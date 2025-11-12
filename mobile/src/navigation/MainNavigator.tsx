@@ -1,0 +1,88 @@
+import React from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from '../screens/HomeScreen';
+import SendScreen from '../screens/SendScreen';
+import SendEthScreen from '../features/send/SendEthScreen';
+import SendTokenScreen from '../features/send/SendTokenScreen';
+import ReceiveScreen from '../screens/ReceiveScreen';
+import IncomingTransactionsScreen from '../screens/IncomingTransactionsScreen';
+import HistoryScreen from '../features/history/HistoryScreen';
+import ManageAccountsScreen from '../screens/wallet/ManageAccountsScreen';
+import TransactionDetailsScreen from '../screens/TransactionDetailsScreen';
+import { Transaction } from '../services/blockchain/transactionHistoryService';
+import SettingsScreen from '../screens/SettingsScreen';
+import SecuritySettingsScreen from '../screens/SecuritySettingsScreen';
+import DevSettingsScreen from '../screens/DevSettingsScreen';
+import PrivacyCenterScreen from '../screens/PrivacyCenterScreen';
+import SplitBillScreen from '../screens/SplitBillScreen';
+import SplitBillHistoryScreen from '../screens/SplitBillHistoryScreen';
+import PaySplitBillScreen from '../screens/PaySplitBillScreen';
+import PendingPaymentsScreen from '../screens/PendingPaymentsScreen';
+import AddMoneyScreen from '../screens/AddMoneyScreen';
+import TransakWidgetScreen from '../screens/TransakWidgetScreen';
+import SchedulePaymentScreen from '../screens/SchedulePaymentScreen';
+import ScheduledPaymentsListScreen from '../screens/ScheduledPaymentsListScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
+
+export type MainStackParamList = {
+  Home: undefined;
+  Send: undefined;
+  SendToken: { tokenAddress?: string } | undefined;
+  Receive: undefined;
+  IncomingTransactions: undefined;
+  ManageAccounts: undefined;
+  ManageTokens: undefined;
+  TransactionDetails: { transaction: Transaction };
+  TransactionHistory: { address: string };
+  Settings: undefined;
+  PrivacyCenter: undefined;
+  SecuritySettings: undefined;
+  DevSettings: undefined;
+  NotificationSettings: undefined;
+  LanguageSettings: undefined;
+  SplitBill: undefined;
+  SplitBillHistory: undefined;
+  PaySplitBill: { to: string; amount: string; total?: string; participants?: string };
+  PendingPayments: undefined;
+  AddMoney: undefined;
+  TransakWidget: { amount: string; walletAddress: string };
+  SchedulePayment: undefined;
+  ScheduledPaymentsList: undefined;
+};
+
+const Stack = createNativeStackNavigator<MainStackParamList>();
+
+export default function MainNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Send" component={SendEthScreen} />
+      <Stack.Screen name="SendToken" component={SendTokenScreen} />
+      <Stack.Screen name="Receive" component={ReceiveScreen} />
+      <Stack.Screen name="IncomingTransactions" component={IncomingTransactionsScreen} />
+      <Stack.Screen name="ManageAccounts" component={ManageAccountsScreen} />
+      <Stack.Screen name="ManageTokens" component={require('../screens/wallet/ManageTokensScreen').default} />
+      <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} />
+      <Stack.Screen name="TransactionHistory" component={HistoryScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="PrivacyCenter" component={PrivacyCenterScreen} />
+      <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
+      <Stack.Screen name="DevSettings" component={DevSettingsScreen} />
+      <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
+      <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
+      <Stack.Screen name="SplitBill" component={SplitBillScreen} />
+      <Stack.Screen name="SplitBillHistory" component={SplitBillHistoryScreen} />
+      <Stack.Screen name="PaySplitBill" component={PaySplitBillScreen} />
+      <Stack.Screen name="PendingPayments" component={PendingPaymentsScreen} />
+      <Stack.Screen name="AddMoney" component={AddMoneyScreen} />
+      <Stack.Screen name="TransakWidget" component={TransakWidgetScreen} />
+      <Stack.Screen name="SchedulePayment" component={SchedulePaymentScreen} />
+      <Stack.Screen name="ScheduledPaymentsList" component={ScheduledPaymentsListScreen} />
+    </Stack.Navigator>
+  );
+}

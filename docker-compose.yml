@@ -1,0 +1,59 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: eternity-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eternity_wallet
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+  redis:
+    image: redis:7-alpine
+    container_name: eternity-redis
+    ports:
+      - '6379:6379'
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
+      anvil
+      --fork-url ${MAINNET_RPC}
+      ${FORK_BLOCK:+--fork-block-number ${FORK_BLOCK} }
+      --port 8545
+      --chain-id 31337
+      --block-time 1
+    ports:
+      - '8545:8545'
+    environment:
+      - MAINNET_RPC=${MAINNET_RPC}
+      - FORK_BLOCK=${FORK_BLOCK}
+
+volumes:
+  pgdata:

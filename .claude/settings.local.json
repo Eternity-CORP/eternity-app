@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(npm install:*)",
+      "Bash(npx expo start:*)",
+      "Bash(timeout 15 npx expo start:*)",
+      "Bash(tree:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(cat:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(curl:*)",
+      "Bash(npx expo install:*)",
+      "Bash(npx expo prebuild --clean)",
+      "Bash(npx expo run:ios)",
+      "Read(//Users/daniillogachev/**)",
+      "Bash(npm run migration:generate:*)",
+      "Bash(npx typeorm:*)",
+      "Bash(psql:*)",
+      "Bash(npm run migration:run:*)",
+      "Bash(npm run start:dev:*)",
+      "Bash(python3 -m json.tool:*)",
+      "Bash(chmod:*)",
+      "Bash(cd /Users/daniillogachev/Ma project/E-Y/mobile && npx tsc --noEmit src/screens/DevSettingsScreen.tsx 2 >& 1:*)",
+      "Bash(pkill:*)",
+      "Bash(npm test -- --coverage --testPathPattern=seedValidator.test.ts)",
+      "Bash(cd /Users/daniillogachev/Ma\\ project/E-Y/mobile && npx tsc:*)",
+      "Bash(npm test -- --testPathPattern=telemetryService.test.ts)",
+      "Bash(node scripts/bump-build-number.js:*)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(cd /Users/daniillogachev/Ma project/E-Y/mobile && npx tsc:*)",
+      "Bash(cd /Users/daniillogachev/Ma project/E-Y/mobile && npm audit:*)",
+      "Bash(cd:*)",
+      "Bash(npx tsc:*)",
+      "Bash(python3:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@eternity-wallet/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and utilities for Eternity Wallet",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "typescript",
+    "types",
+    "shared"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

@@ -1,0 +1,86 @@
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { AuthStackParamList } from '../navigation/AuthNavigator';
+import { importWallet } from '../services/walletService';
+import { saveWallet } from '../services/cryptoService';
+
+type Props = NativeStackScreenProps<AuthStackParamList, 'Verification'>;
+
+export default function VerificationScreen({ route, navigation }: Props) {
+  const { mnemonic } = route.params;
+  const words = useMemo(() => mnemonic.trim().split(/\s+/), [mnemonic]);
+  const [confirmed, setConfirmed] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleFinish = async () => {
+    if (!confirmed) return;
+    try {
+      setSaving(true);
+      const wallet = await importWallet(mnemonic);
+      await saveWallet(mnemonic, wallet.privateKey);
+      navigation.navigate('Home' as any);
+    } catch (e) {
+      console.error(e);
+      // TODO: Show user-friendly error
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Verify Seed Phrase</Text>
+      <Text style={styles.description}>Review your 12-word seed phrase and confirm you have securely stored it.</Text>
+
+      <View style={styles.grid}>
+        {words.map((word, idx) => (
+          <View key={idx} style={styles.wordBox} accessibilityLabel={`Word ${idx + 1}`}> 
+            <Text style={styles.wordIndex}>{idx + 1}</Text>
+            <Text style={styles.wordText}>{word}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.checkboxRow}>
+        <Switch value={confirmed} onValueChange={setConfirmed} />
+        <Text style={styles.checkboxLabel}>I've securely saved my seed phrase</Text>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.button, !confirmed && styles.buttonDisabled]}
+        onPress={handleFinish}
+        disabled={!confirmed || saving}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !confirmed || saving }}
+      >
+        <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Finish'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+        accessibilityRole="button"
+      >
+        <Text style={styles.backButtonText}>Back</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, marginTop: 40 },
+  description: { fontSize: 16, color: '#666', marginBottom: 24, lineHeight: 22 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 16 },
+  wordBox: { width: '30%', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 8, marginBottom: 10, alignItems: 'center' },
+  wordIndex: { fontSize: 12, color: '#666' },
+  wordText: { fontSize: 16, fontWeight: '600' },
+  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
+  checkboxLabel: { marginLeft: 8, fontSize: 16 },
+  button: { backgroundColor: '#007AFF', padding: 16, borderRadius: 8, marginBottom: 12 },
+  buttonDisabled: { backgroundColor: '#ccc' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  backButton: { padding: 16 },
+  backButtonText: { color: '#007AFF', fontSize: 16, textAlign: 'center' },
+});
