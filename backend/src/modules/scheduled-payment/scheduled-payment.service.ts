@@ -1,14 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ScheduledPayment, ScheduledPaymentStatus } from '../../../database/entities/scheduled-payment.entity';
 import { User } from '../../../database/entities/user.entity';
+import { ShardIntegrationService } from '../shard/shard-integration.service';
 
 @Injectable()
 export class ScheduledPaymentService {
+  private readonly logger = new Logger(ScheduledPaymentService.name);
+
   constructor(
     @InjectRepository(ScheduledPayment)
     private scheduledPaymentRepository: Repository<ScheduledPayment>,
+    private readonly shardIntegration: ShardIntegrationService,
   ) {}
 
   async create(dto: any, user: User): Promise<ScheduledPayment> {
@@ -23,7 +27,20 @@ export class ScheduledPaymentService {
       status: ScheduledPaymentStatus.PENDING,
     });
 
-    return this.scheduledPaymentRepository.save(scheduledPayment);
+    const saved = await this.scheduledPaymentRepository.save(scheduledPayment);
+
+    // Award shards for creating scheduled payment
+    try {
+      await this.shardIntegration.handleScheduledPaymentCreated(user.id, {
+        scheduledPaymentId: saved.id,
+        amount: dto.amount,
+        recipientAddress: dto.recipientAddress,
+      });
+    } catch (error: any) {
+      this.logger.error(`Failed to award scheduled payment shards: ${error.message}`);
+    }
+
+    return saved;
   }
 
   async getUserScheduledPayments(userId: string): Promise<ScheduledPayment[]> {

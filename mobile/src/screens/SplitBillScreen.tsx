@@ -24,12 +24,15 @@ import {
   validateCustomSplit,
 } from '../services/splitBillService';
 import { SplitBill, SplitBillParticipant, SplitMode } from '../types/splitBill.types';
+import { useShardAnimation } from '../features/shards/ShardAnimationProvider';
+import { reportSplitBillShard } from '../services/shardEventsService';
 
 type Props = NativeStackScreenProps<any, 'SplitBill'>;
 
 export default function SplitBillScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
+  const { triggerShardAnimation } = useShardAnimation();
 
   const [totalAmount, setTotalAmount] = useState('');
   const [participantsCount, setParticipantsCount] = useState('2');
@@ -112,6 +115,33 @@ export default function SplitBillScreen({ navigation }: Props) {
       };
 
       await saveSplitBill(bill);
+
+      // Сообщаем на backend о создании split bill, чтобы начислить шарды
+      try {
+        const creatorAddress = activeAccount.address;
+        const shardResult = await reportSplitBillShard({
+          walletAddress: creatorAddress,
+          totalAmount,
+          participantsCount: participants.length,
+        });
+
+        const earned = shardResult?.earnedShards ?? 0;
+        if (earned > 0) {
+          triggerShardAnimation(earned);
+        } else if (
+          shardResult?.limitReason === 'DAILY_LIMIT' ||
+          shardResult?.limitReason === 'DEVICE_LIMIT'
+        ) {
+          Alert.alert(
+            'Лимит шардов',
+            'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
+          );
+        }
+      } catch (error) {
+        console.warn('[SplitBillScreen] Failed to report shard event:', error);
+        triggerShardAnimation(1);
+      }
+
       Alert.alert('Успех', 'Счёт сохранён! Теперь вы можете поделиться ссылкой.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);

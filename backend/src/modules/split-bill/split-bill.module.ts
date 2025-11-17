@@ -7,6 +7,7 @@ import { SplitBillController } from './split-bill.controller';
 import { SplitBillService } from './split-bill.service';
 import { PushNotificationService } from '../../services/push-notification.service';
 import { UserModule } from '../user/user.module';
+import { ShardModule } from '../shard/shard.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { UserModule } from '../user/user.module';
       PushToken,
     ]),
     UserModule,
+    ShardModule,
   ],
   controllers: [SplitBillController],
   providers: [SplitBillService, PushNotificationService],

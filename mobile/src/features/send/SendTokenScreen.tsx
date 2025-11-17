@@ -31,6 +31,7 @@ import { MainStackParamList } from '../../navigation/MainNavigator';
 import { useTheme } from '../../context/ThemeContext';
 import { useWallet } from '../../context/WalletContext';
 import Card from '../../components/common/Card';
+import { useShardAnimation } from '../shards/ShardAnimationProvider';
 
 import {
   sendErc20,
@@ -45,6 +46,7 @@ import {
 import { estimateGasForERC20, type GasFeeOptions, type GasFeeLevel } from '../../services/blockchain/gasEstimatorService';
 import { getSelectedNetwork } from '../../services/networkService';
 import type { Network } from '../../config/env';
+import { reportSendShard } from '../../services/shardEventsService';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'SendToken'>;
 
@@ -65,6 +67,7 @@ const COMMON_TOKENS = [
 export default function SendTokenScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
+  const { triggerShardAnimation } = useShardAnimation();
 
   // Form state
   const [tokenAddress, setTokenAddress] = useState(route.params?.tokenAddress || '');
@@ -221,6 +224,31 @@ export default function SendTokenScreen({ navigation, route }: Props) {
       });
 
       setTxHash(result.hash);
+
+      // Report successful send to backend for shard rewards
+      try {
+        if (activeAccount?.address) {
+          const shardResult = await reportSendShard({
+            walletAddress: activeAccount.address,
+            amountEth: amount,
+            txHash: result.hash,
+            recipientAddress: recipient,
+            network,
+          });
+
+          const earned = shardResult?.earnedShards ?? 0;
+          if (earned > 0) {
+            triggerShardAnimation(earned);
+          }
+        } else {
+          // Fallback: still show a local +1 animation
+          triggerShardAnimation(1);
+        }
+      } catch (error) {
+        console.warn('[SendTokenScreen] Failed to report shard event:', error);
+        // Don't break UX if backend call fails
+        triggerShardAnimation(1);
+      }
 
       console.log(`✅ Token sent: ${result.hash}`);
 

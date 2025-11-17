@@ -1,10 +1,10 @@
 import React from 'react';
-import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
 type Props = {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Card({ children, style }: Props) {

@@ -16,10 +16,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { ethers } from 'ethers';
 
 import { useTheme } from '../context/ThemeContext';
+import { useWallet } from '../context/WalletContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { useScheduledPayments } from '../features/schedule/store/scheduledSlice';
 import { getJobRunner } from '../features/schedule/JobRunner';
+import { useShardAnimation } from '../features/shards/ShardAnimationProvider';
+import { reportScheduledPaymentShard } from '../services/shardEventsService';
 
 type Props = NativeStackScreenProps<any, 'SchedulePayment'>;
 
@@ -27,7 +30,9 @@ const EMOJI_LIST = ['☕️', '🍕', '🍺', '🎉', '🎁', '❤️', '🙏', 
 
 export default function SchedulePaymentScreen({ navigation }: Props) {
   const { theme } = useTheme();
+  const { activeAccount } = useWallet();
   const addPayment = useScheduledPayments((state) => state.addPayment);
+  const { triggerShardAnimation } = useShardAnimation();
 
   // Step 1: Date & Time
   const [scheduledDate, setScheduledDate] = useState(new Date());
@@ -110,6 +115,35 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
       // Запускаем JobRunner (он сам проверит, запущен ли уже)
       const jobRunner = getJobRunner();
       jobRunner.start();
+
+      // Сообщаем на backend о создании отложенного платежа, чтобы начислить шарды
+      try {
+        if (activeAccount?.address) {
+          const shardResult = await reportScheduledPaymentShard({
+            walletAddress: activeAccount.address,
+            amountEth: amount,
+            recipientAddress: recipient,
+          });
+
+          const earned = shardResult?.earnedShards ?? 0;
+          if (earned > 0) {
+            triggerShardAnimation(earned);
+          } else if (
+            shardResult?.limitReason === 'DAILY_LIMIT' ||
+            shardResult?.limitReason === 'DEVICE_LIMIT'
+          ) {
+            Alert.alert(
+              'Лимит шардов',
+              'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
+            );
+          }
+        } else {
+          triggerShardAnimation(1);
+        }
+      } catch (error) {
+        console.warn('[SchedulePaymentScreen] Failed to report shard event:', error);
+        triggerShardAnimation(1);
+      }
 
       setSaving(false);
 

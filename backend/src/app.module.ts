@@ -13,6 +13,7 @@ import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { UserModule } from './modules/user/user.module';
 import { SplitBillModule } from './modules/split-bill/split-bill.module';
 import { ScheduledPaymentModule } from './modules/scheduled-payment/scheduled-payment.module';
+import { ShardModule } from './modules/shard/shard.module';
 import { User } from '../database/entities/user.entity';
 import { Payment } from '../database/entities/payment.entity';
 import { LoggingMiddleware } from './common/logging.middleware';
@@ -40,7 +41,8 @@ import { LoggingMiddleware } from './common/logging.middleware';
     WebhooksModule,
     UserModule,
     SplitBillModule,
-    ScheduledPaymentModule
+    ScheduledPaymentModule,
+    ShardModule
   ]
 })
 export class AppModule implements NestModule {

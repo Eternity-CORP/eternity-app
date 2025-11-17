@@ -30,6 +30,7 @@ import { MainStackParamList } from '../../navigation/MainNavigator';
 import { useTheme } from '../../context/ThemeContext';
 import { useWallet } from '../../context/WalletContext';
 import Card from '../../components/common/Card';
+import { useShardAnimation } from '../shards/ShardAnimationProvider';
 
 import {
   sendNative,
@@ -46,12 +47,14 @@ import { getETHBalance } from '../../services/blockchain/balanceService';
 import { estimateGasForETH, type GasFeeOptions } from '../../services/blockchain/gasEstimatorService';
 import { getSelectedNetwork } from '../../services/networkService';
 import type { Network } from '../../config/env';
+import { reportSendShard } from '../../services/shardEventsService';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Send'>;
 
 export default function SendEthScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
+  const { triggerShardAnimation } = useShardAnimation();
 
   // Form state
   const [recipient, setRecipient] = useState('');
@@ -192,6 +195,41 @@ export default function SendEthScreen({ navigation }: Props) {
       setTxStatus(result.status);
 
       console.log(`✅ Transaction sent: ${result.hash}`);
+
+      // Report successful send to backend for shard rewards
+      try {
+        if (activeAccount?.address) {
+          const shardResult = await reportSendShard({
+            walletAddress: activeAccount.address,
+            amountEth: amount,
+            txHash: result.hash,
+            recipientAddress: recipient,
+            network,
+          });
+
+          console.log('[SendEthScreen] Shard result:', shardResult);
+
+          const earned = shardResult?.earnedShards ?? 0;
+          if (earned > 0) {
+            triggerShardAnimation(earned);
+          } else if (
+            shardResult?.limitReason === 'DAILY_LIMIT' ||
+            shardResult?.limitReason === 'DEVICE_LIMIT'
+          ) {
+            Alert.alert(
+              'Лимит шардов',
+              'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
+            );
+          }
+        } else {
+          // Fallback: показать локальную анимацию, даже если адрес не найден
+          triggerShardAnimation(1);
+        }
+      } catch (error) {
+        console.warn('[SendEthScreen] Failed to report shard event:', error);
+        // Не ломаем UX, если бекенд недоступен
+        triggerShardAnimation(1);
+      }
 
       // Wait for confirmations in background
       waitForConfirmations({

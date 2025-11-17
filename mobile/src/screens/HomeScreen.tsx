@@ -25,6 +25,7 @@ import Card from '../components/common/Card'
 import Avatar from '../components/common/Avatar'
 import Button from '../components/common/Button'
 import DevModeBadge from '../components/common/DevModeBadge'
+import ShardBadge from '../components/common/ShardBadge'
 import { getUnpaidCount } from '../services/pendingPaymentsService'
 import { useFocusEffect } from '@react-navigation/native'
 import { isBalanceHidden } from '../services/privacySettingsService'
@@ -229,7 +230,10 @@ export default function HomeScreen({ navigation }: Props) {
           end={{ x: 1, y: 1 }}
           style={{ flex: 1 }}
         >
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: theme.spacing.xl }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: theme.spacing.xl * 2 }}
+          >
             <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: 56 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -259,15 +263,7 @@ export default function HomeScreen({ navigation }: Props) {
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <TouchableOpacity onPress={() => navigation.navigate('ManageTokens')} accessibilityRole="button">
-                    <Ionicons name="list" size={22} color={theme.colors.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setSwitcherOpen(true)} accessibilityRole="button">
-                    <Ionicons name="person-circle-outline" size={26} color={theme.colors.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => navigation.navigate('Settings')} accessibilityRole="button">
-                    <Ionicons name="settings-outline" size={22} color={theme.colors.text} />
-                  </TouchableOpacity>
+                  <ShardBadge />
                 </View>
               </View>
             </View>
@@ -383,6 +379,53 @@ export default function HomeScreen({ navigation }: Props) {
               </Card>
             </View>
           </ScrollView>
+
+          {/* Bottom navigation bar for profile/settings, similar to Telegram-style controls */}
+          <View
+            style={{
+              paddingHorizontal: theme.spacing.md,
+              paddingBottom: theme.spacing.md,
+              paddingTop: 8,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: theme.colors.surface,
+                borderRadius: 18,
+                flexDirection: 'row',
+                justifyContent: 'space-around',
+                alignItems: 'center',
+                paddingVertical: 10,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => setSwitcherOpen(true)}
+                accessibilityRole="button"
+                style={{ alignItems: 'center' }}
+              >
+                <Ionicons name="person-circle-outline" size={26} color={theme.colors.text} />
+                <Text style={{ color: theme.colors.muted, fontSize: 11, marginTop: 2 }}>Accounts</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ManageTokens')}
+                accessibilityRole="button"
+                style={{ alignItems: 'center' }}
+              >
+                <Ionicons name="list" size={22} color={theme.colors.text} />
+                <Text style={{ color: theme.colors.muted, fontSize: 11, marginTop: 2 }}>Tokens</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Settings')}
+                accessibilityRole="button"
+                style={{ alignItems: 'center' }}
+              >
+                <Ionicons name="settings-outline" size={22} color={theme.colors.text} />
+                <Text style={{ color: theme.colors.muted, fontSize: 11, marginTop: 2 }}>Settings</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </LinearGradient>
       </View>
     </>

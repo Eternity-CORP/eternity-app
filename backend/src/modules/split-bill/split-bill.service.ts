@@ -1,18 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SplitBill, SplitBillParticipant } from '../../../database/entities/split-bill.entity';
 import { User } from '../../../database/entities/user.entity';
 import { PushNotificationService } from '../../services/push-notification.service';
+import { ShardIntegrationService } from '../shard/shard-integration.service';
 
 @Injectable()
 export class SplitBillService {
+  private readonly logger = new Logger(SplitBillService.name);
+
   constructor(
     @InjectRepository(SplitBill)
     private splitBillRepository: Repository<SplitBill>,
     @InjectRepository(SplitBillParticipant)
     private participantRepository: Repository<SplitBillParticipant>,
     private pushService: PushNotificationService,
+    private readonly shardIntegration: ShardIntegrationService,
   ) {}
 
   async create(dto: any, creator: User): Promise<SplitBill> {
@@ -47,6 +51,17 @@ export class SplitBillService {
 
     if (!result) {
       throw new Error('Failed to create split bill');
+    }
+
+    // Award shards for creating split bill
+    try {
+      await this.shardIntegration.handleSplitBillCreated(creator.id, {
+        splitBillId: result.id,
+        totalAmount: dto.totalAmount,
+        participantsCount: dto.participants.length,
+      });
+    } catch (error: any) {
+      this.logger.error(`Failed to award split bill shards: ${error.message}`);
     }
 
     return result;

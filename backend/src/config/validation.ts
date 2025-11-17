@@ -7,7 +7,7 @@ export function validateEnv(config: Record<string, unknown>) {
     DATABASE_URL: Joi.string().uri().required(),
     DATABASE_SSL: Joi.boolean().default(false),
     JWT_SECRET: Joi.string().min(32).required(),
-    REDIS_URL: Joi.string().uri().required(),
+    REDIS_URL: Joi.string().uri().optional(), // Optional - can work without Redis
     ETHEREUM_RPC_URL: Joi.string().uri().required(),
     ALCHEMY_WEBHOOK_SECRET: Joi.string().min(16).required()
   });

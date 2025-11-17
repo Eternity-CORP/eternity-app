@@ -9,6 +9,10 @@
     "shared"
   ],
   "scripts": {
+    "dev": "concurrently \"npm run backend\" \"npm run mobile\" --names \"🔧,📱\" --prefix-colors \"blue,magenta\"",
+    "dev:ios": "concurrently \"npm run backend\" \"npm run mobile:ios\" --names \"🔧,📱\" --prefix-colors \"blue,magenta\"",
+    "dev:android": "concurrently \"npm run backend\" \"npm run mobile:android\" --names \"🔧,📱\" --prefix-colors \"blue,magenta\"",
+    "dev:web": "concurrently \"npm run backend\" \"npm run mobile:web\" --names \"🔧,📱\" --prefix-colors \"blue,magenta\"",
     "mobile": "cd mobile && npm start",
     "mobile:ios": "cd mobile && npm run ios",
     "mobile:android": "cd mobile && npm run android",
@@ -36,7 +40,8 @@
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
     "@types/node": "^20.11.0",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "concurrently": "^8.2.2"
   },
   "dependencies": {
     "dotenv": "^16.4.0"

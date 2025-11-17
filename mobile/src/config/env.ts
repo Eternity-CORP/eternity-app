@@ -37,3 +37,4 @@ export const STORAGE_ENC_KEY_KEY = getEnv('EXPO_PUBLIC_STORAGE_ENC_KEY_KEY', 'et
 export const STORAGE_WALLET_META_KEY = getEnv('EXPO_PUBLIC_STORAGE_WALLET_META_KEY', 'eternity-wallet-meta');
 export const STORAGE_TOKEN_PREFS_KEY = getEnv('EXPO_PUBLIC_STORAGE_TOKEN_PREFS_KEY', 'eternity-wallet-token-prefs');
 export const ETHERSCAN_API_KEY = getEnv('EXPO_PUBLIC_ETHERSCAN_API_KEY', '');
+export const API_BASE_URL = getEnv('EXPO_PUBLIC_API_BASE_URL', '');

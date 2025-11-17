@@ -14,7 +14,17 @@ export class AuthService {
 
   async validateUser(walletAddress: string, deviceToken: string): Promise<User> {
     const user = await this.userRepo.findOne({ where: { walletAddress } });
-    if (!user || !user.encryptedDeviceToken) throw new UnauthorizedException('Invalid credentials');
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // If user has no device token yet, register this deviceToken on first successful login attempt
+    if (!user.encryptedDeviceToken) {
+      const hash = await bcrypt.hash(deviceToken, 10);
+      user.encryptedDeviceToken = hash;
+      await this.userRepo.save(user);
+      return user;
+    }
 
     const ok = await bcrypt.compare(deviceToken, user.encryptedDeviceToken);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
