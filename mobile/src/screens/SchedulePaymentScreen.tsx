@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   Platform,
@@ -23,6 +22,8 @@ import { useScheduledPayments } from '../features/schedule/store/scheduledSlice'
 import { getJobRunner } from '../features/schedule/JobRunner';
 import { useShardAnimation } from '../features/shards/ShardAnimationProvider';
 import { reportScheduledPaymentShard } from '../services/shardEventsService';
+import { loginWithWallet } from '../services/authService';
+import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<any, 'SchedulePayment'>;
 
@@ -119,23 +120,28 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
       // Сообщаем на backend о создании отложенного платежа, чтобы начислить шарды
       try {
         if (activeAccount?.address) {
-          const shardResult = await reportScheduledPaymentShard({
-            walletAddress: activeAccount.address,
-            amountEth: amount,
-            recipientAddress: recipient,
-          });
+          const authToken = await loginWithWallet(activeAccount.address, 10000);
+          if (authToken) {
+            const shardResult = await reportScheduledPaymentShard({
+              amountEth: amount,
+              recipientAddress: recipient,
+              authToken,
+            });
 
-          const earned = shardResult?.earnedShards ?? 0;
-          if (earned > 0) {
-            triggerShardAnimation(earned);
-          } else if (
-            shardResult?.limitReason === 'DAILY_LIMIT' ||
-            shardResult?.limitReason === 'DEVICE_LIMIT'
-          ) {
-            Alert.alert(
-              'Лимит шардов',
-              'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
-            );
+            const earned = shardResult?.earnedShards ?? 0;
+            if (earned > 0) {
+              triggerShardAnimation(earned);
+            } else if (
+              shardResult?.limitReason === 'DAILY_LIMIT' ||
+              shardResult?.limitReason === 'DEVICE_LIMIT'
+            ) {
+              Alert.alert(
+                'Лимит шардов',
+                'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
+              );
+            }
+          } else {
+            triggerShardAnimation(1);
           }
         } else {
           triggerShardAnimation(1);
@@ -200,7 +206,7 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <ScrollView style={{ flex: 1 }}>
+      <KeyboardAwareScreen withSafeArea={false} style={{ flex: 1 }}>
         <View style={styles.content}>
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -452,7 +458,7 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
           Отмена
         </Button>
       </View>
-      </ScrollView>
+      </KeyboardAwareScreen>
     </SafeAreaView>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { verifyPin, getLockoutInfo } from '../services/pinService';
 import { isBiometricAvailable, authenticateWithBiometrics } from '../services/biometricService';
+import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
 
 interface PinAuthScreenProps {
   onSuccess: () => void;
@@ -73,7 +74,11 @@ export default function PinAuthScreen({ onSuccess, onCancel }: PinAuthScreenProp
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareScreen 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer}
+      withSafeArea={false}
+    >
       <Text style={styles.title}>Введите пароль</Text>
       {lockoutRemaining > 0 && (
         <Text style={styles.lockoutText}>Блокировка: {lockoutRemaining}s</Text>
@@ -113,12 +118,13 @@ export default function PinAuthScreen({ onSuccess, onCancel }: PinAuthScreenProp
           <Text style={styles.cancelText}>Отмена</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </KeyboardAwareScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#0C0F28' },
+  container: { flex: 1, backgroundColor: '#0C0F28' },
+  contentContainer: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   title: { fontSize: 24, color: '#fff', fontWeight: 'bold', marginBottom: 16 },
   errorText: { color: '#FF3B30', marginBottom: 12 },
   lockoutText: { color: '#FF9500', marginBottom: 12 },

@@ -1,0 +1,305 @@
+---
+description: Testing standards for mobile and backend
+globs: ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+---
+
+# Testing Standards
+
+## Testing Frameworks
+- **Mobile**: Jest + React Native Testing Library + Detox (E2E)
+- **Backend**: Jest + Supertest + TypeORM test utilities
+
+## Test Structure
+
+### AAA Pattern (Arrange, Act, Assert)
+```typescript
+describe('WalletService', () => {
+  describe('getBalance', () => {
+    it('should return formatted balance for valid address', async () => {
+      // Arrange
+      const address = '0x742d35Cc6634C0532925a3b844Bc9e7595f7b';
+      const mockBalance = parseEther('1.5');
+      mockProvider.getBalance.mockResolvedValue(mockBalance);
+
+      // Act
+      const result = await walletService.getBalance(address);
+
+      // Assert
+      expect(result).toBe('1.5');
+      expect(mockProvider.getBalance).toHaveBeenCalledWith(address);
+    });
+  });
+});
+```
+
+### Test Naming Convention
+```typescript
+// Format: should [expected behavior] when [condition]
+it('should throw InsufficientBalance when balance is too low', async () => { });
+it('should return empty array when no transactions exist', async () => { });
+it('should retry 3 times when network fails', async () => { });
+```
+
+## Unit Tests
+
+### Service Testing (Backend)
+```typescript
+describe('TransactionService', () => {
+  let service: TransactionService;
+  let mockRepo: MockRepository<Transaction>;
+  let mockBlockchain: jest.Mocked<BlockchainService>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        TransactionService,
+        { provide: getRepositoryToken(Transaction), useFactory: mockRepositoryFactory },
+        { provide: BlockchainService, useValue: createMockBlockchainService() },
+      ],
+    }).compile();
+
+    service = module.get(TransactionService);
+    mockRepo = module.get(getRepositoryToken(Transaction));
+    mockBlockchain = module.get(BlockchainService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should create pending transaction', async () => {
+    const dto = { toAddress: '0x...', amount: '1000000' };
+    mockBlockchain.sendTransaction.mockResolvedValue('0xhash...');
+    mockRepo.save.mockImplementation((tx) => Promise.resolve({ id: '1', ...tx }));
+
+    const result = await service.create('user-1', dto);
+
+    expect(result.status).toBe('pending');
+    expect(mockBlockchain.sendTransaction).toHaveBeenCalled();
+  });
+});
+```
+
+### Component Testing (Mobile)
+```typescript
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
+
+describe('WalletCard', () => {
+  const defaultProps = {
+    balance: '1.5',
+    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f7b',
+    onPress: jest.fn(),
+  };
+
+  it('should render balance correctly', () => {
+    const { getByText } = render(<WalletCard {...defaultProps} />);
+    expect(getByText('1.5')).toBeTruthy();
+  });
+
+  it('should truncate address', () => {
+    const { getByText } = render(<WalletCard {...defaultProps} />);
+    expect(getByText('0x742d...5f7b')).toBeTruthy();
+  });
+
+  it('should call onPress when tapped', () => {
+    const { getByTestId } = render(<WalletCard {...defaultProps} />);
+    fireEvent.press(getByTestId('wallet-card'));
+    expect(defaultProps.onPress).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+### Hook Testing
+```typescript
+import { renderHook, act, waitFor } from '@testing-library/react-native';
+
+describe('useWalletBalance', () => {
+  it('should fetch and return balance', async () => {
+    mockGetBalance.mockResolvedValue('1.5');
+
+    const { result } = renderHook(() => useWalletBalance('0x...'));
+
+    expect(result.current.isLoading).toBe(true);
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    expect(result.current.balance).toBe('1.5');
+    expect(result.current.error).toBeNull();
+  });
+
+  it('should handle errors', async () => {
+    mockGetBalance.mockRejectedValue(new Error('Network error'));
+
+    const { result } = renderHook(() => useWalletBalance('0x...'));
+
+    await waitFor(() => {
+      expect(result.current.error).toBeTruthy();
+    });
+
+    expect(result.current.error?.message).toBe('Network error');
+  });
+});
+```
+
+## Integration Tests
+
+### API Testing (Backend)
+```typescript
+describe('POST /api/v1/transactions', () => {
+  let app: INestApplication;
+  let authToken: string;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+
+    // Get auth token
+    const loginRes = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ address: '0x...', signature: '0x...' });
+    authToken = loginRes.body.accessToken;
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('should create transaction with valid data', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        toAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595f7b',
+        amount: '1000000',
+        chainId: 1,
+      })
+      .expect(201);
+
+    expect(response.body).toHaveProperty('id');
+    expect(response.body.status).toBe('pending');
+  });
+
+  it('should return 401 without auth token', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/transactions')
+      .send({ toAddress: '0x...', amount: '1000' })
+      .expect(401);
+  });
+
+  it('should return 400 for invalid address', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/v1/transactions')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ toAddress: 'invalid', amount: '1000' })
+      .expect(400);
+
+    expect(response.body.error).toBe('VALIDATION_ERROR');
+  });
+});
+```
+
+## E2E Tests (Detox)
+
+### Mobile E2E
+```typescript
+describe('Send Flow', () => {
+  beforeAll(async () => {
+    await device.launchApp();
+  });
+
+  beforeEach(async () => {
+    await device.reloadReactNative();
+  });
+
+  it('should complete send transaction', async () => {
+    // Navigate to send screen
+    await element(by.id('send-button')).tap();
+    
+    // Enter recipient
+    await element(by.id('recipient-input')).typeText('0x742d35Cc6634C0532925a3b844Bc9e7595f7b');
+    
+    // Enter amount
+    await element(by.id('amount-input')).typeText('0.1');
+    
+    // Confirm
+    await element(by.id('confirm-button')).tap();
+    
+    // Authenticate
+    await element(by.id('pin-input')).typeText('123456');
+    
+    // Wait for success
+    await waitFor(element(by.id('success-screen')))
+      .toBeVisible()
+      .withTimeout(10000);
+    
+    await expect(element(by.text('Transaction Sent'))).toBeVisible();
+  });
+});
+```
+
+## Mocking
+
+### Mock Factory Pattern
+```typescript
+// mocks/blockchain.mock.ts
+export function createMockProvider(): jest.Mocked<JsonRpcProvider> {
+  return {
+    getBalance: jest.fn(),
+    getTransactionReceipt: jest.fn(),
+    estimateGas: jest.fn(),
+    getFeeData: jest.fn(),
+    getNetwork: jest.fn().mockResolvedValue({ chainId: 1n, name: 'mainnet' }),
+  } as unknown as jest.Mocked<JsonRpcProvider>;
+}
+
+export function createMockWallet(): jest.Mocked<Wallet> {
+  return {
+    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f7b',
+    signTransaction: jest.fn(),
+    sendTransaction: jest.fn(),
+  } as unknown as jest.Mocked<Wallet>;
+}
+```
+
+### Mock External APIs
+```typescript
+// Mock cross-chain aggregator
+jest.mock('../services/LifiRouter.service', () => ({
+  LifiRouterService: jest.fn().mockImplementation(() => ({
+    getQuote: jest.fn().mockResolvedValue({
+      estimatedOutput: '1000000',
+      fee: '2.50',
+      durationSeconds: 180,
+    }),
+    prepareTransaction: jest.fn().mockResolvedValue({
+      to: '0x...',
+      data: '0x...',
+      value: '0',
+    }),
+  })),
+}));
+```
+
+## Test Coverage Requirements
+- **Unit tests**: >80% coverage
+- **Critical paths**: 100% coverage (auth, transactions, wallet operations)
+- **E2E tests**: All happy paths covered
+
+## Running Tests
+```bash
+# Mobile
+cd mobile && npm test
+npm run test:coverage
+npm run test:e2e  # Detox
+
+# Backend
+cd backend && npm test
+npm run test:cov
+npm run test:e2e
+```

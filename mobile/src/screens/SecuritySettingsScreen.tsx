@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { useTheme } from '../context/ThemeContext';
+import SafeScreen from '../components/common/SafeScreen';
 import Card from '../components/common/Card';
 import { isBiometricAvailable, isBiometricEnabled, setBiometricEnabled } from '../services/biometricService';
 import { isPinSet, setPin, clearPin } from '../services/pinService';
@@ -70,8 +72,23 @@ export default function SecuritySettingsScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Card>
+    <SafeScreen>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Security</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Card>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Пароль</Text>
         {pinSet ? (
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.colors.error }]} onPress={handleClearPin}>
@@ -119,17 +136,59 @@ export default function SecuritySettingsScreen({ navigation }: Props) {
             <Text style={styles.actionText}>{bioEnabled ? 'Отключить' : 'Включить'}</Text>
           </TouchableOpacity>
         </View>
-      </Card>
-    </View>
+        </Card>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  input: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
-  actionButton: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' },
-  actionText: { color: '#fff', fontWeight: '600' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  input: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  actionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  actionText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 });
 

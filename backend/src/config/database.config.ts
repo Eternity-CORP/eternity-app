@@ -13,7 +13,10 @@ export function DatabaseConfig(configService: ConfigService): DataSourceOptions 
           rejectUnauthorized: true
         }
       : false,
-    entities: [__dirname + '/../../database/entities/*.entity{.ts,.js}'],
+    entities: [
+      __dirname + '/../../database/entities/*.entity{.ts,.js}',
+      __dirname + '/../entities/*.entity{.ts,.js}'
+    ],
     migrations: [__dirname + '/../../database/migrations/*{.ts,.js}'],
     synchronize: false,
     logging: ['error', 'warn'],

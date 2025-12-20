@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { createWalletWithWordCount } from '../services/walletService';
 import {
@@ -8,12 +10,17 @@ import {
   disableScreenshotProtection,
   addScreenshotListener
 } from '../services/screenshotGuard';
+import SafeScreen from '../components/common/SafeScreen';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+import { useTheme } from '../context/ThemeContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'CreateWallet'>;
 
 const SEED_DISPLAY_TIMEOUT = 180; // 3 minutes (180 seconds)
 
 export default function CreateWalletScreen({ navigation }: Props) {
+  const { theme } = useTheme();
   const [mnemonic, setMnemonic] = useState<string[]>([]);
   const [generating, setGenerating] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,146 +120,312 @@ export default function CreateWalletScreen({ navigation }: Props) {
     );
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (mnemonic.length > 0 && saved) {
+      try {
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (e) {}
       navigation.navigate('Verification' as any, { mnemonic: mnemonic.join(' ') } as any);
     }
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create New Wallet</Text>
-      <Text style={styles.description}>
-        A new wallet will be created with a secure seed phrase.
-        Make sure to write it down and keep it safe.
-      </Text>
-
-      {/* Word count selector */}
-      <View style={styles.selectorRow} accessibilityRole="radiogroup">
+    <SafeScreen gradient gradientColors={['#0D0D0D', '#1A1A2E']}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
-          style={[styles.selectorButton, wordCount === 12 && styles.selectorButtonActive]}
-          onPress={() => setWordCount(12)}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: wordCount === 12 }}
-        >
-          <Text style={[styles.selectorText, wordCount === 12 && styles.selectorTextActive]}>12 words</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.selectorButton, wordCount === 24 && styles.selectorButtonActive]}
-          onPress={() => setWordCount(24)}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: wordCount === 24 }}
-        >
-          <Text style={[styles.selectorText, wordCount === 24 && styles.selectorTextActive]}>24 words</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.warningBox} accessibilityRole="alert">
-        <Text style={styles.warningTitle}>⚠️ Important</Text>
-        <Text style={styles.warningText}>• Never share your seed phrase with anyone</Text>
-        <Text style={styles.warningText}>• Store it in a secure location</Text>
-        <Text style={styles.warningText}>• You'll need it to recover your wallet</Text>
-      </View>
-
-      {mnemonic.length === 0 ? (
-        <TouchableOpacity
-          style={[styles.button, generating && styles.buttonDisabled]}
-          onPress={handleCreateWallet}
-          disabled={generating}
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
           accessibilityRole="button"
-          accessibilityState={{ disabled: generating }}
         >
-          <Text style={styles.buttonText}>{generating ? 'Generating…' : `Generate ${wordCount}-word Wallet`}</Text>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-      ) : (
-        <View>
-          {seedVisible ? (
-            <>
-              <View style={styles.timerBox}>
-                <Text style={styles.timerText}>
-                  ⏱️ Time remaining: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
-                </Text>
-                <Text style={styles.timerSubtext}>
-                  Seed phrase will be hidden for security • {wordCount} words
-                </Text>
-              </View>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Create Wallet</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-              <View style={styles.grid}>
-                {mnemonic.map((word, idx) => (
-                  <View key={idx} style={styles.wordBox} accessibilityLabel={`Word ${idx + 1}`}>
-                    <Text style={styles.wordIndex}>{idx + 1}</Text>
-                    <Text style={styles.wordText}>{word}</Text>
-                  </View>
-                ))}
-              </View>
-            </>
-          ) : (
-            <View style={styles.hiddenBox}>
-              <Text style={styles.hiddenIcon}>🔒</Text>
-              <Text style={styles.hiddenText}>Seed phrase hidden for security</Text>
-              <TouchableOpacity style={styles.showButton} onPress={handleShowSeed}>
-                <Text style={styles.showButtonText}>Show Again</Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {mnemonic.length === 0 ? (
+          <>
+            <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+              A new wallet will be created with a secure seed phrase. Make sure to write it down and keep it safe.
+            </Text>
+
+            {/* Word count selector */}
+            <View style={styles.selectorRow} accessibilityRole="radiogroup">
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                  wordCount === 12 && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                ]}
+                onPress={() => setWordCount(12)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: wordCount === 12 }}
+              >
+                <Text style={[
+                  styles.selectorText,
+                  { color: wordCount === 12 ? '#FFFFFF' : theme.colors.textSecondary }
+                ]}>12 words</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+                  wordCount === 24 && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                ]}
+                onPress={() => setWordCount(24)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: wordCount === 24 }}
+              >
+                <Text style={[
+                  styles.selectorText,
+                  { color: wordCount === 24 ? '#FFFFFF' : theme.colors.textSecondary }
+                ]}>24 words</Text>
               </TouchableOpacity>
             </View>
-          )}
 
-          <View style={styles.checkboxRow}>
-            <Switch value={saved} onValueChange={setSaved} />
-            <Text style={styles.checkboxLabel}>I've securely saved my seed phrase</Text>
-          </View>
+            {/* Warning Card */}
+            <Card style={[styles.warningBox, { backgroundColor: `${theme.colors.warning}15` }]}>
+              <View style={styles.warningHeader}>
+                <Ionicons name="warning" size={24} color={theme.colors.warning} />
+                <Text style={[styles.warningTitle, { color: theme.colors.warning }]}>Important</Text>
+              </View>
+              <Text style={[styles.warningText, { color: theme.colors.text }]}>
+                • Never share your seed phrase with anyone
+              </Text>
+              <Text style={[styles.warningText, { color: theme.colors.text }]}>
+                • Store it in a secure offline location
+              </Text>
+              <Text style={[styles.warningText, { color: theme.colors.text }]}>
+                • You'll need it to recover your wallet
+              </Text>
+            </Card>
 
-          <TouchableOpacity
-            style={[styles.button, !saved && styles.buttonDisabled]}
-            onPress={handleContinue}
-            disabled={!saved}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !saved }}
-          >
-            <Text style={styles.buttonText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+            <Button
+              title={generating ? 'Generating...' : `Generate ${wordCount}-word Wallet`}
+              variant="primary"
+              onPress={handleCreateWallet}
+              disabled={generating}
+              loading={generating}
+              style={styles.generateButton}
+            />
+          </>
+        ) : (
+          <>
+            {seedVisible ? (
+              <>
+                {/* Timer */}
+                <View style={[styles.timerBox, { backgroundColor: `${theme.colors.primary}20` }]}>
+                  <View style={styles.timerRow}>
+                    <Ionicons name="time-outline" size={20} color={theme.colors.primary} />
+                    <Text style={[styles.timerText, { color: theme.colors.primary }]}>
+                      {formatTime(timeLeft)}
+                    </Text>
+                  </View>
+                  <Text style={[styles.timerSubtext, { color: theme.colors.textSecondary }]}>
+                    Seed phrase will be hidden for security
+                  </Text>
+                </View>
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        accessibilityRole="button"
-      >
-        <Text style={styles.backButtonText}>Back</Text>
-      </TouchableOpacity>
-    </View>
+                {/* Seed Grid */}
+                <View style={styles.grid}>
+                  {mnemonic.map((word, idx) => (
+                    <View 
+                      key={idx} 
+                      style={[styles.wordBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                      accessibilityLabel={`Word ${idx + 1}`}
+                    >
+                      <Text style={[styles.wordIndex, { color: theme.colors.muted }]}>{idx + 1}</Text>
+                      <Text style={[styles.wordText, { color: theme.colors.text }]}>{word}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <View style={[styles.hiddenBox, { backgroundColor: theme.colors.card }]}>
+                <Ionicons name="lock-closed" size={48} color={theme.colors.muted} />
+                <Text style={[styles.hiddenText, { color: theme.colors.textSecondary }]}>
+                  Seed phrase hidden for security
+                </Text>
+                <Button
+                  title="Show Again"
+                  variant="outline"
+                  onPress={handleShowSeed}
+                  style={styles.showButton}
+                />
+              </View>
+            )}
+
+            {/* Confirmation */}
+            <View style={styles.checkboxRow}>
+              <Switch 
+                value={saved} 
+                onValueChange={setSaved}
+                trackColor={{ false: theme.colors.surface, true: theme.colors.primary }}
+                thumbColor={saved ? '#FFFFFF' : theme.colors.muted}
+              />
+              <Text style={[styles.checkboxLabel, { color: theme.colors.text }]}>
+                I've securely saved my seed phrase
+              </Text>
+            </View>
+
+            <Button
+              title="Continue"
+              variant="primary"
+              onPress={handleContinue}
+              disabled={!saved}
+              style={styles.continueButton}
+            />
+          </>
+        )}
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, marginTop: 40 },
-  description: { fontSize: 16, color: '#666', marginBottom: 24, lineHeight: 22 },
-  selectorRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  selectorButton: { flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  selectorButtonActive: { backgroundColor: '#E3F2FD', borderColor: '#1976D2' },
-  selectorText: { fontSize: 16, color: '#666', fontWeight: '600' },
-  selectorTextActive: { color: '#1976D2' },
-  warningBox: { backgroundColor: '#FFF3CD', padding: 16, borderRadius: 8, marginBottom: 32 },
-  warningTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8, color: '#856404' },
-  warningText: { fontSize: 14, color: '#856404', marginBottom: 4 },
-  timerBox: { backgroundColor: '#E3F2FD', padding: 12, borderRadius: 8, marginBottom: 16, alignItems: 'center' },
-  timerText: { fontSize: 16, fontWeight: '600', color: '#1976D2', marginBottom: 4 },
-  timerSubtext: { fontSize: 12, color: '#1976D2' },
-  hiddenBox: { backgroundColor: '#f5f5f5', padding: 48, borderRadius: 12, marginBottom: 16, alignItems: 'center' },
-  hiddenIcon: { fontSize: 48, marginBottom: 16 },
-  hiddenText: { fontSize: 16, color: '#666', marginBottom: 16, textAlign: 'center' },
-  showButton: { backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  showButtonText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  button: { backgroundColor: '#007AFF', padding: 16, borderRadius: 8, marginBottom: 12 },
-  buttonDisabled: { backgroundColor: '#ccc' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' },
-  backButton: { padding: 16 },
-  backButtonText: { color: '#007AFF', fontSize: 16, textAlign: 'center' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 16 },
-  wordBox: { width: '30%', borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 8, marginBottom: 10, alignItems: 'center' },
-  wordIndex: { fontSize: 12, color: '#666' },
-  wordText: { fontSize: 16, fontWeight: '600' },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
-  checkboxLabel: { marginLeft: 8, fontSize: 16 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  selectorRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  selectorButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  selectorText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  warningBox: {
+    marginBottom: 24,
+    borderWidth: 0,
+  },
+  warningHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  warningTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  warningText: {
+    fontSize: 14,
+    marginBottom: 6,
+    paddingLeft: 8,
+  },
+  generateButton: {
+    marginTop: 8,
+  },
+  timerBox: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  timerText: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  timerSubtext: {
+    fontSize: 13,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  wordBox: {
+    width: '31%',
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  wordIndex: {
+    fontSize: 11,
+    marginBottom: 2,
+  },
+  wordText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  hiddenBox: {
+    padding: 48,
+    borderRadius: 16,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  hiddenText: {
+    fontSize: 16,
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  showButton: {
+    paddingHorizontal: 32,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    flex: 1,
+  },
+  continueButton: {
+    marginTop: 8,
+  },
 });

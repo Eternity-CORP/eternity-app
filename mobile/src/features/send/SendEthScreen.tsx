@@ -17,7 +17,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Alert,
   ActivityIndicator,
   Keyboard,
@@ -30,7 +29,9 @@ import { MainStackParamList } from '../../navigation/MainNavigator';
 import { useTheme } from '../../context/ThemeContext';
 import { useWallet } from '../../context/WalletContext';
 import Card from '../../components/common/Card';
+import ModalTextInput from '../../components/common/ModalTextInput';
 import { useShardAnimation } from '../shards/ShardAnimationProvider';
+import { KeyboardAwareScreen } from '../../components/common/KeyboardAwareScreen';
 
 import {
   sendNative,
@@ -48,6 +49,7 @@ import { estimateGasForETH, type GasFeeOptions } from '../../services/blockchain
 import { getSelectedNetwork } from '../../services/networkService';
 import type { Network } from '../../config/env';
 import { reportSendShard } from '../../services/shardEventsService';
+import { loginWithWallet } from '../../services/authService';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Send'>;
 
@@ -199,27 +201,33 @@ export default function SendEthScreen({ navigation }: Props) {
       // Report successful send to backend for shard rewards
       try {
         if (activeAccount?.address) {
-          const shardResult = await reportSendShard({
-            walletAddress: activeAccount.address,
-            amountEth: amount,
-            txHash: result.hash,
-            recipientAddress: recipient,
-            network,
-          });
+          const authToken = await loginWithWallet(activeAccount.address);
+          if (authToken) {
+            const shardResult = await reportSendShard({
+              amountEth: amount,
+              txHash: result.hash,
+              recipientAddress: recipient,
+              network,
+              authToken,
+            });
 
-          console.log('[SendEthScreen] Shard result:', shardResult);
+            console.log('[SendEthScreen] Shard result:', shardResult);
 
-          const earned = shardResult?.earnedShards ?? 0;
-          if (earned > 0) {
-            triggerShardAnimation(earned);
-          } else if (
-            shardResult?.limitReason === 'DAILY_LIMIT' ||
-            shardResult?.limitReason === 'DEVICE_LIMIT'
-          ) {
-            Alert.alert(
-              'Лимит шардов',
-              'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
-            );
+            const earned = shardResult?.earnedShards ?? 0;
+            if (earned > 0) {
+              triggerShardAnimation(earned);
+            } else if (
+              shardResult?.limitReason === 'DAILY_LIMIT' ||
+              shardResult?.limitReason === 'DEVICE_LIMIT'
+            ) {
+              Alert.alert(
+                'Лимит шардов',
+                'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
+              );
+            }
+          } else {
+            // Fallback: показать локальную анимацию, если нет токена
+            triggerShardAnimation(1);
           }
         } else {
           // Fallback: показать локальную анимацию, даже если адрес не найден
@@ -443,243 +451,243 @@ export default function SendEthScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Send ETH</Text>
-          <View style={{ width: 24 }} />
+    <KeyboardAwareScreen
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      withSafeArea={true}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Send ETH</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* Transaction Status */}
+      {renderTxStatus()}
+
+      {/* Recipient */}
+      <Card style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recipient</Text>
+
+        <View
+          style={[
+            styles.inputContainer,
+            {
+              borderColor:
+                isValidAddress() === null
+                  ? theme.colors.border
+                  : isValidAddress()
+                  ? theme.colors.success
+                  : theme.colors.error,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <Ionicons
+            name="wallet-outline"
+            size={20}
+            color={theme.colors.textSecondary}
+            style={styles.inputIcon}
+          />
+          <ModalTextInput
+            style={[styles.input, { color: theme.colors.text }]}
+            placeholder="0x... wallet address"
+            placeholderTextColor={theme.colors.textSecondary}
+            value={recipient}
+            onChangeText={(t) => setRecipient(t.trim())}
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!sending}
+            title="Recipient Address"
+            helperText="Enter Ethereum wallet address (0x...)"
+            errorText={isValidAddress() === false ? 'Invalid Ethereum address' : undefined}
+          />
         </View>
 
-        {/* Transaction Status */}
-        {renderTxStatus()}
-
-        {/* Recipient */}
-        <Card style={styles.card}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recipient</Text>
-
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                borderColor:
-                  isValidAddress() === null
-                    ? theme.colors.border
-                    : isValidAddress()
-                    ? theme.colors.success
-                    : theme.colors.error,
-                backgroundColor: theme.colors.surface,
-              },
-            ]}
-          >
-            <Ionicons
-              name="wallet-outline"
-              size={20}
-              color={theme.colors.textSecondary}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={[styles.input, { color: theme.colors.text }]}
-              placeholder="0x... wallet address"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={recipient}
-              onChangeText={(t) => setRecipient(t.trim())}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!sending}
-            />
-          </View>
-
-          {isValidAddress() === false && (
-            <View style={styles.errorRow}>
-              <Ionicons name="alert-circle" size={14} color={theme.colors.error} />
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                Invalid Ethereum address
-              </Text>
-            </View>
-          )}
-        </Card>
-
-        {/* Amount */}
-        <Card style={styles.card}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Amount</Text>
-
-          <View
-            style={[
-              styles.amountInputContainer,
-              {
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surface,
-              },
-            ]}
-          >
-            <Text style={[styles.currencySymbol, { color: theme.colors.textSecondary }]}>Ξ</Text>
-            <TextInput
-              style={[styles.amountInput, { color: theme.colors.text }]}
-              placeholder="0.00"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="decimal-pad"
-              editable={!sending}
-            />
-          </View>
-
-          <View style={[styles.balanceRow, { marginTop: 12 }]}>
-            <Text style={[styles.balanceLabel, { color: theme.colors.textSecondary }]}>
-              Balance:
-            </Text>
-            <Text style={[styles.balanceValue, { color: theme.colors.text }]}>
-              {ethers.utils.formatEther(balance)} ETH
+        {isValidAddress() === false && (
+          <View style={styles.errorRow}>
+            <Ionicons name="alert-circle" size={14} color={theme.colors.error} />
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              Invalid Ethereum address
             </Text>
           </View>
-
-          {hasInsufficientFunds() && (
-            <View style={[styles.warningBox, { backgroundColor: theme.colors.error + '20' }]}>
-              <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
-              <Text style={[styles.warningText, { color: theme.colors.error }]}>
-                Insufficient balance (including gas fees)
-              </Text>
-            </View>
-          )}
-        </Card>
-
-        {/* Gas Fee Selection */}
-        {gasFeeOptions && (
-          <Card style={styles.card}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Gas Fee</Text>
-              {estimating && <ActivityIndicator size="small" color={theme.colors.primary} />}
-            </View>
-
-            {renderFeeSelector()}
-
-            {/* Advanced Options Toggle */}
-            <TouchableOpacity
-              style={styles.advancedToggle}
-              onPress={() => setShowAdvanced(!showAdvanced)}
-              disabled={sending}
-            >
-              <Text style={[styles.advancedToggleText, { color: theme.colors.primary }]}>
-                {showAdvanced ? 'Hide' : 'Show'} Advanced Options
-              </Text>
-              <Ionicons
-                name={showAdvanced ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={theme.colors.primary}
-              />
-            </TouchableOpacity>
-
-            {/* Advanced Gas Customization */}
-            {showAdvanced && (
-              <View style={styles.advancedContainer}>
-                <Text style={[styles.advancedLabel, { color: theme.colors.textSecondary }]}>
-                  Gas Limit
-                </Text>
-                <TextInput
-                  style={[
-                    styles.advancedInput,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
-                      color: theme.colors.text,
-                    },
-                  ]}
-                  placeholder={gasFeeOptions[selectedFeeLevel === 'custom' ? 'medium' : selectedFeeLevel].gasLimit.toString()}
-                  placeholderTextColor={theme.colors.textSecondary}
-                  value={customGasLimit}
-                  onChangeText={setCustomGasLimit}
-                  keyboardType="number-pad"
-                  editable={!sending}
-                />
-
-                <Text style={[styles.advancedLabel, { color: theme.colors.textSecondary }]}>
-                  Max Fee (Gwei)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.advancedInput,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
-                      color: theme.colors.text,
-                    },
-                  ]}
-                  placeholder="Auto"
-                  placeholderTextColor={theme.colors.textSecondary}
-                  value={customMaxFee}
-                  onChangeText={setCustomMaxFee}
-                  keyboardType="decimal-pad"
-                  editable={!sending}
-                />
-
-                <Text style={[styles.advancedLabel, { color: theme.colors.textSecondary }]}>
-                  Priority Fee (Gwei)
-                </Text>
-                <TextInput
-                  style={[
-                    styles.advancedInput,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.border,
-                      color: theme.colors.text,
-                    },
-                  ]}
-                  placeholder="Auto"
-                  placeholderTextColor={theme.colors.textSecondary}
-                  value={customPriorityFee}
-                  onChangeText={setCustomPriorityFee}
-                  keyboardType="decimal-pad"
-                  editable={!sending}
-                />
-              </View>
-            )}
-          </Card>
         )}
+      </Card>
 
-        {/* Send Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: !isFormValid() 
-                  ? theme.colors.border 
-                  : theme.colors.success,
-              },
-            ]}
-            onPress={handleSend}
-            disabled={!isFormValid() || sending}
-            activeOpacity={0.8}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.sendButtonText}>
-                Send ETH
-              </Text>
-            )}
-          </TouchableOpacity>
+      {/* Amount */}
+      <Card style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Amount</Text>
+
+        <View
+          style={[
+            styles.amountInputContainer,
+            {
+              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <Text style={[styles.currencySymbol, { color: theme.colors.textSecondary }]}>Ξ</Text>
+          <ModalTextInput
+            style={[styles.amountInput, { color: theme.colors.text }]}
+            placeholder="0.00"
+            placeholderTextColor={theme.colors.textSecondary}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="decimal-pad"
+            editable={!sending}
+            title="Amount to Send"
+            helperText={`Balance: ${ethers.utils.formatEther(balance)} ETH`}
+          />
         </View>
 
-        <View style={styles.spacer} />
-      </ScrollView>
-    </View>
+        <View style={[styles.balanceRow, { marginTop: 12 }]}>
+          <Text style={[styles.balanceLabel, { color: theme.colors.textSecondary }]}>
+            Balance:
+          </Text>
+          <Text style={[styles.balanceValue, { color: theme.colors.text }]}>
+            {ethers.utils.formatEther(balance)} ETH
+          </Text>
+        </View>
+
+        {hasInsufficientFunds() && (
+          <View style={[styles.warningBox, { backgroundColor: theme.colors.error + '20' }]}>
+            <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
+            <Text style={[styles.warningText, { color: theme.colors.error }]}>
+              Insufficient balance (including gas fees)
+            </Text>
+          </View>
+        )}
+      </Card>
+
+      {/* Gas Fee Selection */}
+      {gasFeeOptions && (
+        <Card style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Gas Fee</Text>
+            {estimating && <ActivityIndicator size="small" color={theme.colors.primary} />}
+          </View>
+
+          {renderFeeSelector()}
+
+          {/* Advanced Options Toggle */}
+          <TouchableOpacity
+            style={styles.advancedToggle}
+            onPress={() => setShowAdvanced(!showAdvanced)}
+            disabled={sending}
+          >
+            <Text style={[styles.advancedToggleText, { color: theme.colors.primary }]}>
+              {showAdvanced ? 'Hide' : 'Show'} Advanced Options
+            </Text>
+            <Ionicons
+              name={showAdvanced ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={theme.colors.primary}
+            />
+          </TouchableOpacity>
+
+          {/* Advanced Gas Customization */}
+          {showAdvanced && (
+            <View style={styles.advancedContainer}>
+              <Text style={[styles.advancedLabel, { color: theme.colors.textSecondary }]}>
+                Gas Limit
+              </Text>
+              <TextInput
+                style={[
+                  styles.advancedInput,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                    color: theme.colors.text,
+                  },
+                ]}
+                placeholder={gasFeeOptions[selectedFeeLevel === 'custom' ? 'medium' : selectedFeeLevel].gasLimit.toString()}
+                placeholderTextColor={theme.colors.textSecondary}
+                value={customGasLimit}
+                onChangeText={setCustomGasLimit}
+                keyboardType="number-pad"
+                editable={!sending}
+              />
+
+              <Text style={[styles.advancedLabel, { color: theme.colors.textSecondary }]}>
+                Max Fee (Gwei)
+              </Text>
+              <TextInput
+                style={[
+                  styles.advancedInput,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                    color: theme.colors.text,
+                  },
+                ]}
+                placeholder="Auto"
+                placeholderTextColor={theme.colors.textSecondary}
+                value={customMaxFee}
+                onChangeText={setCustomMaxFee}
+                keyboardType="decimal-pad"
+                editable={!sending}
+              />
+
+              <Text style={[styles.advancedLabel, { color: theme.colors.textSecondary }]}>
+                Priority Fee (Gwei)
+              </Text>
+              <TextInput
+                style={[
+                  styles.advancedInput,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                    color: theme.colors.text,
+                  },
+                ]}
+                placeholder="Auto"
+                placeholderTextColor={theme.colors.textSecondary}
+                value={customPriorityFee}
+                onChangeText={setCustomPriorityFee}
+                keyboardType="decimal-pad"
+                editable={!sending}
+              />
+            </View>
+          )}
+        </Card>
+      )}
+
+      {/* Send Button */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            {
+              backgroundColor: !isFormValid() 
+                ? theme.colors.border 
+                : theme.colors.success,
+            },
+          ]}
+          onPress={handleSend}
+          disabled={!isFormValid() || sending}
+          activeOpacity={0.8}
+        >
+          {sending ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.sendButtonText}>
+              Send ETH
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.spacer} />
+    </KeyboardAwareScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollView: {
     flex: 1,
   },
   scrollContent: {
@@ -690,8 +698,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 16,
+    paddingVertical: 16,
   },
   backButton: {
     padding: 8,

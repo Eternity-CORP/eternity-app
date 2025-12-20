@@ -1,13 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { Transaction } from '../services/blockchain/transactionHistoryService';
+import { useTheme } from '../context/ThemeContext';
 import * as Clipboard from 'expo-clipboard';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'TransactionDetails'>;
 
 export default function TransactionDetailsScreen({ navigation, route }: Props) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { transaction } = route.params;
 
   const formatValue = (value: string) => {
@@ -47,39 +52,50 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
   const isPending = transaction.status === 'pending';
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Transaction Details</Text>
-        <View style={{ width: 50 }} />
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Transaction Details</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.statusCard}>
-        <Text style={styles.statusIcon}>
-          {isPending ? '⏳' : isFailed ? '❌' : isSent ? '📤' : '📥'}
-        </Text>
-        <Text style={styles.statusLabel}>
+      <View style={[styles.statusCard, { backgroundColor: theme.colors.card }]}>
+        <View style={[
+          styles.statusIconContainer,
+          { backgroundColor: isPending ? `${theme.colors.warning}20` : isFailed ? `${theme.colors.error}20` : isSent ? `${theme.colors.error}20` : `${theme.colors.success}20` }
+        ]}>
+          <Ionicons
+            name={isPending ? 'time' : isFailed ? 'close-circle' : isSent ? 'arrow-up' : 'arrow-down'}
+            size={32}
+            color={isPending ? theme.colors.warning : isFailed ? theme.colors.error : isSent ? theme.colors.error : theme.colors.success}
+          />
+        </View>
+        <Text style={[styles.statusLabel, { color: theme.colors.textSecondary }]}>
           {isPending ? 'Pending' : isFailed ? 'Failed' : isSent ? 'Sent' : 'Received'}
         </Text>
-        <Text style={[styles.amountText, isSent && styles.sentAmount, isReceived && styles.receivedAmount]}>
+        <Text style={[
+          styles.amountText,
+          { color: isSent ? theme.colors.error : theme.colors.success }
+        ]}>
           {isSent ? '-' : '+'}{formatValue(transaction.value)} ETH
         </Text>
       </View>
 
-      <View style={styles.detailsCard}>
-        <DetailRow label="Status" value={transaction.status} />
-        <DetailRow label="Date" value={formatDate(transaction.timestamp)} />
-        <DetailRow label="Block" value={transaction.blockNumber.toString()} />
+      <View style={[styles.detailsCard, { backgroundColor: theme.colors.card }]}>
+        <DetailRow label="Status" value={transaction.status} theme={theme} />
+        <DetailRow label="Date" value={formatDate(transaction.timestamp)} theme={theme} />
+        <DetailRow label="Block" value={transaction.blockNumber.toString()} theme={theme} />
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
         <DetailRow
           label="From"
           value={transaction.from}
           copyable
           onCopy={() => handleCopy(transaction.from, 'From address')}
+          theme={theme}
         />
 
         <DetailRow
@@ -87,36 +103,38 @@ export default function TransactionDetailsScreen({ navigation, route }: Props) {
           value={transaction.to}
           copyable
           onCopy={() => handleCopy(transaction.to, 'To address')}
+          theme={theme}
         />
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
-        <DetailRow label="Amount" value={`${formatValue(transaction.value)} ETH`} />
+        <DetailRow label="Amount" value={`${formatValue(transaction.value)} ETH`} theme={theme} />
 
         {transaction.gasUsed && (
-          <DetailRow label="Gas Used" value={transaction.gasUsed} />
+          <DetailRow label="Gas Used" value={transaction.gasUsed} theme={theme} />
         )}
 
         {transaction.gasPrice && (
-          <DetailRow label="Gas Price" value={`${transaction.gasPrice} Gwei`} />
+          <DetailRow label="Gas Price" value={`${transaction.gasPrice} Gwei`} theme={theme} />
         )}
 
         {transaction.fee && (
-          <DetailRow label="Transaction Fee" value={`${parseFloat(transaction.fee).toFixed(6)} ETH`} />
+          <DetailRow label="Transaction Fee" value={`${parseFloat(transaction.fee).toFixed(6)} ETH`} theme={theme} />
         )}
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
         <DetailRow
           label="Transaction Hash"
           value={transaction.hash}
           copyable
           onCopy={() => handleCopy(transaction.hash, 'Transaction hash')}
+          theme={theme}
         />
       </View>
 
-      <TouchableOpacity style={styles.explorerButton} onPress={openInExplorer}>
-        <Text style={styles.explorerButtonText}>View on Etherscan 🔗</Text>
+      <TouchableOpacity style={[styles.explorerButton, { backgroundColor: theme.colors.primary }]} onPress={openInExplorer}>
+        <Text style={styles.explorerButtonText}>View on Etherscan</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -127,19 +145,20 @@ interface DetailRowProps {
   value: string;
   copyable?: boolean;
   onCopy?: () => void;
+  theme: any;
 }
 
-function DetailRow({ label, value, copyable, onCopy }: DetailRowProps) {
+function DetailRow({ label, value, copyable, onCopy, theme }: DetailRowProps) {
   return (
     <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={[styles.detailLabel, { color: theme.colors.textSecondary }]}>{label}</Text>
       <View style={styles.detailValueContainer}>
-        <Text style={styles.detailValue} numberOfLines={1} ellipsizeMode="middle">
+        <Text style={[styles.detailValue, { color: theme.colors.text }]} numberOfLines={1} ellipsizeMode="middle">
           {value}
         </Text>
         {copyable && onCopy && (
           <TouchableOpacity style={styles.copyButton} onPress={onCopy}>
-            <Text style={styles.copyButtonText}>📋</Text>
+            <Ionicons name="copy-outline" size={18} color={theme.colors.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -150,76 +169,54 @@ function DetailRow({ label, value, copyable, onCopy }: DetailRowProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   backButton: {
-    fontSize: 16,
-    color: '#007AFF',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
   },
   statusCard: {
-    backgroundColor: '#fff',
-    margin: 20,
-    padding: 32,
+    margin: 16,
+    padding: 24,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
-  statusIcon: {
-    fontSize: 48,
+  statusIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
   },
   statusLabel: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
     marginBottom: 8,
   },
   amountText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  sentAmount: {
-    color: '#FF3B30',
-  },
-  receivedAmount: {
-    color: '#34C759',
+    fontSize: 28,
+    fontWeight: '700',
   },
   detailsCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
     padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 16,
   },
   detailRow: {
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   detailLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
     marginBottom: 4,
   },
   detailValueContainer: {
@@ -228,27 +225,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   detailValue: {
-    fontSize: 15,
-    color: '#000',
+    fontSize: 14,
     fontWeight: '500',
     flex: 1,
-    fontFamily: 'monospace',
   },
   copyButton: {
     padding: 8,
     marginLeft: 8,
   },
-  copyButtonText: {
-    fontSize: 18,
-  },
   divider: {
     height: 1,
-    backgroundColor: '#eee',
     marginVertical: 8,
   },
   explorerButton: {
-    backgroundColor: '#007AFF',
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 40,
     padding: 16,
     borderRadius: 12,

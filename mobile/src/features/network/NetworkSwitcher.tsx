@@ -12,10 +12,12 @@ import { type Network } from '../../config/env';
 import { getSelectedNetwork, setSelectedNetwork } from '../../services/networkService';
 import { SUPPORTED_CHAINS } from '../../constants/chains';
 import { getProviderWithFallback } from '../../services/blockchain/ethereumProvider';
+import { type NetworkMode, isNetworkAvailable } from '../../services/networkModeService';
 
 interface NetworkSwitcherProps {
   visible: boolean;
   onClose: () => void;
+  mode?: NetworkMode;
 }
 
 interface NetworkInfo {
@@ -27,7 +29,7 @@ interface NetworkInfo {
   status: 'idle' | 'loading' | 'success' | 'error';
 }
 
-export default function NetworkSwitcher({ visible, onClose }: NetworkSwitcherProps) {
+export default function NetworkSwitcher({ visible, onClose, mode = 'demo' }: NetworkSwitcherProps) {
   const [currentNetwork, setCurrentNetwork] = useState<Network>('sepolia');
   const [networks, setNetworks] = useState<NetworkInfo[]>([]);
   const [switching, setSwitching] = useState(false);
@@ -43,8 +45,17 @@ export default function NetworkSwitcher({ visible, onClose }: NetworkSwitcherPro
       const selected = await getSelectedNetwork();
       setCurrentNetwork(selected);
 
-      // Initialize network info
-      const networkInfos: NetworkInfo[] = SUPPORTED_CHAINS.map((chain) => ({
+      // Initialize network info, filtered by mode
+      const networkInfos: NetworkInfo[] = SUPPORTED_CHAINS
+        .filter((chain) => {
+          const network: Network = chain.testnet
+            ? chain.chainId === 11155111
+              ? 'sepolia'
+              : 'holesky'
+            : 'mainnet';
+          return isNetworkAvailable(network, mode);
+        })
+        .map((chain) => ({
         network: chain.testnet
           ? chain.chainId === 11155111
             ? 'sepolia'
@@ -219,7 +230,10 @@ export default function NetworkSwitcher({ visible, onClose }: NetworkSwitcherPro
           )}
 
           <Text style={styles.hint}>
-            Switching networks will reconnect your wallet
+            {mode === 'live' 
+              ? 'You are in Live Mode — only mainnet is available'
+              : 'You are in Demo Mode — only testnets are available'
+            }
           </Text>
         </View>
       </View>

@@ -22,7 +22,9 @@
     "clean": "rm -rf node_modules mobile/node_modules backend/node_modules shared/node_modules",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
-    "test:e2e": "vitest run"
+    "test:e2e": "vitest run",
+    "docs:check": "npx tsx scripts/check-docs-consistency.ts",
+    "docs:sync": "echo '📋 Run docs:check first, then update TRACEABILITY.md manually'"
   },
   "keywords": [
     "crypto",
@@ -44,6 +46,10 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.4.0",
+    "expo-blur": "~15.0.8",
+    "expo-haptics": "~15.0.8",
+    "lottie-react-native": "~7.3.1",
+    "react-native-safe-area-context": "~5.6.0"
   }
 }

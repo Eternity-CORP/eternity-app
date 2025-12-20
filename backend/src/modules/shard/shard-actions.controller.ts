@@ -1,56 +1,43 @@
-import { Body, Controller, NotFoundException, Post } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../../../database/entities/user.entity';
+import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
 import { ShardIntegrationService } from './shard-integration.service';
 import { ShardService } from './shard.service';
+import { JwtAuthGuard } from '../shared/jwt-auth.guard';
 
-class WalletDto {
-  walletAddress!: string;
+class BaseShardActionDto {
   deviceId?: string;
 }
 
-class SendShardDto extends WalletDto {
+class SendShardDto extends BaseShardActionDto {
   amountEth!: string;
   txHash?: string;
   recipientAddress?: string;
   network?: string;
 }
 
-class ReceiveShardDto extends WalletDto {
+class ReceiveShardDto extends BaseShardActionDto {
   amountEth!: string;
   txHash?: string;
   senderAddress?: string;
   network?: string;
 }
 
-class ScheduledShardDto extends WalletDto {
+class ScheduledShardDto extends BaseShardActionDto {
   amountEth?: string;
   recipientAddress?: string;
 }
 
-class SplitBillShardDto extends WalletDto {
+class SplitBillShardDto extends BaseShardActionDto {
   totalAmount?: string;
   participantsCount?: number;
 }
 
 @Controller('shards/actions')
+@UseGuards(JwtAuthGuard)
 export class ShardActionsController {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
     private readonly shardIntegration: ShardIntegrationService,
     private readonly shardService: ShardService,
   ) {}
-
-  private async findUserOrThrow(rawAddress: string): Promise<User> {
-    const walletAddress = rawAddress.toLowerCase();
-    const user = await this.userRepo.findOne({ where: { walletAddress } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
 
   private async withState(userId: string, earnedShards: number, limitReason?: string) {
     const state = await this.shardService.getUserShardState(userId);
@@ -63,8 +50,8 @@ export class ShardActionsController {
   }
 
   @Post('send')
-  async reportSend(@Body() dto: SendShardDto) {
-    const user = await this.findUserOrThrow(dto.walletAddress);
+  async reportSend(@Request() req: any, @Body() dto: SendShardDto) {
+    const userId = req.user.userId;
 
     const meta: Record<string, any> = {};
     if (dto.txHash) meta.txHash = dto.txHash;
@@ -73,17 +60,17 @@ export class ShardActionsController {
     if (dto.deviceId) meta.deviceId = dto.deviceId;
 
     const { earnedShards, limitReason } = await this.shardIntegration.handleTokenSent(
-      user.id,
+      userId,
       dto.amountEth,
       meta,
     );
 
-    return this.withState(user.id, earnedShards, limitReason);
+    return this.withState(userId, earnedShards, limitReason);
   }
 
   @Post('receive')
-  async reportReceive(@Body() dto: ReceiveShardDto) {
-    const user = await this.findUserOrThrow(dto.walletAddress);
+  async reportReceive(@Request() req: any, @Body() dto: ReceiveShardDto) {
+    const userId = req.user.userId;
 
     const meta: Record<string, any> = {};
     if (dto.txHash) meta.txHash = dto.txHash;
@@ -92,17 +79,17 @@ export class ShardActionsController {
     if (dto.deviceId) meta.deviceId = dto.deviceId;
 
     const { earnedShards } = await this.shardIntegration.handleTokenReceived(
-      user.id,
+      userId,
       dto.amountEth,
       meta,
     );
 
-    return this.withState(user.id, earnedShards);
+    return this.withState(userId, earnedShards);
   }
 
   @Post('scheduled-payment')
-  async reportScheduledPayment(@Body() dto: ScheduledShardDto) {
-    const user = await this.findUserOrThrow(dto.walletAddress);
+  async reportScheduledPayment(@Request() req: any, @Body() dto: ScheduledShardDto) {
+    const userId = req.user.userId;
 
     const meta: Record<string, any> = {};
     if (dto.amountEth) meta.amount = dto.amountEth;
@@ -110,14 +97,14 @@ export class ShardActionsController {
     if (dto.deviceId) meta.deviceId = dto.deviceId;
 
     const { earnedShards, limitReason } =
-      await this.shardIntegration.handleScheduledPaymentCreated(user.id, meta);
+      await this.shardIntegration.handleScheduledPaymentCreated(userId, meta);
 
-    return this.withState(user.id, earnedShards, limitReason);
+    return this.withState(userId, earnedShards, limitReason);
   }
 
   @Post('split-bill')
-  async reportSplitBill(@Body() dto: SplitBillShardDto) {
-    const user = await this.findUserOrThrow(dto.walletAddress);
+  async reportSplitBill(@Request() req: any, @Body() dto: SplitBillShardDto) {
+    const userId = req.user.userId;
 
     const meta: Record<string, any> = {};
     if (dto.totalAmount) meta.totalAmount = dto.totalAmount;
@@ -127,10 +114,10 @@ export class ShardActionsController {
     if (dto.deviceId) meta.deviceId = dto.deviceId;
 
     const { earnedShards, limitReason } = await this.shardIntegration.handleSplitBillCreated(
-      user.id,
+      userId,
       meta,
     );
 
-    return this.withState(user.id, earnedShards, limitReason);
+    return this.withState(userId, earnedShards, limitReason);
   }
 }

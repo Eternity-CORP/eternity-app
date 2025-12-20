@@ -1,0 +1,48 @@
+name: Documentation Consistency Check
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'backend/src/**'
+      - 'mobile/src/**'
+      - 'shared/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'docs/**'
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  docs-consistency:
+    name: Check Docs ↔ Code Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Run documentation consistency check
+        run: npm run docs:check
+
+      - name: Comment on PR if issues found
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Documentation Consistency Check Failed**\n\nPlease run `npm run docs:check` locally and fix the issues before merging.\n\nSee `docs/TRACEABILITY.md` for the doc-to-code mapping.'
+            })

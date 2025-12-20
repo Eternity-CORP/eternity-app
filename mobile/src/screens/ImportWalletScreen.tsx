@@ -1,15 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { ethers } from 'ethers';
 import { importWallet, initializeWallet } from '../services/walletService';
 import { saveWallet, isWalletExists } from '../services/cryptoService';
 import { validateSeedPhrase, quickValidate, ValidationResult } from '../services/seedValidator';
+import SafeScreen from '../components/common/SafeScreen';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+import { useTheme } from '../context/ThemeContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ImportWallet'>;
 
 export default function ImportWalletScreen({ navigation }: Props) {
+  const { theme } = useTheme();
   const [seedPhrase, setSeedPhrase] = useState('');
   const [loading, setLoading] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
@@ -68,16 +74,8 @@ export default function ImportWalletScreen({ navigation }: Props) {
       }
 
       // Wallet is now created, RootNavigator will automatically switch to MainNavigator
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Welcome' }],
-      });
-
-      // Fallback: if root switch lags, navigate to Home within Auth to show immediate state
-      // RootNavigator will still swap to MainNavigator when it detects the wallet
-      if (!confirmed) {
-        try { navigation.navigate('Home' as any); } catch {}
-      }
+      // No need to navigate manually - RootNavigator polls wallet status every 500ms
+      // and will switch from AuthNavigator to MainNavigator automatically
     } catch (e) {
       // Do not log error - may contain seed phrase
       setValidationResult({
@@ -137,53 +135,88 @@ export default function ImportWalletScreen({ navigation }: Props) {
   }, [seedPhrase, loading]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <Text style={styles.title}>Импорт Кошелька</Text>
-      <Text style={styles.description}>
-        Введите сид-фразу для восстановления кошелька
-      </Text>
-
-      {/* Переключатель количества слов */}
-      <View style={styles.selectorRow} accessibilityRole="radiogroup">
-        <TouchableOpacity
-          style={[styles.selectorButton, selectedCount === 12 && styles.selectorButtonActive]}
-          onPress={() => setSelectedCount(12)}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: selectedCount === 12 }}
-        >
-          <Text style={[styles.selectorText, selectedCount === 12 && styles.selectorTextActive]}>12 слов</Text>
+    <SafeScreen gradient gradientColors={['#0D0D0D', '#1A1A2E']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.selectorButton, selectedCount === 24 && styles.selectorButtonActive]}
-          onPress={() => setSelectedCount(24)}
-          accessibilityRole="radio"
-          accessibilityState={{ selected: selectedCount === 24 }}
-        >
-          <Text style={[styles.selectorText, selectedCount === 24 && styles.selectorTextActive]}>24 слова</Text>
-        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Import Wallet</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <Text style={styles.label}>Сид-фраза (ровно {selectedCount} слов)</Text>
-      <TextInput
-        style={[
-          styles.input,
-          validationResult && !validationResult.valid && showQuickFeedback && styles.inputError,
-          validationResult?.valid && styles.inputSuccess,
-        ]}
-        placeholder="Введите сид-фразу"
-        placeholderTextColor="#999"
-        value={seedPhrase}
-        onChangeText={(t: string) => {
-          setSeedPhrase(t);
-          setShowQuickFeedback(false);
-        }}
-        multiline={true}
-        numberOfLines={4}
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!loading}
-        accessibilityLabel="Seed phrase input"
-      />
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+          Enter your seed phrase to restore your wallet
+        </Text>
+
+        {/* Word count selector */}
+        <View style={styles.selectorRow} accessibilityRole="radiogroup">
+          <TouchableOpacity
+            style={[
+              styles.selectorButton,
+              { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+              selectedCount === 12 && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+            ]}
+            onPress={() => setSelectedCount(12)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: selectedCount === 12 }}
+          >
+            <Text style={[
+              styles.selectorText,
+              { color: selectedCount === 12 ? '#FFFFFF' : theme.colors.textSecondary }
+            ]}>12 words</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.selectorButton,
+              { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+              selectedCount === 24 && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+            ]}
+            onPress={() => setSelectedCount(24)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: selectedCount === 24 }}
+          >
+            <Text style={[
+              styles.selectorText,
+              { color: selectedCount === 24 ? '#FFFFFF' : theme.colors.textSecondary }
+            ]}>24 words</Text>
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.label, { color: theme.colors.text }]}>
+          Seed Phrase ({selectedCount} words)
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            { 
+              backgroundColor: theme.colors.card, 
+              borderColor: theme.colors.border,
+              color: theme.colors.text 
+            },
+            validationResult && !validationResult.valid && showQuickFeedback && { borderColor: theme.colors.error },
+            validationResult?.valid && { borderColor: theme.colors.success },
+          ]}
+          placeholder="Enter your seed phrase"
+          placeholderTextColor={theme.colors.muted}
+          value={seedPhrase}
+          onChangeText={(t: string) => {
+            setSeedPhrase(t);
+            setShowQuickFeedback(false);
+          }}
+          multiline={true}
+          numberOfLines={4}
+          autoCapitalize="none"
+          autoCorrect={false}
+          editable={!loading}
+          accessibilityLabel="Seed phrase input"
+        />
 
       <View style={styles.validationRow}>
         <Text style={styles.counterText}>Слов: {wordCount}</Text>
@@ -221,7 +254,7 @@ export default function ImportWalletScreen({ navigation }: Props) {
                   Слово #{parseInt(wordIndex) + 1} "{invalidWord}":
                 </Text>
                 <View style={styles.suggestionButtons}>
-                  {suggestions.slice(0, 3).map((suggestion) => (
+                  {suggestions.slice(0, 3).map((suggestion: string) => (
                     <TouchableOpacity
                       key={suggestion}
                       style={styles.suggestionButton}
@@ -281,28 +314,35 @@ export default function ImportWalletScreen({ navigation }: Props) {
       {loading && (
         <View style={styles.overlay}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.overlayText}>Импорт кошелька…</Text>
+          <Text style={styles.overlayText}>Importing wallet…</Text>
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scrollView: {
     flex: 1,
-    backgroundColor: '#fff',
   },
-  contentContainer: {
-    padding: 20,
+  scrollContent: {
+    paddingHorizontal: 20,
     paddingBottom: 40,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    marginTop: 40,
-    color: '#000',
   },
   description: {
     fontSize: 16,
@@ -465,9 +505,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  backButton: {
-    padding: 16,
   },
   backButtonText: {
     color: '#007AFF',

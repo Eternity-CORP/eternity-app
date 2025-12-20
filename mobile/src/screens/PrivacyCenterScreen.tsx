@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { useTheme } from '../context/ThemeContext';
 import Card from '../components/common/Card';
@@ -16,8 +18,9 @@ import {
 
 type Props = NativeStackScreenProps<MainStackParamList, 'PrivacyCenter'>;
 
-export default function PrivacyCenterScreen({}: Props) {
+export default function PrivacyCenterScreen({ navigation }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<PrivacySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -71,9 +74,20 @@ export default function PrivacyCenterScreen({}: Props) {
 
   const features = getPrivacyFeatures();
 
+  const renderHeader = () => (
+    <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+      </TouchableOpacity>
+      <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Privacy Center</Text>
+      <View style={{ width: 40 }} />
+    </View>
+  );
+
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        {renderHeader()}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[styles.loadingText, { color: theme.colors.muted }]}>
@@ -87,7 +101,8 @@ export default function PrivacyCenterScreen({}: Props) {
   if (!settings) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Card>
+        {renderHeader()}
+        <Card style={styles.errorCard}>
           <Text style={[styles.title, { color: theme.colors.text }]}>
             Failed to load privacy settings
           </Text>
@@ -97,7 +112,13 @@ export default function PrivacyCenterScreen({}: Props) {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {renderHeader()}
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Privacy Score */}
       <Card>
         <View style={styles.scoreContainer}>
@@ -165,8 +186,9 @@ export default function PrivacyCenterScreen({}: Props) {
           {'\n'}• Keep your device secure with a strong PIN/biometric
           {'\n'}• Regularly check for app updates
         </Text>
-      </Card>
-    </ScrollView>
+        </Card>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -263,7 +285,33 @@ function getScoreColor(score: number, theme: any): string {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  errorCard: {
+    marginHorizontal: 16,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

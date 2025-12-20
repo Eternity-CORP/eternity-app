@@ -1,0 +1,218 @@
+---
+description: Project structure and file organization
+globs: ["**/*"]
+---
+
+# Project Structure
+
+## Repository Layout
+```
+E-Y/
+├── .bmad-core/           # BMAD workflow configuration
+├── .cursor/rules/        # Cursor AI rules (this folder)
+├── backend/              # NestJS backend
+├── mobile/               # React Native mobile app
+├── docs/                 # Documentation
+│   ├── prd/             # Product requirements & epics
+│   ├── architecture/    # Technical architecture
+│   ├── decisions/       # ADRs (Architecture Decision Records)
+│   ├── stories/         # User stories
+│   └── api/             # API documentation
+└── scripts/              # Utility scripts
+```
+
+## Backend Structure
+```
+backend/
+├── src/
+│   ├── main.ts                    # Application entry point
+│   ├── app.module.ts              # Root module
+│   ├── config/                    # Configuration
+│   │   ├── database.config.ts
+│   │   └── env.validation.ts
+│   ├── common/                    # Shared utilities
+│   │   ├── decorators/
+│   │   ├── filters/
+│   │   ├── guards/
+│   │   ├── interceptors/
+│   │   └── pipes/
+│   ├── modules/                   # Feature modules
+│   │   ├── auth/
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── dto/
+│   │   │   ├── guards/
+│   │   │   └── strategies/
+│   │   ├── wallet/
+│   │   ├── transaction/
+│   │   ├── crosschain/
+│   │   └── blik/
+│   ├── services/                  # Shared services
+│   │   ├── blockchain/
+│   │   └── routers/              # Cross-chain routers
+│   │       ├── LifiRouter.service.ts
+│   │       ├── RangoRouter.service.ts
+│   │       └── SocketRouter.service.ts
+│   ├── entities/                  # Database entities
+│   ├── types/                     # TypeScript types
+│   └── interfaces/                # Interfaces
+├── test/                          # Tests
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+├── migrations/                    # Database migrations
+└── scripts/                       # Utility scripts
+```
+
+## Mobile Structure
+```
+mobile/
+├── src/
+│   ├── App.tsx                    # Root component
+│   ├── components/                # Reusable components
+│   │   ├── common/               # Generic UI components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── SafeScreen.tsx
+│   │   ├── wallet/               # Wallet-specific components
+│   │   └── transaction/          # Transaction components
+│   ├── screens/                   # Screen components
+│   │   ├── auth/
+│   │   │   ├── OnboardingScreen.tsx
+│   │   │   ├── CreateWalletScreen.tsx
+│   │   │   └── ImportWalletScreen.tsx
+│   │   ├── home/
+│   │   │   └── HomeScreen.tsx
+│   │   ├── send/
+│   │   ├── receive/
+│   │   ├── swap/
+│   │   └── settings/
+│   ├── navigation/                # Navigation configuration
+│   │   ├── MainNavigator.tsx
+│   │   ├── AuthNavigator.tsx
+│   │   └── types.ts
+│   ├── hooks/                     # Custom hooks
+│   │   ├── useWallet.ts
+│   │   ├── useBalance.ts
+│   │   └── useTransactions.ts
+│   ├── services/                  # Business logic
+│   │   ├── walletService.ts
+│   │   ├── biometricService.ts
+│   │   └── transactionService.ts
+│   ├── api/                       # API client
+│   │   ├── client.ts
+│   │   ├── authApi.ts
+│   │   └── transactionApi.ts
+│   ├── store/                     # State management (Zustand)
+│   │   ├── useWalletStore.ts
+│   │   └── useSettingsStore.ts
+│   ├── context/                   # React contexts
+│   │   └── ThemeContext.tsx
+│   ├── constants/                 # App constants
+│   │   ├── theme.ts
+│   │   └── chains.ts
+│   ├── types/                     # TypeScript types
+│   ├── utils/                     # Utility functions
+│   │   ├── format.ts
+│   │   ├── validation.ts
+│   │   └── crypto.ts
+│   └── i18n/                      # Internationalization
+├── assets/                        # Static assets
+│   ├── images/
+│   ├── fonts/
+│   └── animations/
+└── __tests__/                     # Tests
+```
+
+## File Naming Conventions
+
+### Components
+```
+PascalCase.tsx           # React components
+PascalCase.styles.ts     # Styled components (if separated)
+PascalCase.test.tsx      # Component tests
+```
+
+### Services/Utilities
+```
+camelCase.service.ts     # Services
+camelCase.utils.ts       # Utilities
+camelCase.types.ts       # Type definitions
+```
+
+### Configuration
+```
+kebab-case.config.ts     # Configuration files
+```
+
+## Import Order
+```typescript
+// 1. React/React Native
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+
+// 2. Third-party libraries
+import { useNavigation } from '@react-navigation/native';
+import { ethers } from 'ethers';
+
+// 3. Internal modules (absolute imports)
+import { useWalletStore } from '@/store/useWalletStore';
+import { WalletCard } from '@/components/wallet/WalletCard';
+
+// 4. Relative imports
+import { styles } from './HomeScreen.styles';
+import { formatBalance } from './utils';
+
+// 5. Types (last)
+import type { Transaction } from '@/types';
+```
+
+## Module Boundaries
+
+### Backend Modules
+Each module should be self-contained:
+```
+modules/wallet/
+├── wallet.module.ts      # Module definition
+├── wallet.controller.ts  # HTTP endpoints
+├── wallet.service.ts     # Business logic
+├── wallet.repository.ts  # Data access (optional)
+├── dto/                  # Request/Response DTOs
+├── entities/             # Database entities
+└── tests/                # Module tests
+```
+
+### Mobile Features
+Group by feature for larger features:
+```
+screens/send/
+├── SendScreen.tsx
+├── components/
+│   ├── AmountInput.tsx
+│   └── RecipientSelector.tsx
+├── hooks/
+│   └── useSendTransaction.ts
+└── utils/
+    └── validation.ts
+```
+
+## Path Aliases
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@screens/*": ["src/screens/*"],
+      "@services/*": ["src/services/*"],
+      "@hooks/*": ["src/hooks/*"],
+      "@utils/*": ["src/utils/*"],
+      "@types/*": ["src/types/*"]
+    }
+  }
+}
+```

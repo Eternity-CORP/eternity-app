@@ -9,7 +9,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   Switch,
@@ -34,6 +33,7 @@ import {
   describeRRule,
 } from '../utils/time-helpers';
 import type { ScheduledKind, AssetType } from '../types';
+import { KeyboardAwareScreen } from '../../../components/common/KeyboardAwareScreen';
 
 // Mock fee estimation (replace with actual suggestFees)
 const suggestFees = async (chainId: number) => {
@@ -365,7 +365,7 @@ export function CreateScheduledPaymentScreen({ navigation, route }: any) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAwareScreen style={styles.container} withSafeArea={true}>
       {/* Warning Banner */}
       <View style={styles.warningBanner}>
         <Text style={styles.warningIcon}>⚠️</Text>
@@ -715,7 +715,7 @@ export function CreateScheduledPaymentScreen({ navigation, route }: any) {
           )}
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </KeyboardAwareScreen>
   );
 }
 

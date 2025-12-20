@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { estimateGas, sendETH } from '../services/blockchain/transactionService';
@@ -8,6 +8,7 @@ import { ethers } from 'ethers';
 import { SUPPORTED_TOKENS, TokenInfo, getTokenAddressForNetwork } from '../constants/tokens';
 import { getTokenPreferences } from '../services/state/tokenPreferences';
 import { getTokenBalance, estimateTokenGas, sendToken } from '../services/blockchain/tokenService';
+import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Send'>;
 
@@ -106,7 +107,7 @@ export default function SendScreen({ navigation }: Props) {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <KeyboardAwareScreen style={styles.container} withSafeArea={true}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backButton}>← Back</Text>
@@ -198,7 +199,7 @@ export default function SendScreen({ navigation }: Props) {
           )}
         </TouchableOpacity>
       </View>
-    </ScrollView>
+    </KeyboardAwareScreen>
   );
 }
 
@@ -211,9 +212,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
+    paddingVertical: 16,
     paddingHorizontal: 20,
-    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },

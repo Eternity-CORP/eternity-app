@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { useWallet } from '../../context/WalletContext';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAwareScreen } from '../../components/common/KeyboardAwareScreen';
 
 export default function ManageAccountsScreen() {
   const { accounts, activeAccount, renameAccount, deleteAccount, switchAccount, canDeleteAccount, busy } = useWallet();
@@ -42,53 +42,55 @@ export default function ManageAccountsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} accessibilityRole="button">
-              <Text style={styles.backText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>Manage Accounts</Text>
-            <View style={{ width: 64 }} />
-          </View>
+    <KeyboardAwareScreen 
+      style={styles.safeArea} 
+      withSafeArea={true}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} accessibilityRole="button">
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Manage Accounts</Text>
+          <View style={{ width: 64 }} />
         </View>
+      </View>
 
-        {accounts.map(a => (
-          <View key={a.index} style={[styles.item, activeAccount?.index === a.index && styles.itemActive]}>
-            <View style={{ flex: 1 }}>
-              {editingIndex === a.index ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TextInput style={styles.input} value={newName} onChangeText={setNewName} editable={!busy} />
-                  <TouchableOpacity style={styles.actionButton} onPress={saveEdit} disabled={busy}><Text style={styles.actionText}>Save</Text></TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionButton, styles.secondary]} onPress={() => setEditingIndex(null)} disabled={busy}><Text style={styles.actionText}>Cancel</Text></TouchableOpacity>
-                </View>
-              ) : (
-                <>
-                  <Text style={styles.name}>{a.name}</Text>
-                  <Text style={styles.addr}>{a.address}</Text>
-                  <Text style={styles.path}>Path: m/44'/60'/0'/0/{a.index}</Text>
-                </>
-              )}
-            </View>
-            {editingIndex !== a.index && (
-              <View style={styles.actions}>
-                <TouchableOpacity style={styles.iconButton} onPress={() => switchAccount(a.index)} disabled={busy}><Text style={styles.icon}>✓</Text></TouchableOpacity>
-                <TouchableOpacity style={styles.iconButton} onPress={() => { setEditingIndex(a.index); setNewName(a.name); }} disabled={busy}><Text style={styles.icon}>✎</Text></TouchableOpacity>
-                <TouchableOpacity style={[styles.iconButton, !canDeleteAccount(a.index) && styles.disabled]} onPress={() => handleDelete(a.index)} disabled={!canDeleteAccount(a.index) || busy}><Text style={styles.icon}>🗑</Text></TouchableOpacity>
+      {accounts.map(a => (
+        <View key={a.index} style={[styles.item, activeAccount?.index === a.index && styles.itemActive]}>
+          <View style={{ flex: 1 }}>
+            {editingIndex === a.index ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TextInput style={styles.input} value={newName} onChangeText={setNewName} editable={!busy} autoFocus />
+                <TouchableOpacity style={styles.actionButton} onPress={saveEdit} disabled={busy}><Text style={styles.actionText}>Save</Text></TouchableOpacity>
+                <TouchableOpacity style={[styles.actionButton, styles.secondary]} onPress={() => setEditingIndex(null)} disabled={busy}><Text style={styles.actionText}>Cancel</Text></TouchableOpacity>
               </View>
+            ) : (
+              <>
+                <Text style={styles.name}>{a.name}</Text>
+                <Text style={styles.addr}>{a.address}</Text>
+                <Text style={styles.path}>Path: m/44'/60'/0'/0/{a.index}</Text>
+              </>
             )}
           </View>
-        ))}
-      </View>
-    </SafeAreaView>
+          {editingIndex !== a.index && (
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.iconButton} onPress={() => switchAccount(a.index)} disabled={busy}><Text style={styles.icon}>✓</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.iconButton} onPress={() => { setEditingIndex(a.index); setNewName(a.name); }} disabled={busy}><Text style={styles.icon}>✎</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.iconButton, !canDeleteAccount(a.index) && styles.disabled]} onPress={() => handleDelete(a.index)} disabled={!canDeleteAccount(a.index) || busy}><Text style={styles.icon}>🗑</Text></TouchableOpacity>
+            </View>
+          )}
+        </View>
+      ))}
+    </KeyboardAwareScreen>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#0B0E13' },
-  container: { flex: 1, padding: 16, backgroundColor: '#0B0E13' },
-  header: { paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#222' },
+  contentContainer: { padding: 16, paddingBottom: 40 },
+  header: { paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#222', marginBottom: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#1b1f27', borderRadius: 8 },
   backText: { color: '#fff', fontSize: 14 },

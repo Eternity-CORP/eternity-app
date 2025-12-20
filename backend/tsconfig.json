@@ -12,15 +12,17 @@
     "baseUrl": "./",
     "incremental": true,
     "strict": true,
+    "strictPropertyInitialization": false,
     "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "skipLibCheck": true,
+    "esModuleInterop": true,
     "types": ["node", "jest"],
     "paths": {
       "*": ["node_modules/*"]
     }
   },
-  "include": ["src/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "test/**/*", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist", "src/examples/**/*", "src/**/__tests__/**/*", "**/*.spec.ts", "**/*.test.ts"]
 }

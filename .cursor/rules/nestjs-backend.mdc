@@ -1,0 +1,364 @@
+---
+description: NestJS backend development rules
+globs: ["backend/**/*.ts"]
+---
+
+# NestJS Backend Rules
+
+## Tech Stack
+- NestJS with TypeScript strict mode
+- TypeORM for database (PostgreSQL)
+- Class-validator for DTO validation
+- Passport.js for authentication
+- ethers.js v6 for blockchain interactions
+
+## Architecture
+
+### Module Structure
+```
+src/
+├── modules/
+│   ├── auth/
+│   │   ├── auth.module.ts
+│   │   ├── auth.controller.ts
+│   │   ├── auth.service.ts
+│   │   ├── dto/
+│   │   ├── guards/
+│   │   └── strategies/
+│   ├── wallet/
+│   ├── transaction/
+│   └── crosschain/
+├── common/
+│   ├── decorators/
+│   ├── filters/
+│   ├── guards/
+│   ├── interceptors/
+│   └── pipes/
+├── config/
+└── shared/
+```
+
+### Controller Pattern
+```typescript
+@Controller('api/v1/transactions')
+@UseGuards(JwtAuthGuard)
+@ApiTags('Transactions')
+export class TransactionController {
+  constructor(private readonly transactionService: TransactionService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get user transactions' })
+  @ApiResponse({ status: 200, type: [TransactionDto] })
+  async findAll(
+    @CurrentUser() user: User,
+    @Query() query: GetTransactionsDto,
+  ): Promise<TransactionDto[]> {
+    return this.transactionService.findByUser(user.id, query);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async create(
+    @CurrentUser() user: User,
+    @Body() dto: CreateTransactionDto,
+  ): Promise<TransactionDto> {
+    return this.transactionService.create(user.id, dto);
+  }
+}
+```
+
+### Service Pattern
+```typescript
+@Injectable()
+export class TransactionService {
+  private readonly logger = new Logger(TransactionService.name);
+
+  constructor(
+    @InjectRepository(Transaction)
+    private readonly transactionRepo: Repository<Transaction>,
+    private readonly blockchainService: BlockchainService,
+  ) {}
+
+  async create(userId: string, dto: CreateTransactionDto): Promise<Transaction> {
+    this.logger.log(`Creating transaction for user ${userId}`);
+    
+    const transaction = this.transactionRepo.create({
+      ...dto,
+      userId,
+      status: TransactionStatus.PENDING,
+    });
+
+    try {
+      const txHash = await this.blockchainService.sendTransaction(dto);
+      transaction.hash = txHash;
+      transaction.status = TransactionStatus.SUBMITTED;
+    } catch (error) {
+      this.logger.error('Transaction failed', { userId, error });
+      transaction.status = TransactionStatus.FAILED;
+      transaction.errorMessage = error.message;
+    }
+
+    return this.transactionRepo.save(transaction);
+  }
+}
+```
+
+## DTOs & Validation
+
+### Request DTOs
+```typescript
+import { IsString, IsNumber, IsOptional, Min, IsEthereumAddress } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateTransactionDto {
+  @ApiProperty({ description: 'Recipient address' })
+  @IsEthereumAddress()
+  toAddress: string;
+
+  @ApiProperty({ description: 'Amount in wei' })
+  @IsString()
+  amount: string;
+
+  @ApiPropertyOptional({ description: 'Chain ID', default: 1 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  chainId?: number = 1;
+}
+```
+
+### Response DTOs
+```typescript
+import { Expose, Transform } from 'class-transformer';
+
+export class TransactionResponseDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  hash: string;
+
+  @Expose()
+  @Transform(({ value }) => value.toString())
+  amount: string;
+
+  @Expose()
+  status: TransactionStatus;
+
+  @Expose()
+  createdAt: Date;
+}
+```
+
+## Error Handling
+
+### Custom Exceptions
+```typescript
+// domain-specific exceptions
+export class InsufficientBalanceException extends HttpException {
+  constructor(required: string, available: string) {
+    super(
+      {
+        statusCode: HttpStatus.BAD_REQUEST,
+        error: 'INSUFFICIENT_BALANCE',
+        message: `Insufficient balance. Required: ${required}, Available: ${available}`,
+      },
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
+
+export class TransactionFailedException extends HttpException {
+  constructor(reason: string, txHash?: string) {
+    super(
+      {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: 'TRANSACTION_FAILED',
+        message: reason,
+        txHash,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
+```
+
+### Global Exception Filter
+```typescript
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
+
+    const status = exception instanceof HttpException
+      ? exception.getStatus()
+      : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const message = exception instanceof HttpException
+      ? exception.getResponse()
+      : 'Internal server error';
+
+    this.logger.error('Exception caught', {
+      path: request.url,
+      method: request.method,
+      status,
+      exception,
+    });
+
+    response.status(status).json({
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      ...(typeof message === 'object' ? message : { message }),
+    });
+  }
+}
+```
+
+## Database
+
+### Entity Pattern
+```typescript
+@Entity('transactions')
+export class Transaction {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  @Index()
+  userId: string;
+
+  @Column({ nullable: true })
+  @Index()
+  hash: string;
+
+  @Column('decimal', { precision: 78, scale: 0 })
+  amount: string;
+
+  @Column({
+    type: 'enum',
+    enum: TransactionStatus,
+    default: TransactionStatus.PENDING,
+  })
+  status: TransactionStatus;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @ManyToOne(() => User, (user) => user.transactions)
+  @JoinColumn({ name: 'userId' })
+  user: User;
+}
+```
+
+### Repository Pattern
+```typescript
+@Injectable()
+export class TransactionRepository {
+  constructor(
+    @InjectRepository(Transaction)
+    private readonly repo: Repository<Transaction>,
+  ) {}
+
+  async findByUserWithPagination(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<[Transaction[], number]> {
+    return this.repo.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+}
+```
+
+## Security
+
+### Rate Limiting
+```typescript
+@Controller('api/v1/auth')
+@UseGuards(ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
+export class AuthController {
+  @Post('login')
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // Stricter for login
+  async login(@Body() dto: LoginDto) { ... }
+}
+```
+
+### Input Sanitization
+```typescript
+// Use validation pipe globally
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true,        // Strip unknown properties
+    forbidNonWhitelisted: true,
+    transform: true,        // Transform to DTO class
+    transformOptions: {
+      enableImplicitConversion: true,
+    },
+  }),
+);
+```
+
+## Testing
+
+### Unit Test Pattern
+```typescript
+describe('TransactionService', () => {
+  let service: TransactionService;
+  let mockRepo: MockType<Repository<Transaction>>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        TransactionService,
+        {
+          provide: getRepositoryToken(Transaction),
+          useFactory: repositoryMockFactory,
+        },
+      ],
+    }).compile();
+
+    service = module.get(TransactionService);
+    mockRepo = module.get(getRepositoryToken(Transaction));
+  });
+
+  it('should create transaction', async () => {
+    const dto = { toAddress: '0x...', amount: '1000' };
+    mockRepo.create.mockReturnValue({ ...dto, id: '1' });
+    mockRepo.save.mockResolvedValue({ ...dto, id: '1' });
+
+    const result = await service.create('user1', dto);
+    expect(result.id).toBe('1');
+  });
+});
+```
+
+## Logging
+```typescript
+// Structured logging
+this.logger.log('Transaction created', {
+  userId,
+  txHash: transaction.hash,
+  amount: transaction.amount,
+  chainId: transaction.chainId,
+});
+
+// Error logging with context
+this.logger.error('Transaction failed', {
+  userId,
+  error: error.message,
+  stack: error.stack,
+});
+```

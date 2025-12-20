@@ -1,0 +1,330 @@
+---
+description: Security best practices for crypto wallet development
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: true
+---
+
+# Security Rules (CRITICAL)
+
+> ⚠️ **This is a crypto wallet application. Security is paramount.**
+
+## Sensitive Data Handling
+
+### NEVER Log Sensitive Data
+```typescript
+// ❌ NEVER DO THIS
+console.log('Private key:', privateKey);
+console.log('Mnemonic:', seedPhrase);
+console.log('PIN:', userPin);
+logger.debug('User password:', password);
+
+// ✅ CORRECT
+console.log('Wallet created successfully');
+logger.info('Transaction signed', { txHash: hash });
+```
+
+### Secure Storage
+```typescript
+// Mobile: Use expo-secure-store
+import * as SecureStore from 'expo-secure-store';
+
+// Store encrypted data
+await SecureStore.setItemAsync('privateKey', encryptedKey, {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+});
+
+// Backend: Use environment variables
+const apiKey = process.env.LIFI_API_KEY; // Never hardcode
+
+// ❌ NEVER hardcode secrets
+const API_KEY = 'sk_live_abc123'; // NEVER DO THIS
+```
+
+### Memory Cleanup
+```typescript
+// Clear sensitive data from memory when done
+function signTransaction(privateKey: string): string {
+  try {
+    const wallet = new Wallet(privateKey);
+    return wallet.signTransaction(tx);
+  } finally {
+    // Clear from memory (best effort in JS)
+    privateKey = '';
+  }
+}
+```
+
+## Input Validation
+
+### Validate All User Inputs
+```typescript
+import { isAddress, getAddress } from 'ethers';
+
+// Address validation
+function validateAddress(input: string): string {
+  if (!input || typeof input !== 'string') {
+    throw new ValidationError('Address is required');
+  }
+  
+  const trimmed = input.trim();
+  if (!isAddress(trimmed)) {
+    throw new ValidationError('Invalid Ethereum address');
+  }
+  
+  return getAddress(trimmed); // Checksummed
+}
+
+// Amount validation
+function validateAmount(amount: string, maxDecimals: number): bigint {
+  if (!/^\d+\.?\d*$/.test(amount)) {
+    throw new ValidationError('Invalid amount format');
+  }
+  
+  const parsed = parseUnits(amount, maxDecimals);
+  if (parsed <= 0n) {
+    throw new ValidationError('Amount must be positive');
+  }
+  
+  return parsed;
+}
+```
+
+### SQL Injection Prevention
+```typescript
+// ✅ Use parameterized queries (TypeORM)
+const transactions = await repo.find({
+  where: { userId: user.id, status: status },
+});
+
+// ✅ Query builder with parameters
+const result = await repo
+  .createQueryBuilder('tx')
+  .where('tx.userId = :userId', { userId })
+  .andWhere('tx.amount > :minAmount', { minAmount })
+  .getMany();
+
+// ❌ NEVER concatenate user input
+const query = `SELECT * FROM transactions WHERE userId = '${userId}'`; // VULNERABLE
+```
+
+### XSS Prevention
+```typescript
+// React Native auto-escapes, but be careful with:
+// ❌ Dangerous
+<WebView source={{ html: userProvidedHtml }} />
+
+// ✅ Safe - sanitize if needed
+import DOMPurify from 'dompurify';
+const sanitized = DOMPurify.sanitize(userContent);
+```
+
+## Authentication & Authorization
+
+### JWT Best Practices
+```typescript
+// Short-lived access tokens
+const accessToken = jwt.sign(payload, secret, { expiresIn: '15m' });
+
+// Longer refresh tokens (stored securely)
+const refreshToken = jwt.sign(payload, refreshSecret, { expiresIn: '7d' });
+
+// Always verify tokens
+try {
+  const decoded = jwt.verify(token, secret);
+} catch (error) {
+  throw new UnauthorizedException('Invalid token');
+}
+```
+
+### Biometric Authentication
+```typescript
+// Always require auth for sensitive actions
+async function sendTransaction(tx: TransactionRequest): Promise<string> {
+  // Step 1: Require authentication
+  const authenticated = await biometricService.authenticate({
+    promptMessage: 'Authenticate to send transaction',
+  });
+  
+  if (!authenticated) {
+    throw new AuthenticationError('Authentication required');
+  }
+  
+  // Step 2: Proceed with transaction
+  return walletService.sign(tx);
+}
+```
+
+### Rate Limiting
+```typescript
+// Apply rate limits to sensitive endpoints
+@Throttle({ default: { limit: 5, ttl: 60000 } })
+@Post('login')
+async login() { ... }
+
+@Throttle({ default: { limit: 10, ttl: 60000 } })
+@Post('transactions')
+async createTransaction() { ... }
+```
+
+## Transaction Security
+
+### Verify Before Signing
+```typescript
+async function prepareAndSignTransaction(params: TxParams) {
+  // 1. Validate recipient
+  const toAddress = validateAddress(params.to);
+  
+  // 2. Validate amount
+  const amount = validateAmount(params.amount, 18);
+  
+  // 3. Check balance
+  const balance = await provider.getBalance(wallet.address);
+  if (balance < amount) {
+    throw new InsufficientBalanceError();
+  }
+  
+  // 4. Estimate gas and check affordability
+  const gasEstimate = await provider.estimateGas({ to: toAddress, value: amount });
+  const feeData = await provider.getFeeData();
+  const totalCost = amount + (gasEstimate * feeData.maxFeePerGas!);
+  
+  if (balance < totalCost) {
+    throw new InsufficientBalanceError('Cannot afford gas fees');
+  }
+  
+  // 5. Sign only after all validations pass
+  return wallet.signTransaction({ ... });
+}
+```
+
+### Prevent Double Spending
+```typescript
+// Use nonce management
+async function getNextNonce(address: string): Promise<number> {
+  const [onChainNonce, pendingNonce] = await Promise.all([
+    provider.getTransactionCount(address, 'latest'),
+    provider.getTransactionCount(address, 'pending'),
+  ]);
+  
+  return Math.max(onChainNonce, pendingNonce);
+}
+```
+
+## API Security
+
+### HTTPS Only
+```typescript
+// Reject non-HTTPS in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(`https://${req.hostname}${req.url}`);
+    }
+    next();
+  });
+}
+```
+
+### CORS Configuration
+```typescript
+app.enableCors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || [],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+});
+```
+
+### Security Headers
+```typescript
+import helmet from 'helmet';
+
+app.use(helmet());
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: ["'self'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+  },
+}));
+```
+
+## Seed Phrase Security
+
+### Display Warnings
+```typescript
+// Always warn users when showing seed phrase
+function SeedPhraseScreen() {
+  return (
+    <View>
+      <WarningBanner 
+        message="Never share your seed phrase with anyone. E-Y will never ask for it."
+        severity="critical"
+      />
+      <WarningBanner 
+        message="Anyone with your seed phrase can steal your funds."
+        severity="critical"
+      />
+      {/* Seed phrase display */}
+    </View>
+  );
+}
+```
+
+### Screenshot Prevention
+```typescript
+import * as ScreenCapture from 'expo-screen-capture';
+
+// Prevent screenshots on sensitive screens
+useEffect(() => {
+  ScreenCapture.preventScreenCaptureAsync();
+  return () => {
+    ScreenCapture.allowScreenCaptureAsync();
+  };
+}, []);
+```
+
+### Auto-Lock
+```typescript
+// Auto-hide seed phrase after timeout
+useEffect(() => {
+  const timeout = setTimeout(() => {
+    setSeedPhraseVisible(false);
+    navigation.goBack();
+  }, 30000); // 30 seconds
+  
+  return () => clearTimeout(timeout);
+}, []);
+```
+
+## Error Messages
+
+### Don't Leak Information
+```typescript
+// ❌ Leaks information
+throw new Error(`User ${email} not found in database`);
+throw new Error(`Invalid password for user ${userId}`);
+
+// ✅ Generic error messages
+throw new UnauthorizedException('Invalid credentials');
+throw new NotFoundException('Resource not found');
+```
+
+## Dependency Security
+```bash
+# Regularly audit dependencies
+npm audit
+npm audit fix
+
+# Use lockfiles
+# Always commit package-lock.json / yarn.lock
+```
+
+## Security Checklist
+- [ ] No secrets in code or logs
+- [ ] All inputs validated
+- [ ] Rate limiting on sensitive endpoints
+- [ ] HTTPS enforced in production
+- [ ] JWT tokens short-lived
+- [ ] Biometric auth for sensitive actions
+- [ ] Screenshot prevention on seed phrase screens
+- [ ] Dependencies audited regularly

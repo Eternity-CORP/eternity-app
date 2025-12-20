@@ -53,7 +53,7 @@ export type Theme = {
   };
 };
 
-const baseTypography = {
+const baseTypography: Theme['typography'] = {
   fontSizes: {
     xs: 12,
     sm: 14,
@@ -93,19 +93,19 @@ const baseRadius = {
 
 export const lightTheme: Theme = {
   colors: {
-    primary: '#7C3AED',
-    secondary: '#10B981',
-    background: '#0F1224', // using dark gradient background for modern feel
-    card: '#15193A',
-    surface: '#1B1F49',
-    text: '#E5E7EB',
-    textSecondary: '#A1A7C4',
-    muted: '#A1A7C4',
-    border: '#2A2F63',
-    error: '#EF4444',
-    success: '#22C55E',
-    warning: '#F59E0B',
-    accent: '#06B6D4',
+    primary: '#AB9FF2',      // Phantom-style purple
+    secondary: '#22D3EE',    // Cyan accent
+    background: '#FFFFFF',   // Clean white for light mode
+    card: '#F5F5F7',         // Subtle gray cards
+    surface: '#EBEBF0',      // Surface elements
+    text: '#1C1C1E',         // Dark text
+    textSecondary: '#8E8E93',
+    muted: '#C7C7CC',
+    border: '#E5E5EA',
+    error: '#FF3B30',
+    success: '#34C759',
+    warning: '#FF9500',
+    accent: '#5856D6',
   },
   typography: baseTypography,
   spacing: baseSpacing,
@@ -114,19 +114,19 @@ export const lightTheme: Theme = {
 
 export const darkTheme: Theme = {
   colors: {
-    primary: '#8B5CF6',
-    secondary: '#34D399',
-    background: '#0A0C1C',
-    card: '#121434',
-    surface: '#17193F',
-    text: '#E6E8F1',
-    textSecondary: '#9AA0B8',
-    muted: '#9AA0B8',
-    border: '#272B57',
-    error: '#F87171',
-    success: '#4ADE80',
-    warning: '#FDBA74',
-    accent: '#22D3EE',
+    primary: '#AB9FF2',      // Phantom-style purple
+    secondary: '#22D3EE',    // Cyan accent
+    background: '#0D0D0D',   // Deep black like Trust Wallet
+    card: '#1A1A1A',         // Slightly lighter cards
+    surface: '#2C2C2E',      // Surface for tabs/buttons
+    text: '#FFFFFF',         // Pure white text
+    textSecondary: '#8E8E93',
+    muted: '#636366',
+    border: '#3A3A3C',
+    error: '#FF453A',
+    success: '#30D158',
+    warning: '#FFD60A',
+    accent: '#64D2FF',
   },
   typography: baseTypography,
   spacing: baseSpacing,
