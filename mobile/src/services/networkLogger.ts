@@ -62,14 +62,23 @@ class NetworkLogger {
     console.log('Network logs cleared');
   }
 
-  // Helper method to wrap fetch calls with logging
-  async loggedFetch(url: string, options?: RequestInit): Promise<Response> {
+  // Helper method to wrap fetch calls with logging and timeout
+  async loggedFetch(url: string, options?: RequestInit, timeoutMs = 30000): Promise<Response> {
     const startTime = Date.now();
-    
+
     try {
-      const response = await fetch(url, options);
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
       const duration = Date.now() - startTime;
-      
+
       this.log({
         type: 'API',
         url,
@@ -79,21 +88,27 @@ class NetworkLogger {
         duration,
         error: response.ok ? undefined : `HTTP ${response.status}: ${response.statusText}`,
       });
-      
+
       return response;
     } catch (error: any) {
       const duration = Date.now() - startTime;
-      
+
+      // Check if it's a timeout error
+      const isTimeout = error.name === 'AbortError' || duration >= timeoutMs;
+      const errorMessage = isTimeout
+        ? `Network request timed out (${timeoutMs}ms)`
+        : error?.message || 'Network error';
+
       this.log({
         type: 'API',
         url,
         method: options?.method || 'GET',
         success: false,
         duration,
-        error: error?.message || 'Network error',
+        error: errorMessage,
         details: error,
       });
-      
+
       throw error;
     }
   }

@@ -8,7 +8,7 @@ export interface TokenPreferences {
 }
 
 const DEFAULT_PREFS: TokenPreferences = {
-  visibleSymbols: ['ETH', 'USDC', 'USDT', 'DAI'],
+  visibleSymbols: ['ETH', 'USDC', 'USDT', 'DAI', 'WETH', 'LINK'],
   customTokens: [],
 };
 
@@ -16,8 +16,18 @@ export async function getTokenPreferences(): Promise<TokenPreferences> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_TOKEN_PREFS_KEY);
     if (!raw) return DEFAULT_PREFS;
-    const parsed = JSON.parse(raw) as TokenPreferences;
-    return { ...DEFAULT_PREFS, ...parsed };
+    
+    const parsed = JSON.parse(raw);
+    const visibleSymbols = parsed.visibleSymbols || [...DEFAULT_PREFS.visibleSymbols];
+    
+    // Ensure WETH and LINK are visible (Migration for testnet support)
+    if (!visibleSymbols.includes('WETH')) visibleSymbols.push('WETH');
+    if (!visibleSymbols.includes('LINK')) visibleSymbols.push('LINK');
+    
+    return {
+      visibleSymbols,
+      customTokens: parsed.customTokens || []
+    };
   } catch {
     return DEFAULT_PREFS;
   }

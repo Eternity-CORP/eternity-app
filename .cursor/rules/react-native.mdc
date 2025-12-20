@@ -1,0 +1,259 @@
+---
+description: React Native and Expo development rules for mobile app
+globs: ["mobile/**/*.ts", "mobile/**/*.tsx"]
+---
+
+# React Native & Expo Rules
+
+## Tech Stack
+- React Native with Expo SDK 51+
+- TypeScript strict mode
+- React Navigation v6
+- Zustand for state management
+- ethers.js v6 for blockchain
+- expo-secure-store for sensitive data
+
+## Component Structure
+
+### Functional Components Only
+```typescript
+// Good - Functional component with TypeScript
+interface WalletCardProps {
+  balance: string;
+  address: string;
+  onPress?: () => void;
+}
+
+export function WalletCard({ balance, address, onPress }: WalletCardProps) {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.container}>
+      <Text style={styles.balance}>{balance}</Text>
+      <Text style={styles.address}>{truncateAddress(address)}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// Avoid - Class components
+class WalletCard extends React.Component { ... }
+```
+
+### Hook Patterns
+```typescript
+// Custom hook with proper typing
+function useWalletBalance(address: string) {
+  const [balance, setBalance] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    async function fetchBalance() {
+      try {
+        setIsLoading(true);
+        const result = await getBalance(address);
+        if (!cancelled) setBalance(result);
+      } catch (err) {
+        if (!cancelled) setError(err as Error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+    
+    fetchBalance();
+    return () => { cancelled = true; };
+  }, [address]);
+
+  return { balance, isLoading, error };
+}
+```
+
+## Styling
+
+### Use StyleSheet.create
+```typescript
+// Good
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#0D0D0D',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+});
+
+// Avoid inline styles for performance
+<View style={{ flex: 1, padding: 16 }} />
+```
+
+### Theme Integration
+```typescript
+// Always use theme colors
+const { theme } = useTheme();
+
+<View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+  <Text style={[styles.title, { color: theme.colors.text }]}>
+    {title}
+  </Text>
+</View>
+```
+
+### Safe Area Handling
+```typescript
+// Always use safe area for screens
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+export function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Content */}
+    </View>
+  );
+}
+```
+
+## Navigation
+
+### Type-Safe Navigation
+```typescript
+// Define param types
+type RootStackParamList = {
+  Home: undefined;
+  Send: { tokenAddress: string };
+  TransactionDetails: { txHash: string };
+};
+
+// Use typed navigation
+const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+navigation.navigate('Send', { tokenAddress: '0x...' });
+```
+
+## State Management
+
+### Zustand Store Pattern
+```typescript
+interface WalletState {
+  address: string | null;
+  balance: string;
+  isLoading: boolean;
+  setAddress: (address: string) => void;
+  refreshBalance: () => Promise<void>;
+}
+
+export const useWalletStore = create<WalletState>((set, get) => ({
+  address: null,
+  balance: '0',
+  isLoading: false,
+  setAddress: (address) => set({ address }),
+  refreshBalance: async () => {
+    const { address } = get();
+    if (!address) return;
+    set({ isLoading: true });
+    try {
+      const balance = await fetchBalance(address);
+      set({ balance, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+}));
+```
+
+## Performance
+
+### Memoization
+```typescript
+// Memoize expensive computations
+const formattedBalance = useMemo(
+  () => formatCurrency(balance, decimals),
+  [balance, decimals]
+);
+
+// Memoize callbacks passed to children
+const handlePress = useCallback(() => {
+  navigation.navigate('Details', { id });
+}, [navigation, id]);
+
+// Memoize list items
+const renderItem = useCallback(({ item }: { item: Transaction }) => (
+  <TransactionItem transaction={item} />
+), []);
+```
+
+### FlatList Optimization
+```typescript
+<FlatList
+  data={transactions}
+  keyExtractor={(item) => item.hash}
+  renderItem={renderItem}
+  initialNumToRender={10}
+  maxToRenderPerBatch={10}
+  windowSize={5}
+  removeClippedSubviews={true}
+  getItemLayout={(_, index) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+/>
+```
+
+## Security
+
+### Sensitive Data Storage
+```typescript
+// Use expo-secure-store for sensitive data
+import * as SecureStore from 'expo-secure-store';
+
+// Store private key
+await SecureStore.setItemAsync('privateKey', encryptedKey, {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+});
+
+// Never log sensitive data
+console.log('Wallet created'); // Good
+console.log('Private key:', key); // NEVER DO THIS
+```
+
+### Biometric Authentication
+```typescript
+import * as LocalAuthentication from 'expo-local-authentication';
+
+async function authenticateUser(): Promise<boolean> {
+  const hasHardware = await LocalAuthentication.hasHardwareAsync();
+  if (!hasHardware) return false;
+  
+  const result = await LocalAuthentication.authenticateAsync({
+    promptMessage: 'Authenticate to access wallet',
+    fallbackLabel: 'Use PIN',
+  });
+  
+  return result.success;
+}
+```
+
+## Error Boundaries
+```typescript
+// Wrap screens with error boundaries
+<ErrorBoundary fallback={<ErrorScreen />}>
+  <HomeScreen />
+</ErrorBoundary>
+```
+
+## Accessibility
+```typescript
+<TouchableOpacity
+  onPress={handleSend}
+  accessibilityLabel="Send cryptocurrency"
+  accessibilityRole="button"
+  accessibilityHint="Opens the send transaction screen"
+>
+  <Text>Send</Text>
+</TouchableOpacity>
+```

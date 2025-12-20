@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Alert,
   Keyboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -23,6 +23,7 @@ import { useWallet } from '../context/WalletContext';
 import Card from '../components/common/Card';
 import SwipeToConfirm from '../components/SwipeToConfirm';
 import { notifyTransactionSent } from '../services/notificationService';
+import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Send'>;
 
@@ -173,7 +174,7 @@ export default function SendScreenNew({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
       <ConfettiCannon
         ref={confettiRef}
         count={150}
@@ -182,10 +183,9 @@ export default function SendScreenNew({ navigation }: Props) {
         fadeOut={true}
       />
 
-      <ScrollView
-        style={styles.scrollView}
+      <KeyboardAwareScreen
+        withSafeArea={false}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -388,16 +388,13 @@ export default function SendScreenNew({ navigation }: Props) {
         </View>
 
         <View style={styles.spacer} />
-      </ScrollView>
-    </View>
+      </KeyboardAwareScreen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollView: {
     flex: 1,
   },
   scrollContent: {
@@ -408,8 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 16,
+    paddingVertical: 16,
   },
   backButton: {
     padding: 8,

@@ -10,22 +10,29 @@ function getBaseUrl(): string | null {
   return API_BASE_URL.replace(/\/$/, '');
 }
 
-export async function loginWithWallet(walletAddress: string): Promise<string | null> {
+export async function loginWithWallet(walletAddress: string, timeoutMs: number = 60000): Promise<string | null> {
   const baseUrl = getBaseUrl();
-  if (!baseUrl) return null;
+  if (!baseUrl) {
+    console.warn('[authService] No base URL configured, skipping authentication');
+    return null;
+  }
 
   const url = `${baseUrl}/auth/login`;
   const deviceToken = await getOrCreateDeviceToken();
 
   try {
-    const response = await networkLogger.loggedFetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+    const response = await networkLogger.loggedFetch(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ walletAddress, deviceToken }),
       },
-      body: JSON.stringify({ walletAddress, deviceToken }),
-    });
+      timeoutMs // Use custom timeout
+    );
 
     if (!response.ok) {
       console.warn(`[authService] /auth/login failed: ${response.status} ${response.statusText}`);
@@ -39,7 +46,12 @@ export async function loginWithWallet(walletAddress: string): Promise<string | n
     }
     return token;
   } catch (error: any) {
-    console.warn('[authService] Failed to login:', error?.message || error);
+    // Don't log full error for timeout - it's expected when backend is unavailable
+    if (error?.name === 'AbortError') {
+      console.warn('[authService] Authentication timed out - backend may be unavailable');
+    } else {
+      console.warn('[authService] Failed to login:', error?.message || error);
+    }
     return null;
   }
 }

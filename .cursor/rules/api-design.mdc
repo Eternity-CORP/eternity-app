@@ -1,0 +1,351 @@
+---
+description: REST API design standards
+globs: ["backend/**/*.controller.ts", "backend/**/*.dto.ts", "mobile/**/api/**"]
+---
+
+# API Design Standards
+
+## RESTful Conventions
+
+### URL Structure
+```
+GET    /api/v1/transactions           # List transactions
+GET    /api/v1/transactions/:id       # Get single transaction
+POST   /api/v1/transactions           # Create transaction
+PUT    /api/v1/transactions/:id       # Update transaction
+DELETE /api/v1/transactions/:id       # Delete transaction
+
+# Nested resources
+GET    /api/v1/wallets/:address/transactions
+GET    /api/v1/wallets/:address/balances
+
+# Actions (when CRUD doesn't fit)
+POST   /api/v1/transactions/:id/retry
+POST   /api/v1/wallets/:address/refresh
+```
+
+### Naming
+- Use plural nouns for resources: `/transactions`, `/wallets`
+- Use kebab-case: `/cross-chain`, `/gas-estimates`
+- Avoid verbs in URLs (use HTTP methods instead)
+- Version APIs: `/api/v1/`
+
+## Request/Response Format
+
+### Standard Response Envelope
+```typescript
+// Success response
+{
+  "success": true,
+  "data": { ... },
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8
+  }
+}
+
+// Error response
+{
+  "success": false,
+  "error": {
+    "code": "INSUFFICIENT_BALANCE",
+    "message": "Insufficient balance for transaction",
+    "details": {
+      "required": "1000000000000000000",
+      "available": "500000000000000000"
+    }
+  }
+}
+```
+
+### Pagination
+```typescript
+// Request
+GET /api/v1/transactions?page=2&limit=20&sort=createdAt:desc
+
+// Response
+{
+  "success": true,
+  "data": [...],
+  "meta": {
+    "page": 2,
+    "limit": 20,
+    "total": 150,
+    "totalPages": 8,
+    "hasNextPage": true,
+    "hasPrevPage": true
+  }
+}
+```
+
+### Filtering
+```typescript
+// Request
+GET /api/v1/transactions?status=completed&chainId=1&fromDate=2024-01-01
+
+// Support multiple values
+GET /api/v1/transactions?chainId=1,137,42161
+```
+
+## HTTP Status Codes
+
+### Success Codes
+```typescript
+200 OK           // Successful GET, PUT, PATCH
+201 Created      // Successful POST (resource created)
+204 No Content   // Successful DELETE
+```
+
+### Client Error Codes
+```typescript
+400 Bad Request      // Validation error, malformed request
+401 Unauthorized     // Missing or invalid authentication
+403 Forbidden        // Authenticated but not authorized
+404 Not Found        // Resource doesn't exist
+409 Conflict         // Resource conflict (duplicate, etc.)
+422 Unprocessable    // Semantic errors
+429 Too Many Requests // Rate limited
+```
+
+### Server Error Codes
+```typescript
+500 Internal Server Error  // Unexpected server error
+502 Bad Gateway           // Upstream service error
+503 Service Unavailable   // Maintenance or overload
+```
+
+## Error Handling
+
+### Error Response Format
+```typescript
+interface ApiError {
+  code: string;           // Machine-readable code
+  message: string;        // Developer-friendly message
+  userMessage?: string;   // User-friendly message (for display)
+  details?: Record<string, unknown>;
+  requestId?: string;     // For support/debugging
+}
+
+// Example
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Request validation failed",
+    "userMessage": "Please check your input and try again",
+    "details": {
+      "fields": {
+        "amount": "Amount must be positive",
+        "toAddress": "Invalid Ethereum address"
+      }
+    },
+    "requestId": "req_abc123"
+  }
+}
+```
+
+### Error Codes
+```typescript
+// Authentication
+AUTH_REQUIRED
+AUTH_INVALID_TOKEN
+AUTH_EXPIRED_TOKEN
+
+// Validation
+VALIDATION_ERROR
+INVALID_ADDRESS
+INVALID_AMOUNT
+
+// Business Logic
+INSUFFICIENT_BALANCE
+TRANSACTION_FAILED
+ROUTE_NOT_FOUND
+UNSUPPORTED_CHAIN
+
+// Rate Limiting
+RATE_LIMIT_EXCEEDED
+
+// Server
+INTERNAL_ERROR
+SERVICE_UNAVAILABLE
+```
+
+## DTOs (Data Transfer Objects)
+
+### Request DTOs
+```typescript
+// create-transaction.dto.ts
+import { IsString, IsNumber, IsOptional, IsEthereumAddress, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateTransactionDto {
+  @ApiProperty({ 
+    description: 'Recipient wallet address',
+    example: '0x742d35Cc6634C0532925a3b844Bc9e7595f7b' 
+  })
+  @IsEthereumAddress()
+  toAddress: string;
+
+  @ApiProperty({ 
+    description: 'Amount in smallest unit (wei)',
+    example: '1000000000000000000' 
+  })
+  @IsString()
+  amount: string;
+
+  @ApiPropertyOptional({ 
+    description: 'Chain ID',
+    default: 1,
+    example: 137 
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  chainId?: number = 1;
+}
+```
+
+### Response DTOs
+```typescript
+// transaction-response.dto.ts
+import { Expose, Type } from 'class-transformer';
+
+export class TransactionResponseDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  hash: string;
+
+  @Expose()
+  fromAddress: string;
+
+  @Expose()
+  toAddress: string;
+
+  @Expose()
+  amount: string;
+
+  @Expose()
+  status: TransactionStatus;
+
+  @Expose()
+  chainId: number;
+
+  @Expose()
+  @Type(() => Date)
+  createdAt: Date;
+
+  @Expose()
+  @Type(() => Date)
+  confirmedAt?: Date;
+}
+```
+
+## API Documentation (Swagger)
+
+### Controller Documentation
+```typescript
+@Controller('api/v1/transactions')
+@ApiTags('Transactions')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+export class TransactionController {
+  
+  @Get()
+  @ApiOperation({ 
+    summary: 'List transactions',
+    description: 'Get paginated list of user transactions with optional filters'
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: TransactionStatus })
+  @ApiResponse({ status: 200, type: PaginatedTransactionResponse })
+  async findAll(@Query() query: GetTransactionsDto) { ... }
+
+  @Post()
+  @ApiOperation({ summary: 'Create transaction' })
+  @ApiBody({ type: CreateTransactionDto })
+  @ApiResponse({ status: 201, type: TransactionResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async create(@Body() dto: CreateTransactionDto) { ... }
+}
+```
+
+## Mobile API Client
+
+### Type-Safe API Client
+```typescript
+// api/client.ts
+import axios, { AxiosInstance } from 'axios';
+
+class ApiClient {
+  private client: AxiosInstance;
+
+  constructor() {
+    this.client = axios.create({
+      baseURL: API_BASE_URL,
+      timeout: 30000,
+    });
+
+    this.client.interceptors.request.use(async (config) => {
+      const token = await getAuthToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => this.handleError(error)
+    );
+  }
+
+  async get<T>(url: string, params?: object): Promise<T> {
+    const response = await this.client.get<ApiResponse<T>>(url, { params });
+    return response.data.data;
+  }
+
+  async post<T>(url: string, data?: object): Promise<T> {
+    const response = await this.client.post<ApiResponse<T>>(url, data);
+    return response.data.data;
+  }
+
+  private handleError(error: AxiosError) {
+    if (error.response?.status === 401) {
+      // Handle token refresh or logout
+    }
+    throw new ApiError(error.response?.data?.error || 'Network error');
+  }
+}
+
+export const api = new ApiClient();
+```
+
+### Service Layer
+```typescript
+// api/transactionService.ts
+export const transactionService = {
+  async getTransactions(params: GetTransactionsParams) {
+    return api.get<Transaction[]>('/transactions', params);
+  },
+
+  async createTransaction(data: CreateTransactionDto) {
+    return api.post<Transaction>('/transactions', data);
+  },
+
+  async getTransaction(id: string) {
+    return api.get<Transaction>(`/transactions/${id}`);
+  },
+};
+```
+
+## Versioning Strategy
+- Use URL versioning: `/api/v1/`, `/api/v2/`
+- Support previous version for 6 months after new version
+- Document breaking changes in changelog
+- Use deprecation headers for old endpoints

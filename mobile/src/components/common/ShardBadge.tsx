@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
@@ -6,6 +6,7 @@ import ShardIcon from './ShardIcon';
 import { useShards } from '../../features/shards/store/shardsSlice';
 import { useWallet } from '../../context/WalletContext';
 import { loginWithWallet } from '../../services/authService';
+import { useShardAnimation } from '../../features/shards/ShardAnimationProvider';
 
 type Props = {
   onPress?: () => void;
@@ -19,14 +20,23 @@ export default function ShardBadge({ onPress, showLabel = false }: Props) {
   const loading = useShards((state) => state.loading);
   const lastEarnedAt = useShards((state) => state.lastEarnedAt);
   const loadShardState = useShards((state) => state.loadShardState);
+  const { setTargetRef } = useShardAnimation();
 
   const scale = useSharedValue(1);
+  const containerRef = useRef<View>(null);
+
+  useEffect(() => {
+    // Register this badge as the target for shard animations
+    if (containerRef.current) {
+      setTargetRef(containerRef.current);
+    }
+  }, [setTargetRef]);
 
   useEffect(() => {
     const syncShardState = async () => {
       const address = activeAccount?.address;
       if (!address) {
-        await loadShardState().catch(() => {});
+        // Don't make any API calls if we don't have an address
         return;
       }
 
@@ -34,11 +44,10 @@ export default function ShardBadge({ onPress, showLabel = false }: Props) {
         const token = await loginWithWallet(address);
         if (token) {
           await loadShardState({ authToken: token });
-        } else {
-          await loadShardState().catch(() => {});
         }
-      } catch {
-        await loadShardState().catch(() => {});
+        // If login fails, don't make unauthorized requests
+      } catch (error) {
+        console.warn('[ShardBadge] Failed to sync shard state:', error);
       }
     };
 
@@ -62,6 +71,7 @@ export default function ShardBadge({ onPress, showLabel = false }: Props) {
       accessibilityRole={onPress ? 'button' : undefined}
     >
       <Animated.View
+        ref={containerRef}
         style={[
           styles.container,
           {

@@ -18,7 +18,7 @@ export const SUPPORTED_TOKENS: TokenInfo[] = [
     logoUri: 'https://assets.coingecko.com/coins/images/6319/thumb/usdc.png',
     networks: {
       mainnet: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606EB48',
-      // Sepolia: No official USDC on testnet
+      sepolia: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Sepolia USDC
     },
   },
   {
@@ -40,7 +40,18 @@ export const SUPPORTED_TOKENS: TokenInfo[] = [
     logoUri: 'https://assets.coingecko.com/coins/images/9956/thumb/4943.png',
     networks: {
       mainnet: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-      // Sepolia: No official DAI on testnet
+      sepolia: '0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357', // Sepolia DAI
+    },
+  },
+  {
+    name: 'Wrapped Ether',
+    symbol: 'WETH',
+    address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // Mainnet
+    decimals: 18,
+    logoUri: 'https://assets.coingecko.com/coins/images/2518/thumb/weth.png',
+    networks: {
+      mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+      sepolia: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14', // Sepolia WETH
     },
   },
   // Sepolia testnet tokens (for testing purposes)

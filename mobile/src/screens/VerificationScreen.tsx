@@ -1,14 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthStackParamList } from '../navigation/AuthNavigator';
 import { importWallet, initializeWallet } from '../services/walletService';
 import { saveWallet, isWalletExists } from '../services/cryptoService';
 import { setBiometricEnabled, isBiometricAvailable } from '../services/biometricService';
+import SafeScreen from '../components/common/SafeScreen';
+import { useTheme } from '../context/ThemeContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Verification'>;
 
 export default function VerificationScreen({ route, navigation }: Props) {
+  const { theme } = useTheme();
   const { mnemonic } = route.params;
   const words = useMemo(() => mnemonic.trim().split(/\s+/), [mnemonic]);
 
@@ -124,85 +128,153 @@ export default function VerificationScreen({ route, navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Verify Seed Phrase</Text>
-      <Text style={styles.subTitle}>Words to verify: {words.length}</Text>
-      <Text style={styles.description}>
-        To confirm you've saved your seed phrase correctly, please enter the following words:
-      </Text>
-
-      <View style={styles.testContainer}>
-        {testIndices.map((wordIndex, idx) => (
-          <View key={idx} style={styles.testItem}>
-            <Text style={styles.testLabel}>Word #{wordIndex + 1}</Text>
-            <TextInput
-              style={[styles.input, error && styles.inputError]}
-              placeholder="Enter word"
-              value={userInputs[idx]}
-              onChangeText={(text) => handleInputChange(idx, text)}
-              autoCapitalize="none"
-              autoCorrect={false}
-              accessibilityLabel={`Word ${wordIndex + 1} input`}
-            />
-          </View>
-        ))}
+    <SafeScreen gradient gradientColors={['#0D0D0D', '#1A1A2E']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Verify Phrase</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      {error && (
-        <View style={styles.errorBox} accessibilityRole="alert">
-          <Text style={styles.errorText}>{error}</Text>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.subTitle, { color: theme.colors.textSecondary }]}>
+          Words to verify: {words.length}
+        </Text>
+        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+          To confirm you've saved your seed phrase correctly, please enter the following words:
+        </Text>
+
+        <View style={styles.testContainer}>
+          {testIndices.map((wordIndex, idx) => (
+            <View key={idx} style={styles.testItem}>
+              <Text style={[styles.testLabel, { color: theme.colors.text }]}>Word #{wordIndex + 1}</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { backgroundColor: theme.colors.card, borderColor: theme.colors.border, color: theme.colors.text },
+                  error && { borderColor: theme.colors.error }
+                ]}
+                placeholder="Enter word"
+                placeholderTextColor={theme.colors.muted}
+                value={userInputs[idx]}
+                onChangeText={(text) => handleInputChange(idx, text)}
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel={`Word ${wordIndex + 1} input`}
+              />
+            </View>
+          ))}
         </View>
-      )}
 
-      <View style={styles.infoBox}>
-        <Text style={styles.infoText}>💡 Tip: Words are case-insensitive</Text>
-      </View>
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: `${theme.colors.error}20` }]} accessibilityRole="alert">
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
+          </View>
+        )}
 
-      <TouchableOpacity
-        style={[styles.button, saving && styles.buttonDisabled]}
-        onPress={handleFinish}
-        disabled={saving}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: saving }}
-      >
-        <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Verify & Continue'}</Text>
-      </TouchableOpacity>
+        <View style={[styles.infoBox, { backgroundColor: `${theme.colors.primary}20` }]}>
+          <Text style={[styles.infoText, { color: theme.colors.primary }]}>💡 Tip: Words are case-insensitive</Text>
+        </View>
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        accessibilityRole="button"
-      >
-        <Text style={styles.backButtonText}>Back</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.colors.primary }, saving && styles.buttonDisabled]}
+          onPress={handleFinish}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: saving }}
+        >
+          <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Verify & Continue'}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, marginTop: 40 },
-  subTitle: { fontSize: 16, color: '#666', marginBottom: 8 },
-  description: { fontSize: 16, color: '#666', marginBottom: 32, lineHeight: 22 },
-  testContainer: { marginBottom: 24 },
-  testItem: { marginBottom: 20 },
-  testLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, color: '#333' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  subTitle: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  testContainer: {
+    marginBottom: 24,
+  },
+  testItem: {
+    marginBottom: 20,
+  },
+  testLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 14,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
   },
-  inputError: { borderColor: '#D32F2F', backgroundColor: '#FFEBEE' },
-  errorBox: { backgroundColor: '#FFEBEE', padding: 12, borderRadius: 8, marginBottom: 16 },
-  errorText: { color: '#C62828', fontSize: 14, textAlign: 'center' },
-  infoBox: { backgroundColor: '#E3F2FD', padding: 12, borderRadius: 8, marginBottom: 16 },
-  infoText: { fontSize: 14, color: '#1976D2', textAlign: 'center' },
-  button: { backgroundColor: '#007AFF', padding: 16, borderRadius: 8, marginBottom: 12 },
-  buttonDisabled: { backgroundColor: '#ccc' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' },
-  backButton: { padding: 16 },
-  backButtonText: { color: '#007AFF', fontSize: 16, textAlign: 'center' },
+  errorBox: {
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  infoBox: {
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  infoText: {
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  button: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });

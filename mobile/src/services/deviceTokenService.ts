@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ethers } from 'ethers';
 import { SECURESTORE_IOS_ACCESSIBILITY } from '../config/security';
 
-const DEVICE_TOKEN_KEY = '@eternity_device_token';
+const DEVICE_TOKEN_KEY = 'eternity_device_token';
 
 async function getItem(key: string): Promise<string | null> {
   if (Platform.OS === 'web') {

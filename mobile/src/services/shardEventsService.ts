@@ -19,18 +19,24 @@ function getBaseUrl(): string | null {
   return API_BASE_URL.replace(/\/$/, '');
 }
 
-async function postJson(path: string, body: any): Promise<ShardActionResult | null> {
+async function postJson(path: string, body: any, authToken?: string): Promise<ShardActionResult | null> {
   const baseUrl = getBaseUrl();
   if (!baseUrl) return null;
 
   const url = `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
   const response = await networkLogger.loggedFetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
+    headers,
     body: JSON.stringify(body),
   });
 
@@ -56,30 +62,45 @@ async function postJson(path: string, body: any): Promise<ShardActionResult | nu
 }
 
 export async function reportSendShard(params: {
-  walletAddress: string;
   amountEth: string;
   txHash?: string;
   recipientAddress?: string;
   network?: string;
+  authToken?: string;
 }): Promise<ShardActionResult | null> {
   const deviceId = await getOrCreateDeviceId();
-  return postJson('/shards/actions/send', { ...params, deviceId });
+  const { authToken, ...bodyParams } = params;
+  return postJson('/shards/actions/send', { ...bodyParams, deviceId }, authToken);
 }
 
 export async function reportScheduledPaymentShard(params: {
-  walletAddress: string;
   amountEth?: string;
   recipientAddress?: string;
+  authToken?: string;
 }): Promise<ShardActionResult | null> {
   const deviceId = await getOrCreateDeviceId();
-  return postJson('/shards/actions/scheduled-payment', { ...params, deviceId });
+  const { authToken, ...bodyParams } = params;
+  return postJson('/shards/actions/scheduled-payment', { ...bodyParams, deviceId }, authToken);
+}
+
+export async function reportReceiveShard(params: {
+  amountEth: string;
+  txHash?: string;
+  senderAddress?: string;
+  network?: string;
+  authToken?: string;
+}): Promise<ShardActionResult | null> {
+  const deviceId = await getOrCreateDeviceId();
+  const { authToken, ...bodyParams } = params;
+  return postJson('/shards/actions/receive', { ...bodyParams, deviceId }, authToken);
 }
 
 export async function reportSplitBillShard(params: {
-  walletAddress: string;
   totalAmount?: string;
   participantsCount?: number;
+  authToken?: string;
 }): Promise<ShardActionResult | null> {
   const deviceId = await getOrCreateDeviceId();
-  return postJson('/shards/actions/split-bill', { ...params, deviceId });
+  const { authToken, ...bodyParams } = params;
+  return postJson('/shards/actions/split-bill', { ...bodyParams, deviceId }, authToken);
 }

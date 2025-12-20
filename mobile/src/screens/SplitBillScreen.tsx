@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TextInput,
   TouchableOpacity,
   Alert,
@@ -26,6 +25,8 @@ import {
 import { SplitBill, SplitBillParticipant, SplitMode } from '../types/splitBill.types';
 import { useShardAnimation } from '../features/shards/ShardAnimationProvider';
 import { reportSplitBillShard } from '../services/shardEventsService';
+import { loginWithWallet } from '../services/authService';
+import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
 
 type Props = NativeStackScreenProps<any, 'SplitBill'>;
 
@@ -119,23 +120,28 @@ export default function SplitBillScreen({ navigation }: Props) {
       // Сообщаем на backend о создании split bill, чтобы начислить шарды
       try {
         const creatorAddress = activeAccount.address;
-        const shardResult = await reportSplitBillShard({
-          walletAddress: creatorAddress,
-          totalAmount,
-          participantsCount: participants.length,
-        });
+        const authToken = await loginWithWallet(creatorAddress, 10000);
+        if (authToken) {
+          const shardResult = await reportSplitBillShard({
+            totalAmount,
+            participantsCount: participants.length,
+            authToken,
+          });
 
-        const earned = shardResult?.earnedShards ?? 0;
-        if (earned > 0) {
-          triggerShardAnimation(earned);
-        } else if (
-          shardResult?.limitReason === 'DAILY_LIMIT' ||
-          shardResult?.limitReason === 'DEVICE_LIMIT'
-        ) {
-          Alert.alert(
-            'Лимит шардов',
-            'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
-          );
+          const earned = shardResult?.earnedShards ?? 0;
+          if (earned > 0) {
+            triggerShardAnimation(earned);
+          } else if (
+            shardResult?.limitReason === 'DAILY_LIMIT' ||
+            shardResult?.limitReason === 'DEVICE_LIMIT'
+          ) {
+            Alert.alert(
+              'Лимит шардов',
+              'На сегодня дневной лимит шардов достигнут. Действие всё равно выполнено, но новые шарды будут начислены завтра.',
+            );
+          }
+        } else {
+          triggerShardAnimation(1);
         }
       } catch (error) {
         console.warn('[SplitBillScreen] Failed to report shard event:', error);
@@ -163,148 +169,150 @@ export default function SplitBillScreen({ navigation }: Props) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>Разделить счёт</Text>
+    <KeyboardAwareScreen
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={styles.content}
+      withSafeArea={true}
+    >
+      <Text style={[styles.title, { color: theme.colors.text }]}>Разделить счёт</Text>
 
-        <Card style={styles.card}>
-          <Text style={[styles.label, { color: theme.colors.text }]}>Общая сумма (ETH)</Text>
-          <TextInput
-            style={[styles.input, {
-              backgroundColor: theme.colors.background,
-              color: theme.colors.text,
-              borderColor: theme.colors.border,
-            }]}
-            placeholder="0.00"
-            placeholderTextColor={theme.colors.textSecondary}
-            keyboardType="decimal-pad"
-            value={totalAmount}
-            onChangeText={setTotalAmount}
-          />
-        </Card>
+      <Card style={styles.card}>
+        <Text style={[styles.label, { color: theme.colors.text }]}>Общая сумма (ETH)</Text>
+        <TextInput
+          style={[styles.input, {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.text,
+            borderColor: theme.colors.border,
+          }]}
+          placeholder="0.00"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="decimal-pad"
+          value={totalAmount}
+          onChangeText={setTotalAmount}
+        />
+      </Card>
 
-        <Card style={styles.card}>
-          <Text style={[styles.label, { color: theme.colors.text }]}>Количество участников</Text>
-          <TextInput
-            style={[styles.input, {
-              backgroundColor: theme.colors.background,
-              color: theme.colors.text,
-              borderColor: theme.colors.border,
-            }]}
-            placeholder="2"
-            placeholderTextColor={theme.colors.textSecondary}
-            keyboardType="number-pad"
-            value={participantsCount}
-            onChangeText={setParticipantsCount}
-          />
-        </Card>
+      <Card style={styles.card}>
+        <Text style={[styles.label, { color: theme.colors.text }]}>Количество участников</Text>
+        <TextInput
+          style={[styles.input, {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.text,
+            borderColor: theme.colors.border,
+          }]}
+          placeholder="2"
+          placeholderTextColor={theme.colors.textSecondary}
+          keyboardType="number-pad"
+          value={participantsCount}
+          onChangeText={setParticipantsCount}
+        />
+      </Card>
 
-        <Card style={styles.card}>
-          <View style={styles.switchRow}>
-            <View>
-              <Text style={[styles.label, { color: theme.colors.text }]}>Режим деления</Text>
-              <Text style={[styles.subLabel, { color: theme.colors.textSecondary }]}>
-                {splitMode === 'equal' ? 'Поровну' : 'Кастомное'}
-              </Text>
-            </View>
-            <View style={styles.switchContainer}>
-              <Text style={[styles.switchLabel, { color: theme.colors.textSecondary }]}>
-                Поровну
-              </Text>
-              <Switch
-                value={splitMode === 'custom'}
-                onValueChange={handleSwitchMode}
-                trackColor={{ false: theme.colors.textSecondary, true: theme.colors.primary }}
-                thumbColor={theme.colors.surface}
-              />
-              <Text style={[styles.switchLabel, { color: theme.colors.textSecondary }]}>
-                Кастомное
-              </Text>
-            </View>
+      <Card style={styles.card}>
+        <View style={styles.switchRow}>
+          <View>
+            <Text style={[styles.label, { color: theme.colors.text }]}>Режим деления</Text>
+            <Text style={[styles.subLabel, { color: theme.colors.textSecondary }]}>
+              {splitMode === 'equal' ? 'Поровну' : 'Кастомное'}
+            </Text>
           </View>
-        </Card>
-
-        {participants.length > 0 && (
-          <Card style={styles.card}>
-            <Text style={[styles.label, { color: theme.colors.text }]}>
-              Участники {splitMode === 'custom' && `(Итого: ${getTotalCustom()} ETH)`}
+          <View style={styles.switchContainer}>
+            <Text style={[styles.switchLabel, { color: theme.colors.textSecondary }]}>
+              Поровну
             </Text>
-            {!isCustomValid() && (
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                Сумма не совпадает с общей суммой!
+            <Switch
+              value={splitMode === 'custom'}
+              onValueChange={handleSwitchMode}
+              trackColor={{ false: theme.colors.textSecondary, true: theme.colors.primary }}
+              thumbColor={theme.colors.surface}
+            />
+            <Text style={[styles.switchLabel, { color: theme.colors.textSecondary }]}>
+              Кастомное
+            </Text>
+          </View>
+        </View>
+      </Card>
+
+      {participants.length > 0 && (
+        <Card style={styles.card}>
+          <Text style={[styles.label, { color: theme.colors.text }]}>
+            Участники {splitMode === 'custom' && `(Итого: ${getTotalCustom()} ETH)`}
+          </Text>
+          {!isCustomValid() && (
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              Сумма не совпадает с общей суммой!
+            </Text>
+          )}
+          {participants.map((participant, index) => (
+            <View key={participant.id} style={styles.participantRow}>
+              <Text style={[styles.participantNumber, { color: theme.colors.textSecondary }]}>
+                #{index + 1}
               </Text>
-            )}
-            {participants.map((participant, index) => (
-              <View key={participant.id} style={styles.participantRow}>
-                <Text style={[styles.participantNumber, { color: theme.colors.textSecondary }]}>
-                  #{index + 1}
-                </Text>
-                <View style={styles.participantInput}>
-                  {splitMode === 'equal' ? (
-                    <View style={[styles.amountDisplay, { backgroundColor: theme.colors.background }]}>
-                      <Text style={[styles.amountText, { color: theme.colors.text }]}>
-                        {participant.amount} ETH
-                      </Text>
-                    </View>
-                  ) : (
-                    <TextInput
-                      style={[styles.input, {
-                        backgroundColor: theme.colors.background,
-                        color: theme.colors.text,
-                        borderColor: theme.colors.border,
-                      }]}
-                      placeholder="0.00"
-                      placeholderTextColor={theme.colors.textSecondary}
-                      keyboardType="decimal-pad"
-                      value={participant.amount}
-                      onChangeText={(text) => handleParticipantAmountChange(index, text)}
-                    />
-                  )}
-                </View>
+              <View style={styles.participantInput}>
+                {splitMode === 'equal' ? (
+                  <View style={[styles.amountDisplay, { backgroundColor: theme.colors.background }]}>
+                    <Text style={[styles.amountText, { color: theme.colors.text }]}>
+                      {participant.amount} ETH
+                    </Text>
+                  </View>
+                ) : (
+                  <TextInput
+                    style={[styles.input, {
+                      backgroundColor: theme.colors.background,
+                      color: theme.colors.text,
+                      borderColor: theme.colors.border,
+                    }]}
+                    placeholder="0.00"
+                    placeholderTextColor={theme.colors.textSecondary}
+                    keyboardType="decimal-pad"
+                    value={participant.amount}
+                    onChangeText={(text) => handleParticipantAmountChange(index, text)}
+                  />
+                )}
               </View>
-            ))}
-          </Card>
-        )}
+            </View>
+          ))}
+        </Card>
+      )}
 
-        {shareableLink && (
-          <Card style={styles.card}>
-            <Text style={[styles.label, { color: theme.colors.text }]}>Ссылка для друзей</Text>
-            <TouchableOpacity
-              style={[styles.linkContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
-              onPress={handleCopyLink}
+      {shareableLink && (
+        <Card style={styles.card}>
+          <Text style={[styles.label, { color: theme.colors.text }]}>Ссылка для друзей</Text>
+          <TouchableOpacity
+            style={[styles.linkContainer, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
+            onPress={handleCopyLink}
+          >
+            <Text
+              style={[styles.linkText, { color: theme.colors.primary }]}
+              numberOfLines={1}
+              ellipsizeMode="middle"
             >
-              <Text
-                style={[styles.linkText, { color: theme.colors.primary }]}
-                numberOfLines={1}
-                ellipsizeMode="middle"
-              >
-                {shareableLink}
-              </Text>
-              <Ionicons name="copy-outline" size={20} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
-              Нажмите, чтобы скопировать и отправить друзьям
+              {shareableLink}
             </Text>
-          </Card>
-        )}
+            <Ionicons name="copy-outline" size={20} color={theme.colors.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.hint, { color: theme.colors.textSecondary }]}>
+            Нажмите, чтобы скопировать и отправить друзьям
+          </Text>
+        </Card>
+      )}
 
-        <Button
-          variant="primary"
-          onPress={handleSave}
-          disabled={!isCustomValid() || !totalAmount || participants.length === 0}
-        >
-          Сохранить счёт
-        </Button>
+      <Button
+        variant="primary"
+        onPress={handleSave}
+        disabled={!isCustomValid() || !totalAmount || participants.length === 0}
+      >
+        Сохранить счёт
+      </Button>
 
-        <Button
-          variant="outline"
-          onPress={() => navigation.goBack()}
-          style={styles.cancelButton}
-        >
-          Отмена
-        </Button>
-      </View>
-    </ScrollView>
+      <Button
+        variant="outline"
+        onPress={() => navigation.goBack()}
+        style={styles.cancelButton}
+      >
+        Отмена
+      </Button>
+    </KeyboardAwareScreen>
   );
 }
 
@@ -314,6 +322,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 24,

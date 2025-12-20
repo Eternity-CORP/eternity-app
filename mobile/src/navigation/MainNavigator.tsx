@@ -2,6 +2,8 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/HomeScreen';
 import SendScreen from '../screens/SendScreen';
+import UnifiedSendScreen from '../screens/UnifiedSendScreen';
+import UnifiedReceiveScreen from '../screens/UnifiedReceiveScreen';
 import SendEthScreen from '../features/send/SendEthScreen';
 import SendTokenScreen from '../features/send/SendTokenScreen';
 import ReceiveScreen from '../screens/ReceiveScreen';
@@ -24,6 +26,15 @@ import SchedulePaymentScreen from '../screens/SchedulePaymentScreen';
 import ScheduledPaymentsListScreen from '../screens/ScheduledPaymentsListScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import LanguageSettingsScreen from '../screens/LanguageSettingsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import ProfileManagementScreen from '../screens/ProfileManagementScreen';
+import AccountAndProfileScreen from '../screens/AccountAndProfileScreen';
+import SendByIdentifierScreen from '../screens/SendByIdentifierScreen';
+import CreateBlikCodeScreen from '../screens/CreateBlikCodeScreen';
+import BlikCodeDisplayScreen from '../screens/BlikCodeDisplayScreen';
+import PayBlikCodeScreen from '../screens/PayBlikCodeScreen';
+import CrosschainQuoteScreen from '../screens/CrosschainQuoteScreen';
+import SwapScreen from '../screens/SwapScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -49,6 +60,29 @@ export type MainStackParamList = {
   TransakWidget: { amount: string; walletAddress: string };
   SchedulePayment: undefined;
   ScheduledPaymentsList: undefined;
+  Profile: undefined;
+  SendByIdentifier: undefined;
+  CreateBlikCode: undefined;
+  BlikCodeDisplay: { 
+    code: string; 
+    amount: string;
+    tokenSymbol: string;
+    preferredChainId?: string;
+    expiresAt: string;
+  };
+  PayBlikCode: undefined;
+  CrosschainQuote: {
+    params: {
+      fromChainId: string;
+      toChainId: string;
+      fromToken: string;
+      toToken: string;
+      amount: string;
+      fromAddress: string;
+      toAddress: string;
+    };
+  };
+  Swap: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -61,9 +95,10 @@ export default function MainNavigator() {
       }}
     >
       <Stack.Screen name="Home" component={HomeScreen} />
-      <Stack.Screen name="Send" component={SendEthScreen} />
+      <Stack.Screen name="Swap" component={SwapScreen} />
+      <Stack.Screen name="Send" component={UnifiedSendScreen} />
       <Stack.Screen name="SendToken" component={SendTokenScreen} />
-      <Stack.Screen name="Receive" component={ReceiveScreen} />
+      <Stack.Screen name="Receive" component={UnifiedReceiveScreen} />
       <Stack.Screen name="IncomingTransactions" component={IncomingTransactionsScreen} />
       <Stack.Screen name="ManageAccounts" component={ManageAccountsScreen} />
       <Stack.Screen name="ManageTokens" component={require('../screens/wallet/ManageTokensScreen').default} />
@@ -83,6 +118,12 @@ export default function MainNavigator() {
       <Stack.Screen name="TransakWidget" component={TransakWidgetScreen} />
       <Stack.Screen name="SchedulePayment" component={SchedulePaymentScreen} />
       <Stack.Screen name="ScheduledPaymentsList" component={ScheduledPaymentsListScreen} />
+      <Stack.Screen name="Profile" component={ProfileManagementScreen} />
+      <Stack.Screen name="SendByIdentifier" component={SendByIdentifierScreen} />
+      <Stack.Screen name="CreateBlikCode" component={CreateBlikCodeScreen} />
+      <Stack.Screen name="BlikCodeDisplay" component={BlikCodeDisplayScreen} />
+      <Stack.Screen name="PayBlikCode" component={PayBlikCodeScreen} />
+      <Stack.Screen name="CrosschainQuote" component={CrosschainQuoteScreen} />
     </Stack.Navigator>
   );
 }

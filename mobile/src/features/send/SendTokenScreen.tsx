@@ -18,7 +18,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Alert,
   ActivityIndicator,
   Keyboard,
@@ -32,6 +31,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useWallet } from '../../context/WalletContext';
 import Card from '../../components/common/Card';
 import { useShardAnimation } from '../shards/ShardAnimationProvider';
+import { KeyboardAwareScreen } from '../../components/common/KeyboardAwareScreen';
+import ModalTextInput from '../../components/common/ModalTextInput';
 
 import {
   sendErc20,
@@ -229,7 +230,6 @@ export default function SendTokenScreen({ navigation, route }: Props) {
       try {
         if (activeAccount?.address) {
           const shardResult = await reportSendShard({
-            walletAddress: activeAccount.address,
             amountEth: amount,
             txHash: result.hash,
             recipientAddress: recipient,
@@ -357,257 +357,262 @@ export default function SendTokenScreen({ navigation, route }: Props) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Send Token</Text>
-          <View style={{ width: 24 }} />
+    <KeyboardAwareScreen
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      withSafeArea={true}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Send Token</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
+      {/* Token Selection */}
+      <Card style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Token</Text>
+
+        {/* Token Address Input */}
+        <View
+          style={[
+            styles.inputContainer,
+            {
+              borderColor:
+                tokenAddress && !ethers.utils.isAddress(tokenAddress)
+                  ? theme.colors.error
+                  : tokenMetadata
+                  ? theme.colors.success
+                  : theme.colors.border,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <Ionicons
+            name="logo-usd"
+            size={20}
+            color={theme.colors.textSecondary}
+            style={styles.inputIcon}
+          />
+          <ModalTextInput
+            style={[styles.input, { color: theme.colors.text }]}
+            placeholder="Token contract address"
+            placeholderTextColor={theme.colors.textSecondary}
+            value={tokenAddress}
+            onChangeText={setTokenAddress}
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!sending}
+            title="Token Address"
+            helperText="Enter ERC-20 contract address"
+          />
+          {loadingToken && <ActivityIndicator size="small" color={theme.colors.primary} />}
         </View>
 
-        {/* Token Selection */}
-        <Card style={styles.card}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Token</Text>
-
-          {/* Token Address Input */}
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                borderColor:
-                  tokenAddress && !ethers.utils.isAddress(tokenAddress)
-                    ? theme.colors.error
-                    : tokenMetadata
-                    ? theme.colors.success
-                    : theme.colors.border,
-                backgroundColor: theme.colors.surface,
-              },
-            ]}
-          >
-            <Ionicons
-              name="logo-usd"
-              size={20}
-              color={theme.colors.textSecondary}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={[styles.input, { color: theme.colors.text }]}
-              placeholder="Token contract address"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={tokenAddress}
-              onChangeText={setTokenAddress}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!sending}
-            />
-            {loadingToken && <ActivityIndicator size="small" color={theme.colors.primary} />}
-          </View>
-
-          {/* Token Metadata Display */}
-          {tokenMetadata && (
-            <View style={[styles.tokenInfo, { backgroundColor: theme.colors.surface }]}>
-              <View style={styles.tokenInfoRow}>
-                <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
-                  Symbol:
-                </Text>
-                <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
-                  {tokenMetadata.symbol}
-                </Text>
-              </View>
-              <View style={styles.tokenInfoRow}>
-                <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
-                  Name:
-                </Text>
-                <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
-                  {tokenMetadata.name}
-                </Text>
-              </View>
-              <View style={styles.tokenInfoRow}>
-                <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
-                  Decimals:
-                </Text>
-                <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
-                  {tokenMetadata.decimals}
-                </Text>
-              </View>
-              <View style={styles.tokenInfoRow}>
-                <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
-                  Balance:
-                </Text>
-                <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
-                  {formatTokenAmount(tokenBalance, tokenMetadata.decimals)} {tokenMetadata.symbol}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {/* Common Tokens */}
-          <Text style={[styles.commonTokensTitle, { color: theme.colors.textSecondary }]}>
-            Common Tokens:
-          </Text>
-          <View style={styles.commonTokensContainer}>
-            {COMMON_TOKENS.map((token) => (
-              <TouchableOpacity
-                key={token.address}
-                style={[
-                  styles.commonTokenButton,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
-                  },
-                ]}
-                onPress={() => selectToken(token)}
-                disabled={sending}
-              >
-                <Text style={[styles.commonTokenSymbol, { color: theme.colors.text }]}>
-                  {token.symbol}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Card>
-
-        {/* Recipient */}
-        <Card style={styles.card}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recipient</Text>
-
-          <View
-            style={[
-              styles.inputContainer,
-              {
-                borderColor:
-                  isValidAddress() === null
-                    ? theme.colors.border
-                    : isValidAddress()
-                    ? theme.colors.success
-                    : theme.colors.error,
-                backgroundColor: theme.colors.surface,
-              },
-            ]}
-          >
-            <Ionicons
-              name="wallet-outline"
-              size={20}
-              color={theme.colors.textSecondary}
-              style={styles.inputIcon}
-            />
-            <TextInput
-              style={[styles.input, { color: theme.colors.text }]}
-              placeholder="0x... wallet address"
-              placeholderTextColor={theme.colors.textSecondary}
-              value={recipient}
-              onChangeText={(t) => setRecipient(t.trim())}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!sending}
-            />
-          </View>
-
-          {isValidAddress() === false && (
-            <View style={styles.errorRow}>
-              <Ionicons name="alert-circle" size={14} color={theme.colors.error} />
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                Invalid Ethereum address
-              </Text>
-            </View>
-          )}
-        </Card>
-
-        {/* Amount */}
+        {/* Token Metadata Display */}
         {tokenMetadata && (
-          <Card style={styles.card}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Amount</Text>
-
-            <View
-              style={[
-                styles.amountInputContainer,
-                {
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surface,
-                },
-              ]}
-            >
-              <Text style={[styles.currencySymbol, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.tokenInfo, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.tokenInfoRow}>
+              <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
+                Symbol:
+              </Text>
+              <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
                 {tokenMetadata.symbol}
               </Text>
-              <TextInput
-                style={[styles.amountInput, { color: theme.colors.text }]}
-                placeholder="0.00"
-                placeholderTextColor={theme.colors.textSecondary}
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="decimal-pad"
-                editable={!sending}
-              />
             </View>
-
-            <View style={[styles.balanceRow, { marginTop: 12 }]}>
-              <Text style={[styles.balanceLabel, { color: theme.colors.textSecondary }]}>
+            <View style={styles.tokenInfoRow}>
+              <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
+                Name:
+              </Text>
+              <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
+                {tokenMetadata.name}
+              </Text>
+            </View>
+            <View style={styles.tokenInfoRow}>
+              <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
+                Decimals:
+              </Text>
+              <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
+                {tokenMetadata.decimals}
+              </Text>
+            </View>
+            <View style={styles.tokenInfoRow}>
+              <Text style={[styles.tokenInfoLabel, { color: theme.colors.textSecondary }]}>
                 Balance:
               </Text>
-              <Text style={[styles.balanceValue, { color: theme.colors.text }]}>
+              <Text style={[styles.tokenInfoValue, { color: theme.colors.text }]}>
                 {formatTokenAmount(tokenBalance, tokenMetadata.decimals)} {tokenMetadata.symbol}
               </Text>
             </View>
-
-            {hasInsufficientBalance() && (
-              <View style={[styles.warningBox, { backgroundColor: theme.colors.error + '20' }]}>
-                <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
-                <Text style={[styles.warningText, { color: theme.colors.error }]}>
-                  Insufficient {tokenMetadata.symbol} balance
-                </Text>
-              </View>
-            )}
-          </Card>
+          </View>
         )}
 
-        {/* Gas Fee Selection */}
-        {gasFeeOptions && (
-          <Card style={styles.card}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Gas Fee (ETH)</Text>
-              {estimating && <ActivityIndicator size="small" color={theme.colors.primary} />}
-            </View>
-
-            {renderFeeSelector()}
-          </Card>
-        )}
-
-        {/* Send Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: !isFormValid()
-                  ? theme.colors.border
-                  : theme.colors.success,
-              },
-            ]}
-            onPress={handleSend}
-            disabled={!isFormValid() || sending}
-            activeOpacity={0.8}
-          >
-            {sending ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.sendButtonText}>
-                Send {tokenMetadata?.symbol || 'Token'}
+        {/* Common Tokens */}
+        <Text style={[styles.commonTokensTitle, { color: theme.colors.textSecondary }]}>
+          Common Tokens:
+        </Text>
+        <View style={styles.commonTokensContainer}>
+          {COMMON_TOKENS.map((token) => (
+            <TouchableOpacity
+              key={token.address}
+              style={[
+                styles.commonTokenButton,
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              onPress={() => selectToken(token)}
+              disabled={sending}
+            >
+              <Text style={[styles.commonTokenSymbol, { color: theme.colors.text }]}>
+                {token.symbol}
               </Text>
-            )}
-          </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Card>
+
+      {/* Recipient */}
+      <Card style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recipient</Text>
+
+        <View
+          style={[
+            styles.inputContainer,
+            {
+              borderColor:
+                isValidAddress() === null
+                  ? theme.colors.border
+                  : isValidAddress()
+                  ? theme.colors.success
+                  : theme.colors.error,
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+        >
+          <Ionicons
+            name="wallet-outline"
+            size={20}
+            color={theme.colors.textSecondary}
+            style={styles.inputIcon}
+          />
+          <ModalTextInput
+            style={[styles.input, { color: theme.colors.text }]}
+            placeholder="0x... wallet address"
+            placeholderTextColor={theme.colors.textSecondary}
+            value={recipient}
+            onChangeText={(t) => setRecipient(t.trim())}
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!sending}
+            title="Recipient Address"
+            helperText="Enter Ethereum wallet address (0x...)"
+            errorText={isValidAddress() === false ? 'Invalid Ethereum address' : undefined}
+          />
         </View>
 
-        <View style={styles.spacer} />
-      </ScrollView>
-    </View>
+        {isValidAddress() === false && (
+          <View style={styles.errorRow}>
+            <Ionicons name="alert-circle" size={14} color={theme.colors.error} />
+            <Text style={[styles.errorText, { color: theme.colors.error }]}>
+              Invalid Ethereum address
+            </Text>
+          </View>
+        )}
+      </Card>
+
+      {/* Amount */}
+      {tokenMetadata && (
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Amount</Text>
+
+          <View
+            style={[
+              styles.amountInputContainer,
+              {
+                borderColor: theme.colors.border,
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+          >
+            <Text style={[styles.currencySymbol, { color: theme.colors.textSecondary }]}>
+              {tokenMetadata.symbol}
+            </Text>
+            <ModalTextInput
+              style={[styles.amountInput, { color: theme.colors.text }]}
+              placeholder="0.00"
+              placeholderTextColor={theme.colors.textSecondary}
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="decimal-pad"
+              editable={!sending}
+              title="Amount to Send"
+              helperText={`Balance: ${formatTokenAmount(tokenBalance, tokenMetadata.decimals)} ${tokenMetadata.symbol}`}
+            />
+          </View>
+
+          <View style={[styles.balanceRow, { marginTop: 12 }]}>
+            <Text style={[styles.balanceLabel, { color: theme.colors.textSecondary }]}>
+              Balance:
+            </Text>
+            <Text style={[styles.balanceValue, { color: theme.colors.text }]}>
+              {formatTokenAmount(tokenBalance, tokenMetadata.decimals)} {tokenMetadata.symbol}
+            </Text>
+          </View>
+
+          {hasInsufficientBalance() && (
+            <View style={[styles.warningBox, { backgroundColor: theme.colors.error + '20' }]}>
+              <Ionicons name="alert-circle" size={16} color={theme.colors.error} />
+              <Text style={[styles.warningText, { color: theme.colors.error }]}>
+                Insufficient {tokenMetadata.symbol} balance
+              </Text>
+            </View>
+          )}
+        </Card>
+      )}
+
+      {/* Gas Fee Selection */}
+      {gasFeeOptions && (
+        <Card style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Gas Fee (ETH)</Text>
+            {estimating && <ActivityIndicator size="small" color={theme.colors.primary} />}
+          </View>
+
+          {renderFeeSelector()}
+        </Card>
+      )}
+
+      {/* Send Button */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            {
+              backgroundColor: !isFormValid()
+                ? theme.colors.border
+                : theme.colors.success,
+            },
+          ]}
+          onPress={handleSend}
+          disabled={!isFormValid() || sending}
+          activeOpacity={0.8}
+        >
+          {sending ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.sendButtonText}>
+              Send {tokenMetadata?.symbol || 'Token'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.spacer} />
+    </KeyboardAwareScreen>
   );
 }
 

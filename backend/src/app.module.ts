@@ -14,8 +14,14 @@ import { UserModule } from './modules/user/user.module';
 import { SplitBillModule } from './modules/split-bill/split-bill.module';
 import { ScheduledPaymentModule } from './modules/scheduled-payment/scheduled-payment.module';
 import { ShardModule } from './modules/shard/shard.module';
+import { IdentityModule } from './modules/identity/identity.module';
+import { BlikModule } from './modules/blik/blik.module';
+import { CrosschainModule } from './modules/crosschain/crosschain.module';
+import { SwapModule } from './modules/swap/swap.module';
 import { User } from '../database/entities/user.entity';
 import { Payment } from '../database/entities/payment.entity';
+import { UserWallet } from './entities/UserWallet.entity';
+import { TokenPreference } from './entities/TokenPreference.entity';
 import { LoggingMiddleware } from './common/logging.middleware';
 
 @Module({
@@ -33,7 +39,7 @@ import { LoggingMiddleware } from './common/logging.middleware';
       },
       inject: [ConfigService]
     }),
-    TypeOrmModule.forFeature([User, Payment]),
+    TypeOrmModule.forFeature([User, Payment, UserWallet, TokenPreference]),
     HealthModule,
     MetricsModule,
     AuthModule,
@@ -42,7 +48,11 @@ import { LoggingMiddleware } from './common/logging.middleware';
     UserModule,
     SplitBillModule,
     ScheduledPaymentModule,
-    ShardModule
+    ShardModule,
+    IdentityModule,
+    BlikModule,
+    CrosschainModule,
+    SwapModule
   ]
 })
 export class AppModule implements NestModule {

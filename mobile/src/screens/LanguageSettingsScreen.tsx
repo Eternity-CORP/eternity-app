@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ type Props = NativeStackScreenProps<MainStackParamList, 'LanguageSettings'>;
 
 export default function LanguageSettingsScreen({ navigation }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { t, i18n } = useTranslation();
   const [currentLang, setCurrentLang] = useState<SupportedLanguage>('en');
   const languages = getSupportedLanguages();
@@ -77,16 +79,16 @@ export default function LanguageSettingsScreen({ navigation }: Props) {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.xl }}>
         {/* Header */}
-        <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: 60, paddingBottom: theme.spacing.md }}>
+        <View style={{ paddingHorizontal: theme.spacing.md, paddingTop: insets.top + 12, paddingBottom: theme.spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }}>
               <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.colors.text, fontSize: 24, fontFamily: theme.typography.fontFamilies.bold }}>
+              <Text style={{ color: theme.colors.text, fontSize: 18, fontWeight: '600' }}>
                 {t('language.title')}
               </Text>
-              <Text style={{ color: theme.colors.muted, fontSize: 14, marginTop: 4 }}>
+              <Text style={{ color: theme.colors.muted, fontSize: 13, marginTop: 2 }}>
                 {t('language.subtitle')}
               </Text>
             </View>
