@@ -7,6 +7,37 @@ export class CrosschainController {
   constructor(private readonly crosschainService: CrosschainService) {}
 
   /**
+   * Map token symbol to address (native tokens use zero address)
+   */
+  private getTokenAddress(tokenSymbol: string, chainId: string): string {
+    const upperSymbol = tokenSymbol.toUpperCase();
+    
+    // Native tokens use zero address
+    const nativeTokens: Record<string, string[]> = {
+      ethereum: ['ETH'],
+      mainnet: ['ETH'],
+      sepolia: ['ETH', 'SEPOLIAETH'],
+      holesky: ['ETH', 'HOLESKYETH'],
+      polygon: ['MATIC'],
+      bsc: ['BNB'],
+      avalanche: ['AVAX'],
+    };
+
+    const chainLower = chainId.toLowerCase();
+    if (nativeTokens[chainLower]?.includes(upperSymbol)) {
+      return '0x0000000000000000000000000000000000000000';
+    }
+
+    // If it's already an address, return as-is
+    if (tokenSymbol.startsWith('0x') && tokenSymbol.length === 42) {
+      return tokenSymbol;
+    }
+
+    // Default: assume it's a native token
+    return '0x0000000000000000000000000000000000000000';
+  }
+
+  /**
    * GET /api/crosschain/quote
    * Get best quote for crosschain swap
    */
@@ -15,8 +46,8 @@ export class CrosschainController {
     const params: CrosschainQuoteParams = {
       fromChainId: query.fromChainId,
       toChainId: query.toChainId,
-      fromTokenAddress: query.fromToken,
-      toTokenAddress: query.toToken,
+      fromTokenAddress: this.getTokenAddress(query.fromToken, query.fromChainId),
+      toTokenAddress: this.getTokenAddress(query.toToken, query.toChainId),
       amount: query.amount,
       fromAddress: query.fromAddress,
       toAddress: query.toAddress,
@@ -47,8 +78,8 @@ export class CrosschainController {
     const params: CrosschainQuoteParams = {
       fromChainId: query.fromChainId,
       toChainId: query.toChainId,
-      fromTokenAddress: query.fromToken,
-      toTokenAddress: query.toToken,
+      fromTokenAddress: this.getTokenAddress(query.fromToken, query.fromChainId),
+      toTokenAddress: this.getTokenAddress(query.toToken, query.toChainId),
       amount: query.amount,
       fromAddress: query.fromAddress,
       toAddress: query.toAddress,

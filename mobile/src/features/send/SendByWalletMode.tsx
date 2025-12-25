@@ -35,6 +35,8 @@ import { getSelectedNetwork } from '../../services/networkService';
 import type { Network } from '../../config/env';
 import { reportSendShard } from '../../services/shardEventsService';
 import { loginWithWallet } from '../../services/authService';
+import { useNetwork } from '../../hooks/useNetwork';
+import { getNetworkMode } from '../../services/networkModeService';
 
 interface Props {
   navigation: any;
@@ -44,6 +46,7 @@ export default function SendByWalletMode({ navigation }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
   const { triggerShardAnimation } = useShardAnimation();
+  const { network: currentNetwork, mode: currentMode } = useNetwork();
 
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
@@ -79,7 +82,7 @@ export default function SendByWalletMode({ navigation }: Props) {
       }
     };
     loadData();
-  }, [activeAccount?.address]);
+  }, [activeAccount?.address, currentNetwork]);
 
   useEffect(() => {
     const estimate = async () => {
@@ -344,8 +347,45 @@ export default function SendByWalletMode({ navigation }: Props) {
     );
   };
 
+  const getNetworkDisplayName = () => {
+    switch (network) {
+      case 'mainnet': return 'Ethereum Mainnet';
+      case 'sepolia': return 'Sepolia Testnet';
+      case 'holesky': return 'Holesky Testnet';
+      default: return network;
+    }
+  };
+
+  const getNetworkColor = () => {
+    if (network === 'mainnet') return '#4CAF50';
+    return '#FF9800';
+  };
+
   return (
     <KeyboardAwareScreen style={styles.container} withSafeArea={true}>
+      {/* Network Indicator - Critical for security */}
+      <Card style={[styles.networkCard, { backgroundColor: getNetworkColor() + '15', borderColor: getNetworkColor() + '40' }]}>
+        <View style={styles.networkRow}>
+          <View style={[styles.networkDot, { backgroundColor: getNetworkColor() }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.networkLabel, { color: theme.colors.text }]}>Sending on</Text>
+            <Text style={[styles.networkName, { color: getNetworkColor() }]}>
+              {getNetworkDisplayName()} {network === 'mainnet' ? '⚠️' : ''}
+            </Text>
+          </View>
+          {network === 'mainnet' && (
+            <View style={[styles.warningBadge, { backgroundColor: theme.colors.error + '20' }]}>
+              <Text style={[styles.warningText, { color: theme.colors.error }]}>REAL MONEY</Text>
+            </View>
+          )}
+        </View>
+        {network === 'mainnet' && (
+          <Text style={[styles.warningMessage, { color: theme.colors.error }]}>
+            ⚠️ This transaction will use REAL ETH and cannot be undone
+          </Text>
+        )}
+      </Card>
+
       {renderTxStatus()}
 
       <Card style={styles.card}>
@@ -525,6 +565,48 @@ export default function SendByWalletMode({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  networkCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  networkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  networkDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  networkLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  networkName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  warningBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  warningText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  warningMessage: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
   },
   card: {
     marginHorizontal: 16,

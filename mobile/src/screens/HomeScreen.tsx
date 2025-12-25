@@ -6,7 +6,6 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { getETHBalance, formatBalance, autoRefreshBalance } from '../services/blockchain/balanceService';
-import { defaultNetwork } from '../constants/rpcUrls';
 import { diagnoseNetwork, testBalanceRetrieval } from '../services/blockchain/networkDiagnostics';
 import { ethers } from 'ethers';
 import * as Clipboard from 'expo-clipboard';
@@ -27,14 +26,13 @@ import BalanceCard from '../components/common/BalanceCard'
 import Card from '../components/common/Card'
 import Avatar from '../components/common/Avatar'
 import Button from '../components/common/Button'
-import DevModeBadge from '../components/common/DevModeBadge'
-import ShardBadge from '../components/common/ShardBadge'
-import ActionButton from '../components/common/ActionButton'
+import TokenIcon from '../components/common/TokenIcon'
+import BottomTabBar from '../components/common/BottomTabBar'
 import { getUnpaidCount } from '../services/pendingPaymentsService'
 import { useFocusEffect } from '@react-navigation/native'
 import { isBalanceHidden } from '../services/privacySettingsService'
 import { getSelectedNetwork } from '../services/networkService'
-import { getNetworkMode, type NetworkMode } from '../services/networkModeService'
+import { getNetworkMode, onNetworkModeChange, type NetworkMode } from '../services/networkModeService'
 import type { Network } from '../config/env'
 import { checkIncomingTransactions } from '../services/incomingTxMonitor'
 import { useShardAnimation } from '../features/shards/ShardAnimationProvider'
@@ -90,26 +88,50 @@ export default function HomeScreen({ navigation }: Props) {
     };
     loadNetworkAndMode();
 
-    // Re-check when screen comes into focus
+    // Subscribe to mode changes for instant updates
+    const unsubscribeModeChange = onNetworkModeChange((newMode, newNetwork) => {
+      console.log(`🔄 [HomeScreen] Network mode changed: ${newMode} → ${newNetwork}`);
+      setCurrentMode(newMode);
+      setCurrentNetwork(newNetwork);
+      // Clear data immediately - new data will be fetched by dependent useEffects
+      setTokenRows([]);
+      setTransactions([]);
+      setUsdTotal(0);
+      setBalanceEth('0.000000');
+    });
+
+    // Fallback polling for manual network changes (not via mode switch)
     const interval = setInterval(loadNetworkAndMode, 5000);
-    return () => clearInterval(interval);
+    
+    return () => {
+      unsubscribeModeChange();
+      clearInterval(interval);
+    };
   }, []);
 
+  // Balance auto-refresh - depends on BOTH address AND currentNetwork
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
     const init = async () => {
-      if (!address) return;
-      unsubscribe = autoRefreshBalance(address, (bn) => setBalanceEth(formatBalance(bn)), 30000, defaultNetwork);
+      if (!address || !currentNetwork) return;
+      console.log(`🔄 [HomeScreen] Starting balance refresh for ${currentNetwork}`);
+      unsubscribe = autoRefreshBalance(address, (bn) => setBalanceEth(formatBalance(bn)), 30000, currentNetwork);
     };
     init();
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribe) {
+        console.log(`🛑 [HomeScreen] Stopping balance refresh`);
+        unsubscribe();
+      }
     };
-  }, [address]);
+  }, [address, currentNetwork]);
 
+  // Fetch transactions when address OR network changes
   useEffect(() => {
+    // Clear previous transactions when network changes
+    setTransactions([]);
     fetchTransactions();
-  }, [address]);
+  }, [address, currentNetwork]);
 
   // Load unpaid payments count and user profile when screen comes into focus
   useFocusEffect(
@@ -169,8 +191,11 @@ export default function HomeScreen({ navigation }: Props) {
       const customTokens = prefs.customTokens.filter(t => visible.has(t.symbol));
       const allTokens = [...baseTokens, ...customTokens];
 
-      // Scan all supported networks for a unified portfolio view
-      const networks: Network[] = ['mainnet', 'sepolia', 'holesky'];
+      // CRITICAL FIX: Only scan networks available in current mode
+      // live mode = mainnet only, demo mode = testnets only
+      const networks: Network[] = currentMode === 'live' 
+        ? ['mainnet'] 
+        : ['sepolia', 'holesky'];
       
       const rows: any[] = [];
       let totalUsd = 0;
@@ -240,26 +265,31 @@ export default function HomeScreen({ navigation }: Props) {
       setUsdTotal(totalUsd);
     };
 
+    // Clear previous data immediately when network/mode changes
+    setTokenRows([]);
+    setUsdTotal(0);
+    setBalanceEth('0.000000');
+    
     run();
     const timer = setInterval(run, 30000);
     return () => clearInterval(timer);
-  }, [address, currentNetwork]);
+  }, [address, currentNetwork, currentMode]);
 
   const fetchTransactions = async (forceRefresh = false) => {
-    if (!address) return;
+    if (!address || !currentNetwork) return;
 
     try {
       setLoadingTransactions(true);
-      console.log(`📜 Loading transaction history (force: ${forceRefresh})...`);
+      console.log(`📜 Loading transaction history for ${currentNetwork} (force: ${forceRefresh})...`);
 
-      const txHistory = await getTransactionHistory(address, { network: defaultNetwork, page: 1, offset: 50, forceRefresh });
+      const txHistory = await getTransactionHistory(address, { network: currentNetwork, page: 1, offset: 50, forceRefresh });
 
       setTransactions(txHistory);
 
       if (txHistory.length === 0) {
-        console.log(`ℹ️  No transactions to display`);
+        console.log(`ℹ️  No transactions to display on ${currentNetwork}`);
       } else {
-        console.log(`✅ Loaded ${txHistory.length} transactions`);
+        console.log(`✅ Loaded ${txHistory.length} transactions on ${currentNetwork}`);
       }
     } catch (error: any) {
       console.error(`❌ Failed to fetch transactions: ${error.message}`);
@@ -271,11 +301,11 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const handleRefresh = async () => {
-    if (!address) return;
-    console.log('🔄 [HomeScreen] Refreshing balance and transactions...');
+    if (!address || !currentNetwork) return;
+    console.log(`🔄 [HomeScreen] Refreshing balance and transactions for ${currentNetwork}...`);
     // Clear transaction cache first
-    await clearTransactionCache(address, defaultNetwork);
-    const bn = await getETHBalance(address, defaultNetwork);
+    await clearTransactionCache(address, currentNetwork);
+    const bn = await getETHBalance(address, currentNetwork);
     setBalanceEth(formatBalance(bn));
     await fetchTransactions(true); // Force refresh transactions
   };
@@ -308,10 +338,10 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   const handleDiagnose = async () => {
-    if (!address) return;
-    console.log('=== NETWORK DIAGNOSTICS ===');
-    const networkDiag = await diagnoseNetwork(defaultNetwork);
-    const balanceTest = await testBalanceRetrieval(address, defaultNetwork);
+    if (!address || !currentNetwork) return;
+    console.log(`=== NETWORK DIAGNOSTICS (${currentNetwork}) ===`);
+    const networkDiag = await diagnoseNetwork(currentNetwork);
+    const balanceTest = await testBalanceRetrieval(address, currentNetwork);
     console.log('Network diagnosis:', networkDiag);
     console.log('Balance test:', balanceTest);
     console.log('=== END DIAGNOSTICS ===');
@@ -345,7 +375,6 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <>
       <AccountSwitcher visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      <DevModeBadge />
       <View style={styles.container}>
         <LinearGradient
           colors={[theme.colors.background, '#0D0D0D']}
@@ -361,77 +390,84 @@ export default function HomeScreen({ navigation }: Props) {
             ]}
             showsVerticalScrollIndicator={false}
           >
-            {/* Header */}
+            {/* Simplified Header - Telegram/TON Wallet style */}
             <View style={styles.header}>
               <TouchableOpacity 
-                onPress={() => handleActionPress(() => navigation.navigate('Profile'))}
+                onPress={() => handleActionPress(() => setSwitcherOpen(true))}
                 style={styles.avatarContainer}
               >
-                <Avatar address={address} size={44} />
+                <Avatar address={address} size={40} />
               </TouchableOpacity>
               
               <View style={styles.headerCenter}>
-                <TouchableOpacity onPress={handleCopyNickname}>
-                  <Text style={[styles.walletName, { color: theme.colors.text }]}>
-                    {userProfile?.nickname || 'Eternity Wallet'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  onPress={handleCopyAddress}
-                  style={styles.addressRow}
-                >
-                  <Text style={[styles.addressText, { color: theme.colors.muted }]}>
-                    {truncated}
-                  </Text>
-                  <Ionicons name="copy-outline" size={12} color={theme.colors.muted} />
-                </TouchableOpacity>
+                <View style={styles.headerTopRow}>
+                  <TouchableOpacity onPress={handleCopyAddress} style={styles.addressRow}>
+                    <Text style={[styles.addressText, { color: theme.colors.text }]}>
+                      {truncated}
+                    </Text>
+                    <Ionicons name="copy-outline" size={14} color={theme.colors.textSecondary} />
+                  </TouchableOpacity>
+                  {/* Mode Indicator */}
+                  <TouchableOpacity 
+                    onPress={() => handleActionPress(() => navigation.navigate('Settings'))}
+                    style={[
+                      styles.modeBadge,
+                      { 
+                        backgroundColor: currentMode === 'live' 
+                          ? 'rgba(76, 175, 80, 0.15)' 
+                          : 'rgba(255, 152, 0, 0.15)' 
+                      }
+                    ]}
+                  >
+                    <View style={[
+                      styles.modeDot, 
+                      { backgroundColor: currentMode === 'live' ? '#4CAF50' : '#FF9800' }
+                    ]} />
+                    <Text style={[
+                      styles.modeText, 
+                      { color: currentMode === 'live' ? '#4CAF50' : '#FF9800' }
+                    ]}>
+                      {currentMode === 'live' ? 'Live' : 'Demo'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {userProfile?.nickname && (
+                  <TouchableOpacity onPress={handleCopyNickname}>
+                    <Text style={[styles.walletName, { color: theme.colors.textSecondary }]}>
+                      @{userProfile.nickname}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={styles.headerRight}>
-                {/* Mode & Network Badge */}
                 <TouchableOpacity 
-                  style={[styles.networkBadge, { backgroundColor: currentMode === 'live' ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 152, 0, 0.15)' }]}
-                  onPress={() => handleActionPress(() => navigation.navigate('Settings'))}
-                >
-                  <View style={[styles.networkDot, { backgroundColor: currentMode === 'live' ? '#4CAF50' : '#FF9800' }]} />
-                  <Text style={[styles.networkText, { color: currentMode === 'live' ? '#4CAF50' : '#FF9800' }]}>
-                    {currentMode === 'live' ? 'Live' : 'Demo'}
-                  </Text>
-                </TouchableOpacity>
-                <ShardBadge />
-              </View>
-            </View>
-
-            {/* Balance Card */}
-            <View style={styles.balanceSection}>
-              <BalanceCard amount={usdTotal} currency="USD" subtitle="Portfolio Balance" />
-              
-              {/* Quick Actions Row */}
-              <View style={styles.quickActionsRow}>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('AddMoney'))}
-                  style={[styles.addMoneyButton, { backgroundColor: theme.colors.success }]}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="add" size={20} color="#FFFFFF" />
-                  <Text style={styles.addMoneyText}>Add Money</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
                   onPress={() => handleActionPress(handleRefresh)}
-                  style={[styles.refreshButton, { backgroundColor: theme.colors.surface }]}
-                  activeOpacity={0.8}
+                  style={styles.headerIconButton}
                 >
-                  <Ionicons name="refresh" size={20} color={theme.colors.text} />
+                  <Ionicons name="refresh" size={22} color={theme.colors.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => handleActionPress(() => navigation.navigate('Settings'))}
+                  style={styles.headerIconButton}
+                >
+                  <Ionicons name="settings-outline" size={22} color={theme.colors.textSecondary} />
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Action Buttons Grid - Trust Wallet Style */}
+            {/* Balance Card - Simplified */}
+            <View style={styles.balanceSection}>
+              <BalanceCard amount={usdTotal} currency="USD" subtitle="Total Balance" />
+            </View>
+
+            {/* Primary Actions - Telegram/TON Wallet style (large buttons) */}
             <View style={styles.actionsSection}>
               {unpaidPaymentsCount > 0 && (
                 <TouchableOpacity
                   onPress={() => handleActionPress(() => navigation.navigate('PendingPayments'))}
-                  style={[styles.pendingBanner, { backgroundColor: `${theme.colors.error}15` }]}
+                  style={[styles.pendingBanner, { backgroundColor: `${theme.colors.error}15`, borderRadius: theme.radius.md }]}
+                  activeOpacity={0.7}
                 >
                   <Ionicons name="notifications" size={18} color={theme.colors.error} />
                   <Text style={[styles.pendingText, { color: theme.colors.error }]}>
@@ -441,49 +477,68 @@ export default function HomeScreen({ navigation }: Props) {
                 </TouchableOpacity>
               )}
               
-              <View style={styles.actionsGrid}>
-                <ActionButton
-                  icon="arrow-up"
-                  label="Send"
+              {/* Main Send/Receive buttons - large and prominent */}
+              <View style={styles.primaryActions}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, styles.sendButton, { backgroundColor: theme.colors.primary, borderRadius: theme.radius.lg }]}
                   onPress={() => navigation.navigate('Send')}
-                  color={theme.colors.primary}
-                  backgroundColor={`${theme.colors.primary}15`}
-                />
-                <ActionButton
-                  icon="arrow-down"
-                  label="Receive"
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="arrow-up" size={24} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>Send</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.primaryButton, styles.receiveButton, { backgroundColor: theme.colors.success, borderRadius: theme.radius.lg }]}
                   onPress={() => navigation.navigate('Receive')}
-                  color={theme.colors.success}
-                  backgroundColor={`${theme.colors.success}15`}
-                />
-                <ActionButton
-                  icon="swap-horizontal"
-                  label="Swap"
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="arrow-down" size={24} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>Receive</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Secondary Actions - smaller, less prominent */}
+              <View style={styles.secondaryActions}>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md }]}
                   onPress={() => navigation.navigate('Swap')}
-                  color={theme.colors.secondary}
-                  backgroundColor={`${theme.colors.secondary}15`}
-                />
-                <ActionButton
-                  icon="people"
-                  label="Split"
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="swap-horizontal" size={20} color={theme.colors.text} />
+                  <Text style={[styles.secondaryButtonText, { color: theme.colors.text }]}>Swap</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md }]}
                   onPress={() => navigation.navigate('SplitBill')}
-                  color={theme.colors.accent}
-                  backgroundColor={`${theme.colors.accent}15`}
-                />
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="people" size={20} color={theme.colors.text} />
+                  <Text style={[styles.secondaryButtonText, { color: theme.colors.text }]}>Split</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md }]}
+                  onPress={() => handleActionPress(() => navigation.navigate('AddMoney'))}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color={theme.colors.text} />
+                  <Text style={[styles.secondaryButtonText, { color: theme.colors.text }]}>Add</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* Assets Section */}
+            {/* Assets Section - Simplified */}
             <View style={styles.sectionContainer}>
               <Card>
                 <View style={styles.sectionHeader}>
                   <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Assets</Text>
-                  <TouchableOpacity 
-                    onPress={() => handleActionPress(() => navigation.navigate('ManageTokens'))}
-                    style={[styles.manageButton, { backgroundColor: theme.colors.surface }]}
-                  >
-                    <Text style={[styles.manageButtonText, { color: theme.colors.textSecondary }]}>Manage</Text>
-                  </TouchableOpacity>
+                  {tokenRows.length > 0 && (
+                    <TouchableOpacity 
+                      onPress={() => handleActionPress(() => navigation.navigate('ManageTokens'))}
+                      style={styles.headerIconButton}
+                    >
+                      <Ionicons name="settings-outline" size={18} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
                 
                 {tokenRows.length === 0 ? (
@@ -501,9 +556,11 @@ export default function HomeScreen({ navigation }: Props) {
                       ]}
                     >
                       <View style={styles.assetLeft}>
-                        <View style={[styles.tokenLogo, { backgroundColor: theme.colors.surface }]}>
-                          <Image source={{ uri: row.token.logoUri }} style={styles.tokenLogoImage} />
-                        </View>
+                        <TokenIcon
+                          uri={row.token.logoUri}
+                          symbol={row.token.symbol}
+                          size={48}
+                        />
                         <View style={styles.assetInfo}>
                           <View style={styles.assetNameRow}>
                             <Text style={[styles.assetName, { color: theme.colors.text }]}>{row.token.name}</Text>
@@ -527,109 +584,56 @@ export default function HomeScreen({ navigation }: Props) {
               </Card>
             </View>
 
-            {/* Scheduled Payments List */}
+            {/* Scheduled Payments List - Only show if there are payments */}
             <ScheduledPaymentsList />
 
-            {/* Recent Transactions */}
-            <View style={styles.sectionContainer}>
-              <Card>
-                <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recent Activity</Text>
-                  <TouchableOpacity 
-                    onPress={() => handleActionPress(() => navigation.navigate('TransactionHistory', { address }))}
-                    style={[styles.manageButton, { backgroundColor: theme.colors.surface }]}
-                  >
-                    <Text style={[styles.manageButtonText, { color: theme.colors.textSecondary }]}>View All</Text>
-                  </TouchableOpacity>
-                </View>
+            {/* Recent Transactions - Simplified */}
+            {transactions.length > 0 && (
+              <View style={styles.sectionContainer}>
+                <Card>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recent Activity</Text>
+                    <TouchableOpacity 
+                      onPress={() => handleActionPress(() => navigation.navigate('TransactionHistory', { address }))}
+                      style={styles.headerIconButton}
+                    >
+                      <Ionicons name="chevron-forward" size={18} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
                 <TransactionList
                   transactions={transactions.slice(0, 5)}
                   loading={loadingTransactions}
                   onRefresh={() => fetchTransactions(true)}
                   onTransactionPress={(tx) => {
-                    const url = `${getExplorerUrl(defaultNetwork)}/tx/${tx.hash}`;
-                    Linking.openURL(url);
+                    navigation.navigate('TransactionDetails', { transaction: tx });
                   }}
                 />
-              </Card>
-            </View>
+                </Card>
+              </View>
+            )}
           </ScrollView>
 
-          {/* Bottom Tab Bar with Blur */}
-          {Platform.OS === 'ios' ? (
-            <BlurView
-              intensity={80}
-              tint="dark"
-              style={[styles.bottomBar, { paddingBottom: insets.bottom > 0 ? insets.bottom : 12 }]}
-            >
-              <View style={styles.bottomBarContent}>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => setSwitcherOpen(true))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="wallet" size={24} color={theme.colors.primary} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.primary }]}>Wallet</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('ManageTokens'))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="grid-outline" size={22} color={theme.colors.muted} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.muted }]}>Tokens</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('TransactionHistory', { address }))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="time-outline" size={22} color={theme.colors.muted} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.muted }]}>Activity</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('Settings'))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="settings-outline" size={22} color={theme.colors.muted} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.muted }]}>Settings</Text>
-                </TouchableOpacity>
-              </View>
-            </BlurView>
-          ) : (
-            <View style={[
-              styles.bottomBarAndroid, 
-              { backgroundColor: theme.colors.card, paddingBottom: insets.bottom > 0 ? insets.bottom : 12 }
-            ]}>
-              <View style={styles.bottomBarContent}>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => setSwitcherOpen(true))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="wallet" size={24} color={theme.colors.primary} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.primary }]}>Wallet</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('ManageTokens'))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="grid-outline" size={22} color={theme.colors.muted} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.muted }]}>Tokens</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('TransactionHistory', { address }))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="time-outline" size={22} color={theme.colors.muted} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.muted }]}>Activity</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleActionPress(() => navigation.navigate('Settings'))}
-                  style={styles.tabItem}
-                >
-                  <Ionicons name="settings-outline" size={22} color={theme.colors.muted} />
-                  <Text style={[styles.tabLabel, { color: theme.colors.muted }]}>Settings</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+          {/* Bottom Tab Bar - Use shared component */}
+          <BottomTabBar
+            tabs={[
+              { key: 'wallet', icon: 'wallet', label: 'Wallet', iconActive: 'wallet' },
+              { key: 'tokens', icon: 'grid-outline', label: 'Tokens' },
+              { key: 'activity', icon: 'time-outline', label: 'Activity' },
+              { key: 'settings', icon: 'settings-outline', label: 'Settings' },
+            ]}
+            activeTab="wallet"
+            onTabPress={(key) => {
+              if (key === 'wallet') {
+                handleActionPress(() => setSwitcherOpen(true));
+              } else if (key === 'tokens') {
+                handleActionPress(() => navigation.navigate('ManageTokens'));
+              } else if (key === 'activity') {
+                handleActionPress(() => navigation.navigate('TransactionHistory', { address }));
+              } else if (key === 'settings') {
+                handleActionPress(() => navigation.navigate('Settings'));
+              }
+            }}
+          />
         </LinearGradient>
       </View>
     </>
@@ -652,7 +656,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
     gap: 12,
   },
   avatarContainer: {
@@ -661,72 +665,103 @@ const styles = StyleSheet.create({
   headerCenter: {
     flex: 1,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   walletName: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 2,
   },
   addressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
+    gap: 6,
+    flex: 1,
+  },
+  modeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 6,
+  },
+  modeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  modeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   addressText: {
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'monospace',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  networkBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-  },
-  networkDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  networkText: {
-    fontSize: 12,
-    fontWeight: '600',
+  headerIconButton: {
+    padding: 8,
   },
   balanceSection: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  quickActionsRow: {
+  actionsSection: {
+    marginBottom: 24,
+  },
+  primaryActions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 12,
+    marginBottom: 12,
   },
-  addMoneyButton: {
+  primaryButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 14,
+    paddingVertical: 16,
     gap: 8,
+    // Soft shadow
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  addMoneyText: {
+  sendButton: {
+    // Background set dynamically
+  },
+  receiveButton: {
+    // Background set dynamically
+  },
+  primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
   },
-  refreshButton: {
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 14,
+  secondaryActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
   },
-  actionsSection: {
-    marginBottom: 20,
+  secondaryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   pendingBanner: {
     flexDirection: 'row',
@@ -743,10 +778,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  actionsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   sectionContainer: {
     marginBottom: 16,
   },
@@ -754,20 +785,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-  },
-  manageButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  manageButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
@@ -788,17 +810,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
-  },
-  tokenLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  tokenLogoImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
   },
   assetInfo: {
     flex: 1,
@@ -828,34 +839,5 @@ const styles = StyleSheet.create({
   assetAmount: {
     fontSize: 15,
     fontWeight: '600',
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-  },
-  bottomBarAndroid: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-  },
-  bottomBarContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 10,
-  },
-  tabItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  tabLabel: {
-    fontSize: 11,
-    marginTop: 4,
-    fontWeight: '500',
   },
 });

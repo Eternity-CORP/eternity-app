@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { Logger } from '@nestjs/common';
 import { PaymentService, PaymentError } from '../services/Payment.service';
 import {
   SendByIdentifierRequestDto,
@@ -10,6 +11,8 @@ import {
  * Контроллер для обработки платежных операций
  */
 export class PaymentsController {
+  private static readonly logger = new Logger(PaymentsController.name);
+
   constructor(private paymentService: PaymentService) {}
 
   /**
@@ -75,7 +78,7 @@ export class PaymentsController {
     }
 
     // Неизвестная ошибка
-    console.error('Unexpected error in payments controller:', error);
+    PaymentsController.logger.error('Unexpected error in payments controller:', error);
     res.status(500).json({
       code: 'INTERNAL_SERVER_ERROR',
       message: 'An unexpected error occurred',

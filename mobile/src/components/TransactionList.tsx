@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { ethers } from 'ethers';
 import { Transaction, TransactionStatus, TransactionType } from '../services/blockchain/etherscanService';
-import Animated, { SlideInRight } from 'react-native-reanimated'
+import Animated, { SlideInRight } from 'react-native-reanimated';
+import { useTheme } from '../context/ThemeContext';
 
 interface TransactionListProps {
   transactions: Transaction[];
@@ -17,6 +18,7 @@ export default function TransactionList({
   onRefresh,
   onTransactionPress,
 }: TransactionListProps) {
+  const { theme } = useTheme();
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
     const now = new Date();
@@ -62,11 +64,23 @@ export default function TransactionList({
 
     return (
       <TouchableOpacity
-        style={styles.transactionItem}
+        style={[
+          styles.transactionItem,
+          {
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.radius.md,
+          }
+        ]}
         onPress={() => onTransactionPress?.(item)}
         activeOpacity={0.7}
       >
-        <View style={styles.transactionIcon}>
+        <View style={[
+          styles.transactionIcon,
+          {
+            backgroundColor: theme.colors.card,
+            borderRadius: theme.radius.md,
+          }
+        ]}>
           <Text style={styles.iconText}>
             {isPending ? '⏳' : isFailed ? '❌' : isSent ? '📤' : '📥'}
           </Text>
@@ -74,11 +88,14 @@ export default function TransactionList({
 
         <View style={styles.transactionInfo}>
           <View style={styles.transactionRow}>
-            <Text style={styles.transactionType}>
+            <Text style={[styles.transactionType, { color: theme.colors.text }]}>
               {isSent ? 'Sent to' : 'Received from'}
             </Text>
             <Text
-              style={[styles.transactionAmount, isSent && styles.sentAmount, isReceived && styles.receivedAmount]}
+              style={[
+                styles.transactionAmount,
+                { color: isSent ? theme.colors.error : theme.colors.success }
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -87,17 +104,19 @@ export default function TransactionList({
           </View>
 
           <View style={styles.transactionRow}>
-            <Text style={styles.transactionAddress}>
+            <Text style={[styles.transactionAddress, { color: theme.colors.textSecondary }]}>
               {isSent ? truncateAddress(item.to) : truncateAddress(item.from)}
             </Text>
-            <Text style={styles.transactionDate}>{formatDate(item.timestamp)}</Text>
+            <Text style={[styles.transactionDate, { color: theme.colors.textSecondary }]}>
+              {formatDate(item.timestamp)}
+            </Text>
           </View>
 
           {isFailed && (
-            <Text style={styles.failedLabel}>Failed</Text>
+            <Text style={[styles.failedLabel, { color: theme.colors.error }]}>Failed</Text>
           )}
           {isPending && (
-            <Text style={styles.pendingLabel}>Pending...</Text>
+            <Text style={[styles.pendingLabel, { color: theme.colors.warning }]}>Pending...</Text>
           )}
         </View>
       </TouchableOpacity>
@@ -149,31 +168,28 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 8,
+    gap: 8, // More spacing between items
   },
   transactionItem: {
     flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    padding: 16, // More padding for airy feel
     marginBottom: 8,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    // Soft shadow for TON Wallet style
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   transactionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#f5f5f5',
+    width: 48, // Slightly larger
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14, // More spacing
   },
   iconText: {
-    fontSize: 22,
+    fontSize: 24,
   },
   transactionInfo: {
     flex: 1,
@@ -182,12 +198,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6, // More spacing
   },
   transactionType: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000',
   },
   transactionAmount: {
     fontSize: 15,
@@ -195,30 +210,20 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
-  sentAmount: {
-    color: '#FF3B30',
-  },
-  receivedAmount: {
-    color: '#34C759',
-  },
   transactionAddress: {
     fontSize: 13,
-    color: '#666',
     fontFamily: 'monospace',
   },
   transactionDate: {
     fontSize: 13,
-    color: '#999',
   },
   failedLabel: {
     fontSize: 12,
-    color: '#FF3B30',
     fontWeight: '600',
     marginTop: 4,
   },
   pendingLabel: {
     fontSize: 12,
-    color: '#FF9500',
     fontWeight: '600',
     marginTop: 4,
   },
@@ -231,7 +236,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#666',
   },
   emptyContainer: {
     flex: 1,
@@ -245,14 +249,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
     marginBottom: 16,
   },
   refreshButton: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 20, // More rounded
   },
   refreshButtonText: {
     color: '#fff',

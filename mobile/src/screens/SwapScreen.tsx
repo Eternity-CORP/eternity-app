@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Modal,
   FlatList,
-  Image,
   Alert,
   Linking,
 } from 'react-native';
@@ -20,6 +19,7 @@ import { useTheme } from '../context/ThemeContext';
 import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
 import { TokenInfo, SUPPORTED_TOKENS } from '../constants/tokens';
 import Card from '../components/common/Card';
+import TokenIcon from '../components/common/TokenIcon';
 import { ethers } from 'ethers';
 import { getProvider } from '../services/blockchain/ethereumProvider';
 import { getSigner } from '../services/walletService';
@@ -38,7 +38,7 @@ const SEPOLIA_TOKENS: TokenInfo[] = [
     symbol: 'ETH',
     address: '0x0000000000000000000000000000000000000000',
     decimals: 18,
-    logoUri: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png',
+    logoUri: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png', // High quality
     networks: { sepolia: '0x0000000000000000000000000000000000000000' }
   },
   {
@@ -46,7 +46,7 @@ const SEPOLIA_TOKENS: TokenInfo[] = [
     symbol: 'WETH',
     address: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14',
     decimals: 18,
-    logoUri: 'https://assets.coingecko.com/coins/images/2518/thumb/weth.png',
+    logoUri: 'https://assets.coingecko.com/coins/images/2518/large/weth.png', // High quality
     networks: { sepolia: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' }
   },
   {
@@ -54,7 +54,7 @@ const SEPOLIA_TOKENS: TokenInfo[] = [
     symbol: 'USDC',
     address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // Sepolia USDC
     decimals: 6,
-    logoUri: 'https://assets.coingecko.com/coins/images/6319/thumb/usdc.png',
+    logoUri: 'https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png', // High quality
     networks: { sepolia: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238' }
   },
   {
@@ -432,7 +432,7 @@ export default function SwapScreen({ navigation }: Props) {
           keyExtractor={(item) => item.symbol}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.tokenItem} onPress={() => handleTokenSelect(item)}>
-              <Image source={{ uri: item.logoUri }} style={styles.tokenLogo} />
+              <TokenIcon uri={item.logoUri} symbol={item.symbol} size={48} />
               <View style={styles.tokenInfo}>
                 <Text style={[styles.tokenName, { color: theme.colors.text }]}>{item.name}</Text>
                 <Text style={[styles.tokenSymbol, { color: theme.colors.textSecondary }]}>{item.symbol}</Text>
@@ -484,7 +484,7 @@ export default function SwapScreen({ navigation }: Props) {
             >
               {fromToken ? (
                 <>
-                  <Image source={{ uri: fromToken.logoUri }} style={styles.smallLogo} />
+                  <TokenIcon uri={fromToken.logoUri} symbol={fromToken.symbol} size={32} />
                   <Text style={[styles.tokenSelectorText, { color: theme.colors.text }]}>{fromToken.symbol}</Text>
                 </>
               ) : (
@@ -533,7 +533,7 @@ export default function SwapScreen({ navigation }: Props) {
             >
                {toToken ? (
                 <>
-                  <Image source={{ uri: toToken.logoUri }} style={styles.smallLogo} />
+                  <TokenIcon uri={toToken.logoUri} symbol={toToken.symbol} size={32} />
                   <Text style={[styles.tokenSelectorText, { color: theme.colors.text }]}>{toToken.symbol}</Text>
                 </>
               ) : (
@@ -690,11 +690,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     gap: 6,
   },
-  smallLogo: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
   tokenSelectorText: {
     fontSize: 16,
     fontWeight: '600',
@@ -811,12 +806,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
-  },
-  tokenLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
   },
   tokenInfo: {
     flex: 1,

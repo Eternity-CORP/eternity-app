@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { networkDiagnostics, runQuickDiagnostics } from '../services/networkDiagnostics';
 import { networkLogger } from '../services/networkLogger';
-import { defaultNetwork } from '../constants/rpcUrls';
+import { getSelectedNetwork } from '../services/networkService';
+import type { Network } from '../config/env';
 
 interface DiagnosticResult {
   service: string;
@@ -25,11 +26,18 @@ export default function DiagnosticsScreen() {
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<DiagnosticResult[]>([]);
   const [lastRun, setLastRun] = useState<Date | null>(null);
+  const [currentNetwork, setCurrentNetwork] = useState<Network>('sepolia');
+
+  useEffect(() => {
+    getSelectedNetwork().then(setCurrentNetwork);
+  }, []);
 
   const runDiagnostics = async () => {
     setIsRunning(true);
     try {
-      const diagnosticResults = await networkDiagnostics.runFullDiagnostics(defaultNetwork);
+      const network = await getSelectedNetwork();
+      setCurrentNetwork(network);
+      const diagnosticResults = await networkDiagnostics.runFullDiagnostics(network);
       setResults(diagnosticResults);
       setLastRun(new Date());
     } catch (error) {

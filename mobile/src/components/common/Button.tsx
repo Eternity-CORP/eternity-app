@@ -64,12 +64,17 @@ export default function Button({ title, children, variant = 'primary', onPress, 
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 20, // More rounded like TON Wallet
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    borderWidth: 2,
-    minHeight: 56,
+    borderWidth: 0, // No border for primary buttons
+    minHeight: 52,
     justifyContent: 'center',
+    // Soft shadow for depth
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   content: {
     alignItems: 'center',
@@ -77,8 +82,8 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontWeight: '600', // Slightly lighter weight
+    letterSpacing: 0.2,
     textAlign: 'center',
   },
 });

@@ -17,9 +17,10 @@ import { ethers } from 'ethers';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { estimateGas, sendETH } from '../services/blockchain/transactionService';
 import { getETHBalance } from '../services/blockchain/balanceService';
-import { defaultNetwork } from '../constants/rpcUrls';
+import { getSelectedNetwork } from '../services/networkService';
 import { useTheme } from '../context/ThemeContext';
 import { useWallet } from '../context/WalletContext';
+import type { Network } from '../config/env';
 import Card from '../components/common/Card';
 import SwipeToConfirm from '../components/SwipeToConfirm';
 import { notifyTransactionSent } from '../services/notificationService';
@@ -43,15 +44,18 @@ export default function SendScreenNew({ navigation }: Props) {
   const [sending, setSending] = useState(false);
   const [balance, setBalance] = useState<ethers.BigNumber>(ethers.BigNumber.from(0));
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [currentNetwork, setCurrentNetwork] = useState<Network>('sepolia');
 
-  // Load balance on mount
+  // Load network and balance on mount
   useEffect(() => {
-    const loadBalance = async () => {
+    const loadNetworkAndBalance = async () => {
       if (!activeAccount?.address) return;
 
       try {
         setLoadingBalance(true);
-        const bal = await getETHBalance(activeAccount.address, defaultNetwork);
+        const network = await getSelectedNetwork();
+        setCurrentNetwork(network);
+        const bal = await getETHBalance(activeAccount.address, network);
         setBalance(bal);
       } catch (e) {
         console.error('Failed to load balance:', e);
@@ -59,7 +63,7 @@ export default function SendScreenNew({ navigation }: Props) {
         setLoadingBalance(false);
       }
     };
-    loadBalance();
+    loadNetworkAndBalance();
   }, [activeAccount?.address]);
 
   // Estimate gas when recipient and amount change
@@ -75,7 +79,7 @@ export default function SendScreenNew({ navigation }: Props) {
       }
       try {
         setEstimating(true);
-        const { feeEth } = await estimateGas(recipient, amount, defaultNetwork);
+        const { feeEth } = await estimateGas(recipient, amount, currentNetwork);
         setGasFeeEth(feeEth);
       } catch (e) {
         console.warn('Gas estimation failed', e);
@@ -107,7 +111,7 @@ export default function SendScreenNew({ navigation }: Props) {
       Keyboard.dismiss();
       setSending(true);
 
-      const { txHash, receipt } = await sendETH(recipient, amount, defaultNetwork);
+      const { txHash, receipt } = await sendETH(recipient, amount, currentNetwork);
       console.log('Transaction sent:', txHash);
 
       // Send notification

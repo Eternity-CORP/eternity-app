@@ -57,6 +57,7 @@ export class ExecuteBlikRequestDto {
   fromChainId: string;
   fromAddress: string;
   routeId?: string;
+  txHash?: string; // Mobile can provide txHash if transaction was already sent
 }
 
 export class ExecuteBlikResponseDto {

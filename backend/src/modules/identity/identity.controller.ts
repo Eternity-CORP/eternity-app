@@ -21,6 +21,7 @@ class AddWalletDto {
   address!: string;
   isPrimary?: boolean;
   label?: string;
+  isActive?: boolean;
 }
 
 class UpdateWalletDto {
@@ -28,6 +29,7 @@ class UpdateWalletDto {
   address?: string;
   isPrimary?: boolean;
   label?: string;
+  isActive?: boolean;
 }
 
 class SetTokenPreferenceDto {
@@ -88,7 +90,8 @@ export class IdentityController {
       dto.chainId,
       dto.address,
       dto.isPrimary || false,
-      dto.label
+      dto.label,
+      dto.isActive !== undefined ? dto.isActive : true
     );
   }
 
@@ -170,6 +173,25 @@ export class IdentityController {
       req.user.walletAddress,
       parseInt(id, 10)
     );
+  }
+
+  /**
+   * Get active wallets only
+   */
+  @Get('wallets/active')
+  @UseGuards(JwtAuthGuard)
+  async getActiveWallets(@Request() req: any) {
+    return this.identityService.getActiveWallets(req.user.walletAddress);
+  }
+
+  /**
+   * Get primary chain ID
+   */
+  @Get('primary-chain')
+  @UseGuards(JwtAuthGuard)
+  async getPrimaryChain(@Request() req: any) {
+    const chainId = await this.identityService.getPrimaryChain(req.user.walletAddress);
+    return { primaryChainId: chainId };
   }
 
   /**

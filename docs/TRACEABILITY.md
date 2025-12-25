@@ -1,7 +1,7 @@
 # Трассировочная Матрица: Документация ↔ Код
 
-**Версия:** 1.1  
-**Обновлено:** December 18, 2025  
+**Версия:** 1.2  
+**Обновлено:** December 24, 2025  
 **Автоматическая валидация:** `npm run docs:check`
 
 ---
@@ -34,10 +34,10 @@
 | S-06 | ✅ Done | `backend/src/services/routers/LifiRouter.service.ts`, `backend/src/services/Crosschain.service.ts` |
 | S-07 | ✅ Done | `backend/src/services/routers/RangoRouter.service.ts` |
 | S-08 | ⏸️ Deferred | `backend/src/services/routers/SocketRouter.service.ts` |
-| S-09 | ⏳ In Progress | `mobile/src/screens/CrosschainQuoteScreen.tsx`, `mobile/src/services/walletService.ts` |
-| S-10 | ⏳ In Progress | `mobile/src/screens/TransactionDetailsScreen.tsx` |
-| S-11 | ⏳ In Progress | `backend/src/services/Blik.service.ts`, `mobile/src/screens/CreateBlikCodeScreen.tsx` |
-| S-12 | ⏳ In Progress | `mobile/src/services/blockchain/gasEstimatorService.ts` |
+| S-09 | ✅ Done | `mobile/src/screens/CrosschainQuoteScreen.tsx`, `mobile/src/services/walletService.ts` |
+| S-10 | ✅ Done | `mobile/src/screens/CrosschainStatusScreen.tsx` |
+| S-11 | ✅ Done | `backend/src/services/Blik.service.ts`, `backend/src/services/TokenRegistry.service.ts`, `mobile/src/screens/CreateBlikCodeScreen.tsx`, `mobile/src/services/api/blikService.ts` |
+| S-12 | ✅ Done | `mobile/src/services/blockchain/gasEstimatorService.ts` |
 
 ### EPIC-04: Mobile Security
 | Story ID | Статус | Связанные файлы |
@@ -108,6 +108,7 @@
 
 | Дата | Изменение | Автор |
 |------|-----------|-------|
+| 2025-12-24 | Добавлен TokenRegistry.service.ts, обновлены статусы S-09..S-12 на Done | Dev |
 | 2025-12-18 | Добавлен Epic-05 Demo/Live Mode, Story S-19, обновлены статусы | Dev |
 | 2025-12-17 | Создана трассировочная матрица | PM |
 

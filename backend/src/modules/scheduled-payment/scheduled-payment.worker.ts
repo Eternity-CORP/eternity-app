@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
@@ -7,6 +7,8 @@ import { PushNotificationService } from '../../services/push-notification.servic
 
 @Injectable()
 export class ScheduledPaymentWorker {
+  private readonly logger = new Logger(ScheduledPaymentWorker.name);
+
   constructor(
     @InjectRepository(ScheduledPayment)
     private scheduledPaymentRepository: Repository<ScheduledPayment>,
@@ -25,7 +27,9 @@ export class ScheduledPaymentWorker {
       relations: ['user'],
     });
 
-    console.log(`Found ${duePayments.length} due scheduled payments`);
+    if (duePayments.length > 0) {
+      this.logger.log(`Found ${duePayments.length} due scheduled payments`);
+    }
 
     for (const payment of duePayments) {
       await this.notifyUser(payment);
@@ -41,9 +45,9 @@ export class ScheduledPaymentWorker {
         { scheduledPaymentId: payment.id, action: 'execute' },
       );
 
-      console.log(`Notified user for scheduled payment ${payment.id}`);
+      this.logger.log(`Notified user for scheduled payment ${payment.id}`);
     } catch (error) {
-      console.error(`Failed to notify for payment ${payment.id}:`, error);
+      this.logger.error(`Failed to notify for payment ${payment.id}:`, error);
     }
   }
 }

@@ -191,15 +191,16 @@ export class IdentityResolverService {
 
   /**
    * Построение полного объекта ResolvedIdentity
+   * NOTE: Only returns ACTIVE wallets for routing
    * @private
    */
   private async buildResolvedIdentity(user: User): Promise<ResolvedIdentity> {
     // Generate globalId from user id (first 8 characters)
     const globalId = `EY-${user.id.slice(0, 8).toUpperCase()}`;
 
-    // Load wallets
+    // Load ONLY ACTIVE wallets
     const wallets = await this.walletRepository.find({
-      where: { userId: user.id },
+      where: { userId: user.id, isActive: true },
       order: { isPrimary: 'DESC', addedAt: 'DESC' },
     });
 

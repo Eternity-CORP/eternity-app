@@ -52,6 +52,10 @@ export class UserWallet {
   @Index('idx_user_wallets_primary', { where: 'is_primary = TRUE' })
   isPrimary: boolean;
 
+  @Column({ type: 'boolean', default: true, name: 'is_active' })
+  @Index('idx_user_wallets_active', { where: 'is_active = TRUE' })
+  isActive: boolean;
+
   @Column({ type: 'varchar', length: 64, nullable: true })
   label: string | null;
 

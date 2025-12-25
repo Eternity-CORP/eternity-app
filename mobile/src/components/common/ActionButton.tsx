@@ -123,8 +123,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
+    // Soft shadow for depth
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   label: {
     textAlign: 'center',
+    fontWeight: '500',
   },
 });

@@ -10,21 +10,32 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { ethers } from 'ethers';
 import { useTheme } from '../context/ThemeContext';
+import { useWallet } from '../context/WalletContext';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import Card from '../components/common/Card';
-import { compareQuotes, prepareCrosschainTransaction, CompareQuotesResponse } from '../services/api/crosschainService';
+import { 
+  compareQuotes, 
+  prepareCrosschainTransaction, 
+  CompareQuotesResponse 
+} from '../services/api/crosschainService';
+import { getSigner } from '../services/walletService';
+import { getSelectedNetwork } from '../services/networkService';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'CrosschainQuote'>;
 
 export default function CrosschainQuoteScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
+  const { activeAccount } = useWallet();
   const { params } = route.params;
 
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState<CompareQuotesResponse | null>(null);
   const [selectedQuote, setSelectedQuote] = useState<number>(0);
   const [preparing, setPreparing] = useState(false);
+  const [signing, setSigning] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,8 +58,68 @@ export default function CrosschainQuoteScreen({ navigation, route }: Props) {
     }
   };
 
+  /**
+   * Authenticate user with biometrics before signing transaction
+   */
+  const authenticateUser = async (): Promise<boolean> => {
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+
+      if (!hasHardware || !isEnrolled) {
+        // Fall back to confirmation if biometrics not available
+        return true;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to sign transaction',
+        fallbackLabel: 'Use passcode',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      return result.success;
+    } catch (error) {
+      console.error('Authentication error:', error);
+      return false;
+    }
+  };
+
+  /**
+   * Sign and send the cross-chain transaction
+   */
+  const signAndSendTransaction = async (txData: any): Promise<string> => {
+    const network = await getSelectedNetwork();
+    const signer = await getSigner(network);
+
+    console.log('📝 [Crosschain] Signing transaction...');
+    console.log('   To:', txData.to);
+    console.log('   Value:', txData.value);
+    console.log('   Data length:', txData.data?.length || 0);
+
+    // Build transaction object
+    const tx: ethers.providers.TransactionRequest = {
+      to: txData.to,
+      value: txData.value ? ethers.BigNumber.from(txData.value) : ethers.BigNumber.from(0),
+      data: txData.data || '0x',
+      gasLimit: txData.gasLimit ? ethers.BigNumber.from(txData.gasLimit) : undefined,
+      gasPrice: txData.gasPrice ? ethers.BigNumber.from(txData.gasPrice) : undefined,
+      maxFeePerGas: txData.maxFeePerGas ? ethers.BigNumber.from(txData.maxFeePerGas) : undefined,
+      maxPriorityFeePerGas: txData.maxPriorityFeePerGas 
+        ? ethers.BigNumber.from(txData.maxPriorityFeePerGas) 
+        : undefined,
+      chainId: txData.chainId,
+    };
+
+    // Send transaction
+    const response = await signer.sendTransaction(tx);
+    console.log('✅ [Crosschain] Transaction sent:', response.hash);
+
+    return response.hash;
+  };
+
   const handleConfirm = async () => {
-    if (!quotes) return;
+    if (!quotes || !activeAccount) return;
 
     const quote = quotes.quotes[selectedQuote];
 
@@ -63,6 +134,8 @@ export default function CrosschainQuoteScreen({ navigation, route }: Props) {
             try {
               setPreparing(true);
 
+              // Step 1: Prepare transaction data from backend
+              console.log('🔄 [Crosschain] Preparing transaction...');
               const txData = await prepareCrosschainTransaction(
                 quote.router,
                 quote.routeId,
@@ -70,24 +143,68 @@ export default function CrosschainQuoteScreen({ navigation, route }: Props) {
                 params.toAddress
               );
 
+              console.log('✅ [Crosschain] Transaction prepared:', txData);
+
+              // Step 2: Authenticate user
+              setPreparing(false);
+              setSigning(true);
+
+              const authenticated = await authenticateUser();
+              if (!authenticated) {
+                Alert.alert('Authentication Failed', 'Please authenticate to sign the transaction.');
+                setSigning(false);
+                return;
+              }
+
+              // Step 3: Sign and send transaction
+              const txHash = await signAndSendTransaction(txData.transaction);
+
+              // Step 4: Navigate to status monitoring screen
               Alert.alert(
-                'Transaction Ready',
-                'Transaction prepared successfully! Sign it in your wallet to complete the cross-chain transfer.',
+                '🚀 Transaction Sent!',
+                `Your cross-chain transfer is being processed.\n\nTx Hash: ${txHash.slice(0, 10)}...${txHash.slice(-8)}`,
                 [
                   {
-                    text: 'OK',
+                    text: 'Track Status',
                     onPress: () => {
-                      // TODO: Integrate with wallet signing
-                      navigation.navigate('Home');
+                      navigation.replace('CrosschainStatus', {
+                        txHash,
+                        router: quote.router,
+                        fromChainId: params.fromChainId,
+                        toChainId: params.toChainId,
+                        amount: params.amount,
+                        fromToken: params.fromToken,
+                        toToken: params.toToken,
+                        estimatedOutput: quote.estimatedOutput,
+                        estimatedDuration: quote.durationSeconds,
+                      });
                     }
+                  },
+                  {
+                    text: 'Go Home',
+                    style: 'cancel',
+                    onPress: () => navigation.navigate('Home')
                   }
                 ]
               );
             } catch (error: any) {
-              console.error('Failed to prepare transaction:', error);
-              Alert.alert('Error', 'Failed to prepare transaction. Please try again.');
+              console.error('❌ [Crosschain] Transaction failed:', error);
+              
+              let errorMessage = 'Failed to process transaction.';
+              if (error.code === 'INSUFFICIENT_FUNDS') {
+                errorMessage = 'Insufficient funds for gas fees.';
+              } else if (error.code === 'UNPREDICTABLE_GAS_LIMIT') {
+                errorMessage = 'Unable to estimate gas. The transaction may fail.';
+              } else if (error.code === 'USER_REJECTED') {
+                errorMessage = 'Transaction was rejected.';
+              } else if (error.message) {
+                errorMessage = error.message;
+              }
+
+              Alert.alert('Transaction Failed', errorMessage);
             } finally {
               setPreparing(false);
+              setSigning(false);
             }
           }
         }
@@ -307,18 +424,30 @@ export default function CrosschainQuoteScreen({ navigation, route }: Props) {
           style={[
             styles.confirmButton,
             {
-              backgroundColor: preparing ? theme.colors.border : theme.colors.success,
+              backgroundColor: (preparing || signing) ? theme.colors.border : theme.colors.success,
             },
           ]}
           onPress={handleConfirm}
-          disabled={preparing}
+          disabled={preparing || signing}
           activeOpacity={0.8}
         >
           {preparing ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={[styles.confirmButtonSubtext, { marginTop: 4 }]}>
+                Preparing transaction...
+              </Text>
+            </>
+          ) : signing ? (
+            <>
+              <ActivityIndicator size="small" color="#FFFFFF" />
+              <Text style={[styles.confirmButtonSubtext, { marginTop: 4 }]}>
+                Signing transaction...
+              </Text>
+            </>
           ) : (
             <>
-              <Text style={styles.confirmButtonText}>Confirm Transfer</Text>
+              <Text style={styles.confirmButtonText}>Confirm & Sign</Text>
               <Text style={styles.confirmButtonSubtext}>
                 via {quotes.quotes[selectedQuote].router}
               </Text>

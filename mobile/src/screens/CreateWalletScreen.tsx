@@ -238,18 +238,37 @@ export default function CreateWalletScreen({ navigation }: Props) {
                   </Text>
                 </View>
 
-                {/* Seed Grid */}
-                <View style={styles.grid}>
-                  {mnemonic.map((word, idx) => (
-                    <View 
-                      key={idx} 
-                      style={[styles.wordBox, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-                      accessibilityLabel={`Word ${idx + 1}`}
-                    >
-                      <Text style={[styles.wordIndex, { color: theme.colors.muted }]}>{idx + 1}</Text>
-                      <Text style={[styles.wordText, { color: theme.colors.text }]}>{word}</Text>
-                    </View>
-                  ))}
+                {/* Seed Grid - 2 columns layout like Trust Wallet */}
+                <View style={styles.seedContainer}>
+                  {/* Left column: words 1-12 */}
+                  <View style={styles.seedColumn}>
+                    {mnemonic.slice(0, Math.ceil(mnemonic.length / 2)).map((word, idx) => (
+                      <View 
+                        key={idx} 
+                        style={styles.wordRow}
+                        accessibilityLabel={`Word ${idx + 1}: ${word}`}
+                      >
+                        <Text style={[styles.wordNumber, { color: theme.colors.muted }]}>{idx + 1}.</Text>
+                        <Text style={[styles.wordText, { color: theme.colors.text }]}>{word}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {/* Right column: words 13-24 (or 7-12 for 12-word) */}
+                  <View style={styles.seedColumn}>
+                    {mnemonic.slice(Math.ceil(mnemonic.length / 2)).map((word, idx) => {
+                      const wordIndex = Math.ceil(mnemonic.length / 2) + idx + 1;
+                      return (
+                        <View 
+                          key={idx} 
+                          style={styles.wordRow}
+                          accessibilityLabel={`Word ${wordIndex}: ${word}`}
+                        >
+                          <Text style={[styles.wordNumber, { color: theme.colors.muted }]}>{wordIndex}.</Text>
+                          <Text style={[styles.wordText, { color: theme.colors.text }]}>{word}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
               </>
             ) : (
@@ -378,27 +397,29 @@ const styles = StyleSheet.create({
   timerSubtext: {
     fontSize: 13,
   },
-  grid: {
+  seedContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginBottom: 20,
+    gap: 16,
   },
-  wordBox: {
-    width: '31%',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
+  seedColumn: {
+    flex: 1,
+  },
+  wordRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
   },
-  wordIndex: {
-    fontSize: 11,
-    marginBottom: 2,
+  wordNumber: {
+    fontSize: 14,
+    width: 28,
+    textAlign: 'right',
+    marginRight: 8,
   },
   wordText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '500',
   },
   hiddenBox: {
     padding: 48,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import { getCrosschainQuote, CrosschainQuote } from '../../services/api/crosscha
 import { sendETH, estimateGas } from '../../services/blockchain/transactionService';
 import { getETHBalance, formatBalance } from '../../services/blockchain/balanceService';
 import { KeyboardAwareScreen } from '../../components/common/KeyboardAwareScreen';
+import { useWalletPreferences } from '../../hooks/useWalletPreferences';
+import { useTokenChainPreferences } from '../../hooks/useTokenChainPreferences';
+import { getChainInfo } from '../../constants/chains';
 
 interface Props {
   navigation: any;
@@ -34,12 +37,22 @@ const MAINNET_TOKENS = ['ETH', 'USDC', 'USDT', 'DAI'];
 export default function SendByIdentifierMode({ navigation }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
+  const { activeWallets, loading: prefsLoading } = useWalletPreferences();
+  const { getPreferenceForToken } = useTokenChainPreferences();
 
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedToken, setSelectedToken] = useState('ETH');
   const [fromChainId, setFromChainId] = useState('sepolia');
   const [toChainId, setToChainId] = useState('');
+
+  // Filter SUPPORTED_CHAINS to only show active chains
+  const activeChains = useMemo(() => {
+    if (activeWallets.length === 0) return SUPPORTED_CHAINS;
+    return SUPPORTED_CHAINS.filter((chain) =>
+      activeWallets.some((wallet) => wallet.chainId === chain.id)
+    );
+  }, [activeWallets]);
 
   const availableTokens = fromChainId === 'sepolia' ? SEPOLIA_TOKENS : MAINNET_TOKENS;
 
@@ -97,21 +110,35 @@ export default function SendByIdentifierMode({ navigation }: Props) {
 
   useEffect(() => {
     if (resolved) {
-      const pref = resolved.tokenPreferences.find((p) => p.tokenSymbol === selectedToken);
-      if (pref) {
-        setToChainId(pref.preferredChainId);
+      // 1. Check local token preference first (from user's own preferences)
+      const localPref = getPreferenceForToken(selectedToken);
+      if (localPref && resolved.wallets.find((w) => w.chainId === localPref)) {
+        setToChainId(localPref);
+        return;
+      }
+
+      // 2. Check backend token preference (recipient's preferences)
+      const backendPref = resolved.tokenPreferences.find((p) => p.tokenSymbol === selectedToken);
+      if (backendPref) {
+        setToChainId(backendPref.preferredChainId);
+        return;
+      }
+
+      // 3. Try same chain fallback
+      const sameChainWallet = resolved.wallets.find((w) => w.chainId === fromChainId);
+      if (sameChainWallet) {
+        setToChainId(fromChainId);
+        return;
+      }
+
+      // 4. Use first wallet as last resort
+      if (resolved.wallets.length > 0) {
+        setToChainId(resolved.wallets[0].chainId);
       } else {
-        const sameChainWallet = resolved.wallets.find((w) => w.chainId === fromChainId);
-        if (sameChainWallet) {
-          setToChainId(fromChainId);
-        } else if (resolved.wallets.length > 0) {
-          setToChainId(resolved.wallets[0].chainId);
-        } else {
-          setToChainId(fromChainId);
-        }
+        setToChainId(fromChainId);
       }
     }
-  }, [resolved, selectedToken, fromChainId]);
+  }, [resolved, selectedToken, fromChainId, getPreferenceForToken]);
 
   const handleResolveRecipient = async () => {
     try {
@@ -342,7 +369,7 @@ export default function SendByIdentifierMode({ navigation }: Props) {
       <Card style={styles.card}>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>From Network</Text>
         <View style={styles.chainGrid}>
-          {SUPPORTED_CHAINS.map((chain) => (
+          {activeChains.map((chain) => (
             <TouchableOpacity
               key={chain.id}
               style={[
@@ -375,10 +402,12 @@ export default function SendByIdentifierMode({ navigation }: Props) {
             <Ionicons name="checkmark-circle" size={20} color={theme.colors.primary} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.autoDetectedText, { color: theme.colors.primary }]}>
-                Auto-detected: {SUPPORTED_CHAINS.find((c) => c.id === toChainId)?.icon} {toChainId}
+                Auto-detected: {activeChains.find((c) => c.id === toChainId)?.icon || getChainInfo(toChainId)?.icon || '🔗'} {toChainId}
               </Text>
               <Text style={[styles.autoDetectedHint, { color: theme.colors.textSecondary }]}>
-                {resolved.tokenPreferences.find((p) => p.tokenSymbol === selectedToken)
+                {getPreferenceForToken(selectedToken)
+                  ? 'Based on your token preference'
+                  : resolved.tokenPreferences.find((p) => p.tokenSymbol === selectedToken)
                   ? `Based on ${resolved.nickname}'s token preference`
                   : `Based on ${resolved.nickname}'s wallet addresses`}
               </Text>

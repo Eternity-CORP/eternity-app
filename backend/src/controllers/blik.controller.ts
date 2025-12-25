@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Req, Res, Next, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Req, Res, Next, UseGuards, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { JwtAuthGuard } from '../modules/shared/jwt-auth.guard';
 import { BlikService } from '../services/Blik.service';
@@ -18,6 +18,8 @@ import {
  */
 @Controller('blik')
 export class BlikController {
+  private static readonly logger = new Logger(BlikController.name);
+
   constructor(private blikService: BlikService) {}
 
   /**
@@ -202,6 +204,7 @@ export class BlikController {
         fromChainId: req.body.fromChainId,
         fromAddress: req.body.fromAddress,
         routeId: req.body.routeId,
+        txHash: req.body.txHash, // Mobile может передать txHash если транзакция уже отправлена
       };
 
       if (!executeDto.fromChainId || !executeDto.fromAddress) {
@@ -219,6 +222,7 @@ export class BlikController {
         fromChainId: executeDto.fromChainId,
         fromAddress: executeDto.fromAddress,
         routeId: executeDto.routeId,
+        txHash: executeDto.txHash,
       });
 
       const response: ExecuteBlikResponseDto = {
@@ -276,7 +280,7 @@ export class BlikController {
     res: Response,
     _next: NextFunction
   ): void {
-    console.error('BLIK error:', error);
+    BlikController.logger.error('BLIK error:', error.stack);
 
     // Обработка специфичных ошибок
     if (error.message.includes('REQUEST_NOT_FOUND')) {
@@ -346,6 +350,22 @@ export class BlikController {
     if (error.message.includes('FORBIDDEN')) {
       res.status(403).json({
         code: 'FORBIDDEN',
+        message: error.message,
+      } as BlikErrorDto);
+      return;
+    }
+
+    if (error.message.includes('TX_HASH_REQUIRED')) {
+      res.status(400).json({
+        code: 'TX_HASH_REQUIRED',
+        message: 'Mobile must send the transaction and provide txHash. Backend does not have private keys.',
+      } as BlikErrorDto);
+      return;
+    }
+
+    if (error.message.includes('CROSSCHAIN_ROUTE_UNAVAILABLE')) {
+      res.status(400).json({
+        code: 'CROSSCHAIN_ROUTE_UNAVAILABLE',
         message: error.message,
       } as BlikErrorDto);
       return;

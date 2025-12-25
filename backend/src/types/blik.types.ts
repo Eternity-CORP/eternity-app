@@ -50,6 +50,7 @@ export interface ExecutePaymentRequestParams {
   fromChainId: string;
   fromAddress: string;
   routeId?: string; // Для crosschain через Rango/LI.FI
+  txHash?: string; // Mobile передаёт txHash если транзакция уже отправлена
 }
 
 export interface PaymentRequestQuote {

@@ -1,10 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
+import { Logger } from '@nestjs/common';
 import { CrosschainService } from '../services/Crosschain.service';
 
 /**
  * Контроллер для crosschain операций
  */
 export class CrosschainController {
+  private static readonly logger = new Logger(CrosschainController.name);
+
   constructor(private crosschainService: CrosschainService) {}
 
   /**
@@ -132,7 +135,7 @@ export class CrosschainController {
    * Error handler для crosschain операций
    */
   static errorHandler(error: Error, _req: Request, res: Response, _next: NextFunction): void {
-    console.error('Crosschain error:', error);
+    CrosschainController.logger.error('Crosschain error:', error.stack);
 
     if (error.message.includes('No route found')) {
       res.status(404).json({

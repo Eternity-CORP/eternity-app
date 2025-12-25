@@ -1,8 +1,8 @@
 # E-Y Wallet — Project Status
 
-**Last Updated:** December 20, 2025  
-**Phase:** MVP Completion  
-**Overall Progress:** ~92%
+**Last Updated:** December 24, 2025  
+**Phase:** MVP Complete — Ready for E2E Testing  
+**Overall Progress:** ~99%
 
 ---
 
@@ -25,14 +25,15 @@
 | Shards Gamification | ✅ Ready | Earning, display, animations |
 | i18n Localization | ✅ Ready | EN, RU supported |
 
-### What Needs Finishing (~8-12h work)
+### What Needs Finishing (~2-4h work)
 
 | Feature | Status | Remaining Work |
 |---------|--------|----------------|
-| Cross-chain Transfers | 90% | Hook wallet signing in mobile |
-| Cross-chain Status UI | 80% | Transaction status screen |
-| BLIK Cross-chain | 80% | Wire up after signing fix |
-| Gas Fee Breakdown | 70% | UI polish |
+| Cross-chain Transfers | ✅ Done | Wallet signing integrated |
+| Cross-chain Status UI | ✅ Done | `CrosschainStatusScreen` created |
+| BLIK Cross-chain | ✅ Done | Routes to CrosschainQuoteScreen |
+| E2E Testing | ⏳ Pending | Testnet smoke tests |
+| Gas Fee Breakdown | 70% | UI polish (nice-to-have) |
 
 ### What's Deferred (Post-MVP)
 
@@ -76,7 +77,8 @@
 - ✅ PayBlikCodeScreen — Pay via BLIK code
 
 #### Cross-chain
-- ⚠️ CrosschainQuoteScreen — Route comparison (needs signing)
+- ✅ CrosschainQuoteScreen — Route comparison + wallet signing
+- ✅ CrosschainStatusScreen — Transaction status monitoring (NEW)
 - ⚠️ SwapScreen — Token swap interface
 
 #### Profile & Settings
@@ -146,8 +148,8 @@ Key services:
 - **Tasks:** ETH ✅, USDC ✅, Mobile smoke test ⏳
 
 ### Epic 03: Cross-chain Execution
-- **Status:** ⚠️ 85% Done
-- **Tasks:** LiFi ✅, Socket ✅, Mobile signing ⏳, Status UI ⏳
+- **Status:** ✅ 95% Done
+- **Tasks:** LiFi ✅, Socket ✅, Mobile signing ✅, Status UI ✅, E2E testing ⏳
 
 ### Epic 04: Mobile Security
 - **Status:** ✅ 80% Done
@@ -163,14 +165,14 @@ Key services:
 
 ### Critical Path (Must Complete)
 
-| # | Task | Effort | Owner |
-|---|------|--------|-------|
-| 1 | Hook wallet signing for cross-chain | 2-4h | Mobile |
-| 2 | Cross-chain transaction status screen | 4h | Mobile |
-| 3 | BLIK cross-chain payment wiring | 2h | Mobile |
-| 4 | E2E testing on testnet | 2-4h | QA |
+| # | Task | Effort | Status |
+|---|------|--------|--------|
+| 1 | Hook wallet signing for cross-chain | 2-4h | ✅ Done |
+| 2 | Cross-chain transaction status screen | 4h | ✅ Done |
+| 3 | BLIK cross-chain payment wiring | 2h | ✅ Done |
+| 4 | E2E testing on testnet | 2-4h | ⏳ Pending |
 
-**Total Remaining: ~10-14 hours (~2-3 days)**
+**Total Remaining: ~2-4 hours (E2E testing only)**
 
 ### Definition of MVP Done
 
@@ -180,9 +182,9 @@ Key services:
 - [x] Has biometric/PIN security
 - [x] Shows transaction history
 - [x] Has global identity system
-- [ ] Can execute cross-chain transfers
-- [ ] User sees cross-chain transaction status
-- [ ] BLIK cross-chain works
+- [x] Can execute cross-chain transfers ✅ (Dec 20)
+- [x] User sees cross-chain transaction status ✅ (Dec 20)
+- [x] BLIK cross-chain works ✅ (Dec 20)
 
 ---
 
@@ -217,6 +219,60 @@ curl https://api.socket.tech/v2/supported/chains -H "API-KEY: 72a5b4b0-e727-48be
 
 ---
 
+## 📝 Recent Changes (Dec 24, 2025)
+
+### New Files Created
+| File | Description |
+|------|-------------|
+| `backend/src/services/TokenRegistry.service.ts` | Centralized token address registry |
+| `docs/E2E-TEST-PLAN.md` | Comprehensive E2E test checklist |
+
+### Architecture Improvements
+| Change | Description |
+|--------|-------------|
+| BLIK Architecture Fix | Backend no longer attempts transactions (no private keys). Mobile sends TX and provides txHash. |
+| TokenRegistry | Replaced hardcoded token maps with centralized service |
+| Logger Migration | Replaced console.log with NestJS Logger in all backend services |
+
+### Files Updated (Dec 24)
+| File | Changes |
+|------|---------|
+| `Blik.service.ts` | Proper txHash flow from mobile |
+| `blik.controller.ts` | TX_HASH_REQUIRED error handling |
+| `blik.dto.ts` | Added txHash parameter |
+| `blikService.ts` (mobile) | Sends txHash to backend |
+| `push-notification.service.ts` | Logger instead of console |
+| `SocketRouter.service.ts` | Logger instead of console |
+| `crosschain.module.ts` | Logger instead of console |
+| `payments.module.ts` | Logger instead of console |
+| `scheduled-payment.worker.ts` | Logger instead of console |
+
+### Previous Changes (Dec 20)
+| File | Changes |
+|------|---------|
+| `CrosschainQuoteScreen.tsx` | Wallet signing + biometric auth |
+| `CrosschainStatusScreen.tsx` | Transaction status monitoring |
+| `PayBlikCodeScreen.tsx` | Cross-chain routing |
+| `networkModeService.ts` | Event listeners + cache clearing |
+
+---
+
+## ✅ Settings Verification (Production Ready)
+
+All user settings are properly persisted:
+
+| Service | Storage | Status |
+|---------|---------|--------|
+| Privacy Settings | AsyncStorage | ✅ |
+| Notification Settings | AsyncStorage | ✅ |
+| Language Settings | AsyncStorage | ✅ |
+| PIN | SecureStore (encrypted) | ✅ |
+| Biometric | AsyncStorage | ✅ |
+| Network Mode | AsyncStorage | ✅ |
+
+---
+
 **Document Maintainer:** Dev Team  
-**Review Cadence:** Weekly
+**Review Cadence:** Weekly  
+**Last Major Update:** December 24, 2025
 

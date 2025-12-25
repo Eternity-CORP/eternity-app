@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { PaymentsController } from './payments.controller';
@@ -7,6 +7,8 @@ import { Payment } from '../../../database/entities/payment.entity';
 import { User } from '../../../database/entities/user.entity';
 import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
+
+const logger = new Logger('PaymentsModule');
 
 @Module({
   imports: [
@@ -40,10 +42,10 @@ import { ConfigService } from '@nestjs/config';
             disconnect: async () => {},
             quit: async () => {},
           };
-          console.log('🔧 [Redis] Using in-memory mock (Redis not configured)');
+          logger.log('Using in-memory mock (Redis not configured)');
           return mockRedis;
         }
-        console.log('🔧 [Redis] Connecting to Redis at', redisUrl);
+        logger.log(`Connecting to Redis at ${redisUrl}`);
         return new Redis(redisUrl);
       },
       inject: [ConfigService]

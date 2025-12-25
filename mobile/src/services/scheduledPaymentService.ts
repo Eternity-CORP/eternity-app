@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { ScheduledPayment } from '../types/scheduledPayment.types';
 import { sendETH } from './blockchain/transactionService';
-import { defaultNetwork } from '../constants/rpcUrls';
+import { getSelectedNetwork } from './networkService';
 
 const SCHEDULED_PAYMENTS_KEY = '@scheduled_payments';
 
@@ -143,11 +143,16 @@ export async function executeScheduledPayment(paymentId: string): Promise<void> 
     payment.status = 'pending'; // Keep pending during execution
 
     try {
+      // Use saved network from payment, fallback to current network for backward compatibility
+      const network = payment.network || await getSelectedNetwork();
+      
+      console.log(`💸 [ScheduledPayment] Executing payment ${payment.id} on ${network}`);
+      
       // Send the transaction
       const { txHash } = await sendETH(
         payment.recipientAddress,
         payment.amount,
-        defaultNetwork
+        network
       );
 
       // Update payment as completed

@@ -79,7 +79,8 @@ export interface CompareQuotesResponse {
  */
 export const getAvailableRouters = async (): Promise<{ routers: string[] }> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/crosschain/routers`);
+    // API_BASE_URL already includes base URL, global prefix 'api' is added by backend
+    const response = await axios.get(`${API_BASE_URL}/crosschain/routers`);
     return response.data;
   } catch (error) {
     console.error('[Crosschain] Failed to get routers:', error);
@@ -94,7 +95,8 @@ export const getCrosschainQuote = async (
   params: CrosschainQuoteParams
 ): Promise<CrosschainQuote> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/crosschain/quote`, {
+    // API_BASE_URL already includes base URL, global prefix 'api' is added by backend
+    const response = await axios.get(`${API_BASE_URL}/crosschain/quote`, {
       params: {
         fromChainId: params.fromChainId,
         toChainId: params.toChainId,
@@ -125,7 +127,8 @@ export const compareQuotes = async (
   params: CrosschainQuoteParams
 ): Promise<CompareQuotesResponse> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/api/crosschain/quotes/compare`, {
+    // API_BASE_URL already includes base URL, global prefix 'api' is added by backend
+    const response = await axios.get(`${API_BASE_URL}/crosschain/quotes/compare`, {
       params: {
         fromChainId: params.fromChainId,
         toChainId: params.toChainId,
@@ -153,7 +156,8 @@ export const prepareCrosschainTransaction = async (
   toAddress: string
 ) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/api/crosschain/prepare`, {
+    // API_BASE_URL already includes base URL, global prefix 'api' is added by backend
+    const response = await axios.post(`${API_BASE_URL}/crosschain/prepare`, {
       router,
       routeId,
       fromAddress,
@@ -174,8 +178,9 @@ export const getCrosschainTransactionStatus = async (
   txHash: string
 ) => {
   try {
+    // API_BASE_URL already includes base URL, global prefix 'api' is added by backend
     const response = await axios.get(
-      `${API_BASE_URL}/api/crosschain/status/${txHash}?router=${router}`
+      `${API_BASE_URL}/crosschain/status/${txHash}?router=${router}`
     );
     return response.data;
   } catch (error) {

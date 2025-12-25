@@ -133,13 +133,23 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   blurContainer: {
-    borderRadius: 24,
+    borderRadius: 28, // More rounded like TON Wallet
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 0, // No border for cleaner look
+    // Soft shadow
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
   },
   solidContainer: {
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: 28, // More rounded
+    borderWidth: 0,
+    // Soft shadow
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
   },
   tabRow: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
@@ -7,6 +7,7 @@ import { User } from '../../database/entities/user.entity';
 
 @Injectable()
 export class PushNotificationService {
+  private readonly logger = new Logger(PushNotificationService.name);
   private expo: Expo;
 
   constructor(
@@ -26,7 +27,7 @@ export class PushNotificationService {
     data?: Record<string, any>,
   ): Promise<ExpoPushTicket[]> {
     if (!Expo.isExpoPushToken(expoPushToken)) {
-      console.error(`Push token ${expoPushToken} is not a valid Expo push token`);
+      this.logger.warn(`Push token ${expoPushToken} is not a valid Expo push token`);
       return [];
     }
 
@@ -52,7 +53,7 @@ export class PushNotificationService {
 
       return tickets;
     } catch (error) {
-      console.error('Error sending push notification:', error);
+      this.logger.error('Error sending push notification:', error);
       return [];
     }
   }
@@ -74,7 +75,7 @@ export class PushNotificationService {
     });
 
     if (pushTokens.length === 0) {
-      console.log(`No active push tokens for user ${user.id}`);
+      this.logger.debug(`No active push tokens for user ${user.id}`);
       return;
     }
 
@@ -107,7 +108,7 @@ export class PushNotificationService {
     });
 
     if (pushTokens.length === 0) {
-      console.log(`No active push tokens for wallet ${walletAddress}`);
+      this.logger.debug(`No active push tokens for wallet ${walletAddress}`);
       return;
     }
 
