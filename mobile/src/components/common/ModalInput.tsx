@@ -205,25 +205,25 @@ export default function ModalInput({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Lighter overlay for TON Wallet style
     justifyContent: 'flex-end',
   },
   keyboardAvoidingView: {
     width: '100%',
   },
   modalContent: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28, // More rounded
+    borderTopRightRadius: 28,
     padding: 24,
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    shadowColor: '#000',
+    // Softer shadow
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
     shadowOffset: {
       width: 0,
-      height: -2,
+      height: -4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    elevation: 8,
   },
   header: {
     flexDirection: 'row',
@@ -245,9 +245,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16, // More rounded like TON Wallet
     borderWidth: 1,
     minHeight: 52,
+    // Soft shadow
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   inputMultiline: {
     minHeight: 100,
@@ -283,7 +288,7 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 20, // More rounded
     alignItems: 'center',
     justifyContent: 'center',
   },

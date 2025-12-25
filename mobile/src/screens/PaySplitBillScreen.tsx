@@ -15,7 +15,8 @@ import { useWallet } from '../context/WalletContext';
 import Card from '../components/common/Card';
 import Button from '../components/common/Button';
 import { sendETH, estimateGas } from '../services/blockchain/transactionService';
-import { defaultNetwork } from '../constants/rpcUrls';
+import { getSelectedNetwork } from '../services/networkService';
+import type { Network } from '../config/env';
 import {
   savePendingPayment,
   createPendingPaymentFromLink,
@@ -41,15 +42,20 @@ export default function PaySplitBillScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingPaymentId, setPendingPaymentId] = useState<string>('');
+  const [currentNetwork, setCurrentNetwork] = useState<Network>('sepolia');
+
+  useEffect(() => {
+    getSelectedNetwork().then(setCurrentNetwork);
+  }, []);
 
   useEffect(() => {
     loadGasEstimate();
-  }, [to, amount]);
+  }, [to, amount, currentNetwork]);
 
   const loadGasEstimate = async () => {
     try {
       if (!to || !amount) return;
-      const gasLimit = await estimateGas(to, amount, defaultNetwork);
+      const gasLimit = await estimateGas(to, amount, currentNetwork);
       setEstimatedGas(gasLimit.toString());
     } catch (error) {
       console.error('Error estimating gas:', error);
@@ -78,7 +84,7 @@ export default function PaySplitBillScreen({ navigation, route }: Props) {
             try {
               setLoading(true);
 
-              const txHash = await sendETH(to, amount, defaultNetwork);
+              const txHash = await sendETH(to, amount, currentNetwork);
               console.log('Transaction sent:', txHash);
 
               // Mark as paid if it was saved as pending

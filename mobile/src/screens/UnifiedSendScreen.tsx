@@ -65,8 +65,8 @@ export default function UnifiedSendScreen({ navigation }: Props) {
         <View style={{ width: 24 }} />
       </View>
 
-      {/* Tab Switcher */}
-      <View style={[styles.tabContainer, { backgroundColor: theme.colors.surface }]}>
+      {/* Tab Switcher - Telegram/TON Wallet style */}
+      <View style={[styles.tabContainer, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.md }]}>
         {tabs.map((tab) => {
           const isActive = activeMode === tab.key;
           return (
@@ -76,7 +76,7 @@ export default function UnifiedSendScreen({ navigation }: Props) {
                 styles.tab,
                 {
                   backgroundColor: isActive ? theme.colors.primary : 'transparent',
-                  borderRadius: 12,
+                  borderRadius: theme.radius.md,
                 },
               ]}
               onPress={() => setActiveMode(tab.key)}
@@ -84,7 +84,7 @@ export default function UnifiedSendScreen({ navigation }: Props) {
             >
               <Ionicons
                 name={tab.icon as any}
-                size={20}
+                size={18}
                 color={isActive ? '#FFFFFF' : theme.colors.textSecondary}
               />
               <Text
@@ -140,9 +140,8 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20,
     padding: 4,
-    borderRadius: 14,
     gap: 4,
   },
   tab: {
@@ -151,7 +150,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 8,
   },
   tabLabel: {

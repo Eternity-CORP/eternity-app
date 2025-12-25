@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Share, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import QRCode from 'react-native-qrcode-svg';
@@ -13,8 +13,10 @@ import { getAddress } from '../../services/walletService';
 import { getSelectedNetwork } from '../../services/networkService';
 import NetworkSwitcher from '../network/NetworkSwitcher';
 import type { Network } from '../../config/env';
-import { SUPPORTED_CHAINS } from '../../constants/chains';
+import { SUPPORTED_CHAINS, getChainInfo } from '../../constants/chains';
 import Card from '../../components/common/Card';
+import { useNetwork } from '../../hooks/useNetwork';
+import { useWalletPreferences } from '../../hooks/useWalletPreferences';
 
 interface Props {
   navigation: any;
@@ -22,15 +24,26 @@ interface Props {
 
 export default function ReceiveByWalletMode({ navigation }: Props) {
   const { theme } = useTheme();
-  const [currentNetwork, setCurrentNetwork] = useState<Network>('sepolia');
+  const { network: currentNetwork, mode: currentMode } = useNetwork();
+  const { activeWallets, primaryChainId, loading: prefsLoading } = useWalletPreferences();
   const [walletAddress, setWalletAddress] = useState('');
   const [checksummedAddress, setChecksummedAddress] = useState('');
   const [qrValue, setQrValue] = useState('');
   const [showNetworkSwitcher, setShowNetworkSwitcher] = useState(false);
+  const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
+
+  // Set default selected chain to primary chain
+  useEffect(() => {
+    if (primaryChainId && !selectedChainId) {
+      setSelectedChainId(primaryChainId);
+    } else if (!primaryChainId && activeWallets.length > 0 && !selectedChainId) {
+      setSelectedChainId(activeWallets[0].chainId);
+    }
+  }, [primaryChainId, activeWallets]);
 
   useEffect(() => {
     loadAddressAndNetwork();
-  }, []);
+  }, [currentNetwork, selectedChainId]);
 
   const loadAddressAndNetwork = async () => {
     try {
@@ -41,20 +54,26 @@ export default function ReceiveByWalletMode({ navigation }: Props) {
       setWalletAddress(checksummed);
       setChecksummedAddress(checksummed);
 
-      const network = await getSelectedNetwork();
-      setCurrentNetwork(network);
-
-      const chain = SUPPORTED_CHAINS.find(
-        (c) =>
-          (c.testnet && c.chainId === 11155111 && network === 'sepolia') ||
-          (c.testnet && c.chainId === 17000 && network === 'holesky') ||
-          (!c.testnet && c.chainId === 1 && network === 'mainnet')
-      );
-
-      const chainId = chain?.chainId || 11155111;
-
-      const uri = `ethereum:${checksummed}?chainId=${chainId}`;
-      setQrValue(uri);
+      // Use selected chain ID or find from activeWallets
+      if (selectedChainId) {
+        const selectedWallet = activeWallets.find((w) => w.chainId === selectedChainId);
+        if (selectedWallet) {
+          const uri = `ethereum:${selectedWallet.address}`;
+          setQrValue(uri);
+        }
+      } else {
+        // Fallback to old logic if no chain selected yet
+        const network = await getSelectedNetwork();
+        const chain = SUPPORTED_CHAINS.find(
+          (c) =>
+            (c.testnet && c.chainId === 11155111 && network === 'sepolia') ||
+            (c.testnet && c.chainId === 17000 && network === 'holesky') ||
+            (!c.testnet && c.chainId === 1 && network === 'mainnet')
+        );
+        const chainId = chain?.chainId || 11155111;
+        const uri = `ethereum:${checksummed}?chainId=${chainId}`;
+        setQrValue(uri);
+      }
     } catch (error) {
       console.error('Failed to load address:', error);
     }
@@ -62,7 +81,8 @@ export default function ReceiveByWalletMode({ navigation }: Props) {
 
   const handleCopyAddress = async () => {
     try {
-      await Clipboard.setStringAsync(checksummedAddress);
+      const address = getSelectedWalletAddress();
+      await Clipboard.setStringAsync(address);
     } catch (e) {
       console.warn('Copy failed', e);
     }
@@ -70,16 +90,11 @@ export default function ReceiveByWalletMode({ navigation }: Props) {
 
   const handleShare = async () => {
     try {
-      const networkName =
-        SUPPORTED_CHAINS.find(
-          (c) =>
-            (c.testnet && c.chainId === 11155111 && currentNetwork === 'sepolia') ||
-            (c.testnet && c.chainId === 17000 && currentNetwork === 'holesky') ||
-            (!c.testnet && c.chainId === 1 && currentNetwork === 'mainnet')
-        )?.name || 'Ethereum';
+      const address = getSelectedWalletAddress();
+      const networkName = getNetworkDisplayName();
 
       await Share.share({
-        message: `My ${networkName} address: ${checksummedAddress}`,
+        message: `My ${networkName} address: ${address}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -92,24 +107,92 @@ export default function ReceiveByWalletMode({ navigation }: Props) {
   };
 
   const getNetworkDisplayName = () => {
-    const chain = SUPPORTED_CHAINS.find(
-      (c) =>
-        (c.testnet && c.chainId === 11155111 && currentNetwork === 'sepolia') ||
-        (c.testnet && c.chainId === 17000 && currentNetwork === 'holesky') ||
-        (!c.testnet && c.chainId === 1 && currentNetwork === 'mainnet')
-    );
-    return chain?.name || 'Unknown Network';
+    if (!selectedChainId) return 'Select Network';
+    const chainInfo = getChainInfo(selectedChainId);
+    return chainInfo ? chainInfo.name : selectedChainId.charAt(0).toUpperCase() + selectedChainId.slice(1);
+  };
+
+  const getSelectedWalletAddress = () => {
+    if (!selectedChainId) return checksummedAddress;
+    const wallet = activeWallets.find((w) => w.chainId === selectedChainId);
+    return wallet ? wallet.address : checksummedAddress;
   };
 
   return (
     <View style={styles.container}>
       <Card style={styles.card}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Select Network</Text>
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Receiving Network</Text>
         <TouchableOpacity style={[styles.networkButton, { backgroundColor: theme.colors.surface }]} onPress={() => setShowNetworkSwitcher(true)}>
-          <Text style={[styles.networkText, { color: theme.colors.text }]}>{getNetworkDisplayName()}</Text>
+          <View style={styles.networkButtonContent}>
+            <View style={[styles.networkIndicator, { backgroundColor: currentNetwork === 'mainnet' ? '#4CAF50' : '#FF9800' }]} />
+            <Text style={[styles.networkText, { color: theme.colors.text }]}>{getNetworkDisplayName()}</Text>
+            {currentNetwork === 'mainnet' && (
+              <View style={[styles.liveBadge, { backgroundColor: '#4CAF50' + '20' }]}>
+                <Text style={[styles.liveBadgeText, { color: '#4CAF50' }]}>LIVE</Text>
+              </View>
+            )}
+          </View>
           <Ionicons name="chevron-down" size={20} color={theme.colors.textSecondary} />
         </TouchableOpacity>
+        <View style={[styles.warningBox, { backgroundColor: theme.colors.warning + '15', marginTop: 12 }]}>
+          <Ionicons name="information-circle" size={16} color={theme.colors.warning} />
+          <Text style={[styles.warningText, { color: theme.colors.warning }]}>
+            Make sure the sender uses the same network. Tokens sent to a different network won't appear here.
+          </Text>
+        </View>
       </Card>
+
+      {/* Active Networks Horizontal Scroll */}
+      {activeWallets.length > 0 && (
+        <View style={styles.networksContainer}>
+          <Text style={[styles.networksTitle, { color: theme.colors.text }]}>
+            Активные сети / Active Networks
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.networksScroll}
+          >
+            {activeWallets.map((wallet) => {
+              const chainInfo = getChainInfo(wallet.chainId);
+              const isSelected = wallet.chainId === selectedChainId;
+              const isPrimary = wallet.chainId === primaryChainId;
+
+              return (
+                <TouchableOpacity
+                  key={wallet.id}
+                  style={[
+                    styles.chainChip,
+                    {
+                      backgroundColor: isSelected ? theme.colors.primary : theme.colors.surface,
+                      borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                    },
+                  ]}
+                  onPress={() => setSelectedChainId(wallet.chainId)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.chainIcon}>{chainInfo?.icon || '🔗'}</Text>
+                  <Text
+                    style={[
+                      styles.chainName,
+                      { color: isSelected ? '#FFFFFF' : theme.colors.text },
+                    ]}
+                  >
+                    {chainInfo?.name || wallet.chainId}
+                  </Text>
+                  {isPrimary && (
+                    <Ionicons
+                      name="star"
+                      size={14}
+                      color={isSelected ? '#FFD700' : theme.colors.warning}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
 
       <View style={styles.qrContainer}>
         {qrValue ? (
@@ -128,7 +211,7 @@ export default function ReceiveByWalletMode({ navigation }: Props) {
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Your Address (EIP-55)</Text>
         <View style={[styles.addressBox, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.addressText, { color: theme.colors.text }]} numberOfLines={1}>
-            {checksummedAddress}
+            {getSelectedWalletAddress()}
           </Text>
         </View>
       </Card>
@@ -191,8 +274,71 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  networkButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  networkIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   networkText: {
     fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  liveBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  liveBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  warningBox: {
+    flexDirection: 'row',
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  networksContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  networksTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  networksScroll: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  chainChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chainIcon: {
+    fontSize: 16,
+  },
+  chainName: {
+    fontSize: 14,
     fontWeight: '600',
   },
   qrContainer: {

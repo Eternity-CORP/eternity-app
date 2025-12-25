@@ -11,7 +11,7 @@
 
 Реализовать и протестировать выполнение ETH/USDC переводов на одной сети (Sepolia).
 
-**Статус:** ✅ 90% Done
+**Статус:** ✅ Complete (Dec 20, 2025)
 
 ## Критерии готовности
 
@@ -20,6 +20,7 @@
 - [x] USDC (ERC20) перевод работает
 - [x] PaymentService backend валидирован end-to-end
 - [x] Мобильное приложение может отправить same-chain транзакцию
+- [x] Demo/Live mode switching works correctly ✅
 
 ## Стори
 

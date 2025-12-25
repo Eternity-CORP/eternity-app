@@ -135,42 +135,53 @@ export default function ScheduledPaymentsList() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons name="time" size={20} color={theme.colors.accent} />
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          Отложенные платежи ({payments.length})
-        </Text>
-      </View>
+      <Card blur style={styles.cardContainer}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Scheduled Payments
+          </Text>
+          <Text style={[styles.count, { color: theme.colors.textSecondary }]}>
+            {payments.length}
+          </Text>
+        </View>
 
-      <FlatList
-        data={payments}
-        renderItem={renderPayment}
-        keyExtractor={(item) => item.id}
-        scrollEnabled={false}
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-      />
+        <FlatList
+          data={payments}
+          renderItem={renderPayment}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        />
+      </Card>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16,
+    marginBottom: 16,
+    marginHorizontal: 16,
+  },
+  cardContainer: {
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  count: {
+    fontSize: 14,
     fontWeight: '600',
   },
   paymentCard: {
-    marginHorizontal: 16,
-    padding: 12,
+    padding: 16,
+    marginBottom: 8,
   },
   paymentHeader: {
     flexDirection: 'row',
@@ -185,10 +196,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(100, 100, 255, 0.1)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -334,13 +334,15 @@ export class ShardService {
     const todayStart = this.getTodayStart();
     const repo = manager.getRepository(ShardTransaction);
 
-    const count = await repo
+    // PostgreSQL preserves camelCase for JSONB columns, but TypeORM QueryBuilder may need quoted column name
+    // Use raw SQL with proper column name quoting for JSONB access
+    const result = await repo
       .createQueryBuilder('tx')
-      .where("tx.metaJson->>'deviceId' = :deviceId", { deviceId })
+      .where("tx.\"metaJson\"->>'deviceId' = :deviceId", { deviceId })
       .andWhere('tx.createdAt >= :todayStart', { todayStart })
       .getCount();
 
-    return count;
+    return result;
   }
 
   private async hasDeviceReceivedDailyRewardToday(
@@ -351,9 +353,11 @@ export class ShardService {
     const todayStart = this.getTodayStart();
     const repo = manager.getRepository(ShardTransaction);
 
+    // PostgreSQL preserves camelCase for JSONB columns, but TypeORM QueryBuilder may need quoted column name
+    // Use raw SQL with proper column name quoting for JSONB access
     const count = await repo
       .createQueryBuilder('tx')
-      .where("tx.metaJson->>'deviceId' = :deviceId", { deviceId })
+      .where("tx.\"metaJson\"->>'deviceId' = :deviceId", { deviceId })
       .andWhere('tx.reason = :reason', { reason })
       .andWhere('tx.createdAt >= :todayStart', { todayStart })
       .getCount();

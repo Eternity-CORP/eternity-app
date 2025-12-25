@@ -85,7 +85,7 @@ export default function SettingsScreen({ navigation }: Props) {
         showsVerticalScrollIndicator={false}
       >
         {/* Appearance Settings */}
-        <Card>
+        <Card blur>
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <View style={[styles.iconContainer, { backgroundColor: `${theme.colors.primary}20` }]}>
@@ -106,7 +106,7 @@ export default function SettingsScreen({ navigation }: Props) {
         </Card>
 
         {/* Security Settings */}
-        <Card style={styles.cardSpacing}>
+        <Card blur style={styles.cardSpacing}>
           <TouchableOpacity
             onPress={() => navigation.navigate('SecuritySettings')}
             style={styles.settingRow}
@@ -126,7 +126,7 @@ export default function SettingsScreen({ navigation }: Props) {
         </Card>
 
         {/* Privacy Center */}
-        <Card style={styles.cardSpacing}>
+        <Card blur style={styles.cardSpacing}>
           <TouchableOpacity
             onPress={() => navigation.navigate('PrivacyCenter')}
             style={styles.settingRow}
@@ -146,7 +146,7 @@ export default function SettingsScreen({ navigation }: Props) {
         </Card>
 
         {/* Notification Settings */}
-        <Card style={styles.cardSpacing}>
+        <Card blur style={styles.cardSpacing}>
           <TouchableOpacity
             onPress={() => navigation.navigate('NotificationSettings')}
             style={styles.settingRow}
@@ -166,7 +166,7 @@ export default function SettingsScreen({ navigation }: Props) {
         </Card>
 
         {/* Language Settings */}
-        <Card style={styles.cardSpacing}>
+        <Card blur style={styles.cardSpacing}>
           <TouchableOpacity
             onPress={() => navigation.navigate('LanguageSettings')}
             style={styles.settingRow}
@@ -185,8 +185,63 @@ export default function SettingsScreen({ navigation }: Props) {
           </TouchableOpacity>
         </Card>
 
+        {/* Wallet Settings Section Header */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionHeaderText, { color: theme.colors.muted }]}>
+            НАСТРОЙКИ КОШЕЛЬКА / WALLET SETTINGS
+          </Text>
+        </View>
+
+        {/* Manage Networks */}
+        <Card blur style={styles.cardSpacing}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ManageNetworks')}
+            style={styles.settingRow}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: `${theme.colors.primary}20` }]}>
+                <Ionicons name="layers" size={20} color={theme.colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                  Управление сетями / Manage Networks
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: theme.colors.muted }]}>
+                  Включить/отключить сети
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.muted} />
+          </TouchableOpacity>
+        </Card>
+
+        {/* Token Chain Preferences */}
+        <Card blur style={styles.cardSpacing}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ManageTokenPreferences')}
+            style={styles.settingRow}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View style={[styles.iconContainer, { backgroundColor: `${theme.colors.secondary}20` }]}>
+                <Ionicons name="swap-horizontal" size={20} color={theme.colors.secondary} />
+              </View>
+              <View>
+                <Text style={[styles.settingTitle, { color: theme.colors.text }]}>
+                  Предпочтения токенов / Token Preferences
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: theme.colors.muted }]}>
+                  Выбрать сети для токенов
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.muted} />
+          </TouchableOpacity>
+        </Card>
+
         {/* Wallet Mode */}
-        <Card style={styles.cardSpacing}>
+        <Card blur style={styles.cardSpacing}>
           <TouchableOpacity
             onPress={() => setShowModeSwitcher(true)}
             style={styles.settingRow}
@@ -212,7 +267,7 @@ export default function SettingsScreen({ navigation }: Props) {
         </Card>
 
         {/* Network Settings */}
-        <Card style={styles.cardSpacing}>
+        <Card blur style={styles.cardSpacing}>
           <TouchableOpacity
             onPress={() => setShowNetworkSwitcher(true)}
             style={styles.settingRow}
@@ -300,6 +355,16 @@ const styles = StyleSheet.create({
   },
   cardSpacing: {
     marginTop: 12,
+  },
+  sectionHeader: {
+    marginTop: 24,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  sectionHeaderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   settingRow: {
     flexDirection: 'row',

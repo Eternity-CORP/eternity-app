@@ -255,25 +255,88 @@ export default function PayBlikCodeScreen({ navigation }: Props) {
     }
   };
 
+  /**
+   * Get recipient's address for a specific chain
+   */
+  const getRecipientAddress = (): string | null => {
+    if (!requestInfo) return null;
+    
+    // First, try to get address for the preferred chain
+    const preferredWallet = requestInfo.toUser.wallets?.find(
+      w => w.chainId === requestInfo.preferredChainId
+    );
+    if (preferredWallet) return preferredWallet.address;
+    
+    // Fallback to primary wallet
+    const primaryWallet = requestInfo.toUser.wallets?.find(w => w.isPrimary);
+    if (primaryWallet) return primaryWallet.address;
+    
+    // Fallback to any wallet
+    const anyWallet = requestInfo.toUser.wallets?.[0];
+    return anyWallet?.address || null;
+  };
+
+  /**
+   * Navigate to cross-chain quote screen for cross-chain payments
+   */
+  const handleCrosschainPayment = () => {
+    if (!requestInfo || !activeAccount?.address) return;
+    
+    const recipientAddress = getRecipientAddress();
+    if (!recipientAddress) {
+      Alert.alert('Error', 'Recipient has no wallet address configured');
+      return;
+    }
+
+    const targetChain = requestInfo.preferredChainId || selectedChain;
+
+    // Navigate to CrosschainQuoteScreen with all required params
+    navigation.navigate('CrosschainQuote', {
+      params: {
+        fromChainId: selectedChain,
+        toChainId: targetChain,
+        fromToken: requestInfo.tokenSymbol,
+        toToken: requestInfo.tokenSymbol,
+        amount: requestInfo.amount,
+        fromAddress: activeAccount.address,
+        toAddress: recipientAddress,
+      }
+    });
+  };
+
   const handleExecute = async () => {
     if (!requestInfo || !quote || !activeAccount?.address) return;
 
     // Check if same-chain or crosschain
-    const isSameChain = selectedChain === requestInfo.preferredChainId;
+    const isSameChain = !requestInfo.preferredChainId || selectedChain === requestInfo.preferredChainId;
 
+    if (!isSameChain) {
+      // Cross-chain payment: navigate to CrosschainQuoteScreen
+      Alert.alert(
+        'Cross-Chain Payment',
+        `This payment requires a cross-chain transfer from ${selectedChain} to ${requestInfo.preferredChainId}.\n\nYou'll be taken to the cross-chain quote screen to compare routes.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Continue', onPress: handleCrosschainPayment },
+        ]
+      );
+      return;
+    }
+
+    // Same-chain payment
     Alert.alert(
       'Confirm Payment',
-      `Send ${requestInfo.amount} ${requestInfo.tokenSymbol} to @${requestInfo.toUser.nickname}?\n\nNetwork: ${selectedChain}${!isSameChain ? ' → ' + requestInfo.preferredChainId : ''}`,
+      `Send ${requestInfo.amount} ${requestInfo.tokenSymbol} to @${requestInfo.toUser.nickname}?\n\nNetwork: ${selectedChain}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Confirm',
           onPress: async () => {
-            if (isSameChain && requestInfo.tokenSymbol === 'ETH') {
+            if (requestInfo.tokenSymbol === 'ETH') {
               // Same-chain ETH - send real transaction
               await handleSendRealTransaction();
             } else {
-              // Crosschain or ERC-20 - use backend (mock for now)
+              // Same-chain ERC-20 - use backend for now
               await handleExecuteViaBackend();
             }
           },
@@ -432,13 +495,21 @@ export default function PayBlikCodeScreen({ navigation }: Props) {
             </View>
           </Card>
 
-          {/* Crosschain Warning */}
+          {/* Crosschain Info */}
           {isCrosschain && (
-            <View style={[styles.warningBox, { backgroundColor: theme.colors.warning + '20' }]}>
-              <Ionicons name="warning" size={20} color={theme.colors.warning} />
-              <Text style={[styles.warningText, { color: theme.colors.warning }]}>
-                Cross-chain required: {selectedChain} → {requestInfo.preferredChainId}
-              </Text>
+            <View style={[styles.crosschainBox, { backgroundColor: theme.colors.accent + '15' }]}>
+              <Ionicons name="git-branch" size={20} color={theme.colors.accent} />
+              <View style={styles.crosschainContent}>
+                <Text style={[styles.crosschainTitle, { color: theme.colors.accent }]}>
+                  Cross-Chain Transfer
+                </Text>
+                <Text style={[styles.crosschainText, { color: theme.colors.textSecondary }]}>
+                  {selectedChain} → {requestInfo.preferredChainId}
+                </Text>
+                <Text style={[styles.crosschainHint, { color: theme.colors.textSecondary }]}>
+                  You'll be able to compare routes and fees
+                </Text>
+              </View>
             </View>
           )}
 
@@ -675,19 +746,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  warningBox: {
+  crosschainBox: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     padding: 16,
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 16,
   },
-  warningText: {
+  crosschainContent: {
     flex: 1,
+  },
+  crosschainTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  crosschainText: {
     fontSize: 14,
     fontWeight: '600',
+    marginBottom: 4,
+  },
+  crosschainHint: {
+    fontSize: 12,
   },
   buttonContainer: {
     paddingHorizontal: 16,

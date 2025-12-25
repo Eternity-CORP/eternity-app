@@ -45,13 +45,19 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 8,
     fontSize: 14,
+    fontWeight: '500',
   },
   input: {
-    borderRadius: 12,
+    borderRadius: 16, // More rounded like TON Wallet
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
+    // Soft shadow for depth
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
   },
   error: {
     marginTop: 6,

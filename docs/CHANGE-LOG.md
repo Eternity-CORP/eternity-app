@@ -6,6 +6,27 @@
 
 ## Записи изменений
 
+### [2025-12-24] TokenRegistry и исправление BLIK архитектуры
+**Тип:** Feature + Refactor  
+**Автор:** Dev  
+**Затронуто:**
+- Создан `backend/src/services/TokenRegistry.service.ts` — централизованный реестр токенов
+- Изменён `backend/src/services/Blik.service.ts` — исправлена архитектура (backend не отправляет транзакции)
+- Изменён `backend/src/controllers/blik.controller.ts` — добавлена обработка TX_HASH_REQUIRED
+- Изменён `backend/src/modules/blik/blik.module.ts` — добавлен TokenRegistryService
+- Изменён `backend/src/dto/blik.dto.ts` — добавлен txHash в ExecuteBlikRequestDto
+- Изменён `backend/src/types/blik.types.ts` — добавлен txHash в ExecutePaymentRequestParams
+- Изменён `mobile/src/services/api/blikService.ts` — передача txHash в backend
+
+**Причина:** 
+1. Централизация адресов токенов вместо hardcoded маппинга
+2. Исправление архитектуры: backend не имеет приватных ключей и не может отправлять транзакции. Mobile отправляет транзакции и передаёт txHash в backend для записи.
+
+**Проверка настроек:**
+- Все настройки (privacy, notifications, language, pin, biometric, networkMode) корректно сохраняются в AsyncStorage/SecureStore ✅
+
+---
+
 ### [2025-12-18] Добавлен переключатель Demo/Live Mode
 **Тип:** Feature  
 **Автор:** Dev  

@@ -24,8 +24,13 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { getAllAccountsWithStatus, switchAccount, type AccountWithStatus } from '../services/accountManagerService';
+import { useTheme } from '../context/ThemeContext';
+import Avatar from './common/Avatar';
 
 interface AccountSelectorModalProps {
   visible: boolean;
@@ -44,6 +49,7 @@ export default function AccountSelectorModal({
   showCreateButton = false,
   onCreateAccount,
 }: AccountSelectorModalProps) {
+  const { theme, mode } = useTheme();
   const [accounts, setAccounts] = useState<AccountWithStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<number | null>(null);
@@ -98,6 +104,114 @@ export default function AccountSelectorModal({
     return `${address.substring(0, 6)}...${address.substring(38)}`;
   };
 
+  const modalContent = (
+    <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+      {/* Header */}
+      <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+        <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Select Account</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Account List */}
+      <ScrollView style={styles.accountList} showsVerticalScrollIndicator={false}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+              Loading accounts...
+            </Text>
+          </View>
+        ) : (
+          <>
+            {accounts.map((account) => (
+              <TouchableOpacity
+                key={account.index}
+                style={[
+                  styles.accountItem,
+                  {
+                    backgroundColor: account.isActive
+                      ? theme.colors.primary + '15'
+                      : theme.colors.card,
+                    borderColor: account.isActive ? theme.colors.primary : 'transparent',
+                    borderRadius: theme.radius.md,
+                  },
+                ]}
+                onPress={() => handleAccountSelect(account)}
+                disabled={switching !== null}
+                activeOpacity={0.7}
+              >
+                <View style={styles.accountLeft}>
+                  <Avatar address={account.address} size={48} />
+                  <View style={styles.accountInfo}>
+                    <View style={styles.accountNameRow}>
+                      <Text style={[styles.accountName, { color: theme.colors.text }]}>
+                        {account.name}
+                      </Text>
+                      {account.isActive && (
+                        <View style={[styles.activeBadge, { backgroundColor: theme.colors.primary }]}>
+                          <Text style={styles.activeBadgeText}>Active</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.accountAddress, { color: theme.colors.textSecondary }]}>
+                      {shortenAddress(account.address)}
+                    </Text>
+                    {account.hasPendingTransactions && (
+                      <View style={[styles.pendingBadge, { backgroundColor: theme.colors.warning + '20' }]}>
+                        <Ionicons name="time-outline" size={12} color={theme.colors.warning} />
+                        <Text style={[styles.pendingBadgeText, { color: theme.colors.warning }]}>
+                          Pending transactions
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {switching === account.index ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : account.isActive ? (
+                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
+                ) : null}
+              </TouchableOpacity>
+            ))}
+
+            {accounts.length === 0 && !loading && (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="wallet-outline" size={48} color={theme.colors.textSecondary} />
+                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+                  No accounts found
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+      </ScrollView>
+
+      {/* Create Account Button */}
+      {showCreateButton && onCreateAccount && (
+        <TouchableOpacity
+          style={[
+            styles.createButton,
+            {
+              backgroundColor: theme.colors.primary,
+              borderRadius: theme.radius.lg,
+            },
+          ]}
+          onPress={() => {
+            onCreateAccount();
+            onClose();
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.createButtonText}>Create New Account</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
   return (
     <Modal
       visible={visible}
@@ -105,89 +219,25 @@ export default function AccountSelectorModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Account</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Account List */}
-          <ScrollView style={styles.accountList}>
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#4A90E2" />
-                <Text style={styles.loadingText}>Loading accounts...</Text>
-              </View>
-            ) : (
-              <>
-                {accounts.map((account) => (
-                  <TouchableOpacity
-                    key={account.index}
-                    style={[
-                      styles.accountItem,
-                      account.isActive && styles.accountItemActive,
-                    ]}
-                    onPress={() => handleAccountSelect(account)}
-                    disabled={switching !== null}
-                  >
-                    <View style={styles.accountInfo}>
-                      <View style={styles.accountNameRow}>
-                        <Text style={styles.accountName}>{account.name}</Text>
-                        {account.isActive && (
-                          <View style={styles.activeBadge}>
-                            <Text style={styles.activeBadgeText}>Active</Text>
-                          </View>
-                        )}
-                      </View>
-                      <Text style={styles.accountAddress}>
-                        {shortenAddress(account.address)}
-                      </Text>
-                      {account.hasPendingTransactions && (
-                        <View style={styles.pendingBadge}>
-                          <Text style={styles.pendingBadgeText}>
-                            ⏱ Pending transactions
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {switching === account.index ? (
-                      <ActivityIndicator size="small" color="#4A90E2" />
-                    ) : (
-                      <Text style={styles.selectIcon}>
-                        {account.isActive ? '✓' : '→'}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-
-                {accounts.length === 0 && !loading && (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>No accounts found</Text>
-                  </View>
-                )}
-              </>
-            )}
-          </ScrollView>
-
-          {/* Create Account Button */}
-          {showCreateButton && onCreateAccount && (
-            <TouchableOpacity
-              style={styles.createButton}
-              onPress={() => {
-                onCreateAccount();
-                onClose();
-              }}
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={onClose}
+        style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]}
+      >
+        <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+          {Platform.OS === 'ios' ? (
+            <BlurView
+              intensity={80}
+              tint={mode === 'dark' ? 'dark' : 'light'}
+              style={styles.blurContainer}
             >
-              <Text style={styles.createButtonText}>+ Create New Account</Text>
-            </TouchableOpacity>
+              {modalContent}
+            </BlurView>
+          ) : (
+            modalContent
           )}
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 }
@@ -195,131 +245,135 @@ export default function AccountSelectorModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
+  blurContainer: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
   modalContent: {
-    backgroundColor: '#0B0E13',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 24,
+    paddingBottom: 32,
+    paddingHorizontal: 20,
     maxHeight: '80%',
+    // Soft shadow
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     paddingBottom: 16,
+    marginBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#222',
   },
   modalTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
   },
   closeButton: {
-    padding: 8,
-  },
-  closeButtonText: {
-    color: '#9aa0a6',
-    fontSize: 24,
+    padding: 4,
   },
   accountList: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
   },
   accountItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    marginTop: 12,
-    backgroundColor: '#1b1f27',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    // Soft shadow
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  accountItemActive: {
-    backgroundColor: '#10141C',
-    borderColor: '#4A90E2',
+  accountLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   accountInfo: {
+    marginLeft: 12,
     flex: 1,
   },
   accountNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   accountName: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     marginRight: 8,
   },
   accountAddress: {
-    color: '#9aa0a6',
-    fontSize: 14,
+    fontSize: 13,
+    fontFamily: 'monospace',
   },
   activeBadge: {
-    backgroundColor: '#4A90E2',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 8,
   },
   activeBadgeText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  pendingBadgeText: {
     fontSize: 12,
     fontWeight: '600',
   },
-  pendingBadge: {
-    marginTop: 6,
-    backgroundColor: '#FFA726',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  pendingBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  selectIcon: {
-    color: '#4A90E2',
-    fontSize: 20,
-    marginLeft: 12,
-  },
   loadingContainer: {
-    paddingVertical: 40,
+    paddingVertical: 60,
     alignItems: 'center',
   },
   loadingText: {
-    color: '#9aa0a6',
     fontSize: 14,
     marginTop: 12,
   },
   emptyContainer: {
-    paddingVertical: 40,
+    paddingVertical: 60,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#9aa0a6',
-    fontSize: 14,
+    marginTop: 16,
+    fontSize: 16,
   },
   createButton: {
-    marginHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginTop: 16,
     paddingVertical: 14,
-    backgroundColor: '#4A90E2',
-    borderRadius: 12,
-    alignItems: 'center',
+    // Soft shadow
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   createButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

@@ -1,6 +1,23 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/env';
 
+export interface UserWallet {
+  id: number;
+  chainId: string;
+  address: string;
+  isPrimary: boolean;
+  isActive: boolean;
+  label: string | null;
+  addedAt: string;
+}
+
+export interface TokenPreference {
+  id: number;
+  tokenSymbol: string;
+  preferredChainId: string;
+  updatedAt: string;
+}
+
 export interface ResolvedIdentity {
   userId: string;
   globalId: string;
@@ -88,6 +105,7 @@ export const updateWallet = async (
     address?: string;
     isPrimary?: boolean;
     label?: string;
+    isActive?: boolean;
   }
 ): Promise<void> => {
   await axios.put(
@@ -151,7 +169,7 @@ export const deleteTokenPreference = async (token: string, preferenceId: number)
 /**
  * Получение списка кошельков
  */
-export const getWallets = async (token: string) => {
+export const getWallets = async (token: string): Promise<UserWallet[]> => {
   const response = await axios.get(`${API_BASE_URL}/identity/wallets`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -159,9 +177,29 @@ export const getWallets = async (token: string) => {
 };
 
 /**
+ * Получение только активных кошельков
+ */
+export const getActiveWallets = async (token: string): Promise<UserWallet[]> => {
+  const response = await axios.get(`${API_BASE_URL}/identity/wallets/active`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+/**
+ * Получение primary chain ID
+ */
+export const getPrimaryChain = async (token: string): Promise<string | null> => {
+  const response = await axios.get(`${API_BASE_URL}/identity/primary-chain`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data.primaryChainId;
+};
+
+/**
  * Получение token preferences
  */
-export const getTokenPreferences = async (token: string) => {
+export const getTokenPreferences = async (token: string): Promise<TokenPreference[]> => {
   const response = await axios.get(`${API_BASE_URL}/identity/token-preferences`, {
     headers: { Authorization: `Bearer ${token}` },
   });

@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { rpcUrls, rpcFallbacks, defaultNetwork, type Network } from '../../constants/rpcUrls';
+import { rpcUrls, rpcFallbacks, defaultNetwork, type Network, addAnkrApiKey } from '../../constants/rpcUrls';
 import { networkLogger } from '../networkLogger';
 import { getSelectedNetwork } from '../networkService';
 
@@ -29,10 +29,12 @@ async function findWorkingRpcUrl(network: Network): Promise<string> {
     if (!url) continue;
 
     const startTime = Date.now();
+    // Add Ankr API key if this is an Ankr URL
+    const rpcUrl = addAnkrApiKey(url);
 
     try {
       // Create a simple provider
-      const provider = new ethers.providers.JsonRpcProvider(url, {
+      const provider = new ethers.providers.JsonRpcProvider(rpcUrl, {
         name: config.name,
         chainId: config.chainId,
       });
@@ -49,7 +51,7 @@ async function findWorkingRpcUrl(network: Network): Promise<string> {
       if (blockNumber > 0) {
         console.log(`✅ RPC ${url} works! Block: ${blockNumber} (${duration}ms)`);
         networkLogger.logRpcCall(url, true, duration, undefined, { blockNumber, network });
-        return url;
+        return rpcUrl;
       }
     } catch (error: any) {
       const duration = Date.now() - startTime;
@@ -78,10 +80,13 @@ export function getProvider(network?: Network): ethers.providers.JsonRpcProvider
   const urls = rpcFallbacks[targetNetwork];
   const url = urls.find(u => u) || urls[0];
   const config = networkConfig[targetNetwork];
+  
+  // Add Ankr API key if this is an Ankr URL
+  const rpcUrl = addAnkrApiKey(url);
 
   console.log(`🔌 Creating provider for ${targetNetwork} with ${url}`);
 
-  const provider = new ethers.providers.JsonRpcProvider(url, {
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl, {
     name: config.name,
     chainId: config.chainId,
   });
@@ -108,7 +113,7 @@ export async function getProviderWithFallback(network?: Network): Promise<ethers
   // Clear cache to force reconnection
   delete cachedProviders[targetNetwork];
 
-  // Find a working RPC URL
+  // Find a working RPC URL (already has API key appended if Ankr)
   const workingUrl = await findWorkingRpcUrl(targetNetwork);
   const config = networkConfig[targetNetwork];
 

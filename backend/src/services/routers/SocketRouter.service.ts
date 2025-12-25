@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ICrosschainRouter } from '../../interfaces/CrosschainRouter.interface';
 import {
   CrosschainQuoteParams,
@@ -27,6 +27,7 @@ import {
  */
 @Injectable()
 export class SocketRouterService implements ICrosschainRouter {
+  private readonly logger = new Logger(SocketRouterService.name);
   readonly name = 'Socket';
   readonly supportedChainTypes = ['EVM', 'SVM'];
 
@@ -69,7 +70,7 @@ export class SocketRouterService implements ICrosschainRouter {
     this.apiKey = process.env.SOCKET_API_KEY || '72a5b4b0-e727-48be-8aa1-5da9d62fe635';
 
     if (!process.env.SOCKET_API_KEY) {
-      console.log('⚠️  [Socket] Using public API key for testing. Set SOCKET_API_KEY in .env for production.');
+      this.logger.warn('Using public API key for testing. Set SOCKET_API_KEY in .env for production.');
     }
   }
 

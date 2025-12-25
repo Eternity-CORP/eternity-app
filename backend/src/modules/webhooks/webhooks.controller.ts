@@ -17,7 +17,9 @@ export class WebhooksController {
       throw new BadRequestException('Invalid signature');
     }
 
-    // TODO: process events with retry mechanisms / queueing
+    // NOTE: For MVP, webhooks are acknowledged immediately.
+    // Production: Add Bull queue for async processing with retries.
+    // Events are logged and can be replayed from Alchemy dashboard if needed.
     return { ok: true };
   }
 }

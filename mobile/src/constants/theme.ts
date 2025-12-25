@@ -84,49 +84,52 @@ const baseSpacing = {
   xl: 32,
 };
 
+// TON Wallet/Telegram style - more rounded corners
 const baseRadius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  sm: 12,
+  md: 16,
+  lg: 20,
+  xl: 28,
 };
 
+// TON Wallet/Telegram inspired color palette
 export const lightTheme: Theme = {
   colors: {
-    primary: '#AB9FF2',      // Phantom-style purple
-    secondary: '#22D3EE',    // Cyan accent
-    background: '#FFFFFF',   // Clean white for light mode
-    card: '#F5F5F7',         // Subtle gray cards
-    surface: '#EBEBF0',      // Surface elements
-    text: '#1C1C1E',         // Dark text
-    textSecondary: '#8E8E93',
-    muted: '#C7C7CC',
-    border: '#E5E5EA',
-    error: '#FF3B30',
-    success: '#34C759',
-    warning: '#FF9500',
-    accent: '#5856D6',
+    primary: '#3390EC',      // Telegram blue
+    secondary: '#6BCF7F',    // Telegram green accent
+    background: '#FFFFFF',   // Pure white
+    card: 'rgba(255, 255, 255, 0.8)',  // Semi-transparent white for glassmorphism
+    surface: 'rgba(247, 248, 250, 0.9)', // Light surface with transparency
+    text: '#000000',         // Pure black text
+    textSecondary: '#6D6D70',
+    muted: 'rgba(0, 0, 0, 0.3)',
+    border: 'rgba(0, 0, 0, 0.06)', // Very subtle borders
+    error: '#F44336',
+    success: '#4CAF50',
+    warning: '#FF9800',
+    accent: '#3390EC',
   },
   typography: baseTypography,
   spacing: baseSpacing,
   radius: baseRadius,
 };
 
+// Dark theme inspired by Telegram dark mode
 export const darkTheme: Theme = {
   colors: {
-    primary: '#AB9FF2',      // Phantom-style purple
-    secondary: '#22D3EE',    // Cyan accent
-    background: '#0D0D0D',   // Deep black like Trust Wallet
-    card: '#1A1A1A',         // Slightly lighter cards
-    surface: '#2C2C2E',      // Surface for tabs/buttons
+    primary: '#3390EC',      // Telegram blue
+    secondary: '#6BCF7F',    // Telegram green accent
+    background: '#0E1621',   // Telegram dark background
+    card: 'rgba(31, 45, 61, 0.7)',  // Semi-transparent dark cards (glassmorphism)
+    surface: 'rgba(22, 32, 45, 0.8)', // Dark surface with transparency
     text: '#FFFFFF',         // Pure white text
-    textSecondary: '#8E8E93',
-    muted: '#636366',
-    border: '#3A3A3C',
-    error: '#FF453A',
-    success: '#30D158',
-    warning: '#FFD60A',
-    accent: '#64D2FF',
+    textSecondary: 'rgba(255, 255, 255, 0.6)',
+    muted: 'rgba(255, 255, 255, 0.3)',
+    border: 'rgba(255, 255, 255, 0.08)', // Very subtle borders
+    error: '#F44336',
+    success: '#4CAF50',
+    warning: '#FF9800',
+    accent: '#3390EC',
   },
   typography: baseTypography,
   spacing: baseSpacing,

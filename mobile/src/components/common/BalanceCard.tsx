@@ -46,18 +46,25 @@ export default function BalanceCard({ amount, currency = 'USD', subtitle = 'Port
 
 const styles = StyleSheet.create({
   card: {
-    padding: 20,
+    padding: 24, // More spacious
+    // Soft shadow for depth
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
   },
   subtitle: {
     fontSize: 14,
     opacity: 0.9,
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: 0.3,
   },
   amount: {
-    fontSize: 32,
+    fontSize: 36, // Slightly larger
+    letterSpacing: -0.5, // Tighter letter spacing for large numbers
   },
   currency: {
-    fontSize: 16,
+    fontSize: 18,
     opacity: 0.9,
     marginBottom: 4,
   },

@@ -9,9 +9,10 @@ import SendTokenScreen from '../features/send/SendTokenScreen';
 import ReceiveScreen from '../screens/ReceiveScreen';
 import IncomingTransactionsScreen from '../screens/IncomingTransactionsScreen';
 import HistoryScreen from '../features/history/HistoryScreen';
+import TransactionHistoryScreen from '../screens/wallet/TransactionHistoryScreen';
 import ManageAccountsScreen from '../screens/wallet/ManageAccountsScreen';
 import TransactionDetailsScreen from '../screens/TransactionDetailsScreen';
-import { Transaction } from '../services/blockchain/transactionHistoryService';
+import { Transaction } from '../services/blockchain/etherscanService';
 import SettingsScreen from '../screens/SettingsScreen';
 import SecuritySettingsScreen from '../screens/SecuritySettingsScreen';
 import DevSettingsScreen from '../screens/DevSettingsScreen';
@@ -34,6 +35,7 @@ import CreateBlikCodeScreen from '../screens/CreateBlikCodeScreen';
 import BlikCodeDisplayScreen from '../screens/BlikCodeDisplayScreen';
 import PayBlikCodeScreen from '../screens/PayBlikCodeScreen';
 import CrosschainQuoteScreen from '../screens/CrosschainQuoteScreen';
+import CrosschainStatusScreen from '../screens/CrosschainStatusScreen';
 import SwapScreen from '../screens/SwapScreen';
 
 export type MainStackParamList = {
@@ -44,6 +46,8 @@ export type MainStackParamList = {
   IncomingTransactions: undefined;
   ManageAccounts: undefined;
   ManageTokens: undefined;
+  ManageNetworks: undefined;
+  ManageTokenPreferences: undefined;
   TransactionDetails: { transaction: Transaction };
   TransactionHistory: { address: string };
   Settings: undefined;
@@ -82,6 +86,17 @@ export type MainStackParamList = {
       toAddress: string;
     };
   };
+  CrosschainStatus: {
+    txHash: string;
+    router: string;
+    fromChainId: string;
+    toChainId: string;
+    amount: string;
+    fromToken: string;
+    toToken: string;
+    estimatedOutput: string;
+    estimatedDuration: number;
+  };
   Swap: undefined;
 };
 
@@ -102,8 +117,10 @@ export default function MainNavigator() {
       <Stack.Screen name="IncomingTransactions" component={IncomingTransactionsScreen} />
       <Stack.Screen name="ManageAccounts" component={ManageAccountsScreen} />
       <Stack.Screen name="ManageTokens" component={require('../screens/wallet/ManageTokensScreen').default} />
+      <Stack.Screen name="ManageNetworks" component={require('../screens/wallet/ManageNetworksScreen').default} />
+      <Stack.Screen name="ManageTokenPreferences" component={require('../screens/wallet/ManageTokenPreferencesScreen').default} />
       <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} />
-      <Stack.Screen name="TransactionHistory" component={HistoryScreen} />
+      <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="PrivacyCenter" component={PrivacyCenterScreen} />
       <Stack.Screen name="SecuritySettings" component={SecuritySettingsScreen} />
@@ -124,6 +141,7 @@ export default function MainNavigator() {
       <Stack.Screen name="BlikCodeDisplay" component={BlikCodeDisplayScreen} />
       <Stack.Screen name="PayBlikCode" component={PayBlikCodeScreen} />
       <Stack.Screen name="CrosschainQuote" component={CrosschainQuoteScreen} />
+      <Stack.Screen name="CrosschainStatus" component={CrosschainStatusScreen} />
     </Stack.Navigator>
   );
 }

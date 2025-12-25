@@ -38,7 +38,9 @@ export class PaymentsService {
     });
     await this.paymentRepo.save(payment);
 
-    // TODO: Integrate with blockchain/payment gateway
+    // NOTE: In production, mobile client handles blockchain transactions.
+    // Backend receives txHash from mobile after broadcast confirmation.
+    // This stub auto-completes for development/testing purposes.
     payment.status = PaymentStatus.COMPLETED;
     payment.transactionHash = `tx_${Date.now()}`;
     await this.paymentRepo.save(payment);

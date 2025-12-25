@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Switch, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityIndicator, Switch, ScrollView } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { SUPPORTED_TOKENS, TokenInfo } from '../../constants/tokens';
 import { toggleTokenVisibility, getTokenPreferences, addCustomToken, removeCustomToken } from '../../services/state/tokenPreferences';
@@ -11,11 +12,13 @@ import { ethers } from 'ethers';
 import { KeyboardAwareScreen } from '../../components/common/KeyboardAwareScreen';
 import { useTheme } from '../../context/ThemeContext';
 import Card from '../../components/common/Card';
+import TokenIcon from '../../components/common/TokenIcon';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ManageTokens'>;
 
 export default function ManageTokensScreen({ navigation }: Props) {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [prefsLoading, setPrefsLoading] = useState(true);
   const [visibleSymbols, setVisibleSymbols] = useState<string[]>([]);
   const [customTokens, setCustomTokens] = useState<TokenInfo[]>([]);
@@ -79,8 +82,8 @@ export default function ManageTokensScreen({ navigation }: Props) {
 
   return (
     <KeyboardAwareScreen style={[styles.container, { backgroundColor: theme.colors.background }]} withSafeArea={false}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header - Telegram/TON Wallet style */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
@@ -89,30 +92,30 @@ export default function ManageTokensScreen({ navigation }: Props) {
       </View>
 
       {prefsLoading ? (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : (
-        <>
-          {/* Supported Tokens */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Supported Tokens Section */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Supported Tokens</Text>
-            </View>
-            {SUPPORTED_TOKENS.map((t) => (
-              <Card key={t.symbol} style={styles.card}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Supported Tokens</Text>
+            <Text style={[styles.sectionDescription, { color: theme.colors.textSecondary }]}>
+              Toggle visibility for tokens in your wallet
+            </Text>
+            
+            {SUPPORTED_TOKENS.map((t, index) => (
+              <Card key={t.symbol} style={[styles.tokenCard, index === 0 && styles.firstCard]}>
                 <View style={styles.tokenRow}>
                   <View style={styles.tokenLeft}>
-                    {t.logoUri ? (
-                      <Image source={{ uri: t.logoUri }} style={styles.logo} />
-                    ) : (
-                      <View style={[styles.logoPlaceholder, { backgroundColor: theme.colors.primary + '20' }]}>
-                        <Ionicons name="logo-usd" size={16} color={theme.colors.primary} />
-                      </View>
-                    )}
-                    <View>
+                    <View style={[styles.tokenIconContainer, { backgroundColor: theme.colors.surface }]}>
+                      <TokenIcon uri={t.logoUri} symbol={t.symbol} size={40} />
+                    </View>
+                    <View style={styles.tokenInfo}>
                       <Text style={[styles.tokenName, { color: theme.colors.text }]}>{t.name}</Text>
                       <Text style={[styles.tokenSymbol, { color: theme.colors.textSecondary }]}>{t.symbol}</Text>
                     </View>
@@ -120,51 +123,84 @@ export default function ManageTokensScreen({ navigation }: Props) {
                   <Switch
                     value={visibleSymbols.includes(t.symbol)}
                     onValueChange={() => handleToggle(t.symbol)}
-                    trackColor={{ false: theme.colors.border, true: theme.colors.primary + '80' }}
-                    thumbColor={visibleSymbols.includes(t.symbol) ? theme.colors.primary : theme.colors.surface}
+                    trackColor={{ false: theme.colors.border, true: theme.colors.primary + '60' }}
+                    thumbColor={visibleSymbols.includes(t.symbol) ? theme.colors.primary : '#FFFFFF'}
+                    ios_backgroundColor={theme.colors.border}
                   />
                 </View>
               </Card>
             ))}
           </View>
 
-          {/* Custom Tokens */}
+          {/* Custom Tokens Section */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Custom Tokens</Text>
-            </View>
-            {customTokens.length === 0 ? (
-              <Card style={styles.card}>
-                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                  No custom tokens added yet
+            <View style={styles.sectionHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Custom Tokens</Text>
+                <Text style={[styles.sectionDescription, { color: theme.colors.textSecondary }]}>
+                  Tokens you've added manually
                 </Text>
+              </View>
+            </View>
+            
+            {customTokens.length === 0 ? (
+              <Card style={styles.emptyCard}>
+                <View style={styles.emptyState}>
+                  <Ionicons name="wallet-outline" size={48} color={theme.colors.textSecondary} />
+                  <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+                    No custom tokens
+                  </Text>
+                  <Text style={[styles.emptyHint, { color: theme.colors.textSecondary }]}>
+                    Add tokens by contract address below
+                  </Text>
+                </View>
               </Card>
             ) : (
-              customTokens.map((t) => (
-                <Card key={t.address} style={styles.card}>
+              customTokens.map((t, index) => (
+                <Card key={t.address} style={[styles.tokenCard, index === 0 && styles.firstCard]}>
                   <View style={styles.tokenRow}>
                     <View style={styles.tokenLeft}>
-                      {t.logoUri ? (
-                        <Image source={{ uri: t.logoUri }} style={styles.logo} />
-                      ) : (
-                        <View style={[styles.logoPlaceholder, { backgroundColor: theme.colors.primary + '20' }]}>
-                          <Ionicons name="logo-usd" size={16} color={theme.colors.primary} />
-                        </View>
-                      )}
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.tokenName, { color: theme.colors.text }]}>{t.name}</Text>
-                        <Text style={[styles.tokenSymbol, { color: theme.colors.textSecondary }]}>{t.symbol}</Text>
+                      <View style={[styles.tokenIconContainer, { backgroundColor: theme.colors.surface }]}>
+                        <TokenIcon uri={t.logoUri} symbol={t.symbol} size={40} />
+                      </View>
+                      <View style={styles.tokenInfo}>
+                        <Text style={[styles.tokenName, { color: theme.colors.text }]} numberOfLines={1}>
+                          {t.name}
+                        </Text>
+                        <Text style={[styles.tokenSymbol, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                          {t.symbol}
+                        </Text>
+                        <Text style={[styles.tokenAddress, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                          {`${t.address.slice(0, 6)}...${t.address.slice(-4)}`}
+                        </Text>
                       </View>
                     </View>
                     <View style={styles.tokenActions}>
                       <Switch
                         value={visibleSymbols.includes(t.symbol)}
                         onValueChange={() => handleToggle(t.symbol)}
-                        trackColor={{ false: theme.colors.border, true: theme.colors.primary + '80' }}
-                        thumbColor={visibleSymbols.includes(t.symbol) ? theme.colors.primary : theme.colors.surface}
+                        trackColor={{ false: theme.colors.border, true: theme.colors.primary + '60' }}
+                        thumbColor={visibleSymbols.includes(t.symbol) ? theme.colors.primary : '#FFFFFF'}
+                        ios_backgroundColor={theme.colors.border}
                       />
-                      <TouchableOpacity onPress={() => handleRemoveCustom(t.address)} style={styles.removeButton}>
-                        <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
+                      <TouchableOpacity
+                        onPress={() => {
+                          Alert.alert(
+                            'Remove Token',
+                            `Remove ${t.symbol} from your custom tokens?`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Remove',
+                                style: 'destructive',
+                                onPress: () => handleRemoveCustom(t.address),
+                              },
+                            ]
+                          );
+                        }}
+                        style={[styles.removeButton, { backgroundColor: theme.colors.error + '15' }]}
+                      >
+                        <Ionicons name="trash-outline" size={18} color={theme.colors.error} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -173,44 +209,44 @@ export default function ManageTokensScreen({ navigation }: Props) {
             )}
           </View>
 
-          {/* Add Custom Token */}
+          {/* Add Custom Token Section */}
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Add Custom Token</Text>
-            </View>
-            <Card style={styles.card}>
-              <Text style={[styles.label, { color: theme.colors.text }]}>Contract Address</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    color: theme.colors.text,
-                    borderColor: theme.colors.border,
-                    backgroundColor: theme.colors.background,
-                  },
-                ]}
-                placeholder="0x... ERC-20 address"
-                placeholderTextColor={theme.colors.textSecondary}
-                value={newTokenAddress}
-                onChangeText={setNewTokenAddress}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Add Custom Token</Text>
+            <Text style={[styles.sectionDescription, { color: theme.colors.textSecondary }]}>
+              Enter an ERC-20 contract address to add a custom token
+            </Text>
+            
+            <Card style={styles.addTokenCard}>
+              <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                <Ionicons name="link-outline" size={20} color={theme.colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { color: theme.colors.text }]}
+                  placeholder="0x... ERC-20 contract address"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={newTokenAddress}
+                  onChangeText={setNewTokenAddress}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                />
+              </View>
+              
               <TouchableOpacity
                 style={[
-                  styles.button,
+                  styles.addButton,
                   { backgroundColor: theme.colors.primary },
-                  adding && { opacity: 0.6 },
+                  adding && styles.addButtonDisabled,
                 ]}
                 onPress={handleAddToken}
-                disabled={adding}
+                disabled={adding || !newTokenAddress.trim()}
+                activeOpacity={0.7}
               >
                 {adding ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
-                    <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.buttonText}>Add Token</Text>
+                    <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                    <Text style={styles.addButtonText}>Add Token</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -218,7 +254,7 @@ export default function ManageTokensScreen({ navigation }: Props) {
           </View>
 
           <View style={styles.spacer} />
-        </>
+        </ScrollView>
       )}
     </KeyboardAwareScreen>
   );
@@ -238,38 +274,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 56,
     paddingBottom: 16,
   },
   backButton: {
     padding: 8,
+    marginLeft: -8,
   },
   title: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
   },
   section: {
     marginHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  sectionHeader: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 4,
   },
-  card: {
-    marginBottom: 12,
+  sectionDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  tokenCard: {
+    marginBottom: 8,
     padding: 16,
+  },
+  firstCard: {
+    marginTop: 0,
   },
   tokenRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   tokenLeft: {
     flexDirection: 'row',
@@ -277,60 +327,93 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
+  tokenIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tokenInfo: {
+    flex: 1,
+  },
+  tokenName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  tokenSymbol: {
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  tokenAddress: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    marginTop: 2,
+  },
   tokenActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  tokenName: {
-    fontSize: 16,
-    fontWeight: '600',
+  removeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  tokenSymbol: {
-    fontSize: 12,
-    marginTop: 2,
+  emptyCard: {
+    padding: 32,
   },
-  logo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  logoPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeButton: {
-    padding: 8,
-  },
   emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-    paddingVertical: 20,
-  },
-  label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 4,
   },
-  input: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
+  emptyHint: {
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  addTokenCard: {
+    marginTop: 12,
+    padding: 16,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     marginBottom: 16,
   },
-  button: {
+  inputIcon: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'monospace',
+  },
+  addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    padding: 14,
-    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
   },
-  buttonText: {
+  addButtonDisabled: {
+    opacity: 0.5,
+  },
+  addButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

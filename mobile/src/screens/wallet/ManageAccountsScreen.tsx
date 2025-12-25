@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '../../context/WalletContext';
 import { useNavigation } from '@react-navigation/native';
 import { KeyboardAwareScreen } from '../../components/common/KeyboardAwareScreen';
+import { useTheme } from '../../context/ThemeContext';
+import Card from '../../components/common/Card';
+import Avatar from '../../components/common/Avatar';
+import { MainStackParamList } from '../../navigation/MainNavigator';
 
-export default function ManageAccountsScreen() {
+type Props = NativeStackScreenProps<MainStackParamList, 'ManageAccounts'>;
+
+export default function ManageAccountsScreen({ navigation }: Props) {
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { accounts, activeAccount, renameAccount, deleteAccount, switchAccount, canDeleteAccount, busy } = useWallet();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [newName, setNewName] = useState<string>('');
-  const navigation = useNavigation<any>();
 
   const saveEdit = async () => {
     if (editingIndex === null) return;
@@ -43,69 +53,291 @@ export default function ManageAccountsScreen() {
 
   return (
     <KeyboardAwareScreen 
-      style={styles.safeArea} 
-      withSafeArea={true}
-      contentContainerStyle={styles.contentContainer}
+      style={[styles.container, { backgroundColor: theme.colors.background }]} 
+      withSafeArea={false}
     >
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} accessibilityRole="button">
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Manage Accounts</Text>
-          <View style={{ width: 64 }} />
-        </View>
+      {/* Header - Telegram/TON Wallet style */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.title, { color: theme.colors.text }]}>Manage Accounts</Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      {accounts.map(a => (
-        <View key={a.index} style={[styles.item, activeAccount?.index === a.index && styles.itemActive]}>
-          <View style={{ flex: 1 }}>
-            {editingIndex === a.index ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TextInput style={styles.input} value={newName} onChangeText={setNewName} editable={!busy} autoFocus />
-                <TouchableOpacity style={styles.actionButton} onPress={saveEdit} disabled={busy}><Text style={styles.actionText}>Save</Text></TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.secondary]} onPress={() => setEditingIndex(null)} disabled={busy}><Text style={styles.actionText}>Cancel</Text></TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                <Text style={styles.name}>{a.name}</Text>
-                <Text style={styles.addr}>{a.address}</Text>
-                <Text style={styles.path}>Path: m/44'/60'/0'/0/{a.index}</Text>
-              </>
-            )}
-          </View>
-          {editingIndex !== a.index && (
-            <View style={styles.actions}>
-              <TouchableOpacity style={styles.iconButton} onPress={() => switchAccount(a.index)} disabled={busy}><Text style={styles.icon}>✓</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton} onPress={() => { setEditingIndex(a.index); setNewName(a.name); }} disabled={busy}><Text style={styles.icon}>✎</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.iconButton, !canDeleteAccount(a.index) && styles.disabled]} onPress={() => handleDelete(a.index)} disabled={!canDeleteAccount(a.index) || busy}><Text style={styles.icon}>🗑</Text></TouchableOpacity>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {accounts.map((a, index) => {
+          const isActive = activeAccount?.index === a.index;
+          const isEditing = editingIndex === a.index;
+
+          return (
+            <Card key={a.index} style={[styles.accountCard, index === 0 && styles.firstCard]}>
+              {isEditing ? (
+                <View style={styles.editContainer}>
+                  <View style={[styles.inputContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+                    <TextInput
+                      style={[styles.input, { color: theme.colors.text }]}
+                      value={newName}
+                      onChangeText={setNewName}
+                      placeholder="Account name"
+                      placeholderTextColor={theme.colors.textSecondary}
+                      editable={!busy}
+                      autoFocus
+                    />
+                  </View>
+                  <View style={styles.editActions}>
+                    <TouchableOpacity
+                      style={[styles.editButton, styles.saveButton, { backgroundColor: theme.colors.primary }]}
+                      onPress={saveEdit}
+                      disabled={busy}
+                    >
+                      <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                      <Text style={styles.editButtonText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.editButton, styles.cancelButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                      onPress={() => {
+                        setEditingIndex(null);
+                        setNewName('');
+                      }}
+                      disabled={busy}
+                    >
+                      <Ionicons name="close" size={18} color={theme.colors.text} />
+                      <Text style={[styles.editButtonText, { color: theme.colors.text }]}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.accountHeader}>
+                    <View style={styles.accountLeft}>
+                      <Avatar address={a.address} size={48} />
+                      <View style={styles.accountInfo}>
+                        <View style={styles.accountNameRow}>
+                          <Text style={[styles.accountName, { color: theme.colors.text }]}>{a.name}</Text>
+                          {isActive && (
+                            <View style={[styles.activeBadge, { backgroundColor: theme.colors.primary }]}>
+                              <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.accountAddress, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                          {a.address}
+                        </Text>
+                        <Text style={[styles.accountPath, { color: theme.colors.textSecondary }]}>
+                          Path: m/44'/60'/0'/0/{a.index}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.actionsRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton,
+                        isActive ? { backgroundColor: theme.colors.primary } : { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                      ]}
+                      onPress={() => switchAccount(a.index)}
+                      disabled={busy || isActive}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="checkmark"
+                        size={20}
+                        color={isActive ? '#FFFFFF' : theme.colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
+                      onPress={() => {
+                        setEditingIndex(a.index);
+                        setNewName(a.name);
+                      }}
+                      disabled={busy}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="pencil-outline" size={20} color={theme.colors.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton,
+                        { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                        (!canDeleteAccount(a.index) || busy) && styles.actionButtonDisabled,
+                      ]}
+                      onPress={() => handleDelete(a.index)}
+                      disabled={!canDeleteAccount(a.index) || busy}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color={canDeleteAccount(a.index) ? theme.colors.error : theme.colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </Card>
+          );
+        })}
+
+        {accounts.length === 0 && (
+          <Card style={styles.emptyCard}>
+            <View style={styles.emptyState}>
+              <Ionicons name="wallet-outline" size={48} color={theme.colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No accounts</Text>
             </View>
-          )}
-        </View>
-      ))}
+          </Card>
+        )}
+
+        <View style={styles.spacer} />
+      </ScrollView>
     </KeyboardAwareScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#0B0E13' },
-  contentContainer: { padding: 16, paddingBottom: 40 },
-  header: { paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#222', marginBottom: 8 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#1b1f27', borderRadius: 8 },
-  backText: { color: '#fff', fontSize: 14 },
-  title: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  item: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#222', flexDirection: 'row' },
-  itemActive: { backgroundColor: '#10141C' },
-  name: { color: '#fff', fontSize: 16, fontWeight: '500' },
-  addr: { color: '#9aa0a6', fontSize: 12, marginTop: 4 },
-  path: { color: '#62666b', fontSize: 12, marginTop: 2 },
-  actions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  iconButton: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#1b1f27', borderRadius: 8 },
-  icon: { color: '#fff', fontSize: 16 },
-  input: { flex: 1, backgroundColor: '#1b1f27', borderRadius: 6, padding: 8, color: '#fff', marginRight: 8 },
-  actionButton: { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#2b3140', borderRadius: 8 },
-  actionText: { color: '#fff' },
-  secondary: { backgroundColor: '#3a4150' },
-  disabled: { opacity: 0.4 },
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  accountCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+  },
+  firstCard: {
+    marginTop: 0,
+  },
+  accountHeader: {
+    marginBottom: 16,
+  },
+  accountLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  accountName: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  activeBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  accountAddress: {
+    fontSize: 13,
+    fontFamily: 'monospace',
+    marginBottom: 4,
+  },
+  accountPath: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
+  },
+  actionButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  actionButtonDisabled: {
+    opacity: 0.4,
+  },
+  editContainer: {
+    gap: 12,
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  input: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'flex-end',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  saveButton: {
+    borderWidth: 0,
+  },
+  cancelButton: {
+    // Border set dynamically
+  },
+  editButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  emptyCard: {
+    marginHorizontal: 16,
+    padding: 32,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+  },
+  spacer: {
+    height: 40,
+  },
 });

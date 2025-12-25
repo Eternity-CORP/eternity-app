@@ -97,6 +97,7 @@ export class IdentityService {
       chainId: w.chainId,
       address: w.address,
       isPrimary: w.isPrimary,
+      isActive: w.isActive,
       label: w.label,
       addedAt: w.addedAt.toISOString(),
     }));
@@ -110,7 +111,8 @@ export class IdentityService {
     chainId: string,
     address: string,
     isPrimary: boolean = false,
-    label?: string
+    label?: string,
+    isActive: boolean = true
   ) {
     const user = await this.userRepository.findOne({
       where: { walletAddress: walletAddress.toLowerCase() },
@@ -118,6 +120,11 @@ export class IdentityService {
 
     if (!user) {
       throw new NotFoundException('User not found');
+    }
+
+    // Validation: primary wallet must be active
+    if (isPrimary && !isActive) {
+      throw new ConflictException('Primary wallet must be active');
     }
 
     // Check if this address is already assigned to any network
@@ -153,6 +160,7 @@ export class IdentityService {
       chainId: chainId as any,
       address: address.toLowerCase(),
       isPrimary,
+      isActive,
       label: label || null,
     });
 
@@ -163,6 +171,7 @@ export class IdentityService {
       chainId: wallet.chainId,
       address: wallet.address,
       isPrimary: wallet.isPrimary,
+      isActive: wallet.isActive,
       label: wallet.label,
       addedAt: wallet.addedAt.toISOString(),
     };
@@ -174,7 +183,7 @@ export class IdentityService {
   async updateWallet(
     walletAddress: string,
     walletId: number,
-    updates: { chainId?: string; address?: string; isPrimary?: boolean; label?: string }
+    updates: { chainId?: string; address?: string; isPrimary?: boolean; label?: string; isActive?: boolean }
   ) {
     const user = await this.userRepository.findOne({
       where: { walletAddress: walletAddress.toLowerCase() },
@@ -190,6 +199,31 @@ export class IdentityService {
 
     if (!wallet) {
       throw new NotFoundException('Wallet not found');
+    }
+
+    // Validation: Cannot disable last active wallet
+    if (updates.isActive === false) {
+      const activeCount = await this.walletRepository.count({
+        where: { userId: user.id, isActive: true },
+      });
+
+      if (activeCount <= 1) {
+        throw new ConflictException(
+          'Cannot disable last active network. Enable another network first.'
+        );
+      }
+
+      // Cannot disable primary wallet
+      if (wallet.isPrimary) {
+        throw new ConflictException(
+          'Cannot disable primary wallet. Set another wallet as primary first.'
+        );
+      }
+    }
+
+    // Validation: Cannot set inactive wallet as primary
+    if (updates.isPrimary && wallet.isActive === false && updates.isActive !== true) {
+      throw new ConflictException('Cannot set inactive wallet as primary');
     }
 
     // If updating address, check it's not already assigned to another network
@@ -221,6 +255,7 @@ export class IdentityService {
     if (updates.chainId) wallet.chainId = updates.chainId as any;
     if (updates.address) wallet.address = updates.address.toLowerCase();
     if (updates.label !== undefined) wallet.label = updates.label || null;
+    if (updates.isActive !== undefined) wallet.isActive = updates.isActive;
 
     // Handle isPrimary update
     if (updates.isPrimary !== undefined) {
@@ -241,6 +276,7 @@ export class IdentityService {
       chainId: wallet.chainId,
       address: wallet.address,
       isPrimary: wallet.isPrimary,
+      isActive: wallet.isActive,
       label: wallet.label,
       addedAt: wallet.addedAt.toISOString(),
     };
@@ -425,6 +461,54 @@ export class IdentityService {
   }
 
   /**
+   * Get only active wallets
+   */
+  async getActiveWallets(walletAddress: string) {
+    const user = await this.userRepository.findOne({
+      where: { walletAddress: walletAddress.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const wallets = await this.walletRepository.find({
+      where: { userId: user.id, isActive: true },
+      order: { isPrimary: 'DESC', addedAt: 'DESC' },
+    });
+
+    return wallets.map((w) => ({
+      id: w.id,
+      chainId: w.chainId,
+      address: w.address,
+      isPrimary: w.isPrimary,
+      isActive: w.isActive,
+      label: w.label,
+      addedAt: w.addedAt.toISOString(),
+    }));
+  }
+
+  /**
+   * Get primary chain ID
+   */
+  async getPrimaryChain(walletAddress: string): Promise<string | null> {
+    const user = await this.userRepository.findOne({
+      where: { walletAddress: walletAddress.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const primaryWallet = await this.walletRepository.findOne({
+      where: { userId: user.id, isPrimary: true, isActive: true },
+      order: { addedAt: 'ASC' as const },
+    });
+
+    return primaryWallet ? primaryWallet.chainId : null;
+  }
+
+  /**
    * Resolve identifier (@nickname, EY-XXX, or address)
    */
   async resolveIdentifier(identifier: string) {
@@ -466,9 +550,9 @@ export class IdentityService {
       throw new NotFoundException('RECIPIENT_NOT_FOUND');
     }
 
-    // Load wallets
+    // Load ONLY ACTIVE wallets
     const wallets = await this.walletRepository.find({
-      where: { userId: user.id },
+      where: { userId: user.id, isActive: true },
       order: { isPrimary: 'DESC', addedAt: 'DESC' },
     });
 

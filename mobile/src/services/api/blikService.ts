@@ -120,6 +120,7 @@ export const executeBlikPayment = async (
         fromChainId: params.fromChainId,
         fromAddress: params.fromAddress,
         routeId: params.routeId,
+        txHash: params.txHash, // Mobile передаёт txHash после отправки транзакции
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -130,6 +131,9 @@ export const executeBlikPayment = async (
     }
     if (error.response?.data?.code === 'CANNOT_PAY_YOURSELF') {
       throw new Error('CANNOT_PAY_YOURSELF');
+    }
+    if (error.response?.data?.code === 'TX_HASH_REQUIRED') {
+      throw new Error('TX_HASH_REQUIRED');
     }
     throw error;
   }

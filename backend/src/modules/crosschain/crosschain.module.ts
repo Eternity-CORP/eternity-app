@@ -1,4 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Module, OnModuleInit, Logger } from '@nestjs/common';
 import { CrosschainController } from './crosschain.controller';
 import { CrosschainService } from '../../services/Crosschain.service';
 import { LifiRouterService } from '../../services/routers/LifiRouter.service';
@@ -14,6 +14,8 @@ import { SocketRouterService } from '../../services/routers/SocketRouter.service
   exports: [CrosschainService, LifiRouterService],
 })
 export class CrosschainModule implements OnModuleInit {
+  private readonly logger = new Logger(CrosschainModule.name);
+
   constructor(
     private readonly crosschainService: CrosschainService,
     private readonly lifiRouter: LifiRouterService,
@@ -24,15 +26,15 @@ export class CrosschainModule implements OnModuleInit {
    * Register routers on module initialization
    */
   onModuleInit() {
-    console.log('🌉 [Crosschain] Registering bridge routers...');
+    this.logger.log('Registering bridge routers...');
 
     this.crosschainService.registerRouter(this.lifiRouter);
-    console.log('✅ [Crosschain] LI.FI router registered (EVM chains)');
+    this.logger.log('LI.FI router registered (EVM chains)');
 
     this.crosschainService.registerRouter(this.socketRouter);
-    console.log('✅ [Crosschain] Socket router registered (EVM + Solana)');
+    this.logger.log('Socket router registered (EVM + Solana)');
 
     const routers = this.crosschainService.getAvailableRouters();
-    console.log(`🌉 [Crosschain] ${routers.length} routers available: ${routers.join(', ')}`);
+    this.logger.log(`${routers.length} routers available: ${routers.join(', ')}`);
   }
 }

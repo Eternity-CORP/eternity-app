@@ -269,16 +269,9 @@ export class CrosschainService {
       throw new Error('fromChainId and toChainId must be different');
     }
 
-    // Проверка на testnet сети
-    const testnets = ['sepolia', 'holesky', 'goerli', 'mumbai', 'fuji'];
-    const fromIsTestnet = testnets.includes(params.fromChainId.toLowerCase());
-    const toIsTestnet = testnets.includes(params.toChainId.toLowerCase());
-
-    if (fromIsTestnet || toIsTestnet) {
-      throw new Error(
-        'Crosschain bridges do not support testnet networks. Please use mainnet networks (ethereum, polygon, arbitrum, optimism, base, etc.)'
-      );
-    }
+    // Allow testnet-to-testnet transfers (e.g., sepolia -> holesky)
+    // Mainnet bridges may not support testnets, but we allow the attempt
+    // Routers will handle the actual support check via supportsRoute()
 
     if (!params.fromTokenAddress || !params.toTokenAddress) {
       throw new Error('fromTokenAddress and toTokenAddress are required');
