@@ -31,6 +31,7 @@ export async function getShardState(options?: { authToken?: string }): Promise<S
   const url = `${baseUrl}/shards/me`;
   const headers: Record<string, string> = {
     Accept: 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   };
 
   if (options?.authToken) {

@@ -37,10 +37,11 @@ import PayBlikCodeScreen from '../screens/PayBlikCodeScreen';
 import CrosschainQuoteScreen from '../screens/CrosschainQuoteScreen';
 import CrosschainStatusScreen from '../screens/CrosschainStatusScreen';
 import SwapScreen from '../screens/SwapScreen';
+import ChatScreen from '../screens/ChatScreen';
 
 export type MainStackParamList = {
   Home: undefined;
-  Send: undefined;
+  Send: { recipient?: string; amount?: string; token?: string } | undefined;
   SendToken: { tokenAddress?: string } | undefined;
   Receive: undefined;
   IncomingTransactions: undefined;
@@ -97,7 +98,8 @@ export type MainStackParamList = {
     estimatedOutput: string;
     estimatedDuration: number;
   };
-  Swap: undefined;
+  Swap: { fromToken?: string; toToken?: string; amount?: string } | undefined;
+  Chat: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -142,6 +144,7 @@ export default function MainNavigator() {
       <Stack.Screen name="PayBlikCode" component={PayBlikCodeScreen} />
       <Stack.Screen name="CrosschainQuote" component={CrosschainQuoteScreen} />
       <Stack.Screen name="CrosschainStatus" component={CrosschainStatusScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }

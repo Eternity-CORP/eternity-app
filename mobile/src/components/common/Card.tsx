@@ -12,18 +12,19 @@ type Props = {
 export default function Card({ children, style, blur = false }: Props) {
   const { theme, mode } = useTheme();
   
+  // Bittensor style - minimal, clean cards
   const cardStyle = {
     backgroundColor: theme.colors.card,
     borderColor: theme.colors.border,
-    borderRadius: theme.radius.lg, // 20px for TON Wallet style
-    padding: theme.spacing.md, // 16px
+    borderRadius: theme.radius.md, // 8px - minimal radius
+    padding: theme.spacing.md,
   };
 
-  // Glassmorphism effect for TON Wallet/Telegram style
+  // Bittensor doesn't use blur, but keep option for compatibility
   if (blur && Platform.OS === 'ios') {
     return (
       <BlurView
-        intensity={80}
+        intensity={40}
         tint={mode === 'dark' ? 'dark' : 'light'}
         style={[
           styles.card,
@@ -47,7 +48,6 @@ export default function Card({ children, style, blur = false }: Props) {
         cardStyle,
         {
           borderWidth: 1,
-          shadowColor: '#000',
         },
         style,
       ]}
@@ -59,15 +59,15 @@ export default function Card({ children, style, blur = false }: Props) {
 
 const styles = StyleSheet.create({
   card: {
+    // Bittensor style - no shadows, clean and flat
     ...Platform.select({
       ios: {
-        // Soft, airy shadows like TON Wallet
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0,
+        shadowRadius: 0,
+        shadowOffset: { width: 0, height: 0 },
       },
       android: {
-        elevation: 3, // Lower elevation for softer look
+        elevation: 0,
       },
       default: {},
     }),

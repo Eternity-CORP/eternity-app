@@ -8,11 +8,12 @@ import Footer from '@/components/Footer';
 
 export default function Home() {
   return (
-    <main className="min-h-screen gradient-bg relative overflow-hidden">
-      {/* Background Orbs */}
-      <div className="orb w-[500px] h-[500px] bg-[#0098EA] top-[-200px] left-[-200px]" />
-      <div className="orb w-[400px] h-[400px] bg-[#7B61FF] top-[30%] right-[-150px]" style={{ animationDelay: '-5s' }} />
-      <div className="orb w-[350px] h-[350px] bg-[#00D9FF] bottom-[20%] left-[-100px]" style={{ animationDelay: '-10s' }} />
+    <main className="min-h-screen relative overflow-hidden" style={{ background: 'var(--background)' }}>
+      {/* Subtle grid background */}
+      <div className="fixed inset-0 grid-bg pointer-events-none" />
+      
+      {/* Subtle gradient orb - very minimal */}
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl pointer-events-none" style={{ background: 'var(--card-bg)' }} />
       
       <Header />
       <Hero />

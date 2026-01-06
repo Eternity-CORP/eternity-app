@@ -216,8 +216,10 @@ const styles = StyleSheet.create({
     marginLeft: -8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -251,13 +253,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   accountName: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '500',
   },
   activeBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -276,9 +278,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   actionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -291,13 +293,13 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   input: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
   },
   editActions: {
     flexDirection: 'row',
@@ -308,9 +310,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
     borderWidth: 1,
   },
   saveButton: {
@@ -320,9 +322,11 @@ const styles = StyleSheet.create({
     // Border set dynamically
   },
   editButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   emptyCard: {
     marginHorizontal: 16,
@@ -333,9 +337,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     marginTop: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   spacer: {
     height: 40,

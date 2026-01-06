@@ -299,8 +299,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -322,9 +324,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
   },
-  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 4 },
-  subtitle: { fontSize: 12, marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  title: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
+  subtitle: { fontSize: 11, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 12, fontWeight: '500', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   // Privacy Score
   scoreContainer: {
     flexDirection: 'row',
@@ -335,20 +337,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scoreText: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '500',
   },
   scoreLabel: {
     fontSize: 12,
   },
   progressBar: {
-    height: 8,
-    borderRadius: 4,
+    height: 6,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   // Tips
   tipsCard: {
@@ -376,8 +378,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   featureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
   },
   featureDescription: {
     fontSize: 13,
@@ -386,11 +388,13 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 3,
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 9,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   expandButton: {
     flexDirection: 'row',

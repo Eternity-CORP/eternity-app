@@ -56,12 +56,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF9500',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderRadius: 4,
   },
   emoji: {
     fontSize: 12,
@@ -70,7 +65,8 @@ const styles = StyleSheet.create({
   text: {
     color: '#fff',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '500',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

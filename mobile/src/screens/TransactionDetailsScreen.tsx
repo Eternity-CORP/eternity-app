@@ -309,8 +309,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -324,11 +326,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusIconContainer: {
-    width: 88, // Slightly larger
-    height: 88,
+    width: 72,
+    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20, // More spacing
+    marginBottom: 16,
   },
   statusLabel: {
     fontSize: 14,
@@ -338,8 +340,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   amountText: {
-    fontSize: 36, // Larger for emphasis
-    fontWeight: '700',
+    fontSize: 28,
+    fontWeight: '500',
     marginBottom: 10,
     letterSpacing: -0.5,
   },
@@ -352,9 +354,11 @@ const styles = StyleSheet.create({
     padding: 24, // More padding
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
     marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   detailRow: {
     paddingVertical: 12,
@@ -386,8 +390,8 @@ const styles = StyleSheet.create({
   explorerButton: {
     marginHorizontal: 16,
     marginBottom: 16,
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 6,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -395,8 +399,10 @@ const styles = StyleSheet.create({
   },
   explorerButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   spacer: {
     height: 20,

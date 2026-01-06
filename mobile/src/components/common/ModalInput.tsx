@@ -212,18 +212,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   modalContent: {
-    borderTopLeftRadius: 28, // More rounded
-    borderTopRightRadius: 28,
-    padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-    // Softer shadow
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: {
-      width: 0,
-      height: -4,
-    },
-    elevation: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
   },
   header: {
     flexDirection: 'row',
@@ -232,8 +224,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   closeButton: {
     padding: 4,
@@ -242,17 +236,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    fontSize: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16, // More rounded like TON Wallet
+    fontSize: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 6,
     borderWidth: 1,
-    minHeight: 52,
-    // Soft shadow
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    minHeight: 48,
   },
   inputMultiline: {
     minHeight: 100,
@@ -287,8 +276,8 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 20, // More rounded
+    paddingVertical: 12,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -297,18 +286,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   confirmButton: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   confirmButtonText: {
     color: '#FFFFFF',

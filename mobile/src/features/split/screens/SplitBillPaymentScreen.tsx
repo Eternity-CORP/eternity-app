@@ -506,10 +506,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     color: '#000000',
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -517,16 +519,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   summaryLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#8E8E93',
   },
   summaryValue: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#000000',
   },
   summaryValueBold: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#000000',
   },
   progressSection: {
@@ -557,7 +559,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 12,
     backgroundColor: '#F2F2F7',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   currentPaymentText: {
     marginLeft: 8,
@@ -569,8 +571,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
     alignItems: 'center',
   },
   buttonPrimary: {
@@ -578,25 +580,29 @@ const styles = StyleSheet.create({
   },
   buttonSecondary: {
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#007AFF',
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   buttonTextSecondary: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#007AFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   participantCard: {
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    borderWidth: 2,
+    borderRadius: 6,
+    borderWidth: 1,
     borderColor: 'transparent',
   },
   participantCardSelected: {
@@ -613,8 +619,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   participantAddress: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#000000',
     marginBottom: 4,
   },
@@ -623,14 +629,16 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   participantAmount: {
     flexDirection: 'row',
@@ -643,14 +651,14 @@ const styles = StyleSheet.create({
   },
   amountValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#000000',
   },
   explorerLink: {
     marginTop: 8,
     padding: 8,
     backgroundColor: '#E3F2FF',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   explorerLinkText: {
     fontSize: 12,
@@ -661,7 +669,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 8,
     backgroundColor: '#FFF3CD',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   queueStatusText: {
     fontSize: 12,
@@ -671,7 +679,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
     backgroundColor: '#F2F2F7',
-    borderRadius: 8,
+    borderRadius: 6,
   },
   queueItemHeader: {
     flexDirection: 'row',
@@ -681,13 +689,13 @@ const styles = StyleSheet.create({
   },
   queueItemAddress: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#000000',
   },
   queueStatusBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   queueItemAmount: {
     fontSize: 14,

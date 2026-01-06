@@ -43,21 +43,23 @@ export default function Input({ label, value, onChangeText, placeholder, secureT
 
 const styles = StyleSheet.create({
   label: {
-    marginBottom: 8,
-    fontSize: 14,
+    marginBottom: 6,
+    fontSize: 12,
     fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
-    borderRadius: 16, // More rounded like TON Wallet
+    borderRadius: 6, // Bittensor style - minimal radius
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    // Soft shadow for depth
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    // No shadows - clean and flat
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   error: {
     marginTop: 6,

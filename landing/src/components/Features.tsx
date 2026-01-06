@@ -1,91 +1,80 @@
 'use client';
 
 import { 
-  Wallet, 
   Zap, 
   Globe, 
   Shield, 
-  Smartphone, 
   ArrowRightLeft,
   QrCode,
   Clock,
-  Users
+  Users,
+  Brain,
 } from 'lucide-react';
 
 const features = [
   {
+    icon: Brain,
+    title: 'AI-Powered',
+    description: 'First wallet with built-in AI. Smart insights and automatic route optimization.',
+  },
+  {
     icon: Users,
-    title: 'Global Identity (@nickname)',
-    description: 'Claim your unique @username or EY-ID. Send crypto without long addresses — just @alice.',
-    gradient: 'from-[#0098EA] to-[#00D9FF]',
+    title: '@username',
+    description: 'Send crypto to @alice instead of 0x742d35Cc6634C0532925a3b844Bc...',
   },
   {
     icon: Globe,
-    title: 'Multi-Chain Support',
-    description: 'Manage assets across Ethereum, Polygon, Arbitrum, Optimism, and Base. One wallet for all EVM chains.',
-    gradient: 'from-[#7B61FF] to-[#0098EA]',
+    title: 'Multi-Chain',
+    description: 'Ethereum, Polygon, Arbitrum, Optimism, Base. One wallet for all.',
   },
   {
     icon: QrCode,
-    title: 'BLIK Payment Codes',
-    description: 'Generate temporary payment codes to receive crypto without exposing your address. Like BLIK for Web3.',
-    gradient: 'from-[#00D9FF] to-[#7B61FF]',
+    title: 'BLIK Codes',
+    description: 'Generate temporary payment codes. Like BLIK for Web3.',
   },
   {
     icon: ArrowRightLeft,
-    title: 'Intelligent Cross-Chain',
-    description: 'System automatically finds the best route — same-chain, bridge, or swap. Powered by LiFi & Rango.',
-    gradient: 'from-[#0098EA] to-[#7B61FF]',
-  },
-  {
-    icon: Zap,
-    title: 'Instant Transfers',
-    description: 'Send crypto to anyone in seconds. No waiting, no complicated addresses — just fast payments.',
-    gradient: 'from-[#7B61FF] to-[#00D9FF]',
+    title: 'Cross-Chain',
+    description: 'Automatic best route — same-chain, bridge, or swap.',
   },
   {
     icon: Clock,
-    title: 'Scheduled Payments',
-    description: 'Set up recurring payments for subscriptions, salaries, or regular transfers. Never miss a payment.',
-    gradient: 'from-[#00D9FF] to-[#0098EA]',
-  },
-  {
-    icon: Shield,
-    title: 'Earn Shards',
-    description: 'Complete actions to earn Shards — our gamification rewards. First transaction, BLIK use, referrals and more.',
-    gradient: 'from-[#0098EA] to-[#7B61FF]',
+    title: 'Scheduled',
+    description: 'Set up recurring payments. Never miss a transfer.',
   },
 ];
 
 export default function Features() {
   return (
-    <section id="features" className="relative py-24 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Everything You Need in <span className="gradient-text">One Wallet</span>
+    <section id="features" className="relative py-32 px-6">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-20">
+          <p className="text-xs uppercase tracking-widest mb-4" style={{ color: 'var(--text-secondary)' }}>FEATURES</p>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+            Built for the future
           </h2>
-          <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            Built for the multi-chain future. Eternity combines powerful features with 
-            an intuitive interface.
+          <p className="text-body max-w-xl mx-auto">
+            E-Y combines AI intelligence with powerful features and intuitive interface.
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-px rounded-lg overflow-hidden" style={{ background: 'var(--card-border)' }}>
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="glass-card p-8 hover:bg-white/5 transition-all duration-300 group"
+              className="p-8 transition-colors"
+              style={{ background: 'var(--background)' }}
             >
-              <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <feature.icon size={28} className="text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-              <p className="text-white/60 leading-relaxed">{feature.description}</p>
+              <feature.icon size={20} className="mb-4" style={{ color: 'var(--text-secondary)' }} strokeWidth={1.5} />
+              <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>{feature.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{feature.description}</p>
             </div>
           ))}
         </div>
       </div>
+      
+      {/* Divider */}
+      <div className="divider mt-32 max-w-4xl mx-auto" />
     </section>
   );
 }

@@ -18,6 +18,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { BlikModule } from './modules/blik/blik.module';
 import { CrosschainModule } from './modules/crosschain/crosschain.module';
 import { SwapModule } from './modules/swap/swap.module';
+import { AIModule } from './modules/ai/ai.module';
 import { User } from '../database/entities/user.entity';
 import { Payment } from '../database/entities/payment.entity';
 import { UserWallet } from './entities/UserWallet.entity';
@@ -52,7 +53,8 @@ import { LoggingMiddleware } from './common/logging.middleware';
     IdentityModule,
     BlikModule,
     CrosschainModule,
-    SwapModule
+    SwapModule,
+    AIModule,
   ]
 })
 export class AppModule implements NestModule {

@@ -28,6 +28,7 @@ async function postJson(path: string, body: any, authToken?: string): Promise<Sh
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
+    'ngrok-skip-browser-warning': 'true',
   };
 
   if (authToken) {

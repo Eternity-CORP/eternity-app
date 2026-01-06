@@ -192,21 +192,16 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   blurContainer: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     overflow: 'hidden',
   },
   sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingTop: 24,
-    paddingBottom: 32,
-    paddingHorizontal: 20,
-    // Soft shadow
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    paddingTop: 20,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -218,8 +213,10 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   title: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   closeButton: {
     padding: 4,
@@ -232,14 +229,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    marginBottom: 12,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
-    // Soft shadow
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
   itemLeft: {
     flexDirection: 'row',
@@ -256,19 +248,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     marginRight: 8,
   },
   activeBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   activeBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 10,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   itemAddr: {
     fontSize: 13,
@@ -279,8 +273,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   itemBal: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -292,12 +286,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 14,
-    // Soft shadow
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    paddingVertical: 12,
   },
   primaryButton: {
     // Background set dynamically
@@ -307,12 +296,16 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   emptyContainer: {
     alignItems: 'center',
@@ -321,6 +314,6 @@ const styles = StyleSheet.create({
   },
   empty: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 13,
   },
 });

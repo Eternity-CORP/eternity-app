@@ -7,11 +7,14 @@ import Redis from 'ioredis';
 
 @Controller('health')
 export class HealthController {
-  private redis: Redis;
+  private redis: Redis | null = null;
+  private redisUrl: string | undefined;
 
   constructor(@InjectDataSource() private readonly dataSource: DataSource, private readonly configService: ConfigService) {
-    const redisUrl = this.configService.get<string>('redisUrl');
-    this.redis = new Redis(redisUrl!, { lazyConnect: true });
+    this.redisUrl = this.configService.get<string>('redisUrl');
+    if (this.redisUrl) {
+      this.redis = new Redis(this.redisUrl, { lazyConnect: true });
+    }
   }
 
   @Get()
@@ -33,14 +36,18 @@ export class HealthController {
       (result as any).status = 'error';
     }
 
-    // Redis connectivity
-    try {
-      await this.redis.connect();
-      await this.redis.ping();
-      await this.redis.quit();
-      (result as any).checks.redis = true;
-    } catch (e) {
-      (result as any).status = 'error';
+    // Redis connectivity (skip if not configured)
+    if (this.redis) {
+      try {
+        await this.redis.connect();
+        await this.redis.ping();
+        await this.redis.quit();
+        (result as any).checks.redis = true;
+      } catch (e) {
+        (result as any).status = 'error';
+      }
+    } else {
+      (result as any).checks.redis = 'skipped';
     }
 
     // External service availability

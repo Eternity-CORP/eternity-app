@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { MainStackParamList } from '../navigation/MainNavigator';
 import { getAddress } from '../services/walletService';
 import * as Clipboard from 'expo-clipboard';
@@ -10,10 +12,13 @@ import { getSelectedNetwork } from '../services/networkService';
 import NetworkSwitcher from '../features/network/NetworkSwitcher';
 import type { Network } from '../config/env';
 import { SUPPORTED_CHAINS } from '../constants/chains';
+import { useTheme } from '../context/ThemeContext';
+import Card from '../components/common/Card';
 
 type Props = NativeStackScreenProps<MainStackParamList, 'Receive'>;
 
 export default function ReceiveScreen({ navigation }: Props) {
+  const { theme } = useTheme();
   const [currentNetwork, setCurrentNetwork] = useState<Network>('sepolia');
   const [walletAddress, setWalletAddress] = useState('');
   const [checksummedAddress, setChecksummedAddress] = useState('');
@@ -94,206 +99,181 @@ export default function ReceiveScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Receive</Text>
-        <View style={{ width: 50 }} />
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Receive</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       <View style={styles.content}>
-        <View style={styles.networkSelector}>
-          <Text style={styles.label}>Select Network</Text>
+        <Card style={styles.card}>
+          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>NETWORK</Text>
           <TouchableOpacity
-            style={styles.networkButton}
+            style={[styles.networkButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}
             onPress={() => setShowNetworkSwitcher(true)}
           >
-            <Text style={styles.networkText}>{getNetworkDisplayName()}</Text>
-            <Text style={styles.dropdownIcon}>▼</Text>
+            <Text style={[styles.networkText, { color: theme.colors.text }]}>{getNetworkDisplayName()}</Text>
+            <Ionicons name="chevron-down" size={16} color={theme.colors.textSecondary} />
           </TouchableOpacity>
-        </View>
+        </Card>
 
-        <View style={styles.qrContainer}>
-          {qrValue ? (
-            <QRCode value={qrValue} size={200} />
-          ) : (
-            <View style={styles.qrPlaceholder}>
-              <Text style={styles.qrPlaceholderText}>QR Code</Text>
-              <Text style={styles.qrPlaceholderSubtext}>Address not loaded</Text>
-            </View>
-          )}
-        </View>
+        <Card style={styles.card}>
+          <View style={[styles.qrContainer, { backgroundColor: '#FFFFFF', borderRadius: 8 }]}>
+            {qrValue ? (
+              <QRCode value={qrValue} size={180} backgroundColor="#FFFFFF" color="#000000" />
+            ) : (
+              <View style={styles.qrPlaceholder}>
+                <Text style={styles.qrPlaceholderText}>QR Code</Text>
+              </View>
+            )}
+          </View>
+        </Card>
 
-        <View style={styles.addressContainer}>
-          <Text style={styles.label}>Your Address (EIP-55)</Text>
-          <View style={styles.addressBox}>
-            <Text style={styles.addressText} numberOfLines={1}>
+        <Card style={styles.card}>
+          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>YOUR ADDRESS</Text>
+          <View style={[styles.addressBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Text style={[styles.addressText, { color: theme.colors.text }]} numberOfLines={1}>
               {checksummedAddress}
             </Text>
           </View>
-        </View>
 
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCopyAddress}
-          >
-            <Text style={styles.actionButtonText}>📋 Copy Address</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: theme.colors.primary }]}
+              onPress={handleCopyAddress}
+            >
+              <Ionicons name="copy-outline" size={18} color={theme.colors.background} />
+              <Text style={[styles.actionButtonText, { color: theme.colors.background }]}>COPY</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleShare}
-          >
-            <Text style={styles.actionButtonText}>📤 Share</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
+              onPress={handleShare}
+            >
+              <Ionicons name="share-outline" size={18} color={theme.colors.text} />
+              <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>SHARE</Text>
+            </TouchableOpacity>
+          </View>
+        </Card>
 
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>ℹ️ How to receive</Text>
-          <Text style={styles.infoText}>
-            1. Share your address or QR code with the sender
+        <Card style={styles.card}>
+          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>HOW TO RECEIVE</Text>
+          <Text style={[styles.infoText, { color: theme.colors.text }]}>
+            1. Share your address or QR code
           </Text>
-          <Text style={styles.infoText}>
-            2. Make sure they select the correct network
+          <Text style={[styles.infoText, { color: theme.colors.text }]}>
+            2. Ensure correct network is selected
           </Text>
-          <Text style={styles.infoText}>
-            3. Wait for the transaction to be confirmed
+          <Text style={[styles.infoText, { color: theme.colors.text }]}>
+            3. Wait for confirmation
           </Text>
-        </View>
+        </Card>
       </View>
 
-      {/* Network Switcher Modal */}
       <NetworkSwitcher
         visible={showNetworkSwitcher}
         onClose={handleNetworkChange}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   backButton: {
-    fontSize: 16,
-    color: '#007AFF',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: 16,
   },
-  networkSelector: {
-    marginBottom: 24,
+  card: {
+    marginBottom: 16,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   networkButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderRadius: 6,
     padding: 12,
   },
   networkText: {
-    fontSize: 16,
-  },
-  dropdownIcon: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
   },
   qrContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    justifyContent: 'center',
+    padding: 20,
   },
   qrPlaceholder: {
-    width: 200,
-    height: 200,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
+    width: 180,
+    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderStyle: 'dashed',
   },
   qrPlaceholderText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
     color: '#999',
-    marginBottom: 8,
-  },
-  qrPlaceholderSubtext: {
-    fontSize: 12,
-    color: '#999',
-  },
-  addressContainer: {
-    marginBottom: 24,
   },
   addressBox: {
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 6,
+    borderWidth: 1,
+    marginBottom: 16,
   },
   addressText: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'monospace',
   },
   buttonContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 14,
+    borderRadius: 6,
+    gap: 8,
   },
   actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  infoBox: {
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    borderRadius: 8,
-  },
-  infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#1976D2',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   infoText: {
-    fontSize: 14,
-    color: '#1976D2',
-    marginBottom: 4,
+    fontSize: 13,
+    marginBottom: 6,
     lineHeight: 20,
   },
 });

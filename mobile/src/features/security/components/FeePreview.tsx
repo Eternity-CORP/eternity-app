@@ -305,9 +305,9 @@ function getLevelIcon(level: 'info' | 'warning' | 'error'): string {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: 14,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 16,
   },
   loadingText: {
@@ -330,13 +330,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   feeETH: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     color: '#000000',
   },
   feeTotalETH: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '500',
     color: '#000000',
   },
   feeUSD: {
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   warningBox: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     marginBottom: 12,
   },
   warningHeader: {
@@ -359,8 +359,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   warningTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
   },
   warningMessage: {
     fontSize: 12,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     backgroundColor: '#E3F2FF',
-    borderRadius: 8,
+    borderRadius: 6,
     marginBottom: 12,
   },
   approvalIcon: {
@@ -418,8 +418,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5EA',
   },
   batchTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#000000',
   },
   batchCount: {

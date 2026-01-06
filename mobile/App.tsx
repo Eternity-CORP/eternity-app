@@ -6,6 +6,7 @@ import { AuthProvider } from './src/context/AuthContext';
 import { requestNotificationPermissions } from './src/services/notificationService';
 import { getJobRunner } from './src/features/schedule/JobRunner';
 import { ShardAnimationProvider } from './src/features/shards/ShardAnimationProvider';
+import { GhostModeProvider } from './src/context/GhostModeContext';
 import './src/i18n/config'; // Initialize i18n
 
 export default function App() {
@@ -36,10 +37,12 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <ShardAnimationProvider>
-          <RootNavigator />
-          <StatusBar style="auto" />
-        </ShardAnimationProvider>
+        <GhostModeProvider>
+          <ShardAnimationProvider>
+            <RootNavigator />
+            <StatusBar style="auto" />
+          </ShardAnimationProvider>
+        </GhostModeProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -811,17 +811,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   nickname: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
   nicknameEdit: {
     width: '100%',
   },
   nicknameInput: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 14,
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -831,13 +832,15 @@ const styles = StyleSheet.create({
   },
   nicknameButton: {
     flex: 1,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
     alignItems: 'center',
   },
   nicknameButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   globalId: {
     fontSize: 14,
@@ -868,8 +871,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   walletRow: {
     flexDirection: 'row',
@@ -891,9 +896,9 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   primaryBadge: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   primaryText: {
     fontSize: 12,
@@ -977,10 +982,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
     marginBottom: 20,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   modalLabel: {
     fontSize: 14,
@@ -989,10 +996,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   modalInput: {
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 15,
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 14,
     marginBottom: 12,
   },
   chainSelectGrid: {
@@ -1000,10 +1007,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   chainSelectButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    borderWidth: 1,
     alignItems: 'center',
   },
   chainSelectText: {
@@ -1019,9 +1026,9 @@ const styles = StyleSheet.create({
   tokenSelectButton: {
     flex: 1,
     minWidth: '22%',
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
     alignItems: 'center',
   },
   tokenSelectText: {
@@ -1035,12 +1042,14 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
     alignItems: 'center',
   },
   modalButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

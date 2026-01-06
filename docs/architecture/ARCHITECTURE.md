@@ -1157,6 +1157,139 @@ npm run test:anvil        # Run local Anvil (Foundry) tests
 
 ---
 
+## Point A: Thinking Wallet Architecture (NEW - Jan 2026)
+
+### AI Integration Overview
+
+The "Thinking Wallet" feature transforms E-Y from a traditional wallet into an AI-powered assistant that understands natural language commands.
+
+### New Components
+
+#### Backend AI Module
+
+```
+backend/src/
+├── modules/
+│   └── ai/                          # NEW: AI feature module
+│       ├── ai.module.ts             # Module definition
+│       ├── ai.controller.ts         # REST endpoints
+│       └── ai.service.ts            # Orchestration
+│
+├── services/
+│   ├── AIIntent.service.ts          # NEW: Intent parsing (Groq + LangChain)
+│   ├── TransactionRisk.service.ts   # NEW: Risk scoring (green/yellow/red)
+│   └── GhostMode.service.ts         # NEW: Duress PIN management
+```
+
+#### Mobile AI Components
+
+```
+mobile/src/
+├── screens/
+│   └── ChatScreen.tsx               # NEW: Main AI interaction
+│
+├── components/
+│   └── ItemCard/                    # NEW: Transaction card
+│       ├── ItemCard.tsx             # Main component
+│       ├── ItemCardFront.tsx        # Summary view
+│       ├── ItemCardBack.tsx         # Stats view (flip)
+│       └── styles.ts
+│
+├── services/
+│   └── aiService.ts                 # NEW: AI API client
+│
+├── contexts/
+│   └── GhostModeContext.tsx         # NEW: Ghost mode state
+```
+
+### AI Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         USER INPUT                               │
+│                    "Отправь 0.5 ETH на @alice"                   │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      MOBILE APP                                  │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────────┐  │
+│  │ ChatScreen  │───▶│ aiService   │───▶│ POST /api/ai/parse  │  │
+│  └─────────────┘    └─────────────┘    └─────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        BACKEND                                   │
+│  ┌─────────────────┐    ┌─────────────┐    ┌─────────────────┐  │
+│  │ ai.controller   │───▶│ AIIntent    │───▶│ Groq API        │  │
+│  │                 │    │ Service     │    │ (LLM inference) │  │
+│  └─────────────────┘    └─────────────┘    └─────────────────┘  │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌─────────────────┐                                            │
+│  │ TransactionRisk │  Returns: { type, amount, recipient,       │
+│  │ Service         │            token, confidence, riskLevel }  │
+│  └─────────────────┘                                            │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      MOBILE APP                                  │
+│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────────┐  │
+│  │ ItemCard    │◀───│ Risk-colored    │◀───│ Parsed Intent   │  │
+│  │ Component   │    │ (🟢🟡🔴)         │    │                 │  │
+│  └─────────────┘    └─────────────────┘    └─────────────────┘  │
+│         │                                                        │
+│         ▼                                                        │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ USER CONFIRMATION                                           ││
+│  │ • Swipe RIGHT → Confirm                                     ││
+│  │ • Swipe LEFT → Cancel                                       ││
+│  │ • Type modification → Update Intent                         ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    SECURITY GATE                                 │
+│  IF amount > $500 OR new_address:                               │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ "Enter seed words #3, #7, #12"                              ││
+│  └─────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    TRANSACTION EXECUTION                         │
+│  Existing transactionService.ts → sign → broadcast              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### New API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/ai/parse-intent` | POST | Parse natural language to structured intent |
+| `/api/ai/risk-score` | POST | Calculate transaction risk level |
+| `/api/ai/ghost-mode` | GET/PUT | Get/set ghost mode status |
+
+### External Services (New)
+
+| Service | Purpose | API |
+|---------|---------|-----|
+| **Groq** | Fast LLM inference | `groq-sdk` |
+| **LangChain** | Agent orchestration | `langchain` |
+
+### Security Considerations
+
+1. **Seed Word Gate:** Never log seed word positions in plaintext
+2. **Duress PIN:** Store separately from real PIN, implement decoy state
+3. **Ghost Mode:** Client-side only, no backend awareness
+4. **AI Parsing:** Validate all parsed amounts server-side before execution
+
+---
+
 ## Conclusion
 
 This architecture document provides a comprehensive snapshot of the E-Y Crypto Wallet codebase as of the MVP stabilization phase. It reflects the **actual state** of the system, including working features, incomplete implementations, and technical debt that must be addressed in the upcoming 7 epics.

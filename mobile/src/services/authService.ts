@@ -10,12 +10,36 @@ function getBaseUrl(): string | null {
   return API_BASE_URL.replace(/\/$/, '');
 }
 
+async function ensureUserRegistered(baseUrl: string, walletAddress: string): Promise<boolean> {
+  try {
+    const response = await networkLogger.loggedFetch(
+      `${baseUrl}/users/register`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ walletAddress }),
+      },
+      10000
+    );
+    return response.ok;
+  } catch (error: any) {
+    console.warn('[authService] Failed to register user:', error?.message || error);
+    return false;
+  }
+}
+
 export async function loginWithWallet(walletAddress: string, timeoutMs: number = 60000): Promise<string | null> {
   const baseUrl = getBaseUrl();
   if (!baseUrl) {
     console.warn('[authService] No base URL configured, skipping authentication');
     return null;
   }
+
+  // Ensure user is registered before login
+  await ensureUserRegistered(baseUrl, walletAddress);
 
   const url = `${baseUrl}/auth/login`;
   const deviceToken = await getOrCreateDeviceToken();

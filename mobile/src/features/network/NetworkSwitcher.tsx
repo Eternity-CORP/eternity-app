@@ -249,8 +249,8 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: '#0B0E13',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     padding: 16,
     maxHeight: '80%',
   },
@@ -262,8 +262,10 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   close: {
     color: '#aaa',
@@ -275,13 +277,13 @@ const styles = StyleSheet.create({
   },
   networkItem: {
     backgroundColor: '#1A1D26',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 6,
+    padding: 14,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderLeftWidth: 4,
+    borderLeftWidth: 3,
   },
   networkItemActive: {
     backgroundColor: '#242936',
@@ -298,8 +300,8 @@ const styles = StyleSheet.create({
   },
   networkName: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     marginRight: 8,
   },
   testnetBadge: {
@@ -336,15 +338,17 @@ const styles = StyleSheet.create({
   },
   activeBadge: {
     backgroundColor: 'rgba(41, 182, 175, 0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
     marginBottom: 4,
   },
   activeText: {
     color: '#29B6AF',
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statusIcon: {
     fontSize: 12,
@@ -362,13 +366,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(11, 14, 19, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
   },
   loadingText: {
     color: '#fff',
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 13,
   },
   hint: {
     color: '#666',

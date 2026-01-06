@@ -168,28 +168,28 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 8,
-    gap: 8, // More spacing between items
+    gap: 8,
   },
   transactionItem: {
     flexDirection: 'row',
-    padding: 16, // More padding for airy feel
+    padding: 14,
     marginBottom: 8,
     alignItems: 'center',
-    // Soft shadow for TON Wallet style
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    // Bittensor style - no shadows
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   transactionIcon: {
-    width: 48, // Slightly larger
-    height: 48,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14, // More spacing
+    marginRight: 12,
   },
   iconText: {
-    fontSize: 24,
+    fontSize: 20,
   },
   transactionInfo: {
     flex: 1,
@@ -198,34 +198,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6, // More spacing
+    marginBottom: 4,
   },
   transactionType: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   transactionAmount: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     flexShrink: 1,
     textAlign: 'right',
   },
   transactionAddress: {
-    fontSize: 13,
+    fontSize: 11,
     fontFamily: 'monospace',
   },
   transactionDate: {
-    fontSize: 13,
+    fontSize: 11,
   },
   failedLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     marginTop: 4,
+    textTransform: 'uppercase',
   },
   pendingLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     marginTop: 4,
+    textTransform: 'uppercase',
   },
   loadingContainer: {
     flex: 1,
@@ -235,7 +237,9 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 14,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   emptyContainer: {
     flex: 1,
@@ -244,22 +248,26 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   emptyIcon: {
-    fontSize: 48,
+    fontSize: 32,
     marginBottom: 12,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 12,
     marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   refreshButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20, // More rounded
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 6, // Bittensor style
   },
   refreshButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
   const formatTokenAmount = (value: string, decimals: number, fractionDigits = 4) => {
