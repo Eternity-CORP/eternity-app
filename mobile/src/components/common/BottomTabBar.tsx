@@ -1,6 +1,6 @@
 /**
- * BottomTabBar - Floating bottom navigation with blur effect
- * Style inspired by Phantom wallet
+ * BottomTabBar - Clean bottom navigation
+ * Style inspired by Bittensor - minimal and clean
  */
 
 import React from 'react';
@@ -129,33 +129,33 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingHorizontal: 0,
+    paddingBottom: 0,
   },
   blurContainer: {
-    borderRadius: 28, // More rounded like TON Wallet
+    borderRadius: 0, // Bittensor style - no rounded corners on tab bar
     overflow: 'hidden',
-    borderWidth: 0, // No border for cleaner look
-    // Soft shadow
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
+    borderTopWidth: 1,
+    // No shadow
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   solidContainer: {
-    borderRadius: 28, // More rounded
-    borderWidth: 0,
-    // Soft shadow
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
+    borderRadius: 0, // Bittensor style - straight edges
+    borderTopWidth: 1,
+    // No shadow
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   tabRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: 10,
   },
   tab: {
     alignItems: 'center',
@@ -181,7 +181,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

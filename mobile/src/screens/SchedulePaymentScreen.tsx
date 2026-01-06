@@ -24,6 +24,7 @@ import { useShardAnimation } from '../features/shards/ShardAnimationProvider';
 import { reportScheduledPaymentShard } from '../services/shardEventsService';
 import { loginWithWallet } from '../services/authService';
 import { KeyboardAwareScreen } from '../components/common/KeyboardAwareScreen';
+import { resolveIdentifier, ResolvedIdentity } from '../services/api/identityService';
 
 type Props = NativeStackScreenProps<any, 'SchedulePayment'>;
 
@@ -43,12 +44,51 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
   // Step 2: Amount & Recipient
   const [amount, setAmount] = useState('');
   const [recipient, setRecipient] = useState('');
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolvedIdentity, setResolvedIdentity] = useState<ResolvedIdentity | null>(null);
 
   // Step 3: Message & Emoji
   const [message, setMessage] = useState('');
   const [selectedEmoji, setSelectedEmoji] = useState('');
 
   const [saving, setSaving] = useState(false);
+
+  // Check if recipient is a nickname (@username or ey-id)
+  const isNickname = (value: string) => {
+    return value.startsWith('@') || value.startsWith('ey-') || value.startsWith('EY-');
+  };
+
+  // Resolve nickname to address
+  const handleRecipientChange = async (value: string) => {
+    setRecipient(value);
+    setResolvedAddress(null);
+    setResolvedIdentity(null);
+
+    // If it's an address, use it directly
+    if (ethers.utils.isAddress(value)) {
+      setResolvedAddress(value);
+      return;
+    }
+
+    // If it looks like a nickname, try to resolve it
+    if (isNickname(value) && value.length > 2) {
+      setResolving(true);
+      try {
+        const result = await resolveIdentifier(value);
+        if (result && result.wallets && result.wallets.length > 0) {
+          // Get primary wallet or first one
+          const primaryWallet = result.wallets.find(w => w.isPrimary) || result.wallets[0];
+          setResolvedAddress(primaryWallet.address);
+          setResolvedIdentity(result);
+        }
+      } catch (error) {
+        console.log('[SchedulePayment] Failed to resolve identifier:', error);
+      } finally {
+        setResolving(false);
+      }
+    }
+  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -78,9 +118,12 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
   };
 
   const handleSchedule = async () => {
+    // Get final address (resolved or direct)
+    const finalAddress = resolvedAddress || recipient;
+    
     // Validation
-    if (!ethers.utils.isAddress(recipient)) {
-      Alert.alert('Ошибка', 'Введите корректный адрес кошелька');
+    if (!finalAddress || !ethers.utils.isAddress(finalAddress)) {
+      Alert.alert('Ошибка', 'Введите корректный адрес или никнейм (@username)');
       return;
     }
 
@@ -106,7 +149,7 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
           type: 'ETH',
         },
         fromAccountId: 'default',
-        to: recipient,
+        to: finalAddress,
         amountHuman: amount,
         scheduleAt: scheduledDate.getTime(),
         note: message || undefined,
@@ -124,7 +167,7 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
           if (authToken) {
             const shardResult = await reportScheduledPaymentShard({
               amountEth: amount,
-              recipientAddress: recipient,
+              recipientAddress: finalAddress,
               authToken,
             });
 
@@ -153,11 +196,16 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
 
       setSaving(false);
 
+      // Show nickname if resolved, otherwise show address
+      const recipientDisplay = resolvedIdentity 
+        ? `${resolvedIdentity.nickname} (${finalAddress.slice(0, 6)}...${finalAddress.slice(-4)})`
+        : `${finalAddress.slice(0, 6)}...${finalAddress.slice(-4)}`;
+
       Alert.alert(
         '✅ Платёж запланирован!',
         `${selectedEmoji || '💸'} ${message || 'Платёж'}\n\n` +
           `Сумма: ${amount} ETH\n` +
-          `Получатель: ${recipient.slice(0, 6)}...${recipient.slice(-4)}\n` +
+          `Получатель: ${recipientDisplay}\n` +
           `Когда: ${formatDateTime(scheduledDate)}\n\n` +
           `Деньги будут отправлены автоматически в указанное время.`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
@@ -195,12 +243,15 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
   };
 
   const isFormValid = () => {
+    // Allow either direct address or resolved nickname
+    const hasValidRecipient = resolvedAddress && ethers.utils.isAddress(resolvedAddress);
     return (
-      ethers.utils.isAddress(recipient) &&
+      hasValidRecipient &&
       amount &&
       Number(amount) > 0 &&
       scheduledDate > new Date() &&
-      !saving
+      !saving &&
+      !resolving
     );
   };
 
@@ -329,7 +380,7 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
           </View>
 
           <Text style={[styles.inputLabel, { color: theme.colors.text, marginTop: 16 }]}>
-            Адрес получателя
+            Получатель (адрес или @никнейм)
           </Text>
           <View
             style={[
@@ -337,35 +388,51 @@ export default function SchedulePaymentScreen({ navigation }: Props) {
               {
                 backgroundColor: theme.colors.surface,
                 borderColor: recipient
-                  ? ethers.utils.isAddress(recipient)
+                  ? resolvedAddress
                     ? theme.colors.success
-                    : theme.colors.error
+                    : resolving
+                      ? theme.colors.accent
+                      : theme.colors.error
                   : theme.colors.border,
               },
             ]}
           >
             <Ionicons
-              name="wallet-outline"
+              name={recipient.startsWith('@') ? 'at-outline' : 'wallet-outline'}
               size={20}
               color={theme.colors.textSecondary}
               style={{ marginRight: 8 }}
             />
             <TextInput
               style={[styles.input, { color: theme.colors.text }]}
-              placeholder="0x..."
+              placeholder="0x... или @username"
               placeholderTextColor={theme.colors.textSecondary}
               value={recipient}
-              onChangeText={(t) => setRecipient(t.trim())}
+              onChangeText={handleRecipientChange}
               autoCapitalize="none"
               autoCorrect={false}
             />
+            {resolving && (
+              <Text style={{ color: theme.colors.accent, fontSize: 12 }}>...</Text>
+            )}
           </View>
 
-          {recipient && !ethers.utils.isAddress(recipient) && (
+          {/* Show resolved identity */}
+          {resolvedIdentity && resolvedAddress && (
+            <View style={[styles.resolvedRow, { backgroundColor: theme.colors.success + '15' }]}>
+              <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
+              <Text style={[styles.resolvedText, { color: theme.colors.success }]}>
+                {resolvedIdentity.nickname} → {resolvedAddress.slice(0, 8)}...{resolvedAddress.slice(-6)}
+              </Text>
+            </View>
+          )}
+
+          {/* Show error if can't resolve */}
+          {recipient && !resolvedAddress && !resolving && !ethers.utils.isAddress(recipient) && (
             <View style={styles.errorRow}>
               <Ionicons name="alert-circle" size={14} color={theme.colors.error} />
               <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                Неверный адрес
+                {recipient.startsWith('@') ? 'Пользователь не найден' : 'Неверный адрес'}
               </Text>
             </View>
           )}
@@ -535,9 +602,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 14,
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 12,
     marginBottom: 12,
   },
   dateTimeText: {
@@ -560,39 +627,41 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 14,
   },
   currencySymbol: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '500',
     marginRight: 8,
   },
   amountInput: {
     flex: 1,
-    fontSize: 24,
-    fontWeight: '700',
-    paddingVertical: 14,
+    fontSize: 20,
+    fontWeight: '500',
+    paddingVertical: 12,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
+    borderWidth: 1,
+    borderRadius: 6,
     paddingHorizontal: 12,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 15,
+    paddingVertical: 12,
+    fontSize: 14,
   },
   errorRow: {
     flexDirection: 'row',
@@ -604,18 +673,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  resolvedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  resolvedText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   messageInput: {
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
     marginBottom: 16,
   },
   emojiTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   emojiGrid: {
     flexDirection: 'row',
@@ -623,10 +707,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emojiButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2,
+    width: 44,
+    height: 44,
+    borderRadius: 6,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -644,12 +728,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   previewTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   previewText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     marginBottom: 4,
   },
   previewSubtext: {

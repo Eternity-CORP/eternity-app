@@ -1,6 +1,6 @@
 /**
- * ActionButton - Circular action button for quick actions (Send, Receive, Swap, etc.)
- * Style inspired by Phantom/Trust Wallet
+ * ActionButton - Minimal action button for quick actions (Send, Receive, Swap, etc.)
+ * Style inspired by Bittensor - clean and minimal
  */
 
 import React from 'react';
@@ -38,15 +38,16 @@ export default function ActionButton({
   const { theme } = useTheme();
   const scale = useSharedValue(1);
 
+  // Bittensor style - smaller, more minimal buttons
   const sizeConfig = {
-    small: { container: 48, icon: 22, labelSize: 11 },
-    medium: { container: 56, icon: 26, labelSize: 12 },
-    large: { container: 64, icon: 30, labelSize: 13 },
+    small: { container: 44, icon: 20, labelSize: 10 },
+    medium: { container: 52, icon: 24, labelSize: 11 },
+    large: { container: 60, icon: 28, labelSize: 12 },
   };
 
   const config = sizeConfig[size];
-  const iconColor = color || theme.colors.primary;
-  const bgColor = backgroundColor || `${theme.colors.primary}15`;
+  const iconColor = color || theme.colors.text;
+  const bgColor = backgroundColor || theme.colors.surface;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -117,20 +118,22 @@ export default function ActionButton({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    minWidth: 72,
+    minWidth: 64,
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
-    // Soft shadow for depth
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    marginBottom: 6,
+    // Bittensor style - no shadows
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   label: {
     textAlign: 'center',
     fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

@@ -325,28 +325,32 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
     marginBottom: 20,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   card: {
     marginBottom: 16,
     padding: 16,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   subLabel: {
-    fontSize: 14,
+    fontSize: 12,
     marginTop: 4,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 6,
     padding: 12,
-    fontSize: 16,
+    fontSize: 14,
   },
   switchRow: {
     flexDirection: 'row',
@@ -377,12 +381,12 @@ const styles = StyleSheet.create({
   },
   amountDisplay: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 6,
     padding: 12,
     borderColor: 'transparent',
   },
   amountText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
   },
   linkContainer: {
@@ -390,7 +394,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 6,
     padding: 12,
     marginTop: 8,
   },

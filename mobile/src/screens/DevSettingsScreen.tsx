@@ -303,11 +303,13 @@ const styles = StyleSheet.create({
     fontSize: 32,
   },
   badgeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   badgeSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 2,
   },
   setting: {
@@ -320,17 +322,19 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     marginBottom: 4,
   },
   settingDescription: {
-    fontSize: 12,
+    fontSize: 11,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '500',
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   infoRow: {
     flexDirection: 'row',
@@ -347,28 +351,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dangerCard: {
-    borderWidth: 2,
+    borderWidth: 1,
     marginTop: 16,
   },
   dangerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '500',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   dangerDescription: {
     fontSize: 12,
     marginBottom: 16,
   },
   dangerButton: {
-    padding: 16,
-    borderRadius: 8,
+    padding: 14,
+    borderRadius: 6,
     alignItems: 'center',
     marginBottom: 12,
   },
   dangerButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   dangerWarning: {
     fontSize: 11,

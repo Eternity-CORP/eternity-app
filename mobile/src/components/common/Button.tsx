@@ -23,15 +23,22 @@ export default function Button({ title, children, variant = 'primary', onPress, 
     transform: [{ scale: scale.value }],
   }));
 
+  // Bittensor style: primary is contrast color, secondary is muted
   const bgColor =
     variant === 'primary'
       ? theme.colors.primary
       : variant === 'secondary'
-      ? theme.colors.secondary
+      ? theme.colors.surface
       : 'transparent';
 
   const borderColor = variant === 'outline' ? theme.colors.border : 'transparent';
-  const textColor = variant === 'outline' ? theme.colors.text : '#FFFFFF';
+  // Text color depends on variant and theme
+  const textColor = 
+    variant === 'primary' 
+      ? theme.colors.background  // Inverted for contrast
+      : variant === 'secondary'
+      ? theme.colors.text
+      : theme.colors.text;
   
   const content = children || title;
 
@@ -64,26 +71,27 @@ export default function Button({ title, children, variant = 'primary', onPress, 
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: 20, // More rounded like TON Wallet
+    borderRadius: 8, // Bittensor style - minimal radius
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderWidth: 0, // No border for primary buttons
-    minHeight: 52,
+    borderWidth: 0,
+    minHeight: 48,
     justifyContent: 'center',
-    // Soft shadow for depth
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    // Minimal shadow
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   content: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   text: {
-    fontSize: 17,
-    fontWeight: '600', // Slightly lighter weight
-    letterSpacing: 0.2,
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: -0.01,
     textAlign: 'center',
+    textTransform: 'uppercase',
   },
 });

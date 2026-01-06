@@ -40,16 +40,18 @@ import { getNetworkMode } from '../../services/networkModeService';
 
 interface Props {
   navigation: any;
+  prefillAddress?: string;
+  prefillAmount?: string;
 }
 
-export default function SendByWalletMode({ navigation }: Props) {
+export default function SendByWalletMode({ navigation, prefillAddress, prefillAmount }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
   const { triggerShardAnimation } = useShardAnimation();
   const { network: currentNetwork, mode: currentMode } = useNetwork();
 
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
+  const [recipient, setRecipient] = useState(prefillAddress || '');
+  const [amount, setAmount] = useState(prefillAmount || '');
   const [balance, setBalance] = useState<ethers.BigNumber>(ethers.BigNumber.from(0));
   const [network, setNetwork] = useState<Network>('sepolia');
 
@@ -620,15 +622,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
+    borderWidth: 1,
+    borderRadius: 6,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -652,20 +656,20 @@ const styles = StyleSheet.create({
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 14,
   },
   currencySymbol: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '500',
     marginRight: 8,
   },
   amountInput: {
     flex: 1,
-    fontSize: 32,
-    fontWeight: '700',
-    paddingVertical: 16,
+    fontSize: 22,
+    fontWeight: '500',
+    paddingVertical: 12,
   },
   balanceRow: {
     flexDirection: 'row',
@@ -687,7 +691,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
   },
-  warningText: {
+  warningBoxText: {
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
@@ -699,15 +703,15 @@ const styles = StyleSheet.create({
   },
   feeLevelButton: {
     flex: 1,
-    borderWidth: 2,
-    borderRadius: 12,
-    padding: 12,
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 10,
     alignItems: 'center',
     gap: 4,
   },
   feeLevelLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
   },
   feeLevelValue: {
     fontSize: 11,
@@ -734,7 +738,7 @@ const styles = StyleSheet.create({
   },
   advancedInput: {
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
@@ -750,8 +754,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statusLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
   },
   statusHash: {
     fontSize: 12,
@@ -772,23 +776,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sendButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   sendButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   spacer: {
     height: 20,

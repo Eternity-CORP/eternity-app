@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 type FormType = 'beta' | 'contact';
 
@@ -66,23 +66,21 @@ export default function BetaForm() {
 
   if (success) {
     return (
-      <section id="beta" className="relative py-24 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="glass-card p-12">
-            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6">
-              <CheckCircle size={48} className="text-green-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-4">Thank You!</h3>
-            <p className="text-white/60 mb-6">
+      <section id="beta" className="relative py-32 px-6">
+        <div className="max-w-md mx-auto text-center">
+          <div className="border border-white/10 rounded-lg p-12 bg-white/[0.02]">
+            <CheckCircle size={32} className="text-white/40 mx-auto mb-6" strokeWidth={1} />
+            <h3 className="text-xl font-medium text-white mb-3">Thank you</h3>
+            <p className="text-sm text-white/40 mb-8">
               {formType === 'beta' 
-                ? "You've been added to our beta waitlist. We'll reach out soon!"
-                : "We've received your message and will get back to you shortly."}
+                ? "You've been added to our beta waitlist."
+                : "We've received your message."}
             </p>
             <button 
               onClick={() => setSuccess(false)}
-              className="btn-secondary"
+              className="btn-secondary text-sm"
             >
-              Submit Another
+              SUBMIT ANOTHER
             </button>
           </div>
         </div>
@@ -91,46 +89,47 @@ export default function BetaForm() {
   }
 
   return (
-    <section id="beta" className="relative py-24 px-6">
-      <div className="max-w-4xl mx-auto">
+    <section id="beta" className="relative py-32 px-6">
+      <div className="max-w-xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
-            Ready to <span className="gradient-text">Get Started?</span>
+          <p className="text-xs uppercase tracking-widest mb-4" style={{ color: 'var(--text-secondary)' }}>JOIN US</p>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+            Get early access
           </h2>
-          <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            Join our beta program or reach out to our team. We'd love to hear from you.
+          <p className="text-body">
+            Join our beta program or reach out to our team.
           </p>
         </div>
         
-        {/* Form Type Toggle */}
-        <div className="flex justify-center gap-4 mb-8">
+        {/* Form Type Toggle - Minimal */}
+        <div className="flex justify-center gap-2 mb-10">
           <button
             onClick={() => setFormType('beta')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`px-4 py-2 rounded text-sm font-medium transition-all ${
               formType === 'beta' 
-                ? 'bg-[#0098EA] text-white' 
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                ? 'bg-white text-black' 
+                : 'text-white/40 hover:text-white'
             }`}
           >
             Join Beta
           </button>
           <button
             onClick={() => setFormType('contact')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all ${
+            className={`px-4 py-2 rounded text-sm font-medium transition-all ${
               formType === 'contact' 
-                ? 'bg-[#0098EA] text-white' 
-                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                ? 'bg-white text-black' 
+                : 'text-white/40 hover:text-white'
             }`}
           >
-            Contact Team
+            Contact
           </button>
         </div>
         
-        <div className="glass-card p-8 md:p-12">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
+        <div className="border rounded-lg p-8" style={{ borderColor: 'var(--card-border)', background: 'var(--card-bg)' }}>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="grid md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-white/70 mb-2 text-sm">Name *</label>
+                <label className="block text-white/40 mb-2 text-xs uppercase tracking-wider">Name</label>
                 <input
                   type="text"
                   required
@@ -141,7 +140,7 @@ export default function BetaForm() {
                 />
               </div>
               <div>
-                <label className="block text-white/70 mb-2 text-sm">Email *</label>
+                <label className="block text-white/40 mb-2 text-xs uppercase tracking-wider">Email</label>
                 <input
                   type="email"
                   required
@@ -156,7 +155,7 @@ export default function BetaForm() {
             {formType === 'beta' && (
               <>
                 <div>
-                  <label className="block text-white/70 mb-2 text-sm">Telegram (optional)</label>
+                  <label className="block text-white/40 mb-2 text-xs uppercase tracking-wider">Telegram (optional)</label>
                   <input
                     type="text"
                     className="input-field"
@@ -166,8 +165,8 @@ export default function BetaForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-white/70 mb-2 text-sm">Preferred Device</label>
-                  <div className="flex gap-4">
+                  <label className="block text-white/40 mb-2 text-xs uppercase tracking-wider">Device</label>
+                  <div className="flex gap-6">
                     {['ios', 'android', 'both'].map((device) => (
                       <label key={device} className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -176,9 +175,9 @@ export default function BetaForm() {
                           value={device}
                           checked={formData.device === device}
                           onChange={(e) => setFormData({ ...formData, device: e.target.value })}
-                          className="w-4 h-4 accent-[#0098EA]"
+                          className="w-3 h-3 accent-white"
                         />
-                        <span className="text-white/70 capitalize">{device}</span>
+                        <span className="text-white/50 text-sm capitalize">{device}</span>
                       </label>
                     ))}
                   </div>
@@ -188,7 +187,7 @@ export default function BetaForm() {
             
             {formType === 'contact' && (
               <div>
-                <label className="block text-white/70 mb-2 text-sm">Message *</label>
+                <label className="block text-white/40 mb-2 text-xs uppercase tracking-wider">Message</label>
                 <textarea
                   required
                   rows={4}
@@ -202,7 +201,7 @@ export default function BetaForm() {
             
             {error && (
               <div className="flex items-center gap-2 text-red-400 text-sm">
-                <AlertCircle size={16} />
+                <AlertCircle size={14} />
                 {error}
               </div>
             )}
@@ -213,11 +212,11 @@ export default function BetaForm() {
               className="btn-primary w-full flex items-center justify-center gap-2"
             >
               {loading ? (
-                <Loader2 size={20} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
               ) : (
                 <>
-                  <Send size={18} />
-                  {formType === 'beta' ? 'Join Beta Waitlist' : 'Send Message'}
+                  {formType === 'beta' ? 'JOIN WAITLIST' : 'SEND MESSAGE'}
+                  <ArrowRight size={14} />
                 </>
               )}
             </button>

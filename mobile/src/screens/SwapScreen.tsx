@@ -67,16 +67,31 @@ const SEPOLIA_TOKENS: TokenInfo[] = [
   }
 ];
 
-export default function SwapScreen({ navigation }: Props) {
+export default function SwapScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
   const insets = useSafeAreaInsets();
   const wallet = activeAccount;
 
-  // State
-  const [fromToken, setFromToken] = useState<TokenInfo | null>(SEPOLIA_TOKENS[0]); // Default ETH
-  const [toToken, setToToken] = useState<TokenInfo | null>(SEPOLIA_TOKENS[1]); // Default WETH
-  const [fromAmount, setFromAmount] = useState('');
+  // Get prefill params from navigation
+  const prefillFromToken = route.params?.fromToken;
+  const prefillToToken = route.params?.toToken;
+  const prefillAmount = route.params?.amount;
+
+  // Find token by symbol
+  const findTokenBySymbol = (symbol?: string): TokenInfo | null => {
+    if (!symbol) return null;
+    return SEPOLIA_TOKENS.find(t => t.symbol.toUpperCase() === symbol.toUpperCase()) || null;
+  };
+
+  // State with prefill values
+  const [fromToken, setFromToken] = useState<TokenInfo | null>(
+    findTokenBySymbol(prefillFromToken) || SEPOLIA_TOKENS[0]
+  );
+  const [toToken, setToToken] = useState<TokenInfo | null>(
+    findTokenBySymbol(prefillToToken) || SEPOLIA_TOKENS[1]
+  );
+  const [fromAmount, setFromAmount] = useState(prefillAmount || '');
   const [toAmount, setToAmount] = useState('');
   const [balance, setBalance] = useState('0.0');
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -90,6 +105,22 @@ export default function SwapScreen({ navigation }: Props) {
 
   const chainId = 11155111; // Sepolia
   const chainName = 'Sepolia (testnet)';
+
+  // Normalize amount input - remove leading zeros except for "0.x"
+  const normalizeAmount = (value: string): string => {
+    // Remove non-numeric except dot
+    let cleaned = value.replace(/[^0-9.]/g, '');
+    // Only allow one dot
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    // Remove leading zeros (but keep "0" or "0.x")
+    if (cleaned.length > 1 && cleaned.startsWith('0') && cleaned[1] !== '.') {
+      cleaned = cleaned.replace(/^0+/, '') || '0';
+    }
+    return cleaned;
+  };
 
   // Fetch Balance for From Token
   const fetchBalance = useCallback(async () => {
@@ -499,7 +530,7 @@ export default function SwapScreen({ navigation }: Props) {
               placeholderTextColor={theme.colors.textSecondary}
               keyboardType="numeric"
               value={fromAmount}
-              onChangeText={setFromAmount}
+              onChangeText={(text) => setFromAmount(normalizeAmount(text))}
             />
           </View>
           
@@ -612,6 +643,19 @@ export default function SwapScreen({ navigation }: Props) {
       </View>
 
       <TokenModal />
+
+      {/* Loading Overlay during swap execution */}
+      <Modal visible={isExecuting} transparent animationType="fade">
+        <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingCard, { backgroundColor: theme.colors.surface }]}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={[styles.loadingTitle, { color: theme.colors.text }]}>Processing Swap</Text>
+            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+              Please wait while your transaction is being processed...
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAwareScreen>
   );
 }
@@ -631,13 +675,17 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   content: {
     padding: 16,
@@ -646,9 +694,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 4,
     marginBottom: 24,
     gap: 6,
   },
@@ -663,7 +711,7 @@ const styles = StyleSheet.create({
   },
   swapCard: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 8,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -671,8 +719,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardLabel: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   balanceText: {
     fontSize: 12,
@@ -687,7 +737,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 8,
     paddingRight: 12,
-    borderRadius: 24,
+    borderRadius: 6,
     gap: 6,
   },
   tokenSelectorText: {
@@ -773,14 +823,16 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   reviewButton: {
-    paddingVertical: 16,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 6,
     alignItems: 'center',
   },
   reviewButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   // Modal Styles
   modalContainer: {
@@ -797,8 +849,10 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   tokenItem: {
     flexDirection: 'row',
@@ -816,5 +870,27 @@ const styles = StyleSheet.create({
   },
   tokenSymbol: {
     fontSize: 14,
+  },
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingCard: {
+    padding: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 32,
+  },
+  loadingTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  loadingText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

@@ -325,8 +325,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -336,8 +338,8 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 13,
+    lineHeight: 20,
     marginBottom: 24,
   },
   selectorRow: {
@@ -348,13 +350,15 @@ const styles = StyleSheet.create({
   selectorButton: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 6,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   selectorText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   warningBox: {
     marginBottom: 24,
@@ -367,8 +371,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   warningTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   warningText: {
     fontSize: 14,
@@ -379,8 +385,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timerBox: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 6,
     marginBottom: 20,
     alignItems: 'center',
   },
@@ -391,8 +397,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   timerText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '500',
+    letterSpacing: 1,
   },
   timerSubtext: {
     fontSize: 13,
@@ -422,13 +429,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   hiddenBox: {
-    padding: 48,
-    borderRadius: 16,
+    padding: 40,
+    borderRadius: 8,
     marginBottom: 20,
     alignItems: 'center',
   },
   hiddenText: {
-    fontSize: 16,
+    fontSize: 13,
     marginTop: 16,
     marginBottom: 20,
     textAlign: 'center',

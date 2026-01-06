@@ -337,14 +337,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
   },
   backButton: {
     padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -362,9 +364,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   sectionHeaderText: {
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   settingRow: {
     flexDirection: 'row',
@@ -378,18 +381,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   settingTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
   },
   settingSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 2,
   },
   versionContainer: {
@@ -398,6 +401,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   versionText: {
-    fontSize: 13,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

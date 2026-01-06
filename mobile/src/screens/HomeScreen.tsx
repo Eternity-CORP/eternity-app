@@ -19,7 +19,7 @@ import { getTokenPreferences } from '../services/state/tokenPreferences';
 import { getEthUsdPrice, getTokenUsdPrice } from '../services/priceService';
 import { getTransactionHistory, Transaction, clearTransactionCache } from '../services/blockchain/etherscanService';
 import { getExplorerUrl } from '../constants/etherscanApi';
-import { LinearGradient } from 'expo-linear-gradient'
+// LinearGradient removed - Bittensor uses solid colors
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../context/ThemeContext'
 import BalanceCard from '../components/common/BalanceCard'
@@ -375,13 +375,7 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <>
       <AccountSwitcher visible={switcherOpen} onClose={() => setSwitcherOpen(false)} />
-      <View style={styles.container}>
-        <LinearGradient
-          colors={[theme.colors.background, '#0D0D0D']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.gradient}
-        >
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={[
@@ -617,7 +611,7 @@ export default function HomeScreen({ navigation }: Props) {
           <BottomTabBar
             tabs={[
               { key: 'wallet', icon: 'wallet', label: 'Wallet', iconActive: 'wallet' },
-              { key: 'tokens', icon: 'grid-outline', label: 'Tokens' },
+              { key: 'chat', icon: 'chatbubble-outline', label: 'AI Chat', iconActive: 'chatbubble' },
               { key: 'activity', icon: 'time-outline', label: 'Activity' },
               { key: 'settings', icon: 'settings-outline', label: 'Settings' },
             ]}
@@ -625,8 +619,8 @@ export default function HomeScreen({ navigation }: Props) {
             onTabPress={(key) => {
               if (key === 'wallet') {
                 handleActionPress(() => setSwitcherOpen(true));
-              } else if (key === 'tokens') {
-                handleActionPress(() => navigation.navigate('ManageTokens'));
+              } else if (key === 'chat') {
+                handleActionPress(() => navigation.navigate('Chat'));
               } else if (key === 'activity') {
                 handleActionPress(() => navigation.navigate('TransactionHistory', { address }));
               } else if (key === 'settings') {
@@ -634,7 +628,6 @@ export default function HomeScreen({ navigation }: Props) {
               }
             }}
           />
-        </LinearGradient>
       </View>
     </>
   );
@@ -728,13 +721,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
     gap: 8,
-    // Soft shadow
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    // Bittensor style - no shadows
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   sendButton: {
     // Background set dynamically
@@ -744,8 +737,10 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   secondaryActions: {
     flexDirection: 'row',
@@ -760,8 +755,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   secondaryButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   pendingBanner: {
     flexDirection: 'row',
@@ -788,8 +785,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   emptyState: {
     alignItems: 'center',

@@ -24,7 +24,9 @@
     "test": "npm run test --workspaces",
     "test:e2e": "vitest run",
     "docs:check": "npx tsx scripts/check-docs-consistency.ts",
-    "docs:sync": "echo '📋 Run docs:check first, then update TRACEABILITY.md manually'"
+    "docs:sync": "echo '📋 Run docs:check first, then update TRACEABILITY.md manually'",
+    "landing": "cd landing && npm run dev",
+    "landing:build": "cd landing && npm run build"
   },
   "keywords": [
     "crypto",
@@ -46,6 +48,7 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "@react-native-picker/picker": "2.11.1",
     "dotenv": "^16.4.0",
     "expo-blur": "~15.0.8",
     "expo-haptics": "~15.0.8",

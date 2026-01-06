@@ -267,8 +267,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   card: {
     marginBottom: 16,
@@ -279,9 +281,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -295,8 +297,8 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   amount: {
-    fontSize: 36,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '500',
   },
   subtext: {
     fontSize: 12,

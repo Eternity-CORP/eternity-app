@@ -137,23 +137,25 @@ const styles = StyleSheet.create({
     marginTop: 60,
   },
   logoContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 28,
+    width: 80,
+    height: 80,
+    borderRadius: 8, // Bittensor style
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '500',
     marginBottom: 8,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 13,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 20,
   },
   featuresContainer: {
     gap: 16,
@@ -161,12 +163,12 @@ const styles = StyleSheet.create({
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 14,
   },
   featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 6, // Bittensor style
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -174,12 +176,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
     marginBottom: 2,
   },
   featureDescription: {
-    fontSize: 14,
+    fontSize: 12,
   },
   buttonContainer: {
     gap: 12,
@@ -188,19 +190,23 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   outlineButton: {
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderWidth: 1,
+    borderRadius: 6, // Bittensor style
+    paddingVertical: 14,
     alignItems: 'center',
   },
   outlineButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   terms: {
-    fontSize: 12,
+    fontSize: 10,
     textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 18,
+    lineHeight: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

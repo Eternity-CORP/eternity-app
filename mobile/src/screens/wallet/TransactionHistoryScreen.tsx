@@ -268,12 +268,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   headerSub: {
     fontSize: 12,
@@ -290,28 +294,26 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   sectionHeader: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginTop: 16,
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   row: {
     flexDirection: 'row',
-    padding: 16, // More padding
+    padding: 14,
     alignItems: 'center',
     marginBottom: 8,
-    // Soft shadow
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    // No shadows for Bittensor style
   },
   iconCircle: {
-    width: 48, // Slightly larger
-    height: 48,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14, // More spacing
+    marginRight: 12,
   },
   icon: {
     fontSize: 20,
@@ -322,12 +324,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
   },
   amount: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '500',
   },
   amountSent: {
     color: '#FF3B30',

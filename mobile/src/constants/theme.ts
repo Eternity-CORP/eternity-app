@@ -84,52 +84,52 @@ const baseSpacing = {
   xl: 32,
 };
 
-// TON Wallet/Telegram style - more rounded corners
+// Bittensor style - minimal rounded corners
 const baseRadius = {
-  sm: 12,
-  md: 16,
-  lg: 20,
-  xl: 28,
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
 };
 
-// TON Wallet/Telegram inspired color palette
+// Bittensor inspired color palette - Light theme (white background)
 export const lightTheme: Theme = {
   colors: {
-    primary: '#3390EC',      // Telegram blue
-    secondary: '#6BCF7F',    // Telegram green accent
+    primary: '#000000',      // Black primary
+    secondary: '#737373',    // Gray secondary
     background: '#FFFFFF',   // Pure white
-    card: 'rgba(255, 255, 255, 0.8)',  // Semi-transparent white for glassmorphism
-    surface: 'rgba(247, 248, 250, 0.9)', // Light surface with transparency
+    card: '#FAFAFA',         // Very light gray cards
+    surface: '#F5F5F5',      // Light surface
     text: '#000000',         // Pure black text
-    textSecondary: '#6D6D70',
-    muted: 'rgba(0, 0, 0, 0.3)',
-    border: 'rgba(0, 0, 0, 0.06)', // Very subtle borders
-    error: '#F44336',
-    success: '#4CAF50',
-    warning: '#FF9800',
-    accent: '#3390EC',
+    textSecondary: '#737373', // Gray text
+    muted: 'rgba(0, 0, 0, 0.2)',
+    border: 'rgba(0, 0, 0, 0.08)', // Subtle borders
+    error: '#DC2626',
+    success: '#16A34A',
+    warning: '#D97706',
+    accent: '#000000',       // Black accent
   },
   typography: baseTypography,
   spacing: baseSpacing,
   radius: baseRadius,
 };
 
-// Dark theme inspired by Telegram dark mode
+// Bittensor inspired - Dark theme (black background)
 export const darkTheme: Theme = {
   colors: {
-    primary: '#3390EC',      // Telegram blue
-    secondary: '#6BCF7F',    // Telegram green accent
-    background: '#0E1621',   // Telegram dark background
-    card: 'rgba(31, 45, 61, 0.7)',  // Semi-transparent dark cards (glassmorphism)
-    surface: 'rgba(22, 32, 45, 0.8)', // Dark surface with transparency
+    primary: '#FFFFFF',      // White primary
+    secondary: '#A3A3A3',    // Gray secondary
+    background: '#000000',   // Pure black
+    card: '#0A0A0A',         // Very dark cards
+    surface: '#171717',      // Dark surface
     text: '#FFFFFF',         // Pure white text
-    textSecondary: 'rgba(255, 255, 255, 0.6)',
-    muted: 'rgba(255, 255, 255, 0.3)',
-    border: 'rgba(255, 255, 255, 0.08)', // Very subtle borders
-    error: '#F44336',
-    success: '#4CAF50',
-    warning: '#FF9800',
-    accent: '#3390EC',
+    textSecondary: 'rgba(255, 255, 255, 0.5)', // Gray text
+    muted: 'rgba(255, 255, 255, 0.2)',
+    border: 'rgba(255, 255, 255, 0.08)', // Subtle borders
+    error: '#EF4444',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    accent: '#FFFFFF',       // White accent
   },
   typography: baseTypography,
   spacing: baseSpacing,

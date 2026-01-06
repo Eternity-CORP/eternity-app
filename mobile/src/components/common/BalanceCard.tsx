@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
 import { isBalanceHidden } from '../../services/privacySettingsService';
 
@@ -28,44 +27,57 @@ export default function BalanceCard({ amount, currency = 'USD', subtitle = 'Port
 
   const displayAmount = hidden ? '***' : `$${amount.toFixed(2)}`;
 
+  // Bittensor style - solid color, no gradient
   return (
-    <LinearGradient
-      colors={[theme.colors.primary, theme.colors.secondary]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.card, { borderRadius: theme.radius.lg }]}
+    <View
+      style={[
+        styles.card, 
+        { 
+          borderRadius: theme.radius.md,
+          backgroundColor: theme.colors.primary,
+        }
+      ]}
     >
-      <Text style={[styles.subtitle, { color: '#fff', fontFamily: theme.typography.fontFamilies.medium }]}>{subtitle}</Text>
+      <Text style={[styles.subtitle, { color: theme.colors.background, fontFamily: theme.typography.fontFamilies.medium }]}>
+        {subtitle.toUpperCase()}
+      </Text>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-        <Text style={[styles.amount, { color: '#fff', fontFamily: theme.typography.fontFamilies.bold }]}>{displayAmount}</Text>
-        {!hidden && <Text style={[styles.currency, { color: '#fff', marginLeft: 8 }]}>{currency}</Text>}
+        <Text style={[styles.amount, { color: theme.colors.background, fontFamily: theme.typography.fontFamilies.bold }]}>
+          {displayAmount}
+        </Text>
+        {!hidden && (
+          <Text style={[styles.currency, { color: theme.colors.background, marginLeft: 8 }]}>
+            {currency}
+          </Text>
+        )}
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: 24, // More spacious
-    // Soft shadow for depth
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
+    padding: 24,
+    // Bittensor style - no shadows
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   subtitle: {
-    fontSize: 14,
-    opacity: 0.9,
-    marginBottom: 10,
-    letterSpacing: 0.3,
+    fontSize: 12,
+    opacity: 0.7,
+    marginBottom: 8,
+    letterSpacing: 1,
   },
   amount: {
-    fontSize: 36, // Slightly larger
-    letterSpacing: -0.5, // Tighter letter spacing for large numbers
+    fontSize: 40,
+    fontWeight: '600',
+    letterSpacing: -1,
   },
   currency: {
-    fontSize: 18,
-    opacity: 0.9,
-    marginBottom: 4,
+    fontSize: 16,
+    opacity: 0.7,
+    marginBottom: 6,
   },
 });

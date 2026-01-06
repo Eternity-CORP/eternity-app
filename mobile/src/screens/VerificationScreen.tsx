@@ -209,8 +209,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -220,13 +222,15 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   subTitle: {
-    fontSize: 16,
+    fontSize: 12,
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   description: {
-    fontSize: 16,
+    fontSize: 13,
     marginBottom: 32,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   testContainer: {
     marginBottom: 24,
@@ -235,19 +239,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   testLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
+    borderRadius: 6,
+    padding: 12,
+    fontSize: 14,
   },
   errorBox: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 16,
   },
   errorText: {
@@ -256,16 +262,16 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 6,
     marginBottom: 16,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
   },
   button: {
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 6,
     marginBottom: 12,
   },
   buttonDisabled: {
@@ -273,8 +279,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

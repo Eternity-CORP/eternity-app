@@ -129,8 +129,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -149,7 +151,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tabLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

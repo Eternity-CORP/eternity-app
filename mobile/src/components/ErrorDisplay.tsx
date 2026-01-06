@@ -221,14 +221,9 @@ function getSeverityIcon(severity: 'error' | 'warning' | 'info'): string {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 6,
     overflow: 'hidden',
     marginVertical: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   header: {
     flexDirection: 'row',
@@ -243,8 +238,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     marginBottom: 4,
   },
   message: {
@@ -258,15 +253,17 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E5EA',
   },
   retryHistoryTitle: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '500',
     color: '#8E8E93',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   retryAttempt: {
     padding: 8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 6,
+    borderRadius: 4,
   },
   retryAttemptText: {
     fontSize: 11,
@@ -284,23 +281,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     backgroundColor: '#F2F2F7',
     borderWidth: 1,
     borderColor: '#E5E5EA',
   },
   actionButtonPrimary: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#000',
+    borderColor: '#000',
   },
   actionIcon: {
     fontSize: 14,
     marginRight: 6,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '500',
     color: '#000000',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   actionTextPrimary: {
     color: '#FFFFFF',
@@ -313,9 +312,11 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   technicalToggleText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#8E8E93',
     fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   technicalDetails: {
     maxHeight: 100,
@@ -351,8 +352,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderLeftWidth: 4,
+    borderRadius: 6,
+    borderLeftWidth: 3,
     marginVertical: 4,
   },
   compactIcon: {
@@ -363,8 +364,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   compactTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#000000',
     marginBottom: 2,
   },

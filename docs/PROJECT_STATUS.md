@@ -1,8 +1,9 @@
 # E-Y Wallet — Project Status
 
-**Last Updated:** December 24, 2025  
-**Phase:** MVP Complete — Ready for E2E Testing  
-**Overall Progress:** ~99%
+**Last Updated:** January 4, 2026
+**Phase:** Point A — Thinking Wallet Development
+**Overall Progress:** MVP Complete (~99%), AI Features (~0%)
+**Current Focus:** AI Integration (Epic 06)
 
 ---
 
@@ -43,6 +44,42 @@
 | Fiat On-ramp | Out of MVP scope |
 | NFT Management | Out of MVP scope |
 | WalletConnect | Out of MVP scope |
+
+---
+
+## 🧠 Point A: Thinking Wallet (NEW)
+
+### AI Features Status
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| **AI Intent Parser** | 📋 Planned | Groq + LangChain |
+| **Item Card Transactions** | 📋 Planned | RPG-style TX cards |
+| **Reply-to-Pay** | 📋 Planned | Swipe/text confirmation |
+| **Ghost Mode** | 📋 Planned | Hide balances |
+| **Duress PIN** | 📋 Planned | Fake wallet under duress |
+| **5 Intent Commands** | 📋 Planned | Balance, Send, Swap, Fees, Price |
+| **Seed Word Gate** | 📋 Planned | 3 words for large TX |
+| **Chat Screen UI** | 📋 Planned | Conversational interface |
+
+### Killer Features (3)
+
+| # | Feature | Description | Competitor Gap |
+|---|---------|-------------|----------------|
+| 1 | **Item Card Transactions** | TX as RPG card with 🟢🟡🔴 risk | Metamask = boring modal |
+| 2 | **Reply-to-Pay** | Natural language + swipe | Competitors = forms |
+| 3 | **Ghost Mode + Duress PIN** | Privacy + fake wallet | No competitor has this |
+
+### Implementation Timeline
+
+| Phase | Duration | Status |
+|-------|----------|--------|
+| Week 1-2: Core AI + Item Card | 2 weeks | 📋 Planned |
+| Week 2-3: Reply-to-Pay + Confirmation | 1 week | 📋 Planned |
+| Week 3-4: Ghost Mode + Duress PIN | 1 week | 📋 Planned |
+
+**Epic:** [Epic 06: AI Integration](./prd/epic-06-ai-integration.md)
+**Brainstorming:** [Session Report](./_bmad-output/analysis/brainstorming-session-2026-01-04.md)
 
 ---
 

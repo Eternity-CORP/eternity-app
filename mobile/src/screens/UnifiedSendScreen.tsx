@@ -30,10 +30,24 @@ type Props = NativeStackScreenProps<MainStackParamList, 'Send'>;
 
 type SendMode = 'wallet' | 'identifier' | 'blik';
 
-export default function UnifiedSendScreen({ navigation }: Props) {
+export default function UnifiedSendScreen({ navigation, route }: Props) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [activeMode, setActiveMode] = useState<SendMode>('wallet');
+  
+  // Get pre-filled params from chat or other sources
+  const prefillRecipient = route.params?.recipient;
+  const prefillAmount = route.params?.amount;
+  const prefillToken = route.params?.token;
+  
+  // Auto-select mode based on recipient format
+  const getInitialMode = (): SendMode => {
+    if (prefillRecipient?.startsWith('@') || prefillRecipient?.startsWith('ey-')) {
+      return 'identifier';
+    }
+    return 'wallet';
+  };
+  
+  const [activeMode, setActiveMode] = useState<SendMode>(getInitialMode());
 
   const tabs = [
     { key: 'wallet' as SendMode, label: 'Wallet', icon: 'wallet-outline' },
@@ -44,9 +58,22 @@ export default function UnifiedSendScreen({ navigation }: Props) {
   const renderModeContent = () => {
     switch (activeMode) {
       case 'wallet':
-        return <SendByWalletMode navigation={navigation} />;
+        return (
+          <SendByWalletMode 
+            navigation={navigation}
+            prefillAddress={prefillRecipient?.startsWith('0x') ? prefillRecipient : undefined}
+            prefillAmount={prefillAmount}
+          />
+        );
       case 'identifier':
-        return <SendByIdentifierMode navigation={navigation} />;
+        return (
+          <SendByIdentifierMode 
+            navigation={navigation}
+            prefillIdentifier={prefillRecipient}
+            prefillAmount={prefillAmount}
+            prefillToken={prefillToken}
+          />
+        );
       case 'blik':
         return <SendByBlikMode navigation={navigation} />;
       default:
@@ -134,8 +161,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -154,7 +183,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   tabLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

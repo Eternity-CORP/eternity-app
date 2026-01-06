@@ -460,8 +460,10 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollView: {
     flex: 1,
@@ -482,8 +484,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '500',
     marginTop: 16,
   },
   statusMessage: {
@@ -533,9 +535,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500',
     marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   progressBar: {
     height: 4,
@@ -575,8 +579,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
     marginBottom: 24,
   },
   timeText: {
@@ -591,19 +595,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
   },
   linkText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
     marginBottom: 24,
   },
   errorText: {
@@ -620,15 +626,17 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0, 0, 0, 0.05)',
   },
   homeButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   homeButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 

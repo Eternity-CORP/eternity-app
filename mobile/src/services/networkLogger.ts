@@ -74,6 +74,10 @@ class NetworkLogger {
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+          ...options?.headers,
+        },
       });
 
       clearTimeout(timeoutId);

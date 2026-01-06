@@ -1,7 +1,8 @@
 # E-Y Wallet — Current Status & Roadmap
 
-**Last Updated:** December 20, 2025 (Evening)  
+**Last Updated:** January 4, 2026
 **Phase:** MVP Complete — Ready for E2E Testing
+**Current Focus:** Point A — Thinking Wallet
 **Overall Progress:** ~99%
 
 ---
@@ -237,30 +238,102 @@ cd mobile && npx expo start
 
 ---
 
-## 🔮 Post-MVP Roadmap (Future)
+## 🔮 Strategic Roadmap
 
-### Phase 2: Production Polish (2-3 weeks)
-- Fee breakdown UI component
-- Error recovery UX improvements
-- Analytics integration
-- Performance optimization
-- App Store submission preparation
+### 🅰️ Point A: Thinking Wallet (MVP — Current Goal)
+**Timeline:** 2-4 weeks
+**Status:** 🚧 In Design (Brainstorming Complete Jan 4, 2026)
 
-### Phase 3: Feature Expansion (4-6 weeks)
-- Rango router integration (if API key obtained)
-- WalletConnect support
-- NFT management
-- Fiat on-ramp integration
-- Advanced transaction scheduling
+**Killer Features (3):**
 
-### Phase 4: Scale & Growth
-- Marketing website
-- User acquisition campaigns
-- Community building
-- Additional chain support
+| # | Feature | Description | Competitor Gap |
+|---|---------|-------------|----------------|
+| 1 | **Item Card Transactions** | TX as RPG card with color-coded risk (🟢🟡🔴), flip animation for stats | Metamask = boring modal |
+| 2 | **Reply-to-Pay** | Natural language confirmation via swipe/text commands | Competitors = form fields |
+| 3 | **Ghost Mode + Duress PIN** | Privacy mode + fake wallet under duress | No competitor has this |
+
+**Confirmation Flow:**
+```
+User Intent → AI Parse → Item Card (color) → Swipe/Reply → Security Gate → Execute
+```
+
+**5 Intent Commands (MVP):**
+1. `"Сколько у меня денег?"` → Balance + breakdown
+2. `"Отправь 0.1 ETH на @alice"` → Parse → Item Card → Confirm
+3. `"Обменяй USDC на ETH"` → Best rate → Item Card
+4. `"Сколько потратил на комиссии?"` → TX analysis + tips
+5. `"Сколько стоит мой ETH?"` → Price + 24h change
+
+**Security Model:**
+- Operations >$500 or new address → 3 random seed words
+- Duress PIN → shows decoy wallet + silent alert
+- Ghost Mode → hides all balances in public
+
+**Tech Stack:**
+- Current monorepo (mobile + backend)
+- Groq API (fast LLM inference)
+- LangChain (agent logic and orchestration)
+
+**Implementation Phases:**
+- Week 1-2: Core AI + Item Card component
+- Week 2-3: Reply-to-Pay + Confirmation Flow
+- Week 3-4: Ghost Mode + Duress PIN + Polish
+
+**Related Documents:**
+- [Brainstorming Report](./_bmad-output/analysis/brainstorming-session-2026-01-04.md)
+- [Epic 06: AI Integration](./prd/epic-06-ai-integration.md)
 
 ---
 
-**Document Maintainer:** Dev Team  
-**Review Cadence:** Daily during MVP sprint  
-**Last Major Update:** December 20, 2025 (Wallet signing + Status screen completed)
+### 🅱️ Point B: Smart Security & Analytics
+**Timeline:** 2-3 months
+
+**Functionality:**
+- AI-powered transaction analysis for scam detection ("This address is blacklisted")
+- Portfolio summaries and insights ("You spent 20% on gas this month")
+- Human-readable notifications and alerts
+- Risk scoring for transactions before signing
+
+**Tech Stack:**
+- External APIs integration (CoinGecko, Zerion, Alchemy)
+- ML models for pattern recognition
+- Push notification service
+
+---
+
+### 🅲 Point C: Decentralized Intelligence (Bittensor)
+**Timeline:** 6+ months
+
+**Functionality:**
+- Replacing centralized AI APIs with Bittensor subnet queries (Subnet 18/1)
+- Integration of activity rewards ($TAO / $ETRN tokens)
+- Community-powered AI inference
+- Decentralized data analysis
+
+**Tech Stack:**
+- Bittensor SDK
+- Custom proxy server for subnet communication
+- Token reward distribution system
+
+---
+
+### 🅳 Point D: Sovereign Ecosystem (Vision)
+**Timeline:** 1+ year
+
+**Functionality:**
+- **Eternity Passport** — Wallet as universal identity
+- Single ID for accessing any dApps and AI services
+- Full data decentralization and user sovereignty
+- Self-custody of identity, reputation, and credentials
+- Cross-platform authentication without intermediaries
+
+**Tech Stack:**
+- Decentralized identity standards (DID, Verifiable Credentials)
+- IPFS/Arweave for data storage
+- Zero-knowledge proofs for privacy
+
+---
+
+**Document Maintainer:** Dev Team
+**Review Cadence:** Daily during MVP sprint
+**Last Major Update:** January 4, 2026 (Strategic roadmap: Points A→D added)

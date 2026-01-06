@@ -23,6 +23,9 @@ import { getChainInfo } from '../../constants/chains';
 
 interface Props {
   navigation: any;
+  prefillIdentifier?: string;
+  prefillAmount?: string;
+  prefillToken?: string;
 }
 
 const SUPPORTED_CHAINS = [
@@ -34,15 +37,15 @@ const SUPPORTED_CHAINS = [
 const SEPOLIA_TOKENS = ['ETH'];
 const MAINNET_TOKENS = ['ETH', 'USDC', 'USDT', 'DAI'];
 
-export default function SendByIdentifierMode({ navigation }: Props) {
+export default function SendByIdentifierMode({ navigation, prefillIdentifier, prefillAmount, prefillToken }: Props) {
   const { theme } = useTheme();
   const { activeAccount } = useWallet();
   const { activeWallets, loading: prefsLoading } = useWalletPreferences();
   const { getPreferenceForToken } = useTokenChainPreferences();
 
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
-  const [selectedToken, setSelectedToken] = useState('ETH');
+  const [recipient, setRecipient] = useState(prefillIdentifier || '');
+  const [amount, setAmount] = useState(prefillAmount || '');
+  const [selectedToken, setSelectedToken] = useState(prefillToken || 'ETH');
   const [fromChainId, setFromChainId] = useState('sepolia');
   const [toChainId, setToChainId] = useState('');
 
@@ -112,27 +115,27 @@ export default function SendByIdentifierMode({ navigation }: Props) {
     if (resolved) {
       // 1. Check local token preference first (from user's own preferences)
       const localPref = getPreferenceForToken(selectedToken);
-      if (localPref && resolved.wallets.find((w) => w.chainId === localPref)) {
+      if (localPref && resolved.wallets?.find((w) => w.chainId === localPref)) {
         setToChainId(localPref);
         return;
       }
 
       // 2. Check backend token preference (recipient's preferences)
-      const backendPref = resolved.tokenPreferences.find((p) => p.tokenSymbol === selectedToken);
+      const backendPref = resolved.tokenPreferences?.find((p) => p.tokenSymbol === selectedToken);
       if (backendPref) {
         setToChainId(backendPref.preferredChainId);
         return;
       }
 
       // 3. Try same chain fallback
-      const sameChainWallet = resolved.wallets.find((w) => w.chainId === fromChainId);
+      const sameChainWallet = resolved.wallets?.find((w) => w.chainId === fromChainId);
       if (sameChainWallet) {
         setToChainId(fromChainId);
         return;
       }
 
       // 4. Use first wallet as last resort
-      if (resolved.wallets.length > 0) {
+      if (resolved.wallets?.length > 0) {
         setToChainId(resolved.wallets[0].chainId);
       } else {
         setToChainId(fromChainId);
@@ -243,13 +246,13 @@ export default function SendByIdentifierMode({ navigation }: Props) {
       return;
     }
 
-    const hasAddress = resolved.wallets.some((w) => w.chainId === toChainId);
+    const hasAddress = resolved.wallets?.some((w) => w.chainId === toChainId);
     if (!hasAddress) {
       Alert.alert('No Address', `@${resolved.nickname} doesn't have a ${toChainId} address yet. Try selecting a different network.`);
       return;
     }
 
-    const toAddress = resolved.wallets.find((w) => w.chainId === toChainId)?.address;
+    const toAddress = resolved.wallets?.find((w) => w.chainId === toChainId)?.address;
     if (!toAddress) return;
 
     if (fromChainId === toChainId) {
@@ -359,7 +362,7 @@ export default function SendByIdentifierMode({ navigation }: Props) {
                 Recipient found: @{resolved.nickname} ({resolved.globalId})
               </Text>
               <Text style={[styles.detailText, { color: theme.colors.textSecondary }]}>
-                Has addresses: {resolved.wallets.map((w) => w.chainId).join(', ')}
+                Has addresses: {resolved.wallets?.map((w) => w.chainId).join(', ') || 'None'}
               </Text>
             </View>
           </View>
@@ -407,13 +410,13 @@ export default function SendByIdentifierMode({ navigation }: Props) {
               <Text style={[styles.autoDetectedHint, { color: theme.colors.textSecondary }]}>
                 {getPreferenceForToken(selectedToken)
                   ? 'Based on your token preference'
-                  : resolved.tokenPreferences.find((p) => p.tokenSymbol === selectedToken)
+                  : resolved.tokenPreferences?.find((p) => p.tokenSymbol === selectedToken)
                   ? `Based on ${resolved.nickname}'s token preference`
                   : `Based on ${resolved.nickname}'s wallet addresses`}
               </Text>
             </View>
           </View>
-          {resolved.wallets.length === 0 && (
+          {(resolved.wallets?.length ?? 0) === 0 && (
             <Text style={[styles.errorText, { color: theme.colors.error }]}>Recipient has no wallet addresses</Text>
           )}
         </Card>
@@ -495,8 +498,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
+    borderWidth: 1,
+    borderRadius: 6,
     paddingHorizontal: 12,
   },
   inputIcon: {
@@ -512,7 +515,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 8,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     marginTop: 12,
   },
   hint: {
@@ -526,7 +529,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 12,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   statusText: {
     fontSize: 14,
@@ -550,8 +553,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    padding: 14,
-    borderRadius: 12,
+    padding: 12,
+    borderRadius: 6,
   },
   autoDetectedText: {
     fontSize: 15,
@@ -571,10 +574,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 2,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
     flex: 1,
     minWidth: '45%',
   },
@@ -582,15 +585,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   chainName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '500',
   },
   warningBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 6,
     marginHorizontal: 16,
     marginBottom: 16,
   },
@@ -602,20 +605,20 @@ const styles = StyleSheet.create({
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 14,
   },
   currencySymbol: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '500',
     marginRight: 8,
   },
   amountInput: {
     flex: 1,
-    fontSize: 28,
-    fontWeight: '700',
-    paddingVertical: 14,
+    fontSize: 22,
+    fontWeight: '500',
+    paddingVertical: 12,
   },
   balanceText: {
     fontSize: 13,
@@ -627,23 +630,17 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   button: {
-    height: 56,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   spacer: {
     height: 20,
