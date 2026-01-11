@@ -106,6 +106,18 @@ docs/api-documentation
 
 ## Troubleshooting
 
+### Authentication issues
+```bash
+# Switch GitHub account if needed
+gh auth switch -u eternaki
+
+# Setup git to use GitHub CLI auth
+gh auth setup-git
+
+# Then push
+git push origin main
+```
+
 ### Push rejected (non-fast-forward)
 ```bash
 git fetch origin

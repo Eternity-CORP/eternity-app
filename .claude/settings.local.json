@@ -24,7 +24,12 @@
       "Bash(npx turbo run dev:*)",
       "Bash(npx tsc:*)",
       "Bash(eas:*)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "Bash(git fetch:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git push:*)",
+      "Bash(gh auth:*)",
+      "Bash(git add:*)"
     ]
   }
 }
