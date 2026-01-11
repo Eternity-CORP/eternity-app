@@ -29,7 +29,15 @@
       "Bash(git remote set-url:*)",
       "Bash(git push:*)",
       "Bash(gh auth:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pnpm dev)",
+      "Bash(createdb:*)",
+      "Bash(psql:*)",
+      "Bash(timeout 15 pnpm dev:*)",
+      "Bash(pnpm --filter @e-y/shared typecheck:*)",
+      "Bash(pnpm --filter @e-y/crypto typecheck:*)",
+      "Bash(pnpm typecheck:*)"
     ]
   }
 }

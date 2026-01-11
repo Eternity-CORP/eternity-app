@@ -1,6 +1,9 @@
 // Wallet operations
 export * from './wallet';
 
+// Mnemonic utilities
+export * from './mnemonic';
+
 // Transaction signing
 export * from './signer';
 

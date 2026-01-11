@@ -6,7 +6,7 @@ date: '2026-01-11'
 status: 'IN_PROGRESS'
 total_epics: 6
 total_stories: 21
-completed_stories: 2
+completed_stories: 4
 last_updated: '2026-01-11'
 ---
 
@@ -194,44 +194,49 @@ So that I can start building wallet features.
 
 ---
 
-### Story 1.3: Setup NestJS Backend
+### Story 1.3: Setup NestJS Backend ✅ COMPLETED
 
 As a **developer**,
 I want the backend API initialized,
 So that I can build @username and BLIK services.
+
+**Status:** COMPLETED (2026-01-11)
 
 **Acceptance Criteria:**
 
 **Given** monorepo from Story 1.1
 **When** I initialize the NestJS app
 **Then** `apps/api/` contains:
-- NestJS with TypeScript
-- WebSocket gateway configured
-- Health check endpoint at `/health`
-- Environment config setup
-**And** `pnpm dev` starts the API on port 3000
+- [x] NestJS with TypeScript
+- [x] WebSocket gateway configured (BLIK at `/blik`)
+- [x] Health check endpoint at `/health`
+- [x] Environment config setup (`.env.example`)
+**And** [x] `pnpm dev` starts the API on port 3000
 
 ---
 
-### Story 1.4: Create Shared Packages
+### Story 1.4: Create Shared Packages ✅ COMPLETED
 
 As a **developer**,
 I want shared packages with types and crypto utilities,
 So that mobile and API can share code.
+
+**Status:** COMPLETED (2026-01-11)
 
 **Acceptance Criteria:**
 
 **Given** monorepo from Story 1.1
 **When** I build shared packages
 **Then** `@e-y/shared` exports:
-- TypeScript types (User, Wallet, Transaction, BlikCode)
-- Constants (error codes, limits)
-- Validation utilities
+- [x] TypeScript types (User, Wallet, Transaction, BlikCode)
+- [x] Constants (error codes, limits)
+- [x] Validation utilities
 **And** `@e-y/crypto` exports:
-- Wallet generation (BIP-39)
-- Key derivation (HD wallet)
-- Transaction signing
-**And** both packages are importable from `apps/mobile` and `apps/api`
+- [x] Wallet generation (BIP-39)
+- [x] Key derivation (HD wallet)
+- [x] Transaction signing
+- [x] Mnemonic validation
+**And** [x] both packages are importable from `apps/mobile` and `apps/api`
 
 ---
 
