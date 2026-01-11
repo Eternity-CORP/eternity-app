@@ -1,0 +1,44 @@
+# EAS Build ignore file
+# Files/directories to exclude from build upload
+
+# Documentation
+docs/
+_bmad/
+_bmad-output/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Dependencies (will be installed during build)
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.expo/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Mobile specific
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/
+
+# API (not needed for mobile build)
+apps/api/
