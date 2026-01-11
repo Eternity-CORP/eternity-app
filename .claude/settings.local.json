@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:systematic-debugging)",
+      "WebFetch(domain:expo.dev)",
+      "WebSearch",
+      "Bash(pnpm install:*)",
+      "WebFetch(domain:docs.expo.dev)",
+      "WebFetch(domain:github.com)",
+      "Bash(pnpm list:*)",
+      "Bash(npm view:*)",
+      "Bash(npx expo install:*)"
+    ]
+  }
+}
