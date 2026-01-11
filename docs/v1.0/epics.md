@@ -3,10 +3,10 @@ stepsCompleted: [1, 2, 3, 4]
 inputDocuments: ['prd.md', 'architecture.md']
 project_name: 'E-Y'
 date: '2026-01-11'
-status: 'IN_PROGRESS'
+status: 'NOT_STARTED'
 total_epics: 6
 total_stories: 21
-completed_stories: 4
+completed_stories: 0
 last_updated: '2026-01-11'
 ---
 
@@ -148,95 +148,95 @@ This document provides the complete epic and story breakdown for E-Y, decomposin
 
 **Goal:** Development infrastructure ready for feature implementation
 
-### Story 1.1: Initialize Monorepo Structure ✅ COMPLETED
+### Story 1.1: Initialize Monorepo Structure
 
 As a **developer**,
 I want to have a configured monorepo with Turborepo and pnpm,
 So that I can develop mobile and backend apps with shared packages.
 
-**Status:** COMPLETED (2026-01-11)
+**Status:** NOT STARTED
 
 **Acceptance Criteria:**
 
 **Given** an empty project directory
 **When** I run the initialization scripts
 **Then** monorepo structure is created with:
-- [x] `apps/mobile/` - Expo placeholder
-- [x] `apps/api/` - NestJS placeholder
-- [x] `packages/shared/` - @e-y/shared
-- [x] `packages/crypto/` - @e-y/crypto
-- [x] `turbo.json`, `pnpm-workspace.yaml`, `.npmrc` configured
-**And** [x] `pnpm install` works without errors
-**And** [x] `pnpm dev` starts all apps
+- [ ] `apps/mobile/` - Expo placeholder
+- [ ] `apps/api/` - NestJS placeholder
+- [ ] `packages/shared/` - @e-y/shared
+- [ ] `packages/crypto/` - @e-y/crypto
+- [ ] `turbo.json`, `pnpm-workspace.yaml`, `.npmrc` configured
+**And** [ ] `pnpm install` works without errors
+**And** [ ] `pnpm dev` starts all apps
 
 ---
 
-### Story 1.2: Setup Expo Mobile App ✅ COMPLETED
+### Story 1.2: Setup Expo Mobile App
 
 As a **developer**,
 I want the mobile app initialized with correct dependencies,
 So that I can start building wallet features.
 
-**Status:** COMPLETED (2026-01-11)
+**Status:** NOT STARTED
 
 **Acceptance Criteria:**
 
 **Given** monorepo from Story 1.1
 **When** I initialize the Expo app
 **Then** `apps/mobile/` contains:
-- [x] Expo SDK 52+ with TypeScript
-- [x] Expo Router with tabs template (Home, Wallet, Shard)
-- [x] Redux Toolkit configured
-- [x] expo-dev-client installed
-- [x] EAS Build configured (eas.json)
-- [x] Design system theme constants
-**And** [x] `pnpm dev` starts the app in dev client mode
+- [ ] Expo SDK 52+ with TypeScript
+- [ ] Expo Router with tabs template (Home, Wallet, Shard)
+- [ ] Redux Toolkit configured
+- [ ] expo-dev-client installed
+- [ ] EAS Build configured (eas.json)
+- [ ] Design system theme constants
+**And** [ ] `pnpm dev` starts the app in dev client mode
 
 ---
 
-### Story 1.3: Setup NestJS Backend ✅ COMPLETED
+### Story 1.3: Setup NestJS Backend
 
 As a **developer**,
 I want the backend API initialized,
 So that I can build @username and BLIK services.
 
-**Status:** COMPLETED (2026-01-11)
+**Status:** NOT STARTED
 
 **Acceptance Criteria:**
 
 **Given** monorepo from Story 1.1
 **When** I initialize the NestJS app
 **Then** `apps/api/` contains:
-- [x] NestJS with TypeScript
-- [x] WebSocket gateway configured (BLIK at `/blik`)
-- [x] Health check endpoint at `/health`
-- [x] Environment config setup (`.env.example`)
-**And** [x] `pnpm dev` starts the API on port 3000
+- [ ] NestJS with TypeScript
+- [ ] WebSocket gateway configured (BLIK at `/blik`)
+- [ ] Health check endpoint at `/health`
+- [ ] Environment config setup (`.env.example`)
+**And** [ ] `pnpm dev` starts the API on port 3000
 
 ---
 
-### Story 1.4: Create Shared Packages ✅ COMPLETED
+### Story 1.4: Create Shared Packages
 
 As a **developer**,
 I want shared packages with types and crypto utilities,
 So that mobile and API can share code.
 
-**Status:** COMPLETED (2026-01-11)
+**Status:** NOT STARTED
 
 **Acceptance Criteria:**
 
 **Given** monorepo from Story 1.1
 **When** I build shared packages
 **Then** `@e-y/shared` exports:
-- [x] TypeScript types (User, Wallet, Transaction, BlikCode)
-- [x] Constants (error codes, limits)
-- [x] Validation utilities
+- [ ] TypeScript types (User, Wallet, Transaction, BlikCode)
+- [ ] Constants (error codes, limits)
+- [ ] Validation utilities
 **And** `@e-y/crypto` exports:
-- [x] Wallet generation (BIP-39)
-- [x] Key derivation (HD wallet)
-- [x] Transaction signing
-- [x] Mnemonic validation
-**And** [x] both packages are importable from `apps/mobile` and `apps/api`
+- [ ] Wallet generation (BIP-39)
+- [ ] Key derivation (HD wallet)
+- [ ] Transaction signing
+- [ ] Mnemonic validation
+**And** [ ] both packages are importable from `apps/mobile` and `apps/api`
 
 ---
 
