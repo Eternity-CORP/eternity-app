@@ -3,10 +3,11 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
+import walletReducer from './slices/wallet-slice';
 
 export const store = configureStore({
   reducer: {
-    // Slices will be added here
+    wallet: walletReducer,
   },
 });
 
