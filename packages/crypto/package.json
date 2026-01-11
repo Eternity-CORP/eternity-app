@@ -1,0 +1,21 @@
+{
+  "name": "@e-y/crypto",
+  "version": "0.1.0",
+  "description": "Cryptographic utilities for E-Y wallet operations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["e-y", "crypto", "wallet", "ethers"],
+  "author": "E-Y Team",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "ethers": "^6.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
