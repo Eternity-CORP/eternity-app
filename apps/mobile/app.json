@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "E-Y",
+    "slug": "e-y",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "e-y",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "backgroundColor": "#FFFFFF",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.ey.wallet",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.ey.wallet"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-system-ui"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "524f08ed-363f-4822-b996-8eb9a877f437"
+      }
+    }
+  }
+}
