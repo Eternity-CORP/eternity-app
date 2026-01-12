@@ -1,58 +1,76 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
+import { useAppDispatch } from '@/src/store/hooks';
+import { saveWalletThunk } from '@/src/store/slices/wallet-slice';
 import { theme } from '@/src/constants/theme';
 
 export default function SeedPhraseScreen() {
-  const { mnemonic } = useLocalSearchParams<{ mnemonic: string }>();
+  const { mnemonic, wordCount } = useLocalSearchParams<{ mnemonic: string; wordCount?: string }>();
+  const dispatch = useAppDispatch();
   const [words, setWords] = useState<string[]>([]);
   const [verificationWords, setVerificationWords] = useState<number[]>([]);
   const [userInputs, setUserInputs] = useState<{ [key: number]: string }>({});
   const [step, setStep] = useState<'show' | 'verify'>('show');
   const [isVerified, setIsVerified] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const totalWords = wordCount ? parseInt(wordCount, 10) : 12;
 
   useEffect(() => {
     if (mnemonic) {
       const wordList = mnemonic.split(' ');
       setWords(wordList);
-      // Select 3 random words for verification
+      // Select 3 random words for verification (or 4 for 24-word phrases)
+      const verificationCount = totalWords === 24 ? 4 : 3;
       const indices = new Set<number>();
-      while (indices.size < 3) {
+      while (indices.size < verificationCount) {
         indices.add(Math.floor(Math.random() * wordList.length));
       }
       setVerificationWords(Array.from(indices).sort((a, b) => a - b));
     }
-  }, [mnemonic]);
+  }, [mnemonic, totalWords]);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const allCorrect = verificationWords.every((index) => {
       return userInputs[index]?.toLowerCase().trim() === words[index]?.toLowerCase().trim();
     });
 
-    if (allCorrect) {
-      setIsVerified(true);
-      Alert.alert('Success', 'Wallet created successfully!', [
-        {
-          text: 'Continue',
-          onPress: () => {
-            router.replace('/(tabs)/home');
-          },
-        },
-      ]);
-    } else {
+    if (!allCorrect) {
       Alert.alert('Error', 'Some words are incorrect. Please try again.');
+      return;
+    }
+
+    // All words correct - save wallet to storage
+    if (!mnemonic) {
+      Alert.alert('Error', 'Mnemonic not found. Please start over.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await dispatch(saveWalletThunk(mnemonic)).unwrap();
+      setIsVerified(true);
+      // Navigate to home screen
+      router.replace('/(tabs)/home');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save wallet. Please try again.');
+      console.error('Wallet save error:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   if (step === 'show') {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.container}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <Text style={[styles.title, theme.typography.title]}>
             Write Down Your Recovery Phrase
           </Text>
           <Text style={[styles.instruction, theme.typography.body, { color: theme.colors.textSecondary }]}>
-            Write these 12 words down in order and keep them safe. You'll need them to recover your wallet.
+            Write these {totalWords} words down in order and keep them safe. You'll need them to recover your wallet.
           </Text>
 
           <View style={styles.wordsContainer}>
@@ -83,13 +101,15 @@ export default function SeedPhraseScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   // Verification step
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <View style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.title, theme.typography.title]}>
           Verify Your Recovery Phrase
@@ -143,13 +163,13 @@ export default function SeedPhraseScreen() {
           style={[
             styles.button,
             styles.buttonPrimary,
-            Object.keys(userInputs).length !== verificationWords.length && styles.buttonDisabled,
+            (Object.keys(userInputs).length !== verificationWords.length || isSaving) && styles.buttonDisabled,
           ]}
           onPress={handleVerify}
-          disabled={Object.keys(userInputs).length !== verificationWords.length}
+          disabled={Object.keys(userInputs).length !== verificationWords.length || isSaving}
         >
           <Text style={[styles.buttonText, { color: theme.colors.buttonPrimaryText }]}>
-            Verify & Continue
+            {isSaving ? 'Saving...' : 'Verify & Continue'}
           </Text>
         </TouchableOpacity>
 
@@ -162,11 +182,16 @@ export default function SeedPhraseScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
