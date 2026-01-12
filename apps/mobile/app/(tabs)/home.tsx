@@ -811,9 +811,4 @@ const styles = StyleSheet.create({
   transactionEmptySubtext: {
     textAlign: 'center',
   },
-    marginBottom: theme.spacing.xs,
-  },
-  addressText: {
-    fontFamily: 'monospace',
-  },
 });
