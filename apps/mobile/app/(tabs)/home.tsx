@@ -1,22 +1,42 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
+import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
+import { formatUsdValue } from '@/src/services/balance-service';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
+  const balance = useAppSelector((state) => state.balance);
   const currentAccount = getCurrentAccount(wallet);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
-  const totalBalance = '$0.00'; // TODO: Calculate from token balances
+  
+  // Load balances when account changes
+  useEffect(() => {
+    if (currentAccount?.address) {
+      dispatch(fetchBalancesThunk(currentAccount.address));
+    }
+  }, [currentAccount?.address, dispatch]);
+
+  // Pull to refresh
+  const onRefresh = useCallback(() => {
+    if (currentAccount?.address) {
+      dispatch(fetchBalancesThunk(currentAccount.address));
+    }
+  }, [currentAccount?.address, dispatch]);
+
+  // Get ETH balance
+  const ethBalance = balance.balances.find((b) => b.token === 'ETH');
+  const totalBalance = formatUsdValue(balance.totalUsdValue);
 
   const handleAddAccount = async () => {
     setIsAddingAccount(true);
@@ -93,15 +113,30 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={balance.status === 'loading'}
+            onRefresh={onRefresh}
+            tintColor={theme.colors.buttonPrimary}
+          />
+        }
+      >
       {/* Balance Section */}
       <View style={styles.balanceSection}>
         <Text style={[styles.balance, theme.typography.displayLarge]}>
-          {totalBalance}
+          {balance.status === 'loading' && !balance.lastUpdated ? '...' : totalBalance}
         </Text>
         <Text style={[styles.balanceLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
           Total Balance
         </Text>
+        {balance.error && (
+          <Text style={[styles.balanceError, theme.typography.caption, { color: theme.colors.error }]}>
+            {balance.error}
+          </Text>
+        )}
       </View>
 
       {/* Action Buttons */}
@@ -148,28 +183,44 @@ export default function HomeScreen() {
             </View>
           </View>
           <View style={styles.tokenCardBody}>
-            <Text style={[styles.tokenBalance, theme.typography.title]}>0.00 ETH</Text>
+            <Text style={[styles.tokenBalance, theme.typography.title]}>
+              {ethBalance ? `${ethBalance.balance} ETH` : '0.00 ETH'}
+            </Text>
             <Text style={[styles.tokenValue, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-              $0.00
+              {ethBalance?.usdValue ? formatUsdValue(ethBalance.usdValue) : '$0.00'}
             </Text>
           </View>
         </View>
 
         {/* Token Grid (2 columns) */}
-        <View style={styles.tokenGrid}>
-          {/* Placeholder for future tokens */}
-          <View style={styles.tokenCardSmall}>
-            <View style={styles.tokenCardHeader}>
-              <View style={[styles.tokenIcon, styles.tokenIconSmall]}>
-                <Text style={[styles.tokenIconTextSmall, theme.typography.caption]}>?</Text>
-              </View>
-              <View style={styles.tokenInfo}>
-                <Text style={[styles.tokenName, theme.typography.body]}>No tokens</Text>
-              </View>
-            </View>
-            <Text style={[styles.tokenBalanceSmall, theme.typography.body]}>—</Text>
+        {balance.balances.length > 1 && (
+          <View style={styles.tokenGrid}>
+            {balance.balances
+              .filter((b) => b.token !== 'ETH')
+              .map((token) => (
+                <View key={token.token} style={styles.tokenCardSmall}>
+                  <View style={styles.tokenCardHeader}>
+                    <View style={[styles.tokenIcon, styles.tokenIconSmall]}>
+                      <Text style={[styles.tokenIconTextSmall, theme.typography.caption]}>
+                        {token.symbol.slice(0, 2).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.tokenInfo}>
+                      <Text style={[styles.tokenName, theme.typography.body]}>{token.symbol}</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.tokenBalanceSmall, theme.typography.body]}>
+                    {token.balance}
+                  </Text>
+                  {token.usdValue && (
+                    <Text style={[styles.tokenValueSmall, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                      {formatUsdValue(token.usdValue)}
+                    </Text>
+                  )}
+                </View>
+              ))}
           </View>
-        </View>
+        )}
       </View>
 
       </ScrollView>
@@ -443,6 +494,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  balanceError: {
+    marginTop: theme.spacing.sm,
+    textAlign: 'center',
+  },
   actionsRow: {
     flexDirection: 'row',
     gap: theme.spacing.md,
@@ -542,6 +597,9 @@ const styles = StyleSheet.create({
   tokenBalanceSmall: {
     color: theme.colors.textPrimary,
     marginTop: theme.spacing.md,
+  },
+  tokenValueSmall: {
+    marginTop: theme.spacing.xs,
   },
   addressSection: {
     marginTop: theme.spacing.xl,
