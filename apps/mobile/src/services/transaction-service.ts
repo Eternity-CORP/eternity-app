@@ -183,7 +183,6 @@ export async function fetchTransactionDetails(
     // Calculate confirmations
     let confirmations = 0;
     if (receipt && receipt.blockNumber) {
-      const provider = getProvider();
       const currentBlock = await provider.getBlockNumber();
       confirmations = currentBlock - receipt.blockNumber + 1;
     }
