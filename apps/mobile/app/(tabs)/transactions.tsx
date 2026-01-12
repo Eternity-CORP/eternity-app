@@ -22,7 +22,21 @@ export default function TransactionsScreen() {
   // Load transactions when screen mounts or account changes
   useEffect(() => {
     if (currentAccount?.address) {
-      dispatch(fetchTransactionsThunk(currentAccount.address));
+      console.log('Loading transactions for address:', currentAccount.address);
+      dispatch(fetchTransactionsThunk(currentAccount.address))
+        .then((result) => {
+          console.log('Transactions loaded:', result);
+          if (result.type === 'transaction/fetchHistory/fulfilled') {
+            console.log('Transactions count:', result.payload.length);
+          } else if (result.type === 'transaction/fetchHistory/rejected') {
+            console.error('Failed to load transactions:', result.error);
+          }
+        })
+        .catch((error) => {
+          console.error('Error dispatching fetchTransactionsThunk:', error);
+        });
+    } else {
+      console.warn('No current account address available');
     }
   }, [currentAccount?.address, dispatch]);
 
