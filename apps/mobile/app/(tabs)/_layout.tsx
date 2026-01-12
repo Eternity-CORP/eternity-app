@@ -47,6 +47,13 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <TabBarIcon name="id-card" color={color} />,
           }}
         />
+        <Tabs.Screen
+          name="transactions"
+          options={{
+            href: null, // Hide from tab bar
+            headerShown: false,
+          }}
+        />
       </Tabs>
     </Provider>
   );
