@@ -9,6 +9,10 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
+    "mobile": "pnpm --filter @e-y/mobile start",
+    "mobile:go": "pnpm --filter @e-y/mobile start:go",
+    "mobile:ios": "pnpm --filter @e-y/mobile ios",
+    "mobile:android": "pnpm --filter @e-y/mobile android",
     "eas-build-pre-install": "cd apps/mobile && bash eas-build-pre-install.sh"
   },
   "devDependencies": {
@@ -19,5 +23,5 @@
     "node": ">=18.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@8.15.0"
+  "packageManager": "pnpm@9.1.0"
 }
