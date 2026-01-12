@@ -27,8 +27,9 @@ export default function ImportWalletScreen() {
       await dispatch(importWalletThunk(mnemonic)).unwrap();
       // Navigate to home screen on success
       router.replace('/(tabs)/home');
-    } catch (error: any) {
-      Alert.alert('Import Failed', error?.message || 'Invalid seed phrase. Please check your words and try again.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Invalid seed phrase. Please check your words and try again.';
+      Alert.alert('Import Failed', message);
       console.error('Wallet import error:', error);
     } finally {
       setIsImporting(false);
