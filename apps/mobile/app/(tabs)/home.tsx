@@ -259,7 +259,7 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, theme.typography.heading]}>Recent Transactions</Text>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/wallet')}
+            onPress={() => router.push('/(tabs)/transactions')}
             style={styles.viewAllButton}
           >
             <Text style={[styles.viewAllText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
@@ -291,7 +291,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={tx.hash}
                 style={styles.transactionItem}
-                onPress={() => router.push(`/(tabs)/wallet?tx=${tx.hash}`)}
+                onPress={() => router.push('/(tabs)/transactions')}
               >
                 <View style={styles.transactionIcon}>
                   <FontAwesome
