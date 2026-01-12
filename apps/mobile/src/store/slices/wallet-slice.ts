@@ -3,7 +3,7 @@
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { createWallet, loadWallet, type WalletData } from '@/src/services/wallet-service';
+import { generateWallet, saveWallet, importWallet, loadWallet, type WalletData } from '@/src/services/wallet-service';
 
 interface WalletState {
   address: string | null;
@@ -33,12 +33,35 @@ export const loadWalletThunk = createAsyncThunk(
 );
 
 /**
- * Create new wallet
+ * Generate new wallet (does NOT save to storage)
+ * @param wordCount - Number of words: 12 or 24 (default: 12)
  */
-export const createWalletThunk = createAsyncThunk(
-  'wallet/create',
-  async () => {
-    const walletData = await createWallet();
+export const generateWalletThunk = createAsyncThunk(
+  'wallet/generate',
+  async (wordCount: 12 | 24 = 12) => {
+    const walletData = await generateWallet(wordCount);
+    return walletData;
+  }
+);
+
+/**
+ * Save wallet to storage (call after verification)
+ */
+export const saveWalletThunk = createAsyncThunk(
+  'wallet/save',
+  async (mnemonic: string) => {
+    const walletData = await saveWallet(mnemonic);
+    return walletData;
+  }
+);
+
+/**
+ * Import wallet from mnemonic phrase
+ */
+export const importWalletThunk = createAsyncThunk(
+  'wallet/import',
+  async (mnemonic: string) => {
+    const walletData = await importWallet(mnemonic);
     return walletData;
   }
 );
@@ -82,19 +105,48 @@ const walletSlice = createSlice({
         state.status = 'failed';
         state.error = action.error.message || 'Failed to load wallet';
       })
-      // Create wallet
-      .addCase(createWalletThunk.pending, (state) => {
+      // Generate wallet
+      .addCase(generateWalletThunk.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(createWalletThunk.fulfilled, (state, action) => {
+      .addCase(generateWalletThunk.fulfilled, (state, action) => {
+        // Store mnemonic temporarily (not saved to storage yet)
+        state.mnemonic = action.payload.mnemonic;
+        state.address = action.payload.address;
+        state.status = 'succeeded';
+        // Don't set isInitialized = true until saved
+      })
+      .addCase(generateWalletThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Failed to generate wallet';
+      })
+      // Save wallet
+      .addCase(saveWalletThunk.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(saveWalletThunk.fulfilled, (state, action) => {
         state.address = action.payload.address;
         state.mnemonic = action.payload.mnemonic;
         state.status = 'succeeded';
         state.isInitialized = true;
       })
-      .addCase(createWalletThunk.rejected, (state, action) => {
+      .addCase(saveWalletThunk.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Failed to create wallet';
+        state.error = action.error.message || 'Failed to save wallet';
+      })
+      // Import wallet
+      .addCase(importWalletThunk.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(importWalletThunk.fulfilled, (state, action) => {
+        state.address = action.payload.address;
+        state.mnemonic = action.payload.mnemonic;
+        state.status = 'succeeded';
+        state.isInitialized = true;
+      })
+      .addCase(importWalletThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Failed to import wallet';
       });
   },
 });

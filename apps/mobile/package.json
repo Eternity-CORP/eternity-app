@@ -11,12 +11,12 @@
     "dev": "expo start --dev-client",
     "build": "expo export",
     "typecheck": "tsc --noEmit",
-    "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@8.15.0 --activate && pnpm install",
+    "eas-build-pre-install": "cd ../.. && corepack enable && corepack prepare pnpm@9.1.0 --activate && pnpm install",
     "eas-build-post-install": "cd ../.. && pnpm --filter @e-y/shared build && pnpm --filter @e-y/crypto build"
   },
   "dependencies": {
-    "@e-y/shared": "workspace:*",
     "@e-y/crypto": "workspace:*",
+    "@e-y/shared": "workspace:*",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/native": "^7.1.8",
     "@reduxjs/toolkit": "^2.2.0",
@@ -38,12 +38,13 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-get-random-values": "^2.0.0",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-web": "~0.21.0",
-    "react-redux": "^9.1.0",
-    "react-native-worklets": "0.5.1"
+    "react-native-worklets": "0.5.1",
+    "react-redux": "^9.1.0"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
