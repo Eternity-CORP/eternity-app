@@ -60,10 +60,10 @@ export async function fetchTransactionHistory(
     console.log('[TransactionService] Current block:', currentBlock);
     
     // Optimized block scanning to balance rate limits and coverage
-    // Scan last 50 blocks with delays to find recent transactions
+    // Scan last 100 blocks with delays to find recent transactions
     const transactions: Transaction[] = [];
-    const maxBlocksToScan = 50; // Increased to 50 to find more transactions
-    const delayBetweenBlocks = 150; // 150ms delay between block requests to avoid rate limits
+    const maxBlocksToScan = 100; // Increased to 100 to find more transactions
+    const delayBetweenBlocks = 200; // 200ms delay between block requests to avoid rate limits
     
     // Scan recent blocks with delays
     for (let i = 0; i < maxBlocksToScan && transactions.length < limit; i++) {
@@ -96,8 +96,13 @@ export async function fetchTransactionHistory(
               const isFrom = tx.from.toLowerCase() === addressLower;
               const isTo = tx.to && tx.to.toLowerCase() === addressLower;
               
+              // Debug: log all transactions to see what we're checking
+              if (i < 5) { // Only log first 5 blocks to avoid spam
+                console.log(`[TransactionService] Checking tx ${txHash.slice(0, 10)}... from=${tx.from.slice(0, 8)}... to=${tx.to?.slice(0, 8) || 'null'}...`);
+              }
+              
               if (isFrom || isTo) {
-                console.log(`[TransactionService] Found matching transaction: ${txHash.slice(0, 10)}... (${isFrom ? 'sent' : 'received'})`);
+                console.log(`[TransactionService] ✅ Found matching transaction: ${txHash.slice(0, 10)}... (${isFrom ? 'sent' : 'received'})`);
                 // Get transaction receipt for status (with delay)
                 await delay(50); // Small delay before receipt request
                 
