@@ -116,4 +116,5 @@ const balanceSlice = createSlice({
 });
 
 export const { clearBalances } = balanceSlice.actions;
+export { fetchBalancesThunk, fetchEthPriceThunk };
 export default balanceSlice.reducer;
