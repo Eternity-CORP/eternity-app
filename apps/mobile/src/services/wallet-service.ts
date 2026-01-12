@@ -5,10 +5,13 @@
 
 import * as SecureStore from 'expo-secure-store';
 import { generateMnemonic, generateWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength } from '@e-y/crypto';
+import { getAddressFromMnemonic } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
+import type { Account } from '@/src/store/slices/wallet-slice';
 
 const WALLET_MNEMONIC_KEY = 'wallet_mnemonic';
 const WALLET_ADDRESS_KEY = 'wallet_address';
+const ACCOUNTS_KEY = 'wallet_accounts'; // JSON array of accounts
 
 export interface WalletData {
   mnemonic: string;
@@ -43,6 +46,17 @@ export async function saveWallet(mnemonic: string): Promise<WalletData> {
   // Store mnemonic securely
   await SecureStore.setItemAsync(WALLET_MNEMONIC_KEY, mnemonic);
   await SecureStore.setItemAsync(WALLET_ADDRESS_KEY, address);
+
+  // Create default account if accounts don't exist
+  const existingAccounts = await loadAccounts();
+  if (existingAccounts.length === 0) {
+    const defaultAccount: Account = {
+      id: '0',
+      address,
+      accountIndex: 0,
+    };
+    await saveAccounts([defaultAccount]);
+  }
 
   // Don't include wallet object in return (not serializable for Redux)
   return {
@@ -85,6 +99,60 @@ export async function loadWallet(): Promise<WalletData | null> {
 }
 
 /**
+ * Load all accounts from storage
+ */
+export async function loadAccounts(): Promise<Account[]> {
+  try {
+    const accountsJson = await SecureStore.getItemAsync(ACCOUNTS_KEY);
+    if (!accountsJson) {
+      // If no accounts stored, return empty array (will be created from wallet)
+      return [];
+    }
+    return JSON.parse(accountsJson) as Account[];
+  } catch (error) {
+    console.error('Error loading accounts:', error);
+    return [];
+  }
+}
+
+/**
+ * Save accounts to storage
+ */
+export async function saveAccounts(accounts: Account[]): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(accounts));
+  } catch (error) {
+    console.error('Error saving accounts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new account from mnemonic at the next account index
+ */
+export async function createNewAccount(mnemonic: string, existingAccounts: Account[]): Promise<Account> {
+  // Find the highest accountIndex
+  const maxIndex = existingAccounts.length > 0
+    ? Math.max(...existingAccounts.map((acc) => acc.accountIndex))
+    : -1;
+  
+  const newAccountIndex = maxIndex + 1;
+  const address = getAddressFromMnemonic(mnemonic, newAccountIndex);
+
+  const newAccount: Account = {
+    id: newAccountIndex.toString(),
+    address,
+    accountIndex: newAccountIndex,
+  };
+
+  // Save updated accounts list
+  const updatedAccounts = [...existingAccounts, newAccount];
+  await saveAccounts(updatedAccounts);
+
+  return newAccount;
+}
+
+/**
  * Check if wallet exists
  */
 export async function hasWallet(): Promise<boolean> {
@@ -122,6 +190,17 @@ export async function importWallet(mnemonic: string): Promise<WalletData> {
   await SecureStore.setItemAsync(WALLET_MNEMONIC_KEY, normalizedMnemonic);
   await SecureStore.setItemAsync(WALLET_ADDRESS_KEY, address);
 
+  // Create default account if accounts don't exist
+  const existingAccounts = await loadAccounts();
+  if (existingAccounts.length === 0) {
+    const defaultAccount: Account = {
+      id: '0',
+      address,
+      accountIndex: 0,
+    };
+    await saveAccounts([defaultAccount]);
+  }
+
   // Don't include wallet object in return (not serializable for Redux)
   return {
     mnemonic: normalizedMnemonic,
@@ -143,4 +222,5 @@ export function getWalletFromMnemonic(mnemonic: string, accountIndex: number = 0
 export async function clearWallet(): Promise<void> {
   await SecureStore.deleteItemAsync(WALLET_MNEMONIC_KEY);
   await SecureStore.deleteItemAsync(WALLET_ADDRESS_KEY);
+  await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
 }
