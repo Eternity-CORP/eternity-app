@@ -41,7 +41,7 @@ const getRpcUrl = (): string => {
 // Create provider instance
 let provider: JsonRpcProvider | null = null;
 
-const getProvider = (): JsonRpcProvider => {
+export const getProvider = (): JsonRpcProvider => {
   if (!provider) {
     provider = new JsonRpcProvider(getRpcUrl());
   }
