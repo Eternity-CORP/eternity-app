@@ -22,20 +22,7 @@ export default function TransactionsScreen() {
   // Load transactions when screen mounts or account changes
   useEffect(() => {
     if (currentAccount?.address) {
-      console.log('[TransactionsScreen] Loading transactions for address:', currentAccount.address);
-      dispatch(fetchTransactionsThunk(currentAccount.address))
-        .then((result) => {
-          if (result.type === 'transaction/fetchHistory/fulfilled') {
-            console.log('[TransactionsScreen] Successfully loaded', result.payload.length, 'transactions');
-          } else if (result.type === 'transaction/fetchHistory/rejected') {
-            console.error('[TransactionsScreen] Failed to load transactions:', result.error);
-          }
-        })
-        .catch((error) => {
-          console.error('[TransactionsScreen] Error dispatching fetchTransactionsThunk:', error);
-        });
-    } else {
-      console.warn('[TransactionsScreen] No current account address available');
+      dispatch(fetchTransactionsThunk(currentAccount.address));
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -50,10 +37,9 @@ export default function TransactionsScreen() {
     if (currentAccount?.address) {
       try {
         await dispatch(fetchTransactionDetailsThunk({ txHash, userAddress: currentAccount.address }));
-        // TODO: Navigate to transaction details screen
-        // router.push(`/(tabs)/transaction-details?hash=${txHash}`);
+        // TODO: Navigate to transaction details screen when implemented
       } catch (error) {
-        console.error('Error loading transaction details:', error);
+        // Error handling is done by Redux slice
       }
     }
   };

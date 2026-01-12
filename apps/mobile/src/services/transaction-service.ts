@@ -43,27 +43,21 @@ function delay(ms: number): Promise<void> {
 
 /**
  * Fetch transaction history for an address
- * Uses optimized approach: scan fewer blocks with delays to avoid rate limits
- * Note: For production, consider using Alchemy's getAssetTransfers API
+ * Scans recent blocks to find transactions involving the address
+ * Note: Limited to recent blocks to avoid rate limits. For full history, consider using Alchemy's getAssetTransfers API
  */
 export async function fetchTransactionHistory(
   address: string,
   limit: number = 20
 ): Promise<Transaction[]> {
   try {
-    console.log('[TransactionService] Fetching history for address:', address);
     const provider = getProvider();
     const addressLower = address.toLowerCase();
-    
-    // Get current block number
     const currentBlock = await provider.getBlockNumber();
-    console.log('[TransactionService] Current block:', currentBlock);
     
-    // Optimized block scanning to balance rate limits and coverage
-    // Scan last 100 blocks with delays to find recent transactions
     const transactions: Transaction[] = [];
-    const maxBlocksToScan = 100; // Increased to 100 to find more transactions
-    const delayBetweenBlocks = 200; // 200ms delay between block requests to avoid rate limits
+    const maxBlocksToScan = 100;
+    const delayBetweenBlocks = 200; // Delay to avoid rate limits
     
     // Scan recent blocks with delays
     for (let i = 0; i < maxBlocksToScan && transactions.length < limit; i++) {
@@ -81,8 +75,6 @@ export async function fetchTransactionHistory(
           continue;
         }
         
-        console.log(`[TransactionService] Scanning block ${blockNumber}, ${block.transactions.length} transactions`);
-        
         // Check each transaction in the block
         for (const txHash of block.transactions) {
           if (transactions.length >= limit) break;
@@ -96,17 +88,7 @@ export async function fetchTransactionHistory(
               const isFrom = tx.from.toLowerCase() === addressLower;
               const isTo = tx.to && tx.to.toLowerCase() === addressLower;
               
-              // Debug: log transactions that might match (first 10 blocks only)
-              if (i < 10) {
-                const mightMatch = tx.from.toLowerCase().includes(addressLower.slice(2, 8)) || 
-                                   (tx.to && tx.to.toLowerCase().includes(addressLower.slice(2, 8)));
-                if (mightMatch) {
-                  console.log(`[TransactionService] Potential match: tx ${txHash.slice(0, 10)}... from=${tx.from} to=${tx.to || 'null'}, ourAddr=${addressLower}`);
-                }
-              }
-              
               if (isFrom || isTo) {
-                console.log(`[TransactionService] ✅ MATCH! tx ${txHash.slice(0, 10)}... from=${tx.from} to=${tx.to || 'null'}, direction=${isFrom ? 'sent' : 'received'}, amount=${formatEther(tx.value || '0')}`);
                 // Get transaction receipt for status (with delay)
                 await delay(50); // Small delay before receipt request
                 
@@ -149,8 +131,7 @@ export async function fetchTransactionHistory(
         }
       } catch (error) {
         // If rate limited, stop scanning and return what we have
-        if (error instanceof Error && error.message.includes('429')) {
-          console.warn('Rate limited, returning partial transaction history');
+        if (error instanceof Error && (error.message.includes('429') || error.message.includes('rate limit'))) {
           break;
         }
         // Continue with next block for other errors
@@ -161,19 +142,9 @@ export async function fetchTransactionHistory(
     // Sort by timestamp (newest first)
     transactions.sort((a, b) => b.timestamp - a.timestamp);
     
-    const result = transactions.slice(0, limit);
-    console.log('[TransactionService] Total found:', result.length, 'transactions after scanning', maxBlocksToScan, 'blocks');
-    if (result.length > 0) {
-      console.log('[TransactionService] Sample transaction:', {
-        hash: result[0].hash.slice(0, 10) + '...',
-        direction: result[0].direction,
-        amount: result[0].amount,
-        status: result[0].status,
-      });
-    }
-    return result;
+    return transactions.slice(0, limit);
   } catch (error) {
-    console.error('[TransactionService] Error fetching transaction history:', error);
+    console.error('Error fetching transaction history:', error);
     // Return empty array instead of throwing to allow UI to show "no transactions"
     return [];
   }
