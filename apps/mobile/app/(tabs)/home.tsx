@@ -2,6 +2,8 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
 import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
@@ -91,6 +93,19 @@ export default function HomeScreen() {
     setEditLabel('');
   };
 
+  const handleCopyAddress = async () => {
+    if (!currentAccount?.address) return;
+    
+    try {
+      await Clipboard.setStringAsync(currentAccount.address);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Copied!', 'Wallet address copied to clipboard');
+    } catch (error) {
+      console.error('Error copying address:', error);
+      Alert.alert('Error', 'Failed to copy address');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Account Selector Header */}
@@ -104,9 +119,21 @@ export default function HomeScreen() {
               {currentAccount?.label || `Account ${currentAccount ? currentAccount.accountIndex + 1 : '1'}`}
             </Text>
             {currentAccount && (
-              <Text style={[styles.accountAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                {currentAccount.address.slice(0, 6)}...{currentAccount.address.slice(-4)}
-              </Text>
+              <View style={styles.accountAddressRow}>
+                <Text style={[styles.accountAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                  {currentAccount.address.slice(0, 6)}...{currentAccount.address.slice(-4)}
+                </Text>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleCopyAddress();
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <FontAwesome name="copy" size={14} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
             )}
           </View>
           <FontAwesome name="chevron-down" size={14} color={theme.colors.textSecondary} />
@@ -357,8 +384,19 @@ const styles = StyleSheet.create({
   accountLabel: {
     marginBottom: theme.spacing.xs / 2,
   },
+  accountAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: theme.spacing.xs,
+    gap: theme.spacing.xs,
+  },
   accountAddress: {
     fontFamily: 'monospace',
+    flex: 1,
+  },
+  copyButton: {
+    padding: theme.spacing.xs,
+    marginLeft: theme.spacing.xs,
   },
   container: {
     flex: 1,
