@@ -51,11 +51,13 @@ export async function fetchTransactionHistory(
   limit: number = 20
 ): Promise<Transaction[]> {
   try {
+    console.log('[TransactionService] Fetching history for address:', address);
     const provider = getProvider();
     const addressLower = address.toLowerCase();
     
     // Get current block number
     const currentBlock = await provider.getBlockNumber();
+    console.log('[TransactionService] Current block:', currentBlock);
     
     // Optimized block scanning to balance rate limits and coverage
     // Scan last 50 blocks with delays to find recent transactions
@@ -145,9 +147,11 @@ export async function fetchTransactionHistory(
     // Sort by timestamp (newest first)
     transactions.sort((a, b) => b.timestamp - a.timestamp);
     
-    return transactions.slice(0, limit);
+    const result = transactions.slice(0, limit);
+    console.log('[TransactionService] Found', result.length, 'transactions');
+    return result;
   } catch (error) {
-    console.error('Error fetching transaction history:', error);
+    console.error('[TransactionService] Error fetching transaction history:', error);
     // Return empty array instead of throwing to allow UI to show "no transactions"
     return [];
   }
