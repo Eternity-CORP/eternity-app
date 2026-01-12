@@ -22,21 +22,20 @@ export default function TransactionsScreen() {
   // Load transactions when screen mounts or account changes
   useEffect(() => {
     if (currentAccount?.address) {
-      console.log('Loading transactions for address:', currentAccount.address);
+      console.log('[TransactionsScreen] Loading transactions for address:', currentAccount.address);
       dispatch(fetchTransactionsThunk(currentAccount.address))
         .then((result) => {
-          console.log('Transactions loaded:', result);
           if (result.type === 'transaction/fetchHistory/fulfilled') {
-            console.log('Transactions count:', result.payload.length);
+            console.log('[TransactionsScreen] Successfully loaded', result.payload.length, 'transactions');
           } else if (result.type === 'transaction/fetchHistory/rejected') {
-            console.error('Failed to load transactions:', result.error);
+            console.error('[TransactionsScreen] Failed to load transactions:', result.error);
           }
         })
         .catch((error) => {
-          console.error('Error dispatching fetchTransactionsThunk:', error);
+          console.error('[TransactionsScreen] Error dispatching fetchTransactionsThunk:', error);
         });
     } else {
-      console.warn('No current account address available');
+      console.warn('[TransactionsScreen] No current account address available');
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -86,16 +85,26 @@ export default function TransactionsScreen() {
             <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
               Loading transactions...
             </Text>
+            {currentAccount?.address && (
+              <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                Scanning blocks for {currentAccount.address.slice(0, 8)}...
+              </Text>
+            )}
           </View>
         ) : transaction.transactions.length === 0 ? (
           <View style={styles.emptyState}>
             <FontAwesome name="exchange" size={48} color={theme.colors.textTertiary} />
             <Text style={[styles.emptyText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
-              No transactions yet
+              No transactions found
             </Text>
             <Text style={[styles.emptySubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
-              Your transaction history will appear here
+              We scanned the last 50 blocks. If you sent tokens earlier, they may not appear here.
             </Text>
+            {transaction.error && (
+              <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.error, marginTop: theme.spacing.sm }]}>
+                Error: {transaction.error}
+              </Text>
+            )}
           </View>
         ) : (
           <View style={styles.transactionsList}>

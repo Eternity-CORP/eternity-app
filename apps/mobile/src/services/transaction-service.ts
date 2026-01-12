@@ -77,7 +77,11 @@ export async function fetchTransactionHistory(
       
       try {
         const block = await provider.getBlock(blockNumber, true);
-        if (!block || !block.transactions || block.transactions.length === 0) continue;
+        if (!block || !block.transactions || block.transactions.length === 0) {
+          continue;
+        }
+        
+        console.log(`[TransactionService] Scanning block ${blockNumber}, ${block.transactions.length} transactions`);
         
         // Check each transaction in the block
         for (const txHash of block.transactions) {
@@ -93,6 +97,7 @@ export async function fetchTransactionHistory(
               const isTo = tx.to && tx.to.toLowerCase() === addressLower;
               
               if (isFrom || isTo) {
+                console.log(`[TransactionService] Found matching transaction: ${txHash.slice(0, 10)}... (${isFrom ? 'sent' : 'received'})`);
                 // Get transaction receipt for status (with delay)
                 await delay(50); // Small delay before receipt request
                 
@@ -148,7 +153,15 @@ export async function fetchTransactionHistory(
     transactions.sort((a, b) => b.timestamp - a.timestamp);
     
     const result = transactions.slice(0, limit);
-    console.log('[TransactionService] Found', result.length, 'transactions');
+    console.log('[TransactionService] Total found:', result.length, 'transactions after scanning', maxBlocksToScan, 'blocks');
+    if (result.length > 0) {
+      console.log('[TransactionService] Sample transaction:', {
+        hash: result[0].hash.slice(0, 10) + '...',
+        direction: result[0].direction,
+        amount: result[0].amount,
+        status: result[0].status,
+      });
+    }
     return result;
   } catch (error) {
     console.error('[TransactionService] Error fetching transaction history:', error);
