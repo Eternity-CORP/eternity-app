@@ -96,13 +96,17 @@ export async function fetchTransactionHistory(
               const isFrom = tx.from.toLowerCase() === addressLower;
               const isTo = tx.to && tx.to.toLowerCase() === addressLower;
               
-              // Debug: log all transactions to see what we're checking
-              if (i < 5) { // Only log first 5 blocks to avoid spam
-                console.log(`[TransactionService] Checking tx ${txHash.slice(0, 10)}... from=${tx.from.slice(0, 8)}... to=${tx.to?.slice(0, 8) || 'null'}...`);
+              // Debug: log transactions that might match (first 10 blocks only)
+              if (i < 10) {
+                const mightMatch = tx.from.toLowerCase().includes(addressLower.slice(2, 8)) || 
+                                   (tx.to && tx.to.toLowerCase().includes(addressLower.slice(2, 8)));
+                if (mightMatch) {
+                  console.log(`[TransactionService] Potential match: tx ${txHash.slice(0, 10)}... from=${tx.from} to=${tx.to || 'null'}, ourAddr=${addressLower}`);
+                }
               }
               
               if (isFrom || isTo) {
-                console.log(`[TransactionService] ✅ Found matching transaction: ${txHash.slice(0, 10)}... (${isFrom ? 'sent' : 'received'})`);
+                console.log(`[TransactionService] ✅ MATCH! tx ${txHash.slice(0, 10)}... from=${tx.from} to=${tx.to || 'null'}, direction=${isFrom ? 'sent' : 'received'}, amount=${formatEther(tx.value || '0')}`);
                 // Get transaction receipt for status (with delay)
                 await delay(50); // Small delay before receipt request
                 

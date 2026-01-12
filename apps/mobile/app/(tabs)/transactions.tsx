@@ -98,7 +98,7 @@ export default function TransactionsScreen() {
               No transactions found
             </Text>
             <Text style={[styles.emptySubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
-              We scanned the last 50 blocks. If you sent tokens earlier, they may not appear here.
+              We scanned the last 100 blocks. If you sent tokens earlier, they may not appear here.
             </Text>
             {transaction.error && (
               <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.error, marginTop: theme.spacing.sm }]}>
