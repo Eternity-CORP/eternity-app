@@ -24,8 +24,9 @@ export default function HomeScreen() {
       await dispatch(addAccountThunk()).unwrap();
       setShowAccountSelector(false);
       Alert.alert('Success', 'New account created successfully!');
-    } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to create new account');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create new account';
+      Alert.alert('Error', message);
     } finally {
       setIsAddingAccount(false);
     }

@@ -65,14 +65,6 @@ export async function saveWallet(mnemonic: string): Promise<WalletData> {
   };
 }
 
-/**
- * @deprecated Use generateWallet() + saveWallet() instead
- * Generate and save wallet (for backward compatibility)
- */
-export async function createWallet(): Promise<WalletData> {
-  const walletData = await generateWallet();
-  return await saveWallet(walletData.mnemonic);
-}
 
 /**
  * Load existing wallet from secure storage
