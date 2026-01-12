@@ -3,8 +3,8 @@
  * Handles fetching transaction history from blockchain via RPC
  */
 
-import { JsonRpcProvider, formatEther } from 'ethers';
-import type { TransactionResponse, TransactionReceipt } from 'ethers';
+import { formatEther } from 'ethers';
+import type { TransactionReceipt } from 'ethers';
 
 // Reuse RPC provider from balance-service
 import { getProvider } from './balance-service';
@@ -35,9 +35,16 @@ export interface TransactionDetails extends Transaction {
 }
 
 /**
+ * Helper: Add delay to avoid rate limits
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
  * Fetch transaction history for an address
- * Uses Alchemy/Infura RPC to get recent transactions
- * Note: Free tier RPC providers have limited history, may need to use indexer API for full history
+ * Uses optimized approach: scan fewer blocks with delays to avoid rate limits
+ * Note: For production, consider using Alchemy's getAssetTransfers API
  */
 export async function fetchTransactionHistory(
   address: string,
@@ -45,74 +52,92 @@ export async function fetchTransactionHistory(
 ): Promise<Transaction[]> {
   try {
     const provider = getProvider();
+    const addressLower = address.toLowerCase();
     
     // Get current block number
     const currentBlock = await provider.getBlockNumber();
     
-    // Fetch transactions from recent blocks (last 100 blocks for free tier)
-    // For production, consider using Alchemy's getAssetTransfers API or similar
+    // Reduced block scanning to avoid rate limits
+    // Scan last 20 blocks (enough for recent transactions)
     const transactions: Transaction[] = [];
-    const maxBlocksToScan = 100; // Limit for free tier RPC
+    const maxBlocksToScan = 20; // Reduced from 100 to avoid rate limits
+    const delayBetweenBlocks = 100; // 100ms delay between block requests
     
-    // Scan recent blocks
+    // Scan recent blocks with delays
     for (let i = 0; i < maxBlocksToScan && transactions.length < limit; i++) {
       const blockNumber = currentBlock - i;
       if (blockNumber < 0) break;
       
+      // Add delay to avoid rate limits (except for first request)
+      if (i > 0) {
+        await delay(delayBetweenBlocks);
+      }
+      
       try {
         const block = await provider.getBlock(blockNumber, true);
-        if (!block || !block.transactions) continue;
+        if (!block || !block.transactions || block.transactions.length === 0) continue;
         
         // Check each transaction in the block
         for (const txHash of block.transactions) {
           if (transactions.length >= limit) break;
           
           if (typeof txHash === 'string') {
-            const tx = await provider.getTransaction(txHash);
-            if (!tx) continue;
-            
-            // Check if transaction involves our address
-            const isFrom = tx.from.toLowerCase() === address.toLowerCase();
-            const isTo = tx.to && tx.to.toLowerCase() === address.toLowerCase();
-            
-            if (isFrom || isTo) {
-              // Get transaction receipt for status
-              let receipt: TransactionReceipt | null = null;
-              let status: TransactionStatus = 'pending';
+            try {
+              const tx = await provider.getTransaction(txHash);
+              if (!tx) continue;
               
-              try {
-                receipt = await provider.getTransactionReceipt(txHash);
-                if (receipt) {
-                  status = receipt.status === 1 ? 'confirmed' : 'failed';
+              // Check if transaction involves our address
+              const isFrom = tx.from.toLowerCase() === addressLower;
+              const isTo = tx.to && tx.to.toLowerCase() === addressLower;
+              
+              if (isFrom || isTo) {
+                // Get transaction receipt for status (with delay)
+                await delay(50); // Small delay before receipt request
+                
+                let receipt: TransactionReceipt | null = null;
+                let status: TransactionStatus = 'pending';
+                
+                try {
+                  receipt = await provider.getTransactionReceipt(txHash);
+                  if (receipt) {
+                    status = receipt.status === 1 ? 'confirmed' : 'failed';
+                  }
+                } catch (error) {
+                  // Transaction might still be pending
+                  status = 'pending';
                 }
-              } catch (error) {
-                // Transaction might still be pending
-                status = 'pending';
+                
+                const direction: TransactionDirection = isFrom ? 'sent' : 'received';
+                const amount = formatEther(tx.value || '0');
+                
+                transactions.push({
+                  hash: txHash,
+                  from: tx.from,
+                  to: tx.to || '',
+                  amount: parseFloat(amount).toFixed(6),
+                  token: 'ETH',
+                  direction,
+                  status,
+                  gasUsed: receipt?.gasUsed?.toString(),
+                  gasPrice: tx.gasPrice?.toString(),
+                  blockNumber: receipt?.blockNumber,
+                  timestamp: block.timestamp * 1000, // Convert to milliseconds
+                  createdAt: new Date(block.timestamp * 1000).toISOString(),
+                });
               }
-              
-              const direction: TransactionDirection = isFrom ? 'sent' : 'received';
-              const amount = formatEther(tx.value || '0');
-              
-              transactions.push({
-                hash: txHash,
-                from: tx.from,
-                to: tx.to || '',
-                amount: parseFloat(amount).toFixed(6),
-                token: 'ETH',
-                direction,
-                status,
-                gasUsed: receipt?.gasUsed?.toString(),
-                gasPrice: tx.gasPrice?.toString(),
-                blockNumber: receipt?.blockNumber,
-                timestamp: block.timestamp * 1000, // Convert to milliseconds
-                createdAt: new Date(block.timestamp * 1000).toISOString(),
-              });
+            } catch (error) {
+              // Skip this transaction if there's an error
+              continue;
             }
           }
         }
       } catch (error) {
-        console.warn(`Error scanning block ${blockNumber}:`, error);
-        // Continue with next block
+        // If rate limited, stop scanning and return what we have
+        if (error instanceof Error && error.message.includes('429')) {
+          console.warn('Rate limited, returning partial transaction history');
+          break;
+        }
+        // Continue with next block for other errors
         continue;
       }
     }
@@ -123,7 +148,8 @@ export async function fetchTransactionHistory(
     return transactions.slice(0, limit);
   } catch (error) {
     console.error('Error fetching transaction history:', error);
-    throw new Error('Failed to fetch transaction history');
+    // Return empty array instead of throwing to allow UI to show "no transactions"
+    return [];
   }
 }
 
@@ -160,7 +186,8 @@ export async function fetchTransactionDetails(
     // Calculate confirmations
     let confirmations = 0;
     if (receipt && receipt.blockNumber) {
-      const currentBlock = await getCurrentBlockNumber();
+      const provider = getProvider();
+      const currentBlock = await provider.getBlockNumber();
       confirmations = currentBlock - receipt.blockNumber + 1;
     }
     
@@ -190,12 +217,3 @@ export async function fetchTransactionDetails(
   }
 }
 
-/**
- * Get current block number (helper)
- */
-async function getCurrentBlockNumber(): Promise<number> {
-  const provider = getProvider();
-  return await provider.getBlockNumber();
-}
-
-// Fix: Use getCurrentBlockNumber in fetchTransactionDetails

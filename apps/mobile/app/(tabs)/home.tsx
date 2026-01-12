@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
 import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
+import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue } from '@/src/services/balance-service';
 import { theme } from '@/src/constants/theme';
@@ -16,16 +17,18 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
+  const transaction = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   
-  // Load balances when account changes
+  // Load balances and transactions when account changes
   useEffect(() => {
     if (currentAccount?.address) {
       dispatch(fetchBalancesThunk(currentAccount.address));
+      dispatch(fetchTransactionsThunk(currentAccount.address));
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -33,6 +36,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(() => {
     if (currentAccount?.address) {
       dispatch(fetchBalancesThunk(currentAccount.address));
+      dispatch(fetchTransactionsThunk(currentAccount.address));
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -246,6 +250,89 @@ export default function HomeScreen() {
                   )}
                 </View>
               ))}
+          </View>
+        )}
+      </View>
+
+      {/* Recent Transactions Section */}
+      <View style={styles.transactionsSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, theme.typography.heading]}>Recent Transactions</Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/wallet')}
+            style={styles.viewAllButton}
+          >
+            <Text style={[styles.viewAllText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
+              View All
+            </Text>
+            <FontAwesome name="chevron-right" size={12} color={theme.colors.buttonPrimary} style={styles.viewAllIcon} />
+          </TouchableOpacity>
+        </View>
+
+        {transaction.status === 'loading' && transaction.transactions.length === 0 ? (
+          <View style={styles.transactionEmpty}>
+            <Text style={[styles.transactionEmptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+              Loading transactions...
+            </Text>
+          </View>
+        ) : transaction.transactions.length === 0 ? (
+          <View style={styles.transactionEmpty}>
+            <FontAwesome name="exchange" size={32} color={theme.colors.textTertiary} />
+            <Text style={[styles.transactionEmptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+              No transactions yet
+            </Text>
+            <Text style={[styles.transactionEmptySubtext, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+              Your transaction history will appear here
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.transactionsList}>
+            {transaction.transactions.slice(0, 5).map((tx) => (
+              <TouchableOpacity
+                key={tx.hash}
+                style={styles.transactionItem}
+                onPress={() => router.push(`/(tabs)/wallet?tx=${tx.hash}`)}
+              >
+                <View style={styles.transactionIcon}>
+                  <FontAwesome
+                    name={tx.direction === 'sent' ? 'arrow-up' : 'arrow-down'}
+                    size={16}
+                    color={tx.direction === 'sent' ? theme.colors.error : theme.colors.success || theme.colors.buttonPrimary}
+                  />
+                </View>
+                <View style={styles.transactionInfo}>
+                  <Text style={[styles.transactionDirection, theme.typography.body]}>
+                    {tx.direction === 'sent' ? 'Sent' : 'Received'}
+                  </Text>
+                  <Text style={[styles.transactionDate, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                    {new Date(tx.timestamp).toLocaleDateString()} {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+                <View style={styles.transactionAmount}>
+                  <Text style={[
+                    styles.transactionAmountText,
+                    theme.typography.body,
+                    { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.success || theme.colors.buttonPrimary }
+                  ]}>
+                    {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
+                  </Text>
+                  <View style={styles.transactionStatus}>
+                    <View style={[
+                      styles.statusDot,
+                      {
+                        backgroundColor:
+                          tx.status === 'confirmed' ? (theme.colors.success || theme.colors.buttonPrimary) :
+                          tx.status === 'pending' ? theme.colors.warning || '#FFA500' :
+                          theme.colors.error
+                      }
+                    ]} />
+                    <Text style={[styles.transactionStatusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                      {tx.status}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
       </View>
@@ -639,14 +726,91 @@ const styles = StyleSheet.create({
   tokenValueSmall: {
     marginTop: theme.spacing.xs,
   },
-  addressSection: {
+  transactionsSection: {
     marginTop: theme.spacing.xl,
     paddingTop: theme.spacing.xl,
     borderTopWidth: 1,
     borderTopColor: theme.colors.buttonSecondaryBorder,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  sectionTitle: {
+    color: theme.colors.textPrimary,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  viewAllText: {
+    color: theme.colors.buttonPrimary,
+  },
+  viewAllIcon: {
+    marginLeft: theme.spacing.xs / 2,
+  },
+  transactionsList: {
+    gap: theme.spacing.sm,
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.md,
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  addressLabel: {
+  transactionInfo: {
+    flex: 1,
+  },
+  transactionDirection: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  transactionDate: {
+    color: theme.colors.textSecondary,
+  },
+  transactionAmount: {
+    alignItems: 'flex-end',
+  },
+  transactionAmountText: {
+    marginBottom: theme.spacing.xs / 2,
+  },
+  transactionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs / 2,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  transactionStatusText: {
+    textTransform: 'capitalize',
+  },
+  transactionEmpty: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl * 2,
+    gap: theme.spacing.md,
+  },
+  transactionEmptyText: {
+    textAlign: 'center',
+  },
+  transactionEmptySubtext: {
+    textAlign: 'center',
+  },
     marginBottom: theme.spacing.xs,
   },
   addressText: {
