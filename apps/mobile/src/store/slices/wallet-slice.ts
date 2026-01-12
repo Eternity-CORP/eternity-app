@@ -293,5 +293,5 @@ const walletSlice = createSlice({
   },
 });
 
-export const { setWallet, addAccount, switchAccount, updateAccountLabel, clearWallet } = walletSlice.actions;
+export const { addAccount, switchAccount, updateAccountLabel, clearWallet } = walletSlice.actions;
 export default walletSlice.reducer;
