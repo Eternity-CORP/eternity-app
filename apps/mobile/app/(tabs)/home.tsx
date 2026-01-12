@@ -1,16 +1,98 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useAppSelector } from '@/src/store/hooks';
+import { useState } from 'react';
+import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
+import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
+import { saveAccounts } from '@/src/services/wallet-service';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function HomeScreen() {
-  const { address } = useAppSelector((state) => state.wallet);
+  const dispatch = useAppDispatch();
+  const wallet = useAppSelector((state) => state.wallet);
+  const currentAccount = getCurrentAccount(wallet);
+  const [showAccountSelector, setShowAccountSelector] = useState(false);
+  const [isAddingAccount, setIsAddingAccount] = useState(false);
+  const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
+  const [editLabel, setEditLabel] = useState('');
   const totalBalance = '$0.00'; // TODO: Calculate from token balances
+
+  const handleAddAccount = async () => {
+    setIsAddingAccount(true);
+    try {
+      await dispatch(addAccountThunk()).unwrap();
+      setShowAccountSelector(false);
+      Alert.alert('Success', 'New account created successfully!');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create new account';
+      Alert.alert('Error', message);
+    } finally {
+      setIsAddingAccount(false);
+    }
+  };
+
+  const handleSwitchAccount = (index: number) => {
+    dispatch(switchAccount(index));
+    setShowAccountSelector(false);
+  };
+
+  const handleEditAccount = (accountIndex: number, currentLabel?: string) => {
+    setEditingAccountIndex(accountIndex);
+    setEditLabel(currentLabel || '');
+  };
+
+  const handleSaveLabel = async (accountIndex: number) => {
+    const trimmedLabel = editLabel.trim();
+    
+    // Update Redux state
+    dispatch(updateAccountLabel({ accountIndex, label: trimmedLabel || undefined }));
+    
+    // Save updated accounts to storage
+    // Get updated accounts from current state after dispatch
+    const updatedAccounts = wallet.accounts.map((acc) =>
+      acc.accountIndex === accountIndex ? { ...acc, label: trimmedLabel || undefined } : acc
+    );
+    
+    try {
+      await saveAccounts(updatedAccounts);
+      setEditingAccountIndex(null);
+      setEditLabel('');
+    } catch (error) {
+      console.error('Error saving account label:', error);
+      Alert.alert('Error', 'Failed to save account label');
+      // Revert Redux state on error
+      dispatch(updateAccountLabel({ accountIndex, label: wallet.accounts.find(a => a.accountIndex === accountIndex)?.label }));
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAccountIndex(null);
+    setEditLabel('');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      {/* Account Selector Header */}
+      <View style={styles.accountHeader}>
+        <TouchableOpacity
+          style={styles.accountSelector}
+          onPress={() => setShowAccountSelector(true)}
+        >
+          <View style={styles.accountInfo}>
+            <Text style={[styles.accountLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              {currentAccount?.label || `Account ${currentAccount ? currentAccount.accountIndex + 1 : '1'}`}
+            </Text>
+            {currentAccount && (
+              <Text style={[styles.accountAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                {currentAccount.address.slice(0, 6)}...{currentAccount.address.slice(-4)}
+              </Text>
+            )}
+          </View>
+          <FontAwesome name="chevron-down" size={14} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Balance Section */}
       <View style={styles.balanceSection}>
@@ -90,18 +172,112 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Address Display (for debugging) */}
-      {address && (
-        <View style={styles.addressSection}>
-          <Text style={[styles.addressLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-            Wallet Address
-          </Text>
-          <Text style={[styles.addressText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-            {address.slice(0, 6)}...{address.slice(-4)}
-          </Text>
-        </View>
-      )}
       </ScrollView>
+
+      {/* Account Selector Modal */}
+      <Modal
+        visible={showAccountSelector}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAccountSelector(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAccountSelector(false)}
+        >
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, theme.typography.title]}>Select Account</Text>
+              <TouchableOpacity onPress={() => setShowAccountSelector(false)}>
+                <FontAwesome name="times" size={20} color={theme.colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.accountsList}>
+              {wallet.accounts.map((account, index) => (
+                <View
+                  key={account.id}
+                  style={[
+                    styles.accountItem,
+                    index === wallet.currentAccountIndex && styles.accountItemActive,
+                  ]}
+                >
+                  {editingAccountIndex === account.accountIndex ? (
+                    <View style={styles.accountEditContainer}>
+                      <TextInput
+                        style={[styles.accountEditInput, theme.typography.heading]}
+                        value={editLabel}
+                        onChangeText={setEditLabel}
+                        placeholder="Account name (optional)"
+                        placeholderTextColor={theme.colors.textTertiary}
+                        autoFocus
+                        maxLength={30}
+                      />
+                      <View style={styles.accountEditActions}>
+                        <TouchableOpacity
+                          style={styles.accountEditButton}
+                          onPress={handleCancelEdit}
+                        >
+                          <Text style={[styles.accountEditButtonText, { color: theme.colors.textSecondary }]}>
+                            Cancel
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.accountEditButton, styles.accountEditButtonSave]}
+                          onPress={() => handleSaveLabel(account.accountIndex)}
+                        >
+                          <Text style={[styles.accountEditButtonText, { color: theme.colors.buttonPrimary }]}>
+                            Save
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <TouchableOpacity
+                        style={styles.accountItemTouchable}
+                        onPress={() => handleSwitchAccount(index)}
+                      >
+                        <View style={styles.accountItemContent}>
+                          <Text style={[styles.accountItemLabel, theme.typography.heading]}>
+                            {account.label || `Account ${account.accountIndex + 1}`}
+                          </Text>
+                          <Text style={[styles.accountItemAddress, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                            {account.address.slice(0, 8)}...{account.address.slice(-6)}
+                          </Text>
+                        </View>
+                        {index === wallet.currentAccountIndex && (
+                          <FontAwesome name="check" size={16} color={theme.colors.buttonPrimary} />
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.accountEditIcon}
+                        onPress={() => handleEditAccount(account.accountIndex, account.label)}
+                      >
+                        <FontAwesome name="pencil" size={14} color={theme.colors.textSecondary} />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.addAccountButton, isAddingAccount && styles.addAccountButtonDisabled]}
+                onPress={handleAddAccount}
+                disabled={isAddingAccount}
+              >
+                <FontAwesome name="plus" size={16} color={theme.colors.buttonPrimaryText} style={styles.addAccountIcon} />
+                <Text style={[styles.addAccountText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+                  {isAddingAccount ? 'Creating...' : 'Add Account'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -111,13 +287,149 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  accountHeader: {
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.buttonSecondaryBorder,
+  },
+  accountSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.sm,
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountLabel: {
+    marginBottom: theme.spacing.xs / 2,
+  },
+  accountAddress: {
+    fontFamily: 'monospace',
+  },
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
   },
   content: {
     padding: theme.spacing.xl,
-    paddingTop: theme.spacing.xxl,
+    paddingTop: theme.spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.lg,
+    width: '90%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    paddingBottom: theme.spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.buttonSecondaryBorder,
+  },
+  modalTitle: {
+    color: theme.colors.textPrimary,
+  },
+  accountsList: {
+    maxHeight: 400,
+  },
+  accountItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.buttonSecondaryBorder,
+    position: 'relative',
+  },
+  accountItemActive: {
+    backgroundColor: theme.colors.surface,
+  },
+  accountItemTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.lg,
+    paddingRight: theme.spacing.xl + 20, // Space for edit icon
+  },
+  accountItemContent: {
+    flex: 1,
+  },
+  accountItemLabel: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs,
+  },
+  accountItemAddress: {
+    fontFamily: 'monospace',
+  },
+  accountEditIcon: {
+    position: 'absolute',
+    right: theme.spacing.lg,
+    top: '50%',
+    transform: [{ translateY: -7 }],
+    padding: theme.spacing.sm,
+  },
+  accountEditContainer: {
+    padding: theme.spacing.lg,
+  },
+  accountEditInput: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonSecondaryBorder,
+  },
+  accountEditActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.md,
+  },
+  accountEditButton: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  accountEditButtonSave: {
+    // Additional styles if needed
+  },
+  accountEditButtonText: {
+    ...theme.typography.heading,
+  },
+  modalActions: {
+    padding: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
+  },
+  addAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.buttonPrimary,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.sm,
+  },
+  addAccountButtonDisabled: {
+    opacity: 0.5,
+  },
+  addAccountIcon: {
+    marginRight: theme.spacing.xs,
+  },
+  addAccountText: {
+    // Already styled
   },
   balanceSection: {
     alignItems: 'center',

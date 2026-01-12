@@ -11,7 +11,7 @@ import 'react-native-reanimated';
 import { Provider } from 'react-redux';
 import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
-import { loadWalletThunk } from '@/src/store/slices/wallet-slice';
+import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
 import { hasWallet } from '@/src/services/wallet-service';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -70,7 +70,11 @@ function RootLayoutNav() {
       try {
         const hasWalletData = await hasWallet();
         if (hasWalletData) {
-          await dispatch(loadWalletThunk());
+          const walletResult = await dispatch(loadWalletThunk());
+          // Load accounts after wallet is loaded
+          if (walletResult.type === 'wallet/load/fulfilled') {
+            await dispatch(loadAccountsThunk());
+          }
         }
       } catch (error) {
         console.error('Error checking wallet:', error);
