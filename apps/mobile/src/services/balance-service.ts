@@ -85,6 +85,10 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
  * Uses CoinGecko API (free tier)
  */
 export async function fetchEthUsdPrice(): Promise<number> {
+  // Create AbortController for timeout (AbortSignal.timeout may not be available in React Native)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
   try {
     // CoinGecko API (free, no API key needed for basic usage)
     const response = await fetch(
@@ -94,10 +98,11 @@ export async function fetchEthUsdPrice(): Promise<number> {
         headers: {
           'Accept': 'application/json',
         },
-        // Add timeout for mobile networks
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: controller.signal,
       }
     );
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
@@ -116,10 +121,11 @@ export async function fetchEthUsdPrice(): Promise<number> {
     
     return price;
   } catch (error) {
+    clearTimeout(timeoutId);
     // Handle network errors, timeouts, etc.
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        console.warn('ETH price fetch timeout');
+        console.warn('ETH price fetch timeout (10s)');
       } else {
         console.warn('Error fetching ETH USD price:', error.message);
       }
