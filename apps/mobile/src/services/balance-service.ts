@@ -53,7 +53,13 @@ export interface TokenBalance {
 export async function fetchEthBalance(address: string): Promise<TokenBalance> {
   try {
     const rpcProvider = getProvider();
-    const balanceWei = await rpcProvider.getBalance(address);
+    // Add timeout for RPC calls
+    const balanceWei = await Promise.race([
+      rpcProvider.getBalance(address),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('RPC timeout')), 15000)
+      ),
+    ]);
     const balance = formatEther(balanceWei);
     
     return {
@@ -64,8 +70,13 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
       lastUpdated: Date.now(),
     };
   } catch (error) {
-    console.error('Error fetching ETH balance:', error);
-    throw new Error('Failed to fetch ETH balance');
+    if (error instanceof Error) {
+      console.warn('Error fetching ETH balance:', error.message);
+      throw new Error(`Failed to fetch ETH balance: ${error.message}`);
+    } else {
+      console.warn('Unknown error fetching ETH balance:', error);
+      throw new Error('Failed to fetch ETH balance');
+    }
   }
 }
 
@@ -77,17 +88,44 @@ export async function fetchEthUsdPrice(): Promise<number> {
   try {
     // CoinGecko API (free, no API key needed for basic usage)
     const response = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd'
+      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        // Add timeout for mobile networks
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      }
     );
     
     if (!response.ok) {
-      throw new Error('Failed to fetch ETH price');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.warn(`CoinGecko API error: ${response.status} ${response.statusText}`, errorText);
+      // Return 0 for graceful degradation
+      return 0;
     }
     
     const data = await response.json();
-    return data.ethereum?.usd || 0;
+    const price = data.ethereum?.usd;
+    
+    if (typeof price !== 'number' || price <= 0) {
+      console.warn('Invalid ETH price from CoinGecko:', data);
+      return 0;
+    }
+    
+    return price;
   } catch (error) {
-    console.error('Error fetching ETH USD price:', error);
+    // Handle network errors, timeouts, etc.
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        console.warn('ETH price fetch timeout');
+      } else {
+        console.warn('Error fetching ETH USD price:', error.message);
+      }
+    } else {
+      console.warn('Unknown error fetching ETH price:', error);
+    }
     // Return 0 if API fails (graceful degradation)
     return 0;
   }
