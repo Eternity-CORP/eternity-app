@@ -9,8 +9,9 @@ import { JsonRpcProvider, formatEther } from 'ethers';
 // Load from environment variables (set in .env file)
 // For Expo, variables must be prefixed with EXPO_PUBLIC_
 // The .env file is gitignored, use .env.example as template
-const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '';
-const INFURA_API_KEY = process.env.EXPO_PUBLIC_INFURA_API_KEY || '';
+// Default values for development (Sepolia testnet)
+const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '***REDACTED_ALCHEMY_KEY***';
+const INFURA_API_KEY = process.env.EXPO_PUBLIC_INFURA_API_KEY || '78032b87897043d1a7c69d20fd9731dd';
 const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia'; // 'sepolia' | 'mainnet'
 
 // RPC URLs
