@@ -6,7 +6,7 @@
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { fetchTransactionsThunk, fetchTransactionDetailsThunk } from '@/src/store/slices/transaction-slice';
@@ -109,7 +109,7 @@ export default function TransactionsScreen() {
                   <FontAwesome
                     name={tx.direction === 'sent' ? 'arrow-up' : 'arrow-down'}
                     size={20}
-                    color={tx.direction === 'sent' ? theme.colors.error : theme.colors.success || theme.colors.buttonPrimary}
+                    color={tx.direction === 'sent' ? theme.colors.error : theme.colors.buttonPrimary}
                   />
                 </View>
                 <View style={styles.transactionInfo}>
@@ -130,7 +130,7 @@ export default function TransactionsScreen() {
                   <Text style={[
                     styles.transactionAmountText,
                     theme.typography.heading,
-                    { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.success || theme.colors.buttonPrimary }
+                    { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.buttonPrimary }
                   ]}>
                     {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
                   </Text>
@@ -139,8 +139,8 @@ export default function TransactionsScreen() {
                       styles.statusDot,
                       {
                         backgroundColor:
-                          tx.status === 'confirmed' ? (theme.colors.success || theme.colors.buttonPrimary) :
-                          tx.status === 'pending' ? theme.colors.warning || '#FFA500' :
+                          tx.status === 'confirmed' ? theme.colors.buttonPrimary :
+                          tx.status === 'pending' ? '#FFA500' :
                           theme.colors.error
                       }
                     ]} />
