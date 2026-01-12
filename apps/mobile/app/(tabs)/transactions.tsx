@@ -85,11 +85,11 @@ export default function TransactionsScreen() {
             <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
               Loading transactions...
             </Text>
-            {currentAccount?.address && (
+            {currentAccount?.address ? (
               <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.textTertiary }]}>
                 Scanning blocks for {currentAccount.address.slice(0, 8)}...
               </Text>
-            )}
+            ) : null}
           </View>
         ) : transaction.transactions.length === 0 ? (
           <View style={styles.emptyState}>
