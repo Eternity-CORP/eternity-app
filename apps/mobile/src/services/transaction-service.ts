@@ -57,11 +57,11 @@ export async function fetchTransactionHistory(
     // Get current block number
     const currentBlock = await provider.getBlockNumber();
     
-    // Reduced block scanning to avoid rate limits
-    // Scan last 20 blocks (enough for recent transactions)
+    // Optimized block scanning to balance rate limits and coverage
+    // Scan last 50 blocks with delays to find recent transactions
     const transactions: Transaction[] = [];
-    const maxBlocksToScan = 20; // Reduced from 100 to avoid rate limits
-    const delayBetweenBlocks = 100; // 100ms delay between block requests
+    const maxBlocksToScan = 50; // Increased to 50 to find more transactions
+    const delayBetweenBlocks = 150; // 150ms delay between block requests to avoid rate limits
     
     // Scan recent blocks with delays
     for (let i = 0; i < maxBlocksToScan && transactions.length < limit; i++) {
