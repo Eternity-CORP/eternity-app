@@ -37,15 +37,16 @@ export const fetchEthPriceThunk = createAsyncThunk(
 
 /**
  * Fetch balances for an address
+ * Note: ETH price is cached for 1 minute to avoid CoinGecko rate limits
  */
 export const fetchBalancesThunk = createAsyncThunk(
   'balance/fetchBalances',
   async (address: string) => {
-    // Fetch ETH balance
-    const ethBalance = await fetchEthBalance(address);
-    
-    // Fetch ETH USD price
-    const ethPrice = await fetchEthUsdPrice();
+    // Fetch ETH balance and price in parallel (price uses cache internally)
+    const [ethBalance, ethPrice] = await Promise.all([
+      fetchEthBalance(address),
+      fetchEthUsdPrice(),
+    ]);
     
     // Calculate USD value
     const ethUsdValue = parseFloat(ethBalance.balance) * ethPrice;

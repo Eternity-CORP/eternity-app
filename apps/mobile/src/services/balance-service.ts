@@ -4,6 +4,7 @@
  */
 
 import { JsonRpcProvider, formatEther } from 'ethers';
+import * as SecureStore from 'expo-secure-store';
 
 // RPC Configuration
 // Load from environment variables (set in .env file)
@@ -13,6 +14,15 @@ import { JsonRpcProvider, formatEther } from 'ethers';
 const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '***REDACTED_ALCHEMY_KEY***';
 const INFURA_API_KEY = process.env.EXPO_PUBLIC_INFURA_API_KEY || '78032b87897043d1a7c69d20fd9731dd';
 const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia'; // 'sepolia' | 'mainnet'
+
+// Cache configuration for ETH price
+const ETH_PRICE_CACHE_KEY = 'eth_price_cache';
+const ETH_PRICE_CACHE_DURATION = 60 * 1000; // 1 minute cache (to avoid rate limits)
+
+interface CachedPrice {
+  price: number;
+  timestamp: number;
+}
 
 // RPC URLs
 const getRpcUrl = (): string => {
@@ -81,10 +91,55 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
 }
 
 /**
+ * Get cached ETH price if still valid
+ */
+async function getCachedPrice(): Promise<number | null> {
+  try {
+    const cached = await SecureStore.getItemAsync(ETH_PRICE_CACHE_KEY);
+    if (!cached) return null;
+    
+    const cachedData: CachedPrice = JSON.parse(cached);
+    const now = Date.now();
+    
+    // Check if cache is still valid (within cache duration)
+    if (now - cachedData.timestamp < ETH_PRICE_CACHE_DURATION) {
+      return cachedData.price;
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn('Error reading cached ETH price:', error);
+    return null;
+  }
+}
+
+/**
+ * Save ETH price to cache
+ */
+async function setCachedPrice(price: number): Promise<void> {
+  try {
+    const cachedData: CachedPrice = {
+      price,
+      timestamp: Date.now(),
+    };
+    await SecureStore.setItemAsync(ETH_PRICE_CACHE_KEY, JSON.stringify(cachedData));
+  } catch (error) {
+    console.warn('Error caching ETH price:', error);
+    // Non-critical, continue without cache
+  }
+}
+
+/**
  * Fetch USD price for ETH
- * Uses CoinGecko API (free tier)
+ * Uses CoinGecko API (free tier) with caching to avoid rate limits
  */
 export async function fetchEthUsdPrice(): Promise<number> {
+  // Check cache first
+  const cachedPrice = await getCachedPrice();
+  if (cachedPrice !== null) {
+    return cachedPrice;
+  }
+
   // Create AbortController for timeout (AbortSignal.timeout may not be available in React Native)
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
@@ -107,6 +162,16 @@ export async function fetchEthUsdPrice(): Promise<number> {
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       console.warn(`CoinGecko API error: ${response.status} ${response.statusText}`, errorText);
+      
+      // If rate limited, try to use cached price even if expired
+      if (response.status === 429) {
+        const expiredCache = await getCachedPrice();
+        if (expiredCache !== null) {
+          console.warn('Rate limited, using expired cache');
+          return expiredCache;
+        }
+      }
+      
       // Return 0 for graceful degradation
       return 0;
     }
@@ -118,6 +183,9 @@ export async function fetchEthUsdPrice(): Promise<number> {
       console.warn('Invalid ETH price from CoinGecko:', data);
       return 0;
     }
+    
+    // Cache the price
+    await setCachedPrice(price);
     
     return price;
   } catch (error) {
@@ -132,7 +200,15 @@ export async function fetchEthUsdPrice(): Promise<number> {
     } else {
       console.warn('Unknown error fetching ETH price:', error);
     }
-    // Return 0 if API fails (graceful degradation)
+    
+    // Try to use cached price even if expired
+    const expiredCache = await getCachedPrice();
+    if (expiredCache !== null) {
+      console.warn('Using expired cache due to error');
+      return expiredCache;
+    }
+    
+    // Return 0 if API fails and no cache available
     return 0;
   }
 }
