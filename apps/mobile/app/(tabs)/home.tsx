@@ -7,7 +7,7 @@ import * as Haptics from 'expo-haptics';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
 import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
-import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
+import { fetchTransactionsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue } from '@/src/services/balance-service';
 import { theme } from '@/src/constants/theme';
@@ -17,8 +17,9 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
-  const transaction = useAppSelector((state) => state.transaction);
+  const transactionState = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
+  const transactions = useAppSelector((state) => selectTransactionsForAddress(state, currentAccount?.address || null));
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
@@ -269,13 +270,13 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {transaction.status === 'loading' && transaction.transactions.length === 0 ? (
+        {transactionState.status === 'loading' && transactions.length === 0 ? (
           <View style={styles.transactionEmpty}>
             <Text style={[styles.transactionEmptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
               Loading transactions...
             </Text>
           </View>
-        ) : transaction.transactions.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <View style={styles.transactionEmpty}>
             <FontAwesome name="exchange" size={32} color={theme.colors.textTertiary} />
             <Text style={[styles.transactionEmptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
@@ -287,7 +288,7 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.transactionsList}>
-            {transaction.transactions.slice(0, 5).map((tx) => (
+            {transactions.slice(0, 5).map((tx) => (
               <TouchableOpacity
                 key={tx.hash}
                 style={styles.transactionItem}

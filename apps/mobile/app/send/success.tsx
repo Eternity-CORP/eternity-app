@@ -1,15 +1,17 @@
 /**
- * Send Screen 5: Transaction Success
+ * Send Screen 5: Transaction Status
+ * Shows transaction status (pending/confirmed/failed) and auto-redirects to home
  */
 
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { resetSend } from '@/src/store/slices/send-slice';
-import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
+import { fetchTransactionDetailsThunk } from '@/src/store/slices/transaction-slice';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getProvider } from '@/src/services/balance-service';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -17,13 +19,47 @@ export default function SuccessScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const send = useAppSelector((state) => state.send);
+  const transaction = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
+  const [txStatus, setTxStatus] = useState<'pending' | 'confirmed' | 'failed'>('pending');
+  const [checkingStatus, setCheckingStatus] = useState(true);
 
+  // Check transaction status
   useEffect(() => {
-    // Refresh transactions after successful send
-    if (currentAccount?.address && send.txHash) {
-      dispatch(fetchTransactionsThunk(currentAccount.address));
-    }
+    if (!send.txHash || !currentAccount?.address) return;
+
+    const checkStatus = async () => {
+      try {
+        const provider = getProvider();
+        const receipt = await provider.getTransactionReceipt(send.txHash!);
+        
+        if (receipt) {
+          const status = receipt.status === 1 ? 'confirmed' : 'failed';
+          setTxStatus(status);
+          setCheckingStatus(false);
+          
+          // Auto-redirect to home after 3 seconds
+          setTimeout(() => {
+            dispatch(resetSend());
+            router.replace('/(tabs)/home');
+          }, 3000);
+        } else {
+          // Transaction still pending
+          setTxStatus('pending');
+          setCheckingStatus(false);
+          
+          // Check again after 2 seconds
+          setTimeout(checkStatus, 2000);
+        }
+      } catch (error) {
+        console.error('Error checking transaction status:', error);
+        setCheckingStatus(false);
+        // If error, assume pending
+        setTxStatus('pending');
+      }
+    };
+
+    checkStatus();
   }, [send.txHash, currentAccount?.address, dispatch]);
 
   const handleDone = () => {
@@ -31,22 +67,65 @@ export default function SuccessScreen() {
     router.replace('/(tabs)/home');
   };
 
+  const getStatusConfig = () => {
+    switch (txStatus) {
+      case 'confirmed':
+        return {
+          icon: 'check-circle',
+          color: theme.colors.success,
+          text: 'Transaction Successful',
+          subtext: 'Your transaction has been confirmed',
+        };
+      case 'failed':
+        return {
+          icon: 'times-circle',
+          color: theme.colors.error,
+          text: 'Transaction Failed',
+          subtext: 'Your transaction could not be completed',
+        };
+      default:
+        return {
+          icon: 'clock-o',
+          color: '#FFA500',
+          text: 'Transaction Pending',
+          subtext: 'Waiting for confirmation...',
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig();
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
-        <View style={styles.successIcon}>
-          <View style={styles.successCircle}>
-            <FontAwesome name="check" size={48} color={theme.colors.success} />
+        <View style={styles.statusIcon}>
+          <View style={[styles.statusCircle, { backgroundColor: statusConfig.color + '20' }]}>
+            <FontAwesome name={statusConfig.icon as any} size={48} color={statusConfig.color} />
           </View>
         </View>
 
-        <Text style={[styles.successText, theme.typography.heading]}>
-          Send processing
+        <Text style={[styles.statusText, theme.typography.heading]}>
+          {statusConfig.text}
+        </Text>
+
+        <Text style={[styles.statusSubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          {statusConfig.subtext}
         </Text>
 
         {send.txHash && (
-          <Text style={[styles.txHash, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-            {send.txHash.slice(0, 10)}...{send.txHash.slice(-8)}
+          <View style={styles.txHashContainer}>
+            <Text style={[styles.txHashLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              Transaction Hash
+            </Text>
+            <Text style={[styles.txHash, theme.typography.caption, { color: theme.colors.textPrimary }]}>
+              {send.txHash.slice(0, 10)}...{send.txHash.slice(-8)}
+            </Text>
+          </View>
+        )}
+
+        {txStatus === 'pending' && checkingStatus && (
+          <Text style={[styles.checkingText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+            Checking status...
           </Text>
         )}
 
@@ -69,24 +148,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.xl,
   },
-  successIcon: {
+  statusIcon: {
     marginBottom: theme.spacing.xl,
   },
-  successCircle: {
+  statusCircle: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: theme.colors.success + '20',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  successText: {
+  statusText: {
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
+  statusSubtext: {
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
+  },
+  txHashContainer: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    minWidth: 200,
+  },
+  txHashLabel: {
+    marginBottom: theme.spacing.xs,
+  },
   txHash: {
-    marginBottom: theme.spacing.xxl,
+    fontFamily: 'monospace',
+  },
+  checkingText: {
+    marginBottom: theme.spacing.xl,
     textAlign: 'center',
   },
   doneButton: {

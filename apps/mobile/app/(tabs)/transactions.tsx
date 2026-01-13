@@ -9,15 +9,16 @@ import { router } from 'expo-router';
 import { useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
-import { fetchTransactionsThunk, fetchTransactionDetailsThunk } from '@/src/store/slices/transaction-slice';
+import { fetchTransactionsThunk, fetchTransactionDetailsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function TransactionsScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
-  const transaction = useAppSelector((state) => state.transaction);
+  const transactionState = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
+  const transactions = useAppSelector((state) => selectTransactionsForAddress(state, currentAccount?.address || null));
 
   // Load transactions when screen mounts or account changes
   useEffect(() => {
@@ -59,13 +60,13 @@ export default function TransactionsScreen() {
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
-            refreshing={transaction.status === 'loading'}
+            refreshing={transactionState.status === 'loading'}
             onRefresh={onRefresh}
             tintColor={theme.colors.buttonPrimary}
           />
         }
       >
-        {transaction.status === 'loading' && transaction.transactions.length === 0 ? (
+        {transactionState.status === 'loading' && transactions.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
               Loading transactions...
@@ -76,7 +77,7 @@ export default function TransactionsScreen() {
               </Text>
             ) : null}
           </View>
-        ) : transaction.transactions.length === 0 ? (
+        ) : transactions.length === 0 ? (
           <View style={styles.emptyState}>
             <FontAwesome name="exchange" size={48} color={theme.colors.textTertiary} />
             <Text style={[styles.emptyText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
@@ -85,15 +86,15 @@ export default function TransactionsScreen() {
             <Text style={[styles.emptySubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
               We scanned the last 100 blocks. If you sent tokens earlier, they may not appear here.
             </Text>
-            {transaction.error && (
+            {transactionState.error && (
               <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.error, marginTop: theme.spacing.sm }]}>
-                Error: {transaction.error}
+                Error: {transactionState.error}
               </Text>
             )}
           </View>
         ) : (
           <View style={styles.transactionsList}>
-            {transaction.transactions.map((tx) => (
+            {transactions.map((tx) => (
               <TouchableOpacity
                 key={tx.hash}
                 style={styles.transactionItem}
@@ -148,10 +149,10 @@ export default function TransactionsScreen() {
           </View>
         )}
 
-        {transaction.error && (
+        {transactionState.error && (
           <View style={styles.errorContainer}>
             <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
-              {transaction.error}
+              {transactionState.error}
             </Text>
           </View>
         )}
