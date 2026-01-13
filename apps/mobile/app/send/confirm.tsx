@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
-import { getWalletFromMnemonic } from '@e-y/crypto';
+import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -37,7 +37,7 @@ export default function ConfirmScreen() {
   const handleConfirm = async () => {
     if (!wallet.mnemonic || !currentAccount) return;
     
-    const hdWallet = getWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
     
     await dispatch(sendTransactionThunk({
       wallet: hdWallet,
