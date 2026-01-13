@@ -2,7 +2,7 @@
  * Send Screen 3: Amount Input with Custom Keypad
  */
 
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -68,75 +68,83 @@ export default function AmountScreen() {
         <View style={styles.backButton} />
       </View>
 
-      <View style={styles.container}>
-        <View style={styles.amountDisplay}>
-          <Text style={[styles.amountText, theme.typography.displayLarge]}>
-            {amount || '0'}
-          </Text>
-          <Text style={[styles.tokenText, theme.typography.heading, { color: theme.colors.textSecondary }]}>
-            {send.selectedToken}
-          </Text>
-          {amount && (
-            <Text style={[styles.usdText, theme.typography.body, { color: theme.colors.textSecondary }]}>
-              ${usdValue.toFixed(2)} USD
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <View style={styles.content}>
+          <View style={styles.amountDisplay}>
+            <Text style={[styles.amountText, theme.typography.displayLarge]}>
+              {amount || '0'}
             </Text>
-          )}
-        </View>
+            <Text style={[styles.tokenText, theme.typography.heading, { color: theme.colors.textSecondary }]}>
+              {send.selectedToken}
+            </Text>
+            {amount && (
+              <Text style={[styles.usdText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+                ${usdValue.toFixed(2)} USD
+              </Text>
+            )}
+          </View>
 
-        <View style={styles.quickAmounts}>
-          <TouchableOpacity
-            style={styles.quickAmountChip}
-            onPress={() => handleQuickAmount('0.01')}
-          >
-            <Text style={[styles.quickAmountText, theme.typography.body]}>0.01</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickAmountChip}
-            onPress={() => handleQuickAmount('0.1')}
-          >
-            <Text style={[styles.quickAmountText, theme.typography.body]}>0.1</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickAmountChip}
-            onPress={() => handleQuickAmount('Max')}
-          >
-            <Text style={[styles.quickAmountText, theme.typography.body]}>Max</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.keypad}>
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map((key) => (
+          <View style={styles.quickAmounts}>
             <TouchableOpacity
-              key={key}
-              style={styles.keypadButton}
-              onPress={() => {
-                if (key === 'backspace') {
-                  handleBackspace();
-                } else {
-                  handleNumberPress(key);
-                }
-              }}
+              style={styles.quickAmountChip}
+              onPress={() => handleQuickAmount('0.01')}
             >
-              {key === 'backspace' ? (
-                <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
-              ) : (
-                <Text style={[styles.keypadText, theme.typography.title]}>{key}</Text>
-              )}
+              <Text style={[styles.quickAmountText, theme.typography.body]}>0.01</Text>
             </TouchableOpacity>
-          ))}
+            <TouchableOpacity
+              style={styles.quickAmountChip}
+              onPress={() => handleQuickAmount('0.1')}
+            >
+              <Text style={[styles.quickAmountText, theme.typography.body]}>0.1</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickAmountChip}
+              onPress={() => handleQuickAmount('Max')}
+            >
+              <Text style={[styles.quickAmountText, theme.typography.body]}>Max</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.keypad}>
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map((key) => (
+              <TouchableOpacity
+                key={key}
+                style={styles.keypadButton}
+                onPress={() => {
+                  if (key === 'backspace') {
+                    handleBackspace();
+                  } else {
+                    handleNumberPress(key);
+                  }
+                }}
+              >
+                {key === 'backspace' ? (
+                  <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
+                ) : (
+                  <Text style={[styles.keypadText, theme.typography.title]}>{key}</Text>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!amount || parseFloat(amount) <= 0) && styles.sendButtonDisabled,
-          ]}
-          onPress={handleSend}
-          disabled={!amount || parseFloat(amount) <= 0}
-        >
-          <Text style={[styles.sendButtonText, theme.typography.heading]}>Send</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!amount || parseFloat(amount) <= 0) && styles.sendButtonDisabled,
+            ]}
+            onPress={handleSend}
+            disabled={!amount || parseFloat(amount) <= 0}
+          >
+            <Text style={[styles.sendButtonText, theme.typography.heading]}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -172,9 +180,19 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
-  container: {
+  keyboardView: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
     padding: theme.spacing.xl,
+  },
+  footer: {
+    padding: theme.spacing.xl,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.buttonSecondaryBorder,
+    backgroundColor: theme.colors.background,
   },
   amountDisplay: {
     alignItems: 'center',
