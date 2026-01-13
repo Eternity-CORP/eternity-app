@@ -5,8 +5,6 @@
 
 import { formatEther } from 'ethers';
 import type { TransactionReceipt } from 'ethers';
-
-// Reuse RPC provider from balance-service
 import { getProvider } from './balance-service';
 
 export type TransactionDirection = 'sent' | 'received';
@@ -16,136 +14,211 @@ export interface Transaction {
   hash: string;
   from: string;
   to: string;
-  amount: string; // Human-readable amount (e.g., "0.1")
-  token: string; // 'ETH' or token contract address
+  amount: string;
+  token: string;
   direction: TransactionDirection;
   status: TransactionStatus;
   gasUsed?: string;
   gasPrice?: string;
   blockNumber?: number;
-  timestamp: number; // Unix timestamp
-  createdAt: string; // ISO string
+  timestamp: number;
+  createdAt: string;
 }
 
 export interface TransactionDetails extends Transaction {
   nonce: number;
   data: string;
-  value: string; // Raw value in Wei
+  value: string;
   confirmations: number;
 }
 
 /**
- * Helper: Add delay to avoid rate limits
+ * Fetch transactions using Alchemy getAssetTransfers API
  */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function fetchViaAlchemy(address: string, limit: number): Promise<Transaction[]> {
+  const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '***REDACTED_ALCHEMY_KEY***';
+  const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
+  const url = `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+
+  try {
+    const [receivedRes, sentRes] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'alchemy_getAssetTransfers',
+          params: [{
+            fromBlock: '0x0',
+            toBlock: 'latest',
+            toAddress: address,
+            category: ['external'],
+            withMetadata: true,
+            excludeZeroValue: false,
+            maxCount: `0x${limit.toString(16)}`,
+          }],
+        }),
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'alchemy_getAssetTransfers',
+          params: [{
+            fromBlock: '0x0',
+            toBlock: 'latest',
+            fromAddress: address,
+            category: ['external'],
+            withMetadata: true,
+            excludeZeroValue: false,
+            maxCount: `0x${limit.toString(16)}`,
+          }],
+        }),
+      }),
+    ]);
+
+    const [receivedData, sentData] = await Promise.all([
+      receivedRes.json(),
+      sentRes.json(),
+    ]);
+
+    const transactions: Transaction[] = [];
+
+    if (receivedData.result?.transfers) {
+      for (const t of receivedData.result.transfers) {
+        if (t.asset === 'ETH' && t.value) {
+          transactions.push({
+            hash: t.hash,
+            from: t.from,
+            to: t.to,
+            amount: parseFloat(t.value).toFixed(6),
+            token: 'ETH',
+            direction: 'received',
+            status: 'confirmed',
+            blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
+            timestamp: t.metadata?.blockTimestamp
+              ? new Date(t.metadata.blockTimestamp).getTime()
+              : Date.now(),
+            createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
+          });
+        }
+      }
+    }
+
+    if (sentData.result?.transfers) {
+      for (const t of sentData.result.transfers) {
+        if (t.asset === 'ETH' && t.value) {
+          transactions.push({
+            hash: t.hash,
+            from: t.from,
+            to: t.to,
+            amount: parseFloat(t.value).toFixed(6),
+            token: 'ETH',
+            direction: 'sent',
+            status: 'confirmed',
+            blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
+            timestamp: t.metadata?.blockTimestamp
+              ? new Date(t.metadata.blockTimestamp).getTime()
+              : Date.now(),
+            createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
+          });
+        }
+      }
+    }
+
+    const unique = new Map<string, Transaction>();
+    transactions.sort((a, b) => b.timestamp - a.timestamp);
+    for (const tx of transactions) {
+      if (!unique.has(tx.hash)) {
+        unique.set(tx.hash, tx);
+      }
+    }
+
+    return Array.from(unique.values()).slice(0, limit);
+  } catch (error) {
+    console.error('Alchemy API error:', error);
+    return [];
+  }
 }
 
 /**
  * Fetch transaction history for an address
- * Scans recent blocks to find transactions involving the address
- * Note: Limited to recent blocks to avoid rate limits. For full history, consider using Alchemy's getAssetTransfers API
  */
 export async function fetchTransactionHistory(
   address: string,
   limit: number = 20
 ): Promise<Transaction[]> {
+  const alchemyTxs = await fetchViaAlchemy(address, limit);
+  if (alchemyTxs.length > 0) {
+    return alchemyTxs;
+  }
+
+  // Fallback: scan recent blocks
   try {
     const provider = getProvider();
     const addressLower = address.toLowerCase();
     const currentBlock = await provider.getBlockNumber();
-    
     const transactions: Transaction[] = [];
-    const maxBlocksToScan = 100;
-    const delayBetweenBlocks = 200; // Delay to avoid rate limits
-    
-    // Scan recent blocks with delays
-    for (let i = 0; i < maxBlocksToScan && transactions.length < limit; i++) {
+    const maxBlocks = 1000;
+
+    for (let i = 0; i < maxBlocks && transactions.length < limit; i++) {
       const blockNumber = currentBlock - i;
       if (blockNumber < 0) break;
-      
-      // Add delay to avoid rate limits (except for first request)
-      if (i > 0) {
-        await delay(delayBetweenBlocks);
+
+      if (i > 0 && i % 10 === 0) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      
+
       try {
         const block = await provider.getBlock(blockNumber, true);
-        if (!block || !block.transactions || block.transactions.length === 0) {
-          continue;
-        }
-        
-        // Check each transaction in the block
-        for (const txHash of block.transactions) {
+        if (!block?.transactions?.length) continue;
+
+        for (const txHash of block.transactions.slice(0, 50)) {
           if (transactions.length >= limit) break;
-          
-          if (typeof txHash === 'string') {
-            try {
-              const tx = await provider.getTransaction(txHash);
-              if (!tx) continue;
-              
-              // Check if transaction involves our address
-              const isFrom = tx.from.toLowerCase() === addressLower;
-              const isTo = tx.to && tx.to.toLowerCase() === addressLower;
-              
-              if (isFrom || isTo) {
-                // Get transaction receipt for status (with delay)
-                await delay(50); // Small delay before receipt request
-                
-                let receipt: TransactionReceipt | null = null;
-                let status: TransactionStatus = 'pending';
-                
-                try {
-                  receipt = await provider.getTransactionReceipt(txHash);
-                  if (receipt) {
-                    status = receipt.status === 1 ? 'confirmed' : 'failed';
-                  }
-                } catch (error) {
-                  // Transaction might still be pending
-                  status = 'pending';
-                }
-                
-                const direction: TransactionDirection = isFrom ? 'sent' : 'received';
-                const amount = formatEther(tx.value || '0');
-                
-                transactions.push({
-                  hash: txHash,
-                  from: tx.from,
-                  to: tx.to || '',
-                  amount: parseFloat(amount).toFixed(6),
-                  token: 'ETH',
-                  direction,
-                  status,
-                  gasUsed: receipt?.gasUsed?.toString(),
-                  gasPrice: tx.gasPrice?.toString(),
-                  blockNumber: receipt?.blockNumber,
-                  timestamp: block.timestamp * 1000, // Convert to milliseconds
-                  createdAt: new Date(block.timestamp * 1000).toISOString(),
-                });
-              }
-            } catch (error) {
-              // Skip this transaction if there's an error
-              continue;
+          if (typeof txHash !== 'string') continue;
+
+          try {
+            const tx = await provider.getTransaction(txHash);
+            if (!tx) continue;
+
+            const isFrom = tx.from.toLowerCase() === addressLower;
+            const isTo = tx.to?.toLowerCase() === addressLower;
+
+            if (isFrom || isTo) {
+              const receipt = await provider.getTransactionReceipt(txHash).catch(() => null);
+              const amount = formatEther(tx.value || '0');
+
+              transactions.push({
+                hash: txHash,
+                from: tx.from,
+                to: tx.to || '',
+                amount: parseFloat(amount).toFixed(6),
+                token: 'ETH',
+                direction: isFrom ? 'sent' : 'received',
+                status: receipt ? (receipt.status === 1 ? 'confirmed' : 'failed') : 'pending',
+                gasUsed: receipt?.gasUsed?.toString(),
+                gasPrice: tx.gasPrice?.toString(),
+                blockNumber: receipt?.blockNumber,
+                timestamp: block.timestamp * 1000,
+                createdAt: new Date(block.timestamp * 1000).toISOString(),
+              });
             }
+          } catch {
+            continue;
           }
         }
-      } catch (error) {
-        // If rate limited, stop scanning and return what we have
-        if (error instanceof Error && (error.message.includes('429') || error.message.includes('rate limit'))) {
-          break;
-        }
-        // Continue with next block for other errors
+      } catch {
         continue;
       }
     }
-    
-    // Sort by timestamp (newest first)
+
     transactions.sort((a, b) => b.timestamp - a.timestamp);
-    
     return transactions.slice(0, limit);
   } catch (error) {
     console.error('Error fetching transaction history:', error);
-    // Return empty array instead of throwing to allow UI to show "no transactions"
     return [];
   }
 }
@@ -159,41 +232,36 @@ export async function fetchTransactionDetails(
 ): Promise<TransactionDetails> {
   try {
     const provider = getProvider();
-    
     const [tx, receipt] = await Promise.all([
       provider.getTransaction(txHash),
       provider.getTransactionReceipt(txHash).catch(() => null),
     ]);
-    
+
     if (!tx) {
       throw new Error('Transaction not found');
     }
-    
+
     const block = await provider.getBlock(tx.blockNumber || 'latest');
     const status: TransactionStatus = receipt
-      ? receipt.status === 1
-        ? 'confirmed'
-        : 'failed'
+      ? receipt.status === 1 ? 'confirmed' : 'failed'
       : 'pending';
-    
+
     const amount = formatEther(tx.value || '0');
     const isFrom = tx.from.toLowerCase() === userAddress.toLowerCase();
-    const direction: TransactionDirection = isFrom ? 'sent' : 'received';
-    
-    // Calculate confirmations
     let confirmations = 0;
-    if (receipt && receipt.blockNumber) {
+
+    if (receipt?.blockNumber) {
       const currentBlock = await provider.getBlockNumber();
       confirmations = currentBlock - receipt.blockNumber + 1;
     }
-    
+
     return {
       hash: txHash,
       from: tx.from,
       to: tx.to || '',
       amount: parseFloat(amount).toFixed(6),
       token: 'ETH',
-      direction,
+      direction: isFrom ? 'sent' : 'received',
       status,
       gasUsed: receipt?.gasUsed?.toString(),
       gasPrice: tx.gasPrice?.toString(),
@@ -212,4 +280,3 @@ export async function fetchTransactionDetails(
     throw new Error('Failed to fetch transaction details');
   }
 }
-
