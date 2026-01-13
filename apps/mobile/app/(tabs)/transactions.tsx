@@ -46,13 +46,12 @@ export default function TransactionsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, theme.typography.title]}>Transaction History</Text>
-        <View style={styles.backButton} /> {/* Spacer for centering */}
+        <View style={styles.backButton} />
       </View>
 
       <ScrollView
