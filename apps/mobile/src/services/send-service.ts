@@ -5,7 +5,6 @@
 
 import { isAddress, parseEther, formatEther } from 'ethers';
 import { getProvider } from './balance-service';
-import { signAndSendTransaction } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
 
 export interface SendTransactionParams {
@@ -16,8 +15,8 @@ export interface SendTransactionParams {
 }
 
 export interface GasEstimate {
-  gasLimit: bigint;
-  gasPrice: bigint;
+  gasLimit: string; // BigInt as string for Redux serialization
+  gasPrice: string; // BigInt as string for Redux serialization
   totalGasCost: string; // In ETH
   totalGasCostUsd: number; // In USD
 }
@@ -61,8 +60,8 @@ export async function estimateGas(
     const totalGasCostUsd = parseFloat(totalGasCostEth) * ethPrice;
     
     return {
-      gasLimit,
-      gasPrice,
+      gasLimit: gasLimit.toString(),
+      gasPrice: gasPrice.toString(),
       totalGasCost: totalGasCostEth,
       totalGasCostUsd,
     };
@@ -110,7 +109,11 @@ export async function sendTransaction(
   const provider = getProvider();
   const value = parseEther(amount);
   
-  const txResponse = await signAndSendTransaction(wallet, provider, {
+  // Connect wallet to provider - wallet.sendTransaction requires connected wallet
+  const connectedWallet = wallet.connect(provider);
+  
+  // Use connected wallet's sendTransaction method directly
+  const txResponse = await connectedWallet.sendTransaction({
     to,
     value,
   });
