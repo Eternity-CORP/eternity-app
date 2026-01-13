@@ -3,10 +3,10 @@ stepsCompleted: [1, 2, 3, 4]
 inputDocuments: ['prd.md', 'architecture.md']
 project_name: 'E-Y'
 date: '2026-01-11'
-status: 'NOT_STARTED'
+status: 'IN_PROGRESS'
 total_epics: 6
 total_stories: 21
-completed_stories: 0
+completed_stories: 1
 last_updated: '2026-01-11'
 ---
 
@@ -318,7 +318,7 @@ So that I know how much I have.
 
 ---
 
-### Story 2.5: Transaction History
+### Story 2.5: Transaction History ✅
 
 As a **user**,
 I want to see my transaction history,
@@ -335,6 +335,12 @@ So that I can track my activity.
 - Status (pending/confirmed/failed)
 **And** tapping transaction shows details screen
 **And** details include: tx hash, from/to addresses, gas used, block number
+
+**Status:** ✅ Completed (2026-01-12)
+- Implemented Alchemy API integration for complete transaction history
+- Transaction history screen with pull-to-refresh
+- Recent transactions on home screen
+- All acceptance criteria met
 
 ---
 
