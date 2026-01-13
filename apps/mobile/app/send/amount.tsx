@@ -46,7 +46,7 @@ export default function AmountScreen() {
     }
   };
 
-  const handleContinue = () => {
+  const handleSend = () => {
     if (!amount || parseFloat(amount) <= 0) return;
     dispatch(setAmount(amount));
     dispatch(setStep('confirm'));
@@ -128,13 +128,13 @@ export default function AmountScreen() {
 
         <TouchableOpacity
           style={[
-            styles.continueButton,
-            (!amount || parseFloat(amount) <= 0) && styles.continueButtonDisabled,
+            styles.sendButton,
+            (!amount || parseFloat(amount) <= 0) && styles.sendButtonDisabled,
           ]}
-          onPress={handleContinue}
+          onPress={handleSend}
           disabled={!amount || parseFloat(amount) <= 0}
         >
-          <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
+          <Text style={[styles.sendButtonText, theme.typography.heading]}>Send</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -223,16 +223,16 @@ const styles = StyleSheet.create({
   keypadText: {
     color: theme.colors.textPrimary,
   },
-  continueButton: {
+  sendButton: {
     backgroundColor: theme.colors.buttonPrimary,
     borderRadius: theme.borderRadius.lg,
     paddingVertical: theme.spacing.lg,
     alignItems: 'center',
   },
-  continueButtonDisabled: {
+  sendButtonDisabled: {
     backgroundColor: theme.colors.textTertiary,
   },
-  continueButtonText: {
+  sendButtonText: {
     color: theme.colors.buttonPrimaryText,
   },
 });
