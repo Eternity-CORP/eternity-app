@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### 2026-01-12 - Transaction History
+
+#### Story 2.5: Transaction History ✅
+- Implemented Alchemy API integration for complete transaction history
+- Created transaction service with `getAssetTransfers` API
+- Added transaction history screen with pull-to-refresh
+- Display transaction direction, amount, date/time, status
+- Show recent transactions on home screen
+- Fallback to block scanning if API unavailable
+- Fixed text rendering errors in transaction UI
+
 ### 2026-01-11 - Project Foundation
 
 #### Story 1.1: Initialize Monorepo Structure ✅
