@@ -183,7 +183,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={[styles.actionButton, styles.actionButtonSecondary]}
-          onPress={() => router.push('/(tabs)/wallet')}
+          onPress={() => router.push('/send/token')}
         >
           <Text style={[styles.actionButtonText, { color: theme.colors.textPrimary }]}>
             Send
