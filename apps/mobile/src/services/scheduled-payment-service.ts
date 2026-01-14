@@ -1,32 +1,14 @@
 /**
  * Scheduled Payment Service
- * Manages scheduled payments with local storage and notifications
+ * Manages scheduled payments with local storage
+ *
+ * Note: Notifications are disabled in Expo Go. Build a development client
+ * for full notification support.
  */
 
 import Storage from '@/src/utils/storage';
 
 const SCHEDULED_PAYMENTS_KEY = 'scheduled_payments';
-
-// Lazy-loaded notifications module (not available in Expo Go)
-let Notifications: typeof import('expo-notifications') | null = null;
-let notificationsInitialized = false;
-
-/**
- * Try to load notifications module
- */
-async function getNotifications(): Promise<typeof import('expo-notifications') | null> {
-  if (notificationsInitialized) return Notifications;
-
-  try {
-    Notifications = await import('expo-notifications');
-    notificationsInitialized = true;
-    return Notifications;
-  } catch (error) {
-    console.warn('expo-notifications not available (Expo Go?):', error);
-    notificationsInitialized = true;
-    return null;
-  }
-}
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
@@ -61,112 +43,17 @@ function generateId(): string {
 }
 
 /**
- * Configure notifications
+ * Configure notifications (no-op in Expo Go)
  */
 export async function configureNotifications(): Promise<void> {
-  const notifs = await getNotifications();
-  if (!notifs) return;
-
-  await notifs.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: true,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
+  // Notifications require development build
 }
 
 /**
- * Request notification permissions
+ * Request notification permissions (no-op in Expo Go)
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
-  const notifs = await getNotifications();
-  if (!notifs) return false;
-
-  try {
-    const { status: existingStatus } = await notifs.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await notifs.requestPermissionsAsync();
-      finalStatus = status;
-    }
-
-    return finalStatus === 'granted';
-  } catch (error) {
-    console.warn('Error requesting notification permissions:', error);
-    return false;
-  }
-}
-
-/**
- * Schedule a local notification for a payment
- */
-async function scheduleNotification(payment: ScheduledPayment): Promise<string | null> {
-  const notifs = await getNotifications();
-  if (!notifs) return null;
-
-  try {
-    const hasPermission = await requestNotificationPermissions();
-    if (!hasPermission) {
-      console.warn('Notification permissions not granted');
-      return null;
-    }
-
-    // Cancel existing notification if any
-    if (payment.notificationId) {
-      await notifs.cancelScheduledNotificationAsync(payment.notificationId);
-    }
-
-    const triggerDate = new Date(payment.scheduledAt);
-
-    // Don't schedule if the time has passed
-    if (triggerDate.getTime() <= Date.now()) {
-      return null;
-    }
-
-    const recipientDisplay = payment.recipientUsername
-      ? `@${payment.recipientUsername}`
-      : payment.recipientName
-        ? payment.recipientName
-        : `${payment.recipient.slice(0, 6)}...${payment.recipient.slice(-4)}`;
-
-    const notificationId = await notifs.scheduleNotificationAsync({
-      content: {
-        title: 'Scheduled Payment Due',
-        body: `Time to send ${payment.amount} ${payment.tokenSymbol} to ${recipientDisplay}`,
-        data: {
-          type: 'scheduled_payment',
-          paymentId: payment.id,
-        },
-      },
-      trigger: {
-        type: notifs.SchedulableTriggerInputTypes.DATE,
-        date: triggerDate,
-      },
-    });
-
-    return notificationId;
-  } catch (error) {
-    console.error('Error scheduling notification:', error);
-    return null;
-  }
-}
-
-/**
- * Cancel a scheduled notification
- */
-async function cancelNotification(notificationId: string): Promise<void> {
-  const notifs = await getNotifications();
-  if (!notifs) return;
-
-  try {
-    await notifs.cancelScheduledNotificationAsync(notificationId);
-  } catch (error) {
-    console.error('Error canceling notification:', error);
-  }
+  return false;
 }
 
 /**
@@ -214,12 +101,6 @@ export async function createScheduledPayment(
     updatedAt: Date.now(),
   };
 
-  // Schedule notification
-  const notificationId = await scheduleNotification(newPayment);
-  if (notificationId) {
-    newPayment.notificationId = notificationId;
-  }
-
   payments.push(newPayment);
   await saveScheduledPayments(payments);
 
@@ -246,17 +127,6 @@ export async function updateScheduledPayment(
     updatedAt: Date.now(),
   };
 
-  // Reschedule notification if scheduledAt changed
-  if (updates.scheduledAt && updates.scheduledAt !== payments[index].scheduledAt) {
-    if (payments[index].notificationId) {
-      await cancelNotification(payments[index].notificationId);
-    }
-    const notificationId = await scheduleNotification(updatedPayment);
-    if (notificationId) {
-      updatedPayment.notificationId = notificationId;
-    }
-  }
-
   payments[index] = updatedPayment;
   await saveScheduledPayments(payments);
 
@@ -272,11 +142,6 @@ export async function cancelScheduledPayment(id: string): Promise<boolean> {
 
   if (index === -1) {
     return false;
-  }
-
-  // Cancel notification
-  if (payments[index].notificationId) {
-    await cancelNotification(payments[index].notificationId);
   }
 
   payments[index] = {
@@ -300,11 +165,6 @@ export async function deleteScheduledPayment(id: string): Promise<boolean> {
     return false;
   }
 
-  // Cancel notification
-  if (payment.notificationId) {
-    await cancelNotification(payment.notificationId);
-  }
-
   const filtered = payments.filter((p) => p.id !== id);
   await saveScheduledPayments(filtered);
   return true;
@@ -325,11 +185,6 @@ export async function markPaymentExecuted(
   }
 
   const payment = payments[index];
-
-  // Cancel notification
-  if (payment.notificationId) {
-    await cancelNotification(payment.notificationId);
-  }
 
   // Update payment
   const updatedPayment: ScheduledPayment = {
@@ -360,12 +215,6 @@ export async function markPaymentExecuted(
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-
-      // Schedule notification for next occurrence
-      const notificationId = await scheduleNotification(nextPayment);
-      if (notificationId) {
-        nextPayment.notificationId = notificationId;
-      }
 
       payments.push(nextPayment);
     }
