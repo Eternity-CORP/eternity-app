@@ -506,6 +506,32 @@ export function getTokenIconUrl(contractAddress: string): string {
 }
 
 /**
+ * Format raw token balance to human-readable string
+ */
+export function formatTokenBalance(rawBalance: string, decimals: number): string {
+  if (!rawBalance || rawBalance === '0x0' || rawBalance === '0x') {
+    return '0';
+  }
+
+  // Convert hex to BigInt
+  const balance = BigInt(rawBalance);
+  const divisor = BigInt(10 ** decimals);
+  const wholePart = balance / divisor;
+  const fractionalPart = balance % divisor;
+
+  // Format fractional part with leading zeros
+  const fractionalStr = fractionalPart.toString().padStart(decimals, '0');
+  // Trim trailing zeros but keep at least 2 decimal places for display
+  const trimmedFractional = fractionalStr.slice(0, 6).replace(/0+$/, '') || '0';
+
+  if (wholePart === BigInt(0) && balance > BigInt(0)) {
+    return `0.${fractionalStr.slice(0, 6)}`;
+  }
+
+  return `${wholePart}.${trimmedFractional}`;
+}
+
+/**
  * Calculate total USD value from token balances
  */
 export function calculateTotalUsdValue(balances: TokenBalance[]): number {
@@ -528,4 +554,81 @@ export function formatUsdValue(value: number): string {
   }
   const mValue = value / 1000000;
   return `$${mValue.toFixed(mValue < 10 ? 2 : 1)}M`;
+}
+
+/**
+ * Fetch all balances (ETH + ERC-20) for an address
+ * This is the main function to call from Redux
+ */
+export async function fetchAllBalances(address: string): Promise<{
+  balances: TokenBalance[];
+  ethPrice: number;
+  totalUsdValue: number;
+}> {
+  // Fetch ETH balance and ERC-20 balances in parallel
+  const [ethBalance, tokenBalances] = await Promise.all([
+    fetchEthBalance(address),
+    fetchAllTokenBalances(address),
+  ]);
+
+  // Get contract addresses for price lookup
+  const contractAddresses = tokenBalances.map((t) => t.contractAddress);
+
+  // Fetch prices and metadata in parallel
+  const [{ ethPrice, tokenPrices }, ...metadataResults] = await Promise.all([
+    fetchTokenPrices(contractAddresses),
+    ...tokenBalances.map((t) => fetchTokenMetadata(t.contractAddress)),
+  ]);
+
+  // Calculate ETH USD value
+  const ethUsdValue = parseFloat(ethBalance.balance) * ethPrice;
+  const ethBalanceWithPrice: TokenBalance = {
+    ...ethBalance,
+    usdValue: ethUsdValue,
+  };
+
+  // Process ERC-20 tokens
+  const erc20Balances: TokenBalance[] = [];
+
+  for (let i = 0; i < tokenBalances.length; i++) {
+    const tokenData = tokenBalances[i];
+    const metadata = metadataResults[i];
+
+    if (!metadata) {
+      continue;
+    }
+
+    const balance = formatTokenBalance(tokenData.tokenBalance, metadata.decimals);
+    const balanceNum = parseFloat(balance);
+
+    if (balanceNum === 0) continue;
+
+    const price = tokenPrices[tokenData.contractAddress.toLowerCase()] || 0;
+    const usdValue = balanceNum * price;
+
+    erc20Balances.push({
+      token: tokenData.contractAddress,
+      symbol: metadata.symbol,
+      name: metadata.name,
+      balance,
+      balanceRaw: tokenData.tokenBalance,
+      decimals: metadata.decimals,
+      usdValue,
+      iconUrl: getTokenIconUrl(tokenData.contractAddress),
+      lastUpdated: Date.now(),
+    });
+  }
+
+  // Combine and sort by USD value (highest first)
+  const allBalances = [ethBalanceWithPrice, ...erc20Balances].sort(
+    (a, b) => (b.usdValue || 0) - (a.usdValue || 0)
+  );
+
+  const totalUsdValue = calculateTotalUsdValue(allBalances);
+
+  return {
+    balances: allBalances,
+    ethPrice,
+    totalUsdValue,
+  };
 }
