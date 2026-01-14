@@ -7,8 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { setRecipient, validateRecipient, setStep } from '@/src/store/slices/send-slice';
+import { setRecipient, setStep } from '@/src/store/slices/send-slice';
 import { validateAddress } from '@/src/services/send-service';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -37,17 +38,14 @@ export default function RecipientScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <View style={styles.backButtonCircle}>
-            <FontAwesome name="arrow-left" size={16} color={theme.colors.textPrimary} />
-          </View>
-        </TouchableOpacity>
-        <Text style={[styles.title, theme.typography.title]}>Send</Text>
-        <TouchableOpacity style={styles.backButton}>
-          <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Send"
+        rightElement={
+          <TouchableOpacity>
+            <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
+          </TouchableOpacity>
+        }
+      />
 
       <View style={styles.container}>
         <View style={styles.inputContainer}>
@@ -89,32 +87,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    color: theme.colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
   },
   container: {
     flex: 1,

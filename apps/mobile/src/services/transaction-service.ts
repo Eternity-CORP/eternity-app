@@ -36,8 +36,14 @@ export interface TransactionDetails extends Transaction {
  * Fetch transactions using Alchemy getAssetTransfers API
  */
 async function fetchViaAlchemy(address: string, limit: number): Promise<Transaction[]> {
-  const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || 'UrBsk4l8uqp1oQid2tGGtrcKXybIZqbR';
+  const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY;
   const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
+
+  if (!ALCHEMY_API_KEY) {
+    console.warn('ALCHEMY_API_KEY not set, skipping Alchemy API');
+    return [];
+  }
+
   const url = `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
 
   try {

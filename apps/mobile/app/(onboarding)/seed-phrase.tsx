@@ -2,12 +2,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { useAppDispatch } from '@/src/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { saveWalletThunk } from '@/src/store/slices/wallet-slice';
 import { theme } from '@/src/constants/theme';
 
 export default function SeedPhraseScreen() {
-  const { mnemonic, wordCount } = useLocalSearchParams<{ mnemonic: string; wordCount?: string }>();
+  const { wordCount } = useLocalSearchParams<{ wordCount?: string }>();
+  // Get mnemonic from Redux state (not from URL params for security)
+  const mnemonic = useAppSelector((state) => state.wallet.mnemonic);
   const dispatch = useAppDispatch();
   const [words, setWords] = useState<string[]>([]);
   const [verificationWords, setVerificationWords] = useState<number[]>([]);

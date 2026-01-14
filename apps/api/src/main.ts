@@ -14,7 +14,8 @@ async function bootstrap() {
   await app.listen(port);
   
   console.log(`🚀 E-Y API is running on: http://localhost:${port}`);
-  console.log(`📡 WebSocket gateway available at: ws://localhost:${port}/blik`);
+  console.log(`📡 BLIK WebSocket: ws://localhost:${port}/blik`);
+  console.log(`📡 Transactions WebSocket: ws://localhost:${port}/transactions`);
 }
 
 bootstrap();

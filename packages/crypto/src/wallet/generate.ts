@@ -2,10 +2,9 @@
  * Wallet generation using BIP-39
  */
 
-import { Mnemonic, HDNodeWallet } from 'ethers';
+import { Mnemonic } from 'ethers';
+import { deriveWalletFromMnemonic } from './derive';
 
-// Constants (will be imported from @e-y/shared once monorepo is configured)
-const HD_WALLET_DERIVATION_PATH = "m/44'/60'/0'/0";
 const DEFAULT_ACCOUNT_INDEX = 0;
 
 /**
@@ -75,29 +74,14 @@ export function generateMnemonic(wordCount: 12 | 24 = 12): string {
 }
 
 /**
- * Generate a new wallet from mnemonic phrase
- */
-export function generateWalletFromMnemonic(
-  mnemonic: string,
-  accountIndex: number = DEFAULT_ACCOUNT_INDEX,
-): HDNodeWallet {
-  const mnemonicObj = Mnemonic.fromPhrase(mnemonic);
-  const derivationPath = `${HD_WALLET_DERIVATION_PATH}/${accountIndex}`;
-  return HDNodeWallet.fromPhrase(mnemonicObj.phrase, derivationPath);
-}
-
-/**
  * Generate a new random wallet
  * @param wordCount - Number of words: 12 or 24 (default: 12)
  */
 export function generateRandomWallet(
   accountIndex: number = DEFAULT_ACCOUNT_INDEX,
   wordCount: 12 | 24 = 12,
-): {
-  wallet: HDNodeWallet;
-  mnemonic: string;
-} {
+) {
   const mnemonic = generateMnemonic(wordCount);
-  const wallet = generateWalletFromMnemonic(mnemonic, accountIndex);
+  const wallet = deriveWalletFromMnemonic(mnemonic, accountIndex);
   return { wallet, mnemonic };
 }

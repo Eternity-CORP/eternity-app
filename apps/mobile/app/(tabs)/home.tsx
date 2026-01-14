@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput, RefreshControl, Image } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
@@ -10,6 +10,8 @@ import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
 import { fetchTransactionsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, type TokenBalance } from '@/src/services/balance-service';
+import { truncateAddress } from '@/src/utils/format';
+import { TokenIcon } from '@/src/components/TokenIcon';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -24,12 +26,7 @@ export default function HomeScreen() {
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
-  const [iconErrors, setIconErrors] = useState<{ [key: string]: boolean }>({});
 
-  const handleIconError = (tokenKey: string) => {
-    setIconErrors((prev) => ({ ...prev, [tokenKey]: true }));
-  };
-  
   // Load balances and transactions when account changes
   useEffect(() => {
     if (currentAccount?.address) {
@@ -116,28 +113,6 @@ export default function HomeScreen() {
     }
   };
 
-  const TokenIcon = ({ token, size = 48 }: { token: TokenBalance; size?: number }) => {
-    const showFallback = iconErrors[token.token] || !token.iconUrl;
-
-    if (showFallback) {
-      return (
-        <View style={[styles.tokenIcon, size === 32 && styles.tokenIconSmall]}>
-          <Text style={[size === 32 ? styles.tokenIconTextSmall : styles.tokenIconText, theme.typography.caption]}>
-            {token.symbol.slice(0, 3).toUpperCase()}
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <Image
-        source={{ uri: token.iconUrl }}
-        style={[styles.tokenIconImage, { width: size, height: size, borderRadius: size / 4 }]}
-        onError={() => handleIconError(token.token)}
-      />
-    );
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       {/* Account Selector Header */}
@@ -153,7 +128,7 @@ export default function HomeScreen() {
             {currentAccount && (
               <View style={styles.accountAddressRow}>
                 <Text style={[styles.accountAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                  {currentAccount.address.slice(0, 6)}...{currentAccount.address.slice(-4)}
+                  {truncateAddress(currentAccount.address)}
                 </Text>
                 <TouchableOpacity
                   style={styles.copyButton}
@@ -232,7 +207,7 @@ export default function HomeScreen() {
         {ethBalance && (
           <View style={styles.tokenCardLarge}>
             <View style={styles.tokenCardHeader}>
-              <TokenIcon token={ethBalance} size={48} />
+              <TokenIcon symbol={ethBalance.symbol} iconUrl={ethBalance.iconUrl} size={48} style={{ marginRight: theme.spacing.md }} />
               <View style={styles.tokenInfo}>
                 <Text style={[styles.tokenName, theme.typography.heading]}>{ethBalance.name || 'Ethereum'}</Text>
                 <Text style={[styles.tokenTicker, theme.typography.caption, { color: theme.colors.textSecondary }]}>
@@ -259,7 +234,7 @@ export default function HomeScreen() {
               .map((token) => (
                 <View key={token.token} style={styles.tokenCardSmall}>
                   <View style={styles.tokenCardHeader}>
-                    <TokenIcon token={token} size={32} />
+                    <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={32} style={{ marginRight: theme.spacing.md }} />
                     <View style={styles.tokenInfo}>
                       <Text style={[styles.tokenName, theme.typography.body]}>{token.name || token.symbol}</Text>
                     </View>
@@ -433,7 +408,7 @@ export default function HomeScreen() {
                             {account.label || `Account ${account.accountIndex + 1}`}
                           </Text>
                           <Text style={[styles.accountItemAddress, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                            {account.address.slice(0, 8)}...{account.address.slice(-6)}
+                            {truncateAddress(account.address, 8, 6)}
                           </Text>
                         </View>
                         {index === wallet.currentAccountIndex && (
@@ -690,31 +665,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: theme.spacing.lg,
-  },
-  tokenIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.buttonPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.md,
-  },
-  tokenIconSmall: {
-    width: 32,
-    height: 32,
-  },
-  tokenIconText: {
-    color: theme.colors.buttonPrimaryText,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tokenIconTextSmall: {
-    color: theme.colors.textSecondary,
-  },
-  tokenIconImage: {
-    backgroundColor: theme.colors.surface,
-    marginRight: theme.spacing.md,
   },
   tokenInfo: {
     flex: 1,

@@ -17,11 +17,11 @@ export default function CreateWalletScreen() {
   const handleCreateWallet = async () => {
     setIsCreating(true);
     try {
-      const result = await dispatch(generateWalletThunk(wordCount)).unwrap();
-      // Navigate to seed phrase screen with mnemonic (not saved yet)
+      await dispatch(generateWalletThunk(wordCount)).unwrap();
+      // Navigate to seed phrase screen (mnemonic is in Redux state)
       router.push({
         pathname: '/(onboarding)/seed-phrase',
-        params: { mnemonic: result.mnemonic, wordCount: wordCount.toString() },
+        params: { wordCount: wordCount.toString() },
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to generate wallet. Please try again.');
