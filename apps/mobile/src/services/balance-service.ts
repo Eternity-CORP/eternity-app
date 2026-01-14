@@ -49,12 +49,15 @@ export const getProvider = (): JsonRpcProvider => {
 };
 
 export interface TokenBalance {
-  token: string; // 'ETH' or token contract address
-  symbol: string;
-  balance: string; // Human-readable balance (e.g., "1.5")
-  balanceWei?: string; // Raw balance in Wei (for ETH)
-  usdValue?: number;
-  lastUpdated: number; // Timestamp
+  token: string;          // 'ETH' or contract address (0x...)
+  symbol: string;         // 'ETH', 'USDC', 'USDT'
+  name: string;           // 'Ethereum', 'USD Coin'
+  balance: string;        // Human-readable balance (e.g., "1.5")
+  balanceRaw: string;     // Raw balance in smallest unit (for sending)
+  decimals: number;       // 18 for ETH, 6 for USDC
+  usdValue?: number;      // USD value
+  iconUrl?: string;       // Trust Wallet CDN URL or null
+  lastUpdated: number;    // Timestamp
 }
 
 /**
@@ -75,8 +78,11 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
     return {
       token: 'ETH',
       symbol: 'ETH',
-      balance: parseFloat(balance).toFixed(6), // Format to 6 decimals
-      balanceWei: balanceWei.toString(),
+      name: 'Ethereum',
+      balance: parseFloat(balance).toFixed(6),
+      balanceRaw: balanceWei.toString(),
+      decimals: 18,
+      iconUrl: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png',
       lastUpdated: Date.now(),
     };
   } catch (error) {
