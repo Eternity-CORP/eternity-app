@@ -4,9 +4,7 @@
  */
 
 import type { HDNodeWallet } from 'ethers';
-
-// API base URL - use environment variable or default
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from '@/src/config/api';
 
 interface UsernameData {
   username: string;

@@ -19,9 +19,10 @@ import {
   type CodeLookupPayload,
   type CodeCancelledPayload,
 } from '@e-y/shared';
+import { API_BASE_URL } from '@/src/config/api';
 
-// API URL - use environment variable or default to localhost
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+// Use shared API URL configuration
+const API_URL = API_BASE_URL;
 
 export interface BlikCallbacks {
   // Receiver callbacks
