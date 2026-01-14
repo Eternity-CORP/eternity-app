@@ -346,7 +346,7 @@ export default function HomeScreen() {
                       {
                         backgroundColor:
                           tx.status === 'confirmed' ? (theme.colors.success || theme.colors.buttonPrimary) :
-                          tx.status === 'pending' ? theme.colors.warning || '#FFA500' :
+                          tx.status === 'pending' ? '#FFA500' :
                           theme.colors.error
                       }
                     ]} />

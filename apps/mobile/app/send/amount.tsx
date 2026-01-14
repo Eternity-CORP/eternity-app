@@ -54,7 +54,7 @@ export default function AmountScreen() {
   };
 
   const amountValue = parseFloat(amount) || 0;
-  const usdValue = selectedToken ? (amountValue * selectedToken.usdValue / parseFloat(selectedToken.balance)) : 0;
+  const usdValue = selectedToken ? (amountValue * (selectedToken.usdValue || 0) / parseFloat(selectedToken.balance)) : 0;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

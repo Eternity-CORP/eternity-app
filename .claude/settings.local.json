@@ -9,7 +9,28 @@
       "WebFetch(domain:github.com)",
       "Bash(pnpm list:*)",
       "Bash(npm view:*)",
-      "Bash(npx expo install:*)"
+      "Bash(npx expo install:*)",
+      "Bash(lsof:*)",
+      "Bash(kill:*)",
+      "Bash(brew services stop:*)",
+      "Bash(brew services:*)",
+      "Skill(superpowers:brainstorming)",
+      "Bash(npx tsc:*)",
+      "mcp__linear__list_issues",
+      "Bash(ls:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(cd /Users/daniillogachev/Ma\\\\ project/E-Y && git add:*)",
+      "Bash(git commit -m \"feat\\(balance\\): extend TokenBalance interface for ERC-20 support\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cd:*)",
+      "Bash(pnpm --filter mobile exec tsc:*)",
+      "Bash(pnpm:*)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "linear"
+  ]
 }
