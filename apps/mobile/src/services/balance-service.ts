@@ -5,6 +5,7 @@
 
 import { JsonRpcProvider, formatEther } from 'ethers';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // RPC Configuration
 // Load from environment variables (set in .env file)
@@ -22,6 +23,17 @@ const ETH_PRICE_CACHE_DURATION = 60 * 1000; // 1 minute cache (to avoid rate lim
 interface CachedPrice {
   price: number;
   timestamp: number;
+}
+
+// Token metadata cache configuration
+const TOKEN_METADATA_CACHE_KEY = 'token_metadata_cache';
+
+interface CachedTokenMetadata {
+  [contractAddress: string]: {
+    name: string;
+    symbol: string;
+    decimals: number;
+  };
 }
 
 // RPC URLs
@@ -210,6 +222,30 @@ async function setCachedPrice(price: number): Promise<void> {
 }
 
 /**
+ * Get cached token metadata
+ */
+async function getCachedMetadata(): Promise<CachedTokenMetadata> {
+  try {
+    const cached = await AsyncStorage.getItem(TOKEN_METADATA_CACHE_KEY);
+    return cached ? JSON.parse(cached) : {};
+  } catch (error) {
+    console.warn('Error reading metadata cache:', error);
+    return {};
+  }
+}
+
+/**
+ * Save token metadata to cache
+ */
+async function setCachedMetadata(metadata: CachedTokenMetadata): Promise<void> {
+  try {
+    await AsyncStorage.setItem(TOKEN_METADATA_CACHE_KEY, JSON.stringify(metadata));
+  } catch (error) {
+    console.warn('Error caching metadata:', error);
+  }
+}
+
+/**
  * Fetch USD price for ETH
  * Uses CoinGecko API (free tier) with caching to avoid rate limits
  */
@@ -291,6 +327,65 @@ export async function fetchEthUsdPrice(): Promise<number> {
     // Return 0 if API fails and no cache available
     return 0;
   }
+}
+
+/**
+ * Fetch token metadata from Alchemy API
+ */
+export async function fetchTokenMetadata(
+  contractAddress: string
+): Promise<{ name: string; symbol: string; decimals: number } | null> {
+  // Check cache first
+  const cache = await getCachedMetadata();
+  if (cache[contractAddress.toLowerCase()]) {
+    return cache[contractAddress.toLowerCase()];
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(getAlchemyUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'alchemy_getTokenMetadata',
+        params: [contractAddress],
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn('Alchemy metadata API error:', response.status);
+      return null;
+    }
+
+    const data: AlchemyTokenMetadataResponse = await response.json();
+    const { name, symbol, decimals } = data.result;
+
+    // Cache the metadata (immutable)
+    const updatedCache = { ...cache, [contractAddress.toLowerCase()]: { name, symbol, decimals } };
+    await setCachedMetadata(updatedCache);
+
+    return { name, symbol, decimals };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.warn('Error fetching token metadata:', error);
+    return null;
+  }
+}
+
+/**
+ * Get token icon URL from Trust Wallet Assets
+ */
+export function getTokenIconUrl(contractAddress: string): string {
+  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${contractAddress}/logo.png`;
 }
 
 /**
