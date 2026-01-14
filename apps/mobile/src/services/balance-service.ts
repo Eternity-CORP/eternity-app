@@ -245,6 +245,44 @@ async function setCachedMetadata(metadata: CachedTokenMetadata): Promise<void> {
   }
 }
 
+const TOKEN_PRICES_CACHE_KEY = 'token_prices_cache';
+
+interface CachedTokenPrices {
+  prices: { [contractAddress: string]: number };
+  ethPrice: number;
+  timestamp: number;
+}
+
+/**
+ * Get cached token prices
+ */
+async function getCachedTokenPrices(): Promise<CachedTokenPrices | null> {
+  try {
+    const cached = await SecureStore.getItemAsync(TOKEN_PRICES_CACHE_KEY);
+    if (!cached) return null;
+
+    const data: CachedTokenPrices = JSON.parse(cached);
+    if (Date.now() - data.timestamp < ETH_PRICE_CACHE_DURATION) {
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.warn('Error reading token prices cache:', error);
+    return null;
+  }
+}
+
+/**
+ * Save token prices to cache
+ */
+async function setCachedTokenPrices(prices: CachedTokenPrices): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(TOKEN_PRICES_CACHE_KEY, JSON.stringify(prices));
+  } catch (error) {
+    console.warn('Error caching token prices:', error);
+  }
+}
+
 /**
  * Fetch USD price for ETH
  * Uses CoinGecko API (free tier) with caching to avoid rate limits
@@ -378,6 +416,85 @@ export async function fetchTokenMetadata(
     clearTimeout(timeoutId);
     console.warn('Error fetching token metadata:', error);
     return null;
+  }
+}
+
+/**
+ * Fetch USD prices for ETH and multiple tokens
+ * Uses CoinGecko API with caching
+ */
+export async function fetchTokenPrices(
+  contractAddresses: string[]
+): Promise<{ ethPrice: number; tokenPrices: { [address: string]: number } }> {
+  // Check cache first
+  const cached = await getCachedTokenPrices();
+  if (cached) {
+    return { ethPrice: cached.ethPrice, tokenPrices: cached.prices };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    // Fetch ETH price
+    const ethResponse = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
+      {
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal,
+      }
+    );
+
+    let ethPrice = 0;
+    if (ethResponse.ok) {
+      const ethData = await ethResponse.json();
+      ethPrice = ethData.ethereum?.usd || 0;
+    }
+
+    // Fetch token prices if we have contract addresses
+    const tokenPrices: { [address: string]: number } = {};
+
+    if (contractAddresses.length > 0) {
+      const addressList = contractAddresses.slice(0, 100).join(',');
+
+      // Note: On testnet (Sepolia), tokens won't have prices on CoinGecko
+      const tokenResponse = await fetch(
+        `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${addressList}&vs_currencies=usd`,
+        {
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
+        }
+      );
+
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        for (const [address, priceData] of Object.entries(tokenData)) {
+          tokenPrices[address.toLowerCase()] = (priceData as { usd?: number })?.usd || 0;
+        }
+      }
+    }
+
+    clearTimeout(timeoutId);
+
+    // Cache the prices
+    await setCachedTokenPrices({
+      prices: tokenPrices,
+      ethPrice,
+      timestamp: Date.now(),
+    });
+
+    return { ethPrice, tokenPrices };
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.warn('Error fetching token prices:', error);
+
+    // Try to use cached prices even if expired
+    const expiredCache = await getCachedTokenPrices();
+    if (expiredCache) {
+      return { ethPrice: expiredCache.ethPrice, tokenPrices: expiredCache.prices };
+    }
+
+    return { ethPrice: 0, tokenPrices: {} };
   }
 }
 
