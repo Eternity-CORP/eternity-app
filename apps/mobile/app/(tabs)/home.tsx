@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput, RefreshControl, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
@@ -9,7 +9,7 @@ import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel }
 import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
 import { fetchTransactionsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
-import { formatUsdValue } from '@/src/services/balance-service';
+import { formatUsdValue, type TokenBalance } from '@/src/services/balance-service';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -24,6 +24,11 @@ export default function HomeScreen() {
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
+  const [iconErrors, setIconErrors] = useState<{ [key: string]: boolean }>({});
+
+  const handleIconError = (tokenKey: string) => {
+    setIconErrors((prev) => ({ ...prev, [tokenKey]: true }));
+  };
   
   // Load balances and transactions when account changes
   useEffect(() => {
@@ -109,6 +114,28 @@ export default function HomeScreen() {
       console.error('Error copying address:', error);
       Alert.alert('Error', 'Failed to copy address');
     }
+  };
+
+  const TokenIcon = ({ token, size = 48 }: { token: TokenBalance; size?: number }) => {
+    const showFallback = iconErrors[token.token] || !token.iconUrl;
+
+    if (showFallback) {
+      return (
+        <View style={[styles.tokenIcon, size === 32 && styles.tokenIconSmall]}>
+          <Text style={[size === 32 ? styles.tokenIconTextSmall : styles.tokenIconText, theme.typography.caption]}>
+            {token.symbol.slice(0, 3).toUpperCase()}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <Image
+        source={{ uri: token.iconUrl }}
+        style={[styles.tokenIconImage, { width: size, height: size, borderRadius: size / 4 }]}
+        onError={() => handleIconError(token.token)}
+      />
+    );
   };
 
   return (
@@ -202,27 +229,27 @@ export default function HomeScreen() {
       {/* Token Cards Section */}
       <View style={styles.tokensSection}>
         {/* Large Token Card (Primary) */}
-        <View style={styles.tokenCardLarge}>
-          <View style={styles.tokenCardHeader}>
-            <View style={styles.tokenIcon}>
-              <Text style={[styles.tokenIconText, theme.typography.heading]}>ETH</Text>
+        {ethBalance && (
+          <View style={styles.tokenCardLarge}>
+            <View style={styles.tokenCardHeader}>
+              <TokenIcon token={ethBalance} size={48} />
+              <View style={styles.tokenInfo}>
+                <Text style={[styles.tokenName, theme.typography.heading]}>{ethBalance.name || 'Ethereum'}</Text>
+                <Text style={[styles.tokenTicker, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  {ethBalance.symbol}
+                </Text>
+              </View>
             </View>
-            <View style={styles.tokenInfo}>
-              <Text style={[styles.tokenName, theme.typography.heading]}>Ethereum</Text>
-              <Text style={[styles.tokenTicker, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                ETH
+            <View style={styles.tokenCardBody}>
+              <Text style={[styles.tokenBalance, theme.typography.title]}>
+                {ethBalance.balance} {ethBalance.symbol}
+              </Text>
+              <Text style={[styles.tokenValue, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                {ethBalance.usdValue ? formatUsdValue(ethBalance.usdValue) : '$0.00'}
               </Text>
             </View>
           </View>
-          <View style={styles.tokenCardBody}>
-            <Text style={[styles.tokenBalance, theme.typography.title]}>
-              {ethBalance ? `${ethBalance.balance} ETH` : '0.00 ETH'}
-            </Text>
-            <Text style={[styles.tokenValue, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-              {ethBalance?.usdValue ? formatUsdValue(ethBalance.usdValue) : '$0.00'}
-            </Text>
-          </View>
-        </View>
+        )}
 
         {/* Token Grid (2 columns) */}
         {balance.balances.length > 1 && (
@@ -232,19 +259,15 @@ export default function HomeScreen() {
               .map((token) => (
                 <View key={token.token} style={styles.tokenCardSmall}>
                   <View style={styles.tokenCardHeader}>
-                    <View style={[styles.tokenIcon, styles.tokenIconSmall]}>
-                      <Text style={[styles.tokenIconTextSmall, theme.typography.caption]}>
-                        {token.symbol.slice(0, 2).toUpperCase()}
-                      </Text>
-                    </View>
+                    <TokenIcon token={token} size={32} />
                     <View style={styles.tokenInfo}>
-                      <Text style={[styles.tokenName, theme.typography.body]}>{token.symbol}</Text>
+                      <Text style={[styles.tokenName, theme.typography.body]}>{token.name || token.symbol}</Text>
                     </View>
                   </View>
                   <Text style={[styles.tokenBalanceSmall, theme.typography.body]}>
-                    {token.balance}
+                    {token.balance} {token.symbol}
                   </Text>
-                  {token.usdValue && (
+                  {token.usdValue !== undefined && token.usdValue > 0 && (
                     <Text style={[styles.tokenValueSmall, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                       {formatUsdValue(token.usdValue)}
                     </Text>
@@ -688,6 +711,10 @@ const styles = StyleSheet.create({
   },
   tokenIconTextSmall: {
     color: theme.colors.textSecondary,
+  },
+  tokenIconImage: {
+    backgroundColor: theme.colors.surface,
+    marginRight: theme.spacing.md,
   },
   tokenInfo: {
     flex: 1,
