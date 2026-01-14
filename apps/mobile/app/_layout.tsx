@@ -13,6 +13,7 @@ import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
 import { hasWallet } from '@/src/services/wallet-service';
+import { NotificationProvider } from '@/src/components/NotificationProvider';
 
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -102,15 +103,21 @@ function RootLayoutNav() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="send" options={{ headerShown: false }} />
-        <Stack.Screen name="receive" options={{ headerShown: false }} />
-        <Stack.Screen name="blik" options={{ headerShown: false }} />
-        <Stack.Screen name="profile" options={{ headerShown: false }} />
-      </Stack>
-    </ThemeProvider>
+    <NotificationProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="send" options={{ headerShown: false }} />
+          <Stack.Screen name="receive" options={{ headerShown: false }} />
+          <Stack.Screen name="blik" options={{ headerShown: false }} />
+          <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="transaction" options={{ headerShown: false }} />
+          <Stack.Screen name="token" options={{ headerShown: false }} />
+          <Stack.Screen name="scheduled" options={{ headerShown: false }} />
+          <Stack.Screen name="split" options={{ headerShown: false }} />
+        </Stack>
+      </ThemeProvider>
+    </NotificationProvider>
   );
 }
