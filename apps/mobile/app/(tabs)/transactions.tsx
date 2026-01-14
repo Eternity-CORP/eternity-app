@@ -3,7 +3,7 @@
  * Displays full transaction history for the current account
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, RefreshControl, Linking } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useEffect, useCallback } from 'react';
@@ -20,14 +20,6 @@ import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
-
-const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
-
-const getExplorerUrl = (txHash: string): string => {
-  return NETWORK === 'mainnet'
-    ? `https://etherscan.io/tx/${txHash}`
-    : `https://sepolia.etherscan.io/tx/${txHash}`;
-};
 
 export default function TransactionsScreen() {
   const dispatch = useAppDispatch();
@@ -67,7 +59,7 @@ export default function TransactionsScreen() {
   }, [currentAccount?.address, dispatch]);
 
   const handleTransactionPress = (txHash: string) => {
-    Linking.openURL(getExplorerUrl(txHash));
+    router.push(`/transaction/${txHash}`);
   };
 
   return (
@@ -166,7 +158,7 @@ export default function TransactionsScreen() {
                     <Text style={[styles.transactionStatusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                       {tx.status}
                     </Text>
-                    <FontAwesome name="external-link" size={10} color={theme.colors.textTertiary} style={{ marginLeft: 4 }} />
+                    <FontAwesome name="chevron-right" size={10} color={theme.colors.textTertiary} style={{ marginLeft: 4 }} />
                   </View>
                 </View>
               </TouchableOpacity>

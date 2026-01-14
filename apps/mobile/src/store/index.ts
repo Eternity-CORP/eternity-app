@@ -9,6 +9,8 @@ import transactionReducer from './slices/transaction-slice';
 import sendReducer from './slices/send-slice';
 import blikReducer from './slices/blik-slice';
 import contactsReducer from './slices/contacts-slice';
+import scheduledReducer from './slices/scheduled-slice';
+import splitReducer from './slices/split-slice';
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +20,8 @@ export const store = configureStore({
     send: sendReducer,
     blik: blikReducer,
     contacts: contactsReducer,
+    scheduled: scheduledReducer,
+    split: splitReducer,
   },
 });
 

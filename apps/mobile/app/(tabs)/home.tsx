@@ -8,6 +8,8 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
 import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
 import { fetchTransactionsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
+import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
+import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, type TokenBalance } from '@/src/services/balance-service';
 import { truncateAddress } from '@/src/utils/format';
@@ -20,6 +22,8 @@ export default function HomeScreen() {
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const transactionState = useAppSelector((state) => state.transaction);
+  const scheduled = useAppSelector((state) => state.scheduled);
+  const split = useAppSelector((state) => state.split);
   const currentAccount = getCurrentAccount(wallet);
   const transactions = useAppSelector((state) => selectTransactionsForAddress(state, currentAccount?.address || null));
   const [showAccountSelector, setShowAccountSelector] = useState(false);
@@ -27,11 +31,13 @@ export default function HomeScreen() {
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
 
-  // Load balances and transactions when account changes
+  // Load balances, transactions, scheduled payments, and pending splits when account changes
   useEffect(() => {
     if (currentAccount?.address) {
       dispatch(fetchBalancesThunk(currentAccount.address));
       dispatch(fetchTransactionsThunk(currentAccount.address));
+      dispatch(loadScheduledPaymentsThunk(currentAccount.address));
+      dispatch(loadPendingSplitsThunk(currentAccount.address));
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -40,6 +46,8 @@ export default function HomeScreen() {
     if (currentAccount?.address) {
       dispatch(fetchBalancesThunk(currentAccount.address));
       dispatch(fetchTransactionsThunk(currentAccount.address));
+      dispatch(loadScheduledPaymentsThunk(currentAccount.address));
+      dispatch(loadPendingSplitsThunk(currentAccount.address));
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -158,6 +166,75 @@ export default function HomeScreen() {
           />
         }
       >
+      {/* Pending Split Bills Banner */}
+      {split.pendingSplits.length > 0 && (
+        <View style={styles.pendingSplitBanner}>
+          {split.pendingSplits.slice(0, 2).map((splitBill) => {
+            const myShare = splitBill.participants.find(
+              (p) => p.address.toLowerCase() === currentAccount?.address?.toLowerCase()
+            );
+            const creatorDisplay = splitBill.creatorUsername
+              ? `@${splitBill.creatorUsername}`
+              : truncateAddress(splitBill.creatorAddress);
+            return (
+              <View key={splitBill.id} style={styles.pendingSplitItem}>
+                <View style={styles.pendingSplitHeader}>
+                  <View style={styles.pendingSplitIcon}>
+                    <FontAwesome name="exclamation-circle" size={20} color="#FFA500" />
+                  </View>
+                  <View style={styles.pendingSplitInfo}>
+                    <Text style={[styles.pendingSplitTitle, theme.typography.heading]}>
+                      Payment Request
+                    </Text>
+                    <Text style={[styles.pendingSplitCreator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                      {creatorDisplay} requested {myShare?.amount || '?'} {splitBill.tokenSymbol}
+                    </Text>
+                    {splitBill.description && (
+                      <Text
+                        style={[styles.pendingSplitDescription, theme.typography.caption, { color: theme.colors.textTertiary }]}
+                        numberOfLines={1}
+                      >
+                        "{splitBill.description}"
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <View style={styles.pendingSplitActions}>
+                  <TouchableOpacity
+                    style={styles.pendingSplitPayButton}
+                    onPress={() => {
+                      router.push(`/split/${splitBill.id}`);
+                    }}
+                  >
+                    <Text style={[styles.pendingSplitPayText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+                      Pay Now
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.pendingSplitDetailsButton}
+                    onPress={() => router.push(`/split/${splitBill.id}`)}
+                  >
+                    <Text style={[styles.pendingSplitDetailsText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+                      Details
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+          {split.pendingSplits.length > 2 && (
+            <TouchableOpacity
+              style={styles.pendingSplitMoreButton}
+              onPress={() => router.push('/split/create')}
+            >
+              <Text style={[styles.pendingSplitMoreText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
+                +{split.pendingSplits.length - 2} more pending requests
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* Balance Section */}
       <View style={styles.balanceSection}>
         <Text style={[styles.balance, theme.typography.displayLarge]}>
@@ -205,7 +282,11 @@ export default function HomeScreen() {
       <View style={styles.tokensSection}>
         {/* Large Token Card (Primary) */}
         {ethBalance && (
-          <View style={styles.tokenCardLarge}>
+          <TouchableOpacity
+            style={styles.tokenCardLarge}
+            onPress={() => router.push(`/token/${ethBalance.symbol}`)}
+            activeOpacity={0.7}
+          >
             <View style={styles.tokenCardHeader}>
               <TokenIcon symbol={ethBalance.symbol} iconUrl={ethBalance.iconUrl} size={48} style={{ marginRight: theme.spacing.md }} />
               <View style={styles.tokenInfo}>
@@ -214,6 +295,7 @@ export default function HomeScreen() {
                   {ethBalance.symbol}
                 </Text>
               </View>
+              <FontAwesome name="chevron-right" size={14} color={theme.colors.textTertiary} />
             </View>
             <View style={styles.tokenCardBody}>
               <Text style={[styles.tokenBalance, theme.typography.title]}>
@@ -223,7 +305,7 @@ export default function HomeScreen() {
                 {ethBalance.usdValue ? formatUsdValue(ethBalance.usdValue) : '$0.00'}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Token Grid (2 columns) */}
@@ -232,7 +314,12 @@ export default function HomeScreen() {
             {balance.balances
               .filter((b) => b.token !== 'ETH')
               .map((token) => (
-                <View key={token.token} style={styles.tokenCardSmall}>
+                <TouchableOpacity
+                  key={token.token}
+                  style={styles.tokenCardSmall}
+                  onPress={() => router.push(`/token/${token.symbol}`)}
+                  activeOpacity={0.7}
+                >
                   <View style={styles.tokenCardHeader}>
                     <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={32} style={{ marginRight: theme.spacing.md }} />
                     <View style={styles.tokenInfo}>
@@ -247,11 +334,77 @@ export default function HomeScreen() {
                       {formatUsdValue(token.usdValue)}
                     </Text>
                   )}
-                </View>
+                </TouchableOpacity>
               ))}
           </View>
         )}
       </View>
+
+      {/* Scheduled Payments Section */}
+      {scheduled.payments.length > 0 && (
+        <View style={styles.scheduledSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, theme.typography.heading]}>Upcoming Payments</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/scheduled/create')}
+              style={styles.viewAllButton}
+            >
+              <FontAwesome name="plus" size={12} color={theme.colors.buttonPrimary} />
+              <Text style={[styles.viewAllText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
+                New
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.scheduledList}>
+            {scheduled.payments.slice(0, 3).map((payment) => {
+              const scheduledDate = new Date(payment.scheduledAt);
+              const isPast = scheduledDate.getTime() < Date.now();
+              const recipientDisplay = payment.recipientUsername
+                ? payment.recipientUsername
+                : payment.recipientName
+                  ? payment.recipientName
+                  : truncateAddress(payment.recipient);
+              return (
+                <TouchableOpacity
+                  key={payment.id}
+                  style={styles.scheduledItem}
+                  onPress={() => router.push(`/scheduled/${payment.id}`)}
+                >
+                  <View style={[styles.scheduledIcon, isPast && styles.scheduledIconOverdue]}>
+                    <FontAwesome
+                      name={payment.recurring ? 'refresh' : 'calendar'}
+                      size={16}
+                      color={isPast ? theme.colors.error : theme.colors.buttonPrimary}
+                    />
+                  </View>
+                  <View style={styles.scheduledInfo}>
+                    <Text style={[styles.scheduledAmount, theme.typography.body]}>
+                      {payment.amount} {payment.tokenSymbol} → {recipientDisplay}
+                    </Text>
+                    <Text style={[styles.scheduledDate, theme.typography.caption, { color: isPast ? theme.colors.error : theme.colors.textSecondary }]}>
+                      {isPast ? 'Overdue - ' : ''}{scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
+      {/* Create Scheduled Payment Button (when no payments) */}
+      {scheduled.payments.length === 0 && (
+        <TouchableOpacity
+          style={styles.createScheduledButton}
+          onPress={() => router.push('/scheduled/create')}
+        >
+          <FontAwesome name="calendar-plus-o" size={20} color={theme.colors.buttonPrimary} />
+          <Text style={[styles.createScheduledText, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
+            Schedule a Payment
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Recent Transactions Section */}
       <View style={styles.transactionsSection}>
@@ -290,7 +443,7 @@ export default function HomeScreen() {
               <TouchableOpacity
                 key={tx.hash}
                 style={styles.transactionItem}
-                onPress={() => router.push('/(tabs)/transactions')}
+                onPress={() => router.push(`/transaction/${tx.hash}`)}
               >
                 <View style={styles.transactionIcon}>
                   <FontAwesome
@@ -819,5 +972,132 @@ const styles = StyleSheet.create({
   },
   transactionEmptySubtext: {
     textAlign: 'center',
+  },
+  // Scheduled Payments Section
+  scheduledSection: {
+    marginTop: theme.spacing.xl,
+    paddingTop: theme.spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.buttonSecondaryBorder,
+  },
+  scheduledList: {
+    gap: theme.spacing.sm,
+  },
+  scheduledItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.md,
+  },
+  scheduledIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.buttonPrimary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scheduledIconOverdue: {
+    backgroundColor: theme.colors.error + '20',
+  },
+  scheduledInfo: {
+    flex: 1,
+  },
+  scheduledAmount: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  scheduledDate: {
+    // color set inline
+  },
+  createScheduledButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    marginTop: theme.spacing.xl,
+    backgroundColor: theme.colors.buttonPrimary + '10',
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonPrimary,
+    borderStyle: 'dashed',
+  },
+  createScheduledText: {
+    fontWeight: '600',
+  },
+  // Pending Split Banner
+  pendingSplitBanner: {
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+  },
+  pendingSplitItem: {
+    backgroundColor: '#FFA50015',
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: '#FFA50040',
+  },
+  pendingSplitHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  pendingSplitIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFA50020',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pendingSplitInfo: {
+    flex: 1,
+  },
+  pendingSplitTitle: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  pendingSplitCreator: {
+    marginBottom: theme.spacing.xs / 2,
+  },
+  pendingSplitDescription: {
+    fontStyle: 'italic',
+  },
+  pendingSplitActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  pendingSplitPayButton: {
+    flex: 1,
+    backgroundColor: theme.colors.buttonPrimary,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  pendingSplitPayText: {
+    // color set inline
+  },
+  pendingSplitDetailsButton: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.buttonSecondaryBorder,
+  },
+  pendingSplitDetailsText: {
+    // color set inline
+  },
+  pendingSplitMoreButton: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.sm,
+  },
+  pendingSplitMoreText: {
+    // color set inline
   },
 });
