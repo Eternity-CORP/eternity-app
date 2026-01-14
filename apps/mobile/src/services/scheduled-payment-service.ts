@@ -1,9 +1,9 @@
 /**
  * Scheduled Payment Service
- * Manages scheduled payments with AsyncStorage and local notifications
+ * Manages scheduled payments with local storage and notifications
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import Storage from '@/src/utils/storage';
 import * as Notifications from 'expo-notifications';
 
 const SCHEDULED_PAYMENTS_KEY = 'scheduled_payments';
@@ -137,7 +137,7 @@ async function cancelNotification(notificationId: string): Promise<void> {
  */
 export async function loadScheduledPayments(): Promise<ScheduledPayment[]> {
   try {
-    const data = await AsyncStorage.getItem(SCHEDULED_PAYMENTS_KEY);
+    const data = await Storage.getItem(SCHEDULED_PAYMENTS_KEY);
     if (!data) return [];
 
     const payments: ScheduledPayment[] = JSON.parse(data);
@@ -154,7 +154,7 @@ export async function loadScheduledPayments(): Promise<ScheduledPayment[]> {
  */
 async function saveScheduledPayments(payments: ScheduledPayment[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(SCHEDULED_PAYMENTS_KEY, JSON.stringify(payments));
+    await Storage.setItem(SCHEDULED_PAYMENTS_KEY, JSON.stringify(payments));
   } catch (error) {
     console.error('Error saving scheduled payments:', error);
     throw error;
