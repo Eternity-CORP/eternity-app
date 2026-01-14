@@ -177,27 +177,27 @@ export default function HomeScreen() {
       <View style={styles.actionsRow}>
         <TouchableOpacity
           style={[styles.actionButton, styles.actionButtonPrimary]}
-          onPress={() => router.push('/(tabs)/wallet')}
-        >
-          <Text style={[styles.actionButtonText, { color: theme.colors.buttonPrimaryText }]}>
-            Buy
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonSecondary]}
           onPress={() => router.push('/send/token')}
         >
-          <Text style={[styles.actionButtonText, { color: theme.colors.textPrimary }]}>
+          <Text style={[styles.actionButtonText, { color: theme.colors.buttonPrimaryText }]}>
             Send
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonIcon]}
-          onPress={() => router.push('/(tabs)/wallet')}
+          style={[styles.actionButton, styles.actionButtonSecondary]}
+          onPress={() => router.push('/receive')}
         >
-          <FontAwesome name="ellipsis-h" size={20} color={theme.colors.textPrimary} />
+          <Text style={[styles.actionButtonText, { color: theme.colors.textPrimary }]}>
+            Receive
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, styles.actionButtonIcon]}
+          onPress={() => router.push('/blik/enter-code')}
+        >
+          <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
         </TouchableOpacity>
       </View>
 

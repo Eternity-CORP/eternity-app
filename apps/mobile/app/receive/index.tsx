@@ -1,0 +1,411 @@
+/**
+ * Receive Screen
+ * Shows address, QR code, and BLIK request options
+ */
+
+import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useState, useEffect } from 'react';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
+import QRCode from 'react-native-qrcode-svg';
+import { useAppSelector } from '@/src/store/hooks';
+import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getUsernameByAddress } from '@/src/services/username-service';
+import { truncateAddress } from '@/src/utils/format';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { theme } from '@/src/constants/theme';
+import { FontAwesome } from '@expo/vector-icons';
+
+type Tab = 'address' | 'qr' | 'blik';
+
+export default function ReceiveScreen() {
+  const wallet = useAppSelector((state) => state.wallet);
+  const currentAccount = getCurrentAccount(wallet);
+  const [activeTab, setActiveTab] = useState<Tab>('address');
+  const [username, setUsername] = useState<string | null>(null);
+
+  // Load username on mount
+  useEffect(() => {
+    async function loadUsername() {
+      if (currentAccount?.address) {
+        const name = await getUsernameByAddress(currentAccount.address);
+        setUsername(name);
+      }
+    }
+    loadUsername();
+  }, [currentAccount?.address]);
+
+  const handleCopyAddress = async () => {
+    if (!currentAccount?.address) return;
+
+    try {
+      await Clipboard.setStringAsync(currentAccount.address);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Copied!', 'Address copied to clipboard');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy address');
+    }
+  };
+
+  const handleCopyUsername = async () => {
+    if (!username) return;
+
+    try {
+      await Clipboard.setStringAsync(`@${username}`);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Copied!', 'Username copied to clipboard');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to copy username');
+    }
+  };
+
+  const handleRequestBlik = () => {
+    router.push('/blik/request');
+  };
+
+  const address = currentAccount?.address || '';
+
+  return (
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScreenHeader title="Receive" />
+
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'address' && styles.tabActive]}
+          onPress={() => setActiveTab('address')}
+        >
+          <FontAwesome
+            name="address-card"
+            size={16}
+            color={activeTab === 'address' ? theme.colors.buttonPrimary : theme.colors.textTertiary}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              theme.typography.caption,
+              { color: activeTab === 'address' ? theme.colors.buttonPrimary : theme.colors.textTertiary },
+            ]}
+          >
+            Address
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'qr' && styles.tabActive]}
+          onPress={() => setActiveTab('qr')}
+        >
+          <FontAwesome
+            name="qrcode"
+            size={16}
+            color={activeTab === 'qr' ? theme.colors.buttonPrimary : theme.colors.textTertiary}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              theme.typography.caption,
+              { color: activeTab === 'qr' ? theme.colors.buttonPrimary : theme.colors.textTertiary },
+            ]}
+          >
+            QR Code
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'blik' && styles.tabActive]}
+          onPress={() => setActiveTab('blik')}
+        >
+          <FontAwesome
+            name="bolt"
+            size={16}
+            color={activeTab === 'blik' ? theme.colors.buttonPrimary : theme.colors.textTertiary}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              theme.typography.caption,
+              { color: activeTab === 'blik' ? theme.colors.buttonPrimary : theme.colors.textTertiary },
+            ]}
+          >
+            BLIK
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.container}>
+        {/* Address Tab */}
+        {activeTab === 'address' && (
+          <View style={styles.content}>
+            {username && (
+              <View style={styles.usernameCard}>
+                <Text style={[styles.usernameLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  Your Username
+                </Text>
+                <TouchableOpacity style={styles.usernameRow} onPress={handleCopyUsername}>
+                  <Text style={[styles.usernameValue, theme.typography.title, { color: theme.colors.success }]}>
+                    @{username}
+                  </Text>
+                  <FontAwesome name="copy" size={16} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.addressCard}>
+              <Text style={[styles.addressLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                Your Wallet Address
+              </Text>
+              <Text style={[styles.addressValue, theme.typography.body]} selectable>
+                {address}
+              </Text>
+              <TouchableOpacity style={styles.copyButton} onPress={handleCopyAddress}>
+                <FontAwesome name="copy" size={16} color={theme.colors.buttonPrimaryText} />
+                <Text style={[styles.copyButtonText, theme.typography.body, { color: theme.colors.buttonPrimaryText }]}>
+                  Copy Address
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {!username && (
+              <TouchableOpacity
+                style={styles.claimUsernameButton}
+                onPress={() => router.push('/profile/username')}
+              >
+                <FontAwesome name="at" size={16} color={theme.colors.buttonPrimary} />
+                <Text style={[styles.claimUsernameText, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
+                  Claim your @username
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* QR Code Tab */}
+        {activeTab === 'qr' && (
+          <View style={styles.content}>
+            <View style={styles.qrCard}>
+              <View style={styles.qrContainer}>
+                <QRCode
+                  value={address}
+                  size={200}
+                  backgroundColor="white"
+                  color="black"
+                />
+              </View>
+              <Text style={[styles.qrHint, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                Scan this QR code to send tokens to this address
+              </Text>
+            </View>
+
+            <View style={styles.addressPreview}>
+              <Text style={[styles.addressPreviewText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                {truncateAddress(address, 12, 12)}
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.shareButton} onPress={handleCopyAddress}>
+              <FontAwesome name="share" size={16} color={theme.colors.textPrimary} />
+              <Text style={[styles.shareButtonText, theme.typography.body]}>
+                Share Address
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* BLIK Tab */}
+        {activeTab === 'blik' && (
+          <View style={styles.content}>
+            <View style={styles.blikInfo}>
+              <View style={styles.blikIconContainer}>
+                <FontAwesome name="bolt" size={48} color={theme.colors.buttonPrimary} />
+              </View>
+              <Text style={[styles.blikTitle, theme.typography.title]}>
+                Request Payment
+              </Text>
+              <Text style={[styles.blikDescription, theme.typography.body, { color: theme.colors.textSecondary }]}>
+                Generate a 6-digit code that someone can use to send you crypto instantly. The code expires in 2 minutes.
+              </Text>
+            </View>
+
+            <TouchableOpacity style={styles.blikButton} onPress={handleRequestBlik}>
+              <FontAwesome name="bolt" size={20} color={theme.colors.buttonPrimaryText} />
+              <Text style={[styles.blikButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+                Generate BLIK Code
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: theme.spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.buttonSecondaryBorder,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.xs,
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: theme.colors.buttonPrimary,
+  },
+  tabText: {
+    // Styled inline
+  },
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: theme.spacing.xl,
+  },
+  // Address Tab
+  usernameCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+  },
+  usernameLabel: {
+    marginBottom: theme.spacing.xs,
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  usernameValue: {
+    // Styled inline
+  },
+  addressCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+  },
+  addressLabel: {
+    marginBottom: theme.spacing.sm,
+  },
+  addressValue: {
+    color: theme.colors.textPrimary,
+    fontFamily: 'monospace',
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: theme.spacing.lg,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.buttonPrimary,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  copyButtonText: {
+    // Styled inline
+  },
+  claimUsernameButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonPrimary,
+    borderRadius: theme.borderRadius.md,
+    borderStyle: 'dashed',
+  },
+  claimUsernameText: {
+    // Styled inline
+  },
+  // QR Tab
+  qrCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  qrContainer: {
+    padding: theme.spacing.lg,
+    backgroundColor: 'white',
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.md,
+  },
+  qrHint: {
+    textAlign: 'center',
+  },
+  addressPreview: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  addressPreviewText: {
+    fontFamily: 'monospace',
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.lg,
+    gap: theme.spacing.sm,
+  },
+  shareButtonText: {
+    color: theme.colors.textPrimary,
+  },
+  // BLIK Tab
+  blikInfo: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.xl,
+  },
+  blikIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  blikTitle: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
+    textAlign: 'center',
+  },
+  blikDescription: {
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  blikButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.buttonPrimary,
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xl,
+  },
+  blikButtonText: {
+    // Styled inline
+  },
+});
