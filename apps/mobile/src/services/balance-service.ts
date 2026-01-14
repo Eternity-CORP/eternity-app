@@ -33,9 +33,13 @@ const getRpcUrl = (): string => {
     return `https://${NETWORK}.infura.io/v3/${INFURA_API_KEY}`;
   }
   // Fallback to public RPC (rate limited)
-  return NETWORK === 'mainnet' 
+  return NETWORK === 'mainnet'
     ? 'https://eth.llamarpc.com'
     : 'https://rpc.sepolia.org';
+};
+
+const getAlchemyUrl = (): string => {
+  return `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
 };
 
 // Create provider instance
@@ -60,6 +64,34 @@ export interface TokenBalance {
   lastUpdated: number;    // Timestamp
 }
 
+// Alchemy API response types
+interface AlchemyTokenBalance {
+  contractAddress: string;
+  tokenBalance: string; // hex string
+}
+
+interface AlchemyTokenBalancesResponse {
+  jsonrpc: string;
+  id: number;
+  result: {
+    address: string;
+    tokenBalances: AlchemyTokenBalance[];
+  };
+}
+
+interface AlchemyTokenMetadata {
+  name: string;
+  symbol: string;
+  decimals: number;
+  logo: string | null;
+}
+
+interface AlchemyTokenMetadataResponse {
+  jsonrpc: string;
+  id: number;
+  result: AlchemyTokenMetadata;
+}
+
 /**
  * Fetch ETH balance for an address
  */
@@ -74,7 +106,7 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
       ),
     ]);
     const balance = formatEther(balanceWei);
-    
+
     return {
       token: 'ETH',
       symbol: 'ETH',
@@ -93,6 +125,48 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
       console.warn('Unknown error fetching ETH balance:', error);
       throw new Error('Failed to fetch ETH balance');
     }
+  }
+}
+
+/**
+ * Fetch all ERC-20 token balances for an address using Alchemy API
+ */
+export async function fetchAllTokenBalances(address: string): Promise<AlchemyTokenBalance[]> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(getAlchemyUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'alchemy_getTokenBalances',
+        params: [address, 'erc20'],
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      console.warn('Alchemy API error:', response.status);
+      return [];
+    }
+
+    const data: AlchemyTokenBalancesResponse = await response.json();
+
+    // Filter out zero balances
+    return data.result.tokenBalances.filter(
+      (token) => token.tokenBalance !== '0x0' && token.tokenBalance !== '0x'
+    );
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.warn('Error fetching token balances:', error);
+    return [];
   }
 }
 
