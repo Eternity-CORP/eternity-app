@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setAmount, setStep } from '@/src/store/slices/send-slice';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -58,15 +59,7 @@ export default function AmountScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <View style={styles.backButtonCircle}>
-            <FontAwesome name="arrow-left" size={16} color={theme.colors.textPrimary} />
-          </View>
-        </TouchableOpacity>
-        <Text style={[styles.title, theme.typography.title]}>Send</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader title="Send" />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -153,32 +146,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    color: theme.colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
   },
   keyboardView: {
     flex: 1,

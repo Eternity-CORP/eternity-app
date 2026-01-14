@@ -5,16 +5,14 @@
 
 import { JsonRpcProvider, formatEther } from 'ethers';
 import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // RPC Configuration
 // Load from environment variables (set in .env file)
 // For Expo, variables must be prefixed with EXPO_PUBLIC_
 // The .env file is gitignored, use .env.example as template
-// Default values for development (Sepolia testnet)
-const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '***REDACTED_ALCHEMY_KEY***';
-const INFURA_API_KEY = process.env.EXPO_PUBLIC_INFURA_API_KEY || '78032b87897043d1a7c69d20fd9731dd';
-const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia'; // 'sepolia' | 'mainnet'
+const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY;
+const INFURA_API_KEY = process.env.EXPO_PUBLIC_INFURA_API_KEY;
+const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
 
 // Cache configuration for ETH price
 const ETH_PRICE_CACHE_KEY = 'eth_price_cache';
@@ -226,7 +224,7 @@ async function setCachedPrice(price: number): Promise<void> {
  */
 async function getCachedMetadata(): Promise<CachedTokenMetadata> {
   try {
-    const cached = await AsyncStorage.getItem(TOKEN_METADATA_CACHE_KEY);
+    const cached = await SecureStore.getItemAsync(TOKEN_METADATA_CACHE_KEY);
     return cached ? JSON.parse(cached) : {};
   } catch (error) {
     console.warn('Error reading metadata cache:', error);
@@ -239,7 +237,7 @@ async function getCachedMetadata(): Promise<CachedTokenMetadata> {
  */
 async function setCachedMetadata(metadata: CachedTokenMetadata): Promise<void> {
   try {
-    await AsyncStorage.setItem(TOKEN_METADATA_CACHE_KEY, JSON.stringify(metadata));
+    await SecureStore.setItemAsync(TOKEN_METADATA_CACHE_KEY, JSON.stringify(metadata));
   } catch (error) {
     console.warn('Error caching metadata:', error);
   }

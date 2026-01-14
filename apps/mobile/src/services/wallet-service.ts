@@ -4,8 +4,7 @@
  */
 
 import * as SecureStore from 'expo-secure-store';
-import { generateMnemonic, generateWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength } from '@e-y/crypto';
-import { getAddressFromMnemonic } from '@e-y/crypto';
+import { generateMnemonic, deriveWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength, getAddressFromMnemonic } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
 import type { Account } from '@/src/store/slices/wallet-slice';
 
@@ -26,7 +25,7 @@ export interface WalletData {
  */
 export async function generateWallet(wordCount: 12 | 24 = 12): Promise<WalletData> {
   const mnemonic = generateMnemonic(wordCount);
-  const wallet = generateWalletFromMnemonic(mnemonic, 0);
+  const wallet = deriveWalletFromMnemonic(mnemonic, 0);
   const address = wallet.address;
 
   // Don't include wallet object in return (not serializable for Redux)
@@ -40,7 +39,7 @@ export async function generateWallet(wordCount: 12 | 24 = 12): Promise<WalletDat
  * Save wallet to secure storage (call after verification)
  */
 export async function saveWallet(mnemonic: string): Promise<WalletData> {
-  const wallet = generateWalletFromMnemonic(mnemonic, 0);
+  const wallet = deriveWalletFromMnemonic(mnemonic, 0);
   const address = wallet.address;
 
   // Store mnemonic securely
@@ -76,7 +75,7 @@ export async function loadWallet(): Promise<WalletData | null> {
       return null;
     }
 
-    const wallet = generateWalletFromMnemonic(mnemonic, 0);
+    const wallet = deriveWalletFromMnemonic(mnemonic, 0);
     const address = wallet.address;
 
     // Don't include wallet object in return (not serializable for Redux)
@@ -175,7 +174,7 @@ export async function importWallet(mnemonic: string): Promise<WalletData> {
   }
 
   // Generate wallet from mnemonic
-  const wallet = generateWalletFromMnemonic(normalizedMnemonic, 0);
+  const wallet = deriveWalletFromMnemonic(normalizedMnemonic, 0);
   const address = wallet.address;
 
   // Store mnemonic securely
@@ -205,7 +204,7 @@ export async function importWallet(mnemonic: string): Promise<WalletData> {
  * This creates a new wallet instance when needed, not stored in Redux
  */
 export function getWalletFromMnemonic(mnemonic: string, accountIndex: number = 0): HDNodeWallet {
-  return generateWalletFromMnemonic(mnemonic, accountIndex);
+  return deriveWalletFromMnemonic(mnemonic, accountIndex);
 }
 
 /**

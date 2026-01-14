@@ -3,13 +3,15 @@
  * Manages transaction history and details
  */
 
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector, PayloadAction } from '@reduxjs/toolkit';
 import {
   fetchTransactionHistory,
   fetchTransactionDetails,
   type Transaction,
   type TransactionDetails,
+  type TransactionStatus,
 } from '@/src/services/transaction-service';
+import { transactionSocket, type TransactionStatusUpdate } from '@/src/services/transaction-socket';
 
 interface TransactionState {
   // Store transactions per address
@@ -74,6 +76,23 @@ const transactionSlice = createSlice({
         state.currentAddress = null;
       }
     },
+    updateTransactionStatus: (
+      state,
+      action: PayloadAction<{ txHash: string; status: TransactionStatus; gasUsed?: string }>
+    ) => {
+      const { txHash, status, gasUsed } = action.payload;
+      // Update in all address lists
+      for (const address of Object.keys(state.transactionsByAddress)) {
+        const txList = state.transactionsByAddress[address];
+        const txIndex = txList.findIndex((tx) => tx.hash === txHash);
+        if (txIndex !== -1) {
+          txList[txIndex].status = status;
+          if (gasUsed) {
+            txList[txIndex].gasUsed = gasUsed;
+          }
+        }
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -112,11 +131,48 @@ const transactionSlice = createSlice({
   },
 });
 
-export const { clearTransactions, clearSelectedTransaction, clearTransactionsForAddress } = transactionSlice.actions;
+export const { clearTransactions, clearSelectedTransaction, clearTransactionsForAddress, updateTransactionStatus } = transactionSlice.actions;
 
-// Selector helper to get transactions for current address
-export const selectTransactionsForAddress = (state: { transaction: TransactionState }, address: string | null): Transaction[] => {
-  if (!address) return [];
-  return state.transaction.transactionsByAddress[address] || [];
+/**
+ * Subscribe to real-time updates for pending transactions
+ */
+export const subscribeToPendingTransactions = (
+  transactions: Transaction[],
+  userAddress: string,
+  dispatch: (action: ReturnType<typeof updateTransactionStatus>) => void
+) => {
+  const pendingTxs = transactions.filter((tx) => tx.status === 'pending');
+
+  for (const tx of pendingTxs) {
+    transactionSocket.subscribe(tx.hash, userAddress, (update: TransactionStatusUpdate) => {
+      if (update.status !== 'pending' && update.status !== 'timeout') {
+        dispatch(updateTransactionStatus({
+          txHash: update.txHash,
+          status: update.status,
+          gasUsed: update.gasUsed,
+        }));
+      }
+    });
+  }
 };
+
+/**
+ * Cleanup WebSocket subscriptions
+ */
+export const unsubscribeFromAllTransactions = () => {
+  transactionSocket.disconnect();
+};
+
+// Memoized selector to get transactions for current address
+const EMPTY_TRANSACTIONS: Transaction[] = [];
+
+const selectTransactionsByAddress = (state: { transaction: TransactionState }) => state.transaction.transactionsByAddress;
+
+export const selectTransactionsForAddress = createSelector(
+  [selectTransactionsByAddress, (_state: { transaction: TransactionState }, address: string | null) => address],
+  (transactionsByAddress, address): Transaction[] => {
+    if (!address) return EMPTY_TRANSACTIONS;
+    return transactionsByAddress[address] || EMPTY_TRANSACTIONS;
+  }
+);
 export default transactionSlice.reducer;

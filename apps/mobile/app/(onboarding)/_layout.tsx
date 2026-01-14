@@ -10,6 +10,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="welcome" />
       <Stack.Screen name="create-wallet" />
       <Stack.Screen name="seed-phrase" />
+      <Stack.Screen name="import-wallet" />
     </Stack>
   );
 }

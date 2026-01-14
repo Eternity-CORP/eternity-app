@@ -3,15 +3,31 @@
  * Displays full transaction history for the current account
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, RefreshControl, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
-import { fetchTransactionsThunk, fetchTransactionDetailsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
+import {
+  fetchTransactionsThunk,
+  selectTransactionsForAddress,
+  subscribeToPendingTransactions,
+  unsubscribeFromAllTransactions,
+  updateTransactionStatus,
+} from '@/src/store/slices/transaction-slice';
+import { truncateAddress } from '@/src/utils/format';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+
+const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
+
+const getExplorerUrl = (txHash: string): string => {
+  return NETWORK === 'mainnet'
+    ? `https://etherscan.io/tx/${txHash}`
+    : `https://sepolia.etherscan.io/tx/${txHash}`;
+};
 
 export default function TransactionsScreen() {
   const dispatch = useAppDispatch();
@@ -25,7 +41,23 @@ export default function TransactionsScreen() {
     if (currentAccount?.address) {
       dispatch(fetchTransactionsThunk(currentAccount.address));
     }
+
+    // Cleanup on unmount
+    return () => {
+      unsubscribeFromAllTransactions();
+    };
   }, [currentAccount?.address, dispatch]);
+
+  // Subscribe to real-time updates for pending transactions
+  useEffect(() => {
+    if (currentAccount?.address && transactions.length > 0) {
+      subscribeToPendingTransactions(
+        transactions,
+        currentAccount.address,
+        (action) => dispatch(action)
+      );
+    }
+  }, [transactions, currentAccount?.address, dispatch]);
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
@@ -34,26 +66,13 @@ export default function TransactionsScreen() {
     }
   }, [currentAccount?.address, dispatch]);
 
-  const handleTransactionPress = async (txHash: string) => {
-    if (currentAccount?.address) {
-      try {
-        await dispatch(fetchTransactionDetailsThunk({ txHash, userAddress: currentAccount.address }));
-        // TODO: Navigate to transaction details screen when implemented
-      } catch (error) {
-        // Error handling is done by Redux slice
-      }
-    }
+  const handleTransactionPress = (txHash: string) => {
+    Linking.openURL(getExplorerUrl(txHash));
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, theme.typography.title]}>Transaction History</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader title="Transaction History" />
 
       <ScrollView
         style={styles.container}
@@ -112,9 +131,9 @@ export default function TransactionsScreen() {
                     {tx.direction === 'sent' ? 'Sent' : 'Received'}
                   </Text>
                   <Text style={[styles.transactionAddress, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                    {tx.direction === 'sent' 
-                      ? `To: ${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`
-                      : `From: ${tx.from.slice(0, 6)}...${tx.from.slice(-4)}`
+                    {tx.direction === 'sent'
+                      ? `To: ${truncateAddress(tx.to)}`
+                      : `From: ${truncateAddress(tx.from)}`
                     }
                   </Text>
                   <Text style={[styles.transactionDate, theme.typography.caption, { color: theme.colors.textTertiary }]}>
@@ -129,6 +148,11 @@ export default function TransactionsScreen() {
                   ]}>
                     {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
                   </Text>
+                  {tx.gasUsed && tx.gasPrice && (
+                    <Text style={[styles.transactionGas, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                      Gas: {(parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice) / 1e18).toFixed(6)} ETH
+                    </Text>
+                  )}
                   <View style={styles.transactionStatus}>
                     <View style={[
                       styles.statusDot,
@@ -142,6 +166,7 @@ export default function TransactionsScreen() {
                     <Text style={[styles.transactionStatusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                       {tx.status}
                     </Text>
+                    <FontAwesome name="external-link" size={10} color={theme.colors.textTertiary} style={{ marginLeft: 4 }} />
                   </View>
                 </View>
               </TouchableOpacity>
@@ -165,26 +190,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.buttonSecondaryBorder,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    color: theme.colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
   },
   container: {
     flex: 1,
@@ -228,6 +233,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   transactionAmountText: {
+    marginBottom: theme.spacing.xs / 2,
+  },
+  transactionGas: {
     marginBottom: theme.spacing.xs / 2,
   },
   transactionStatus: {

@@ -26,7 +26,11 @@
       "Bash(git commit:*)",
       "Bash(cd:*)",
       "Bash(pnpm --filter mobile exec tsc:*)",
-      "Bash(pnpm:*)"
+      "Bash(pnpm:*)",
+      "mcp__linear__get_issue",
+      "mcp__linear__update_issue",
+      "Bash(gh auth status:*)",
+      "Bash(gh auth switch:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
