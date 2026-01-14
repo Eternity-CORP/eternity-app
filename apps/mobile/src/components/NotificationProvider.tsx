@@ -1,12 +1,13 @@
 /**
  * Notification Provider
  * Sets up notification listeners and handles notification responses
+ * Note: Push notifications only work in development builds, not in Expo Go
  */
 
 import { useEffect, useRef } from 'react';
 import { router } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import {
+  isNotificationsAvailable,
   requestNotificationPermissions,
   getLastNotificationResponse,
   NotificationData,
@@ -17,55 +18,77 @@ interface NotificationProviderProps {
 }
 
 export function NotificationProvider({ children }: NotificationProviderProps) {
-  const notificationListener = useRef<Notifications.Subscription | null>(null);
-  const responseListener = useRef<Notifications.Subscription | null>(null);
+  const listenerSetup = useRef(false);
 
   useEffect(() => {
-    // Request permissions on mount
-    requestNotificationPermissions();
+    if (listenerSetup.current) return;
+    listenerSetup.current = true;
 
-    // Handle notification received while app is in foreground
-    notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
-      console.log('Notification received:', notification);
-      // Could update UI state here (e.g., show badge, refresh data)
-    });
-
-    // Handle notification response (user tapped notification)
-    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
-      handleNotificationResponse(response);
-    });
-
-    // Check if app was launched from a notification
-    checkLaunchNotification();
-
-    return () => {
-      if (notificationListener.current) {
-        notificationListener.current.remove();
-      }
-      if (responseListener.current) {
-        responseListener.current.remove();
-      }
-    };
+    // Setup notifications asynchronously
+    setupNotifications();
   }, []);
 
   return <>{children}</>;
 }
 
 /**
- * Check if the app was launched from a notification
+ * Setup notifications and listeners
  */
-async function checkLaunchNotification() {
-  const response = await getLastNotificationResponse();
-  if (response) {
-    handleNotificationResponse(response);
+async function setupNotifications() {
+  const available = await isNotificationsAvailable();
+  if (!available) {
+    console.log('Push notifications not available in this environment');
+    return;
+  }
+
+  // Request permissions
+  await requestNotificationPermissions();
+
+  // Check if app was launched from a notification
+  try {
+    const response = await getLastNotificationResponse();
+    if (response) {
+      handleNotificationResponse(response);
+    }
+  } catch (error) {
+    console.warn('Error checking launch notification:', error);
+  }
+
+  // Setup notification listeners dynamically
+  try {
+    const Notifications = await import('expo-notifications');
+
+    // Handle notification received while app is in foreground
+    Notifications.addNotificationReceivedListener((notification) => {
+      console.log('Notification received:', notification.request.content.title);
+    });
+
+    // Handle notification response (user tapped notification)
+    Notifications.addNotificationResponseReceivedListener((response) => {
+      handleNotificationResponse(response);
+    });
+  } catch (error) {
+    console.warn('Could not setup notification listeners:', error);
   }
 }
 
 /**
  * Handle notification tap response
  */
-function handleNotificationResponse(response: Notifications.NotificationResponse) {
-  const data = response.notification.request.content.data as unknown as NotificationData;
+function handleNotificationResponse(response: unknown) {
+  if (!response || typeof response !== 'object') return;
+
+  const typedResponse = response as {
+    notification?: {
+      request?: {
+        content?: {
+          data?: Record<string, unknown>;
+        };
+      };
+    };
+  };
+
+  const data = typedResponse.notification?.request?.content?.data as NotificationData | undefined;
 
   if (!data?.type) {
     console.log('Notification without data type');

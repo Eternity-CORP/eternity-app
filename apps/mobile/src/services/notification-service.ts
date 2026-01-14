@@ -1,23 +1,47 @@
 /**
  * Push Notification Service
  * Handles both local and remote push notifications
+ * Note: Push notifications only work in development builds, not in Expo Go
  */
 
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+// Lazy-loaded notifications module (not available in Expo Go)
+let Notifications: typeof import('expo-notifications') | null = null;
+let Device: typeof import('expo-device') | null = null;
+let modulesInitialized = false;
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+/**
+ * Try to load notifications modules
+ */
+async function loadModules(): Promise<boolean> {
+  if (modulesInitialized) return Notifications !== null;
+
+  try {
+    const [notifs, device] = await Promise.all([
+      import('expo-notifications'),
+      import('expo-device'),
+    ]);
+    Notifications = notifs;
+    Device = device;
+    modulesInitialized = true;
+
+    // Configure notification handler
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+
+    return true;
+  } catch (error) {
+    console.warn('Push notifications not available (Expo Go?):', error);
+    modulesInitialized = true;
+    return false;
+  }
+}
 
 export interface NotificationData {
   type: 'split_request' | 'split_paid' | 'payment_reminder' | 'transaction_received' | 'general';
@@ -31,52 +55,43 @@ export interface NotificationData {
 }
 
 /**
+ * Check if notifications are available
+ */
+export async function isNotificationsAvailable(): Promise<boolean> {
+  return loadModules();
+}
+
+/**
  * Request notification permissions
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
+  const available = await loadModules();
+  if (!available || !Notifications || !Device) return false;
+
   // Notifications are only available on devices
   if (!Device.isDevice) {
     console.log('Notifications only work on physical devices');
     return false;
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.log('Notification permission not granted');
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Get the Expo Push Token for remote notifications
- */
-export async function getExpoPushToken(): Promise<string | null> {
   try {
-    const hasPermission = await requestNotificationPermissions();
-    if (!hasPermission) return null;
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
 
-    // Get project ID from constants
-    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-
-    if (!projectId) {
-      console.log('Missing EAS project ID for push notifications');
-      return null;
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
     }
 
-    const token = await Notifications.getExpoPushTokenAsync({ projectId });
-    return token.data;
+    if (finalStatus !== 'granted') {
+      console.log('Notification permission not granted');
+      return false;
+    }
+
+    return true;
   } catch (error) {
-    console.error('Error getting push token:', error);
-    return null;
+    console.warn('Error requesting notification permissions:', error);
+    return false;
   }
 }
 
@@ -87,9 +102,12 @@ export async function scheduleLocalNotification(options: {
   title: string;
   body: string;
   data?: NotificationData;
-  trigger?: Notifications.NotificationTriggerInput;
+  triggerDate?: Date;
 }): Promise<string | null> {
-  const { title, body, data, trigger } = options;
+  const available = await loadModules();
+  if (!available || !Notifications) return null;
+
+  const { title, body, data, triggerDate } = options;
 
   try {
     const hasPermission = await requestNotificationPermissions();
@@ -102,7 +120,12 @@ export async function scheduleLocalNotification(options: {
         data: data || {},
         sound: true,
       },
-      trigger: trigger || null, // null = immediate
+      trigger: triggerDate
+        ? {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: triggerDate,
+          }
+        : null, // null = immediate
     });
 
     return notificationId;
@@ -124,7 +147,6 @@ export async function sendImmediateNotification(options: {
     title: options.title,
     body: options.body,
     data: options.data,
-    trigger: null,
   });
 }
 
@@ -132,6 +154,9 @@ export async function sendImmediateNotification(options: {
  * Cancel a scheduled notification
  */
 export async function cancelNotification(notificationId: string): Promise<void> {
+  const available = await loadModules();
+  if (!available || !Notifications) return;
+
   try {
     await Notifications.cancelScheduledNotificationAsync(notificationId);
   } catch (error) {
@@ -143,6 +168,9 @@ export async function cancelNotification(notificationId: string): Promise<void> 
  * Cancel all scheduled notifications
  */
 export async function cancelAllNotifications(): Promise<void> {
+  const available = await loadModules();
+  if (!available || !Notifications) return;
+
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch (error) {
@@ -153,7 +181,10 @@ export async function cancelAllNotifications(): Promise<void> {
 /**
  * Get all scheduled notifications
  */
-export async function getScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+export async function getScheduledNotifications(): Promise<unknown[]> {
+  const available = await loadModules();
+  if (!available || !Notifications) return [];
+
   try {
     return await Notifications.getAllScheduledNotificationsAsync();
   } catch (error) {
@@ -163,48 +194,18 @@ export async function getScheduledNotifications(): Promise<Notifications.Notific
 }
 
 /**
- * Set badge count (iOS only)
- */
-export async function setBadgeCount(count: number): Promise<void> {
-  if (Platform.OS === 'ios') {
-    try {
-      await Notifications.setBadgeCountAsync(count);
-    } catch (error) {
-      console.error('Error setting badge count:', error);
-    }
-  }
-}
-
-/**
- * Clear badge count
- */
-export async function clearBadge(): Promise<void> {
-  await setBadgeCount(0);
-}
-
-/**
- * Add notification received listener (when app is in foreground)
- */
-export function addNotificationReceivedListener(
-  callback: (notification: Notifications.Notification) => void
-): Notifications.Subscription {
-  return Notifications.addNotificationReceivedListener(callback);
-}
-
-/**
- * Add notification response listener (when user taps notification)
- */
-export function addNotificationResponseListener(
-  callback: (response: Notifications.NotificationResponse) => void
-): Notifications.Subscription {
-  return Notifications.addNotificationResponseReceivedListener(callback);
-}
-
-/**
  * Get the last notification response (for handling launch from notification)
  */
-export async function getLastNotificationResponse(): Promise<Notifications.NotificationResponse | null> {
-  return await Notifications.getLastNotificationResponseAsync();
+export async function getLastNotificationResponse(): Promise<unknown | null> {
+  const available = await loadModules();
+  if (!available || !Notifications) return null;
+
+  try {
+    return await Notifications.getLastNotificationResponseAsync();
+  } catch (error) {
+    console.error('Error getting last notification response:', error);
+    return null;
+  }
 }
 
 // Pre-defined notification templates

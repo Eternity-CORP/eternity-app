@@ -3,9 +3,9 @@
  * Local storage for frequent recipients
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import Storage from '@/src/utils/storage';
 
-const CONTACTS_STORAGE_KEY = '@e-y/contacts';
+const CONTACTS_STORAGE_KEY = 'e-y_contacts';
 
 export interface Contact {
   id: string;
@@ -21,7 +21,7 @@ export interface Contact {
  */
 export async function loadContacts(): Promise<Contact[]> {
   try {
-    const data = await AsyncStorage.getItem(CONTACTS_STORAGE_KEY);
+    const data = await Storage.getItem(CONTACTS_STORAGE_KEY);
     if (!data) return [];
 
     const contacts: Contact[] = JSON.parse(data);
@@ -55,7 +55,7 @@ export async function saveContact(contact: Omit<Contact, 'id' | 'createdAt' | 'l
       lastUsedAt: now,
     };
     contacts[existingIndex] = updated;
-    await AsyncStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+    await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
     return updated;
   }
 
@@ -70,7 +70,7 @@ export async function saveContact(contact: Omit<Contact, 'id' | 'createdAt' | 'l
   };
 
   contacts.unshift(newContact);
-  await AsyncStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+  await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
   return newContact;
 }
 
@@ -85,7 +85,7 @@ export async function touchContact(address: string): Promise<void> {
 
   if (index >= 0) {
     contacts[index].lastUsedAt = Date.now();
-    await AsyncStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+    await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
   }
 }
 
@@ -108,7 +108,7 @@ export async function updateContact(
   };
 
   contacts[index] = updated;
-  await AsyncStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+  await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
   return updated;
 }
 
@@ -121,7 +121,7 @@ export async function deleteContact(id: string): Promise<boolean> {
 
   if (filtered.length === contacts.length) return false;
 
-  await AsyncStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(filtered));
+  await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(filtered));
   return true;
 }
 
