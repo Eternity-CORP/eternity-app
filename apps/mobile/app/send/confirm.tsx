@@ -34,6 +34,13 @@ export default function ConfirmScreen() {
     }
   }, [currentAccount?.address, send.recipient, send.amount, dispatch]);
 
+  // Navigate to success screen when transaction is sent
+  useEffect(() => {
+    if (send.step === 'success' && send.txHash) {
+      router.replace('/send/success');
+    }
+  }, [send.step, send.txHash]);
+
   const handleConfirm = async () => {
     if (!wallet.mnemonic || !currentAccount) return;
     
@@ -48,7 +55,7 @@ export default function ConfirmScreen() {
   };
 
   const totalAmount = parseFloat(send.amount) || 0;
-  const totalAmountUsd = selectedToken ? (totalAmount * selectedToken.usdValue / parseFloat(selectedToken.balance)) : 0;
+  const totalAmountUsd = selectedToken ? (totalAmount * (selectedToken.usdValue || 0) / parseFloat(selectedToken.balance)) : 0;
   const gasCostUsd = send.gasEstimate ? send.gasEstimate.totalGasCostUsd : 0;
   const totalCostUsd = totalAmountUsd + gasCostUsd;
 
