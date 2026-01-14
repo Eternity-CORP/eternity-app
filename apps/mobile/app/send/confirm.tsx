@@ -2,13 +2,14 @@
  * Send Screen 4: Confirm Transaction
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
+import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
@@ -20,13 +21,27 @@ export default function ConfirmScreen() {
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const send = useAppSelector((state) => state.send);
+  const contacts = useAppSelector((state) => state.contacts.contacts);
   const currentAccount = getCurrentAccount(wallet);
 
+  // Contact-related state
+  const [showSaveContact, setShowSaveContact] = useState(false);
+  const [contactName, setContactName] = useState('');
+
   const selectedToken = balance.balances.find((t) => t.symbol === send.selectedToken);
-  const ethPrice = balance.ethUsdPrice;
 
   // Get the token address for send-service (contract address for ERC-20, 'ETH' for ETH)
   const tokenAddress = selectedToken?.token || 'ETH';
+
+  // Find existing contact for this recipient
+  const existingContact = contacts.find(
+    c => c.address.toLowerCase() === send.recipient.toLowerCase()
+  );
+
+  // Load contacts on mount
+  useEffect(() => {
+    dispatch(loadContactsThunk());
+  }, [dispatch]);
 
   // Estimate gas when screen loads
   useEffect(() => {
@@ -52,13 +67,37 @@ export default function ConfirmScreen() {
 
     const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
 
+    // Touch contact to update lastUsedAt if exists
+    if (existingContact) {
+      dispatch(touchContactThunk(send.recipient));
+    }
+
     await dispatch(sendTransactionThunk({
       wallet: hdWallet,
       to: send.recipient,
       amount: send.amount,
-      token: tokenAddress, // Use contract address for ERC-20, 'ETH' for ETH
+      token: tokenAddress,
     }));
   };
+
+  const handleSaveContact = useCallback(async () => {
+    if (!contactName.trim()) {
+      Alert.alert('Error', 'Please enter a contact name');
+      return;
+    }
+
+    try {
+      await dispatch(saveContactThunk({
+        name: contactName.trim(),
+        address: send.recipient,
+      }));
+      setShowSaveContact(false);
+      setContactName('');
+      Alert.alert('Saved', 'Contact saved successfully');
+    } catch {
+      Alert.alert('Error', 'Failed to save contact');
+    }
+  }, [contactName, send.recipient, dispatch]);
 
   const totalAmount = parseFloat(send.amount) || 0;
   const totalAmountUsd = selectedToken ? (totalAmount * (selectedToken.usdValue || 0) / parseFloat(selectedToken.balance)) : 0;
@@ -95,11 +134,65 @@ export default function ConfirmScreen() {
               <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                 To
               </Text>
-              <Text style={[styles.summaryValue, theme.typography.body]}>
-                {truncateAddress(send.recipient)}
-              </Text>
+              {existingContact ? (
+                <>
+                  <Text style={[styles.summaryValue, theme.typography.body]}>
+                    {existingContact.name}
+                  </Text>
+                  <Text style={[styles.summarySubValue, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                    {truncateAddress(send.recipient)}
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.summaryValue, theme.typography.body]}>
+                  {truncateAddress(send.recipient)}
+                </Text>
+              )}
             </View>
+            {!existingContact && !showSaveContact && (
+              <TouchableOpacity
+                style={styles.saveContactButton}
+                onPress={() => setShowSaveContact(true)}
+              >
+                <FontAwesome name="user-plus" size={16} color={theme.colors.buttonPrimary} />
+              </TouchableOpacity>
+            )}
           </View>
+
+          {/* Save Contact Input */}
+          {showSaveContact && (
+            <View style={styles.saveContactContainer}>
+              <TextInput
+                style={[styles.saveContactInput, theme.typography.body]}
+                placeholder="Contact name"
+                placeholderTextColor={theme.colors.textTertiary}
+                value={contactName}
+                onChangeText={setContactName}
+                autoFocus
+              />
+              <View style={styles.saveContactActions}>
+                <TouchableOpacity
+                  style={styles.saveContactCancel}
+                  onPress={() => {
+                    setShowSaveContact(false);
+                    setContactName('');
+                  }}
+                >
+                  <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.saveContactSave}
+                  onPress={handleSaveContact}
+                >
+                  <Text style={[theme.typography.caption, { color: theme.colors.buttonPrimaryText }]}>
+                    Save
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={styles.detailsCard}>
@@ -213,6 +306,47 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     color: theme.colors.textPrimary,
+  },
+  summarySubValue: {
+    marginTop: 2,
+  },
+  saveContactButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.buttonPrimary,
+  },
+  saveContactContainer: {
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.buttonSecondaryBorder,
+  },
+  saveContactInput: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    color: theme.colors.textPrimary,
+  },
+  saveContactActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+  },
+  saveContactCancel: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+  },
+  saveContactSave: {
+    backgroundColor: theme.colors.buttonPrimary,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
   },
   detailsCard: {
     backgroundColor: theme.colors.surface,

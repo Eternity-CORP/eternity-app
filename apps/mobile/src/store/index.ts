@@ -8,6 +8,7 @@ import balanceReducer from './slices/balance-slice';
 import transactionReducer from './slices/transaction-slice';
 import sendReducer from './slices/send-slice';
 import blikReducer from './slices/blik-slice';
+import contactsReducer from './slices/contacts-slice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     transaction: transactionReducer,
     send: sendReducer,
     blik: blikReducer,
+    contacts: contactsReducer,
   },
 });
 
