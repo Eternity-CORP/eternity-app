@@ -122,7 +122,7 @@ export default function RecipientScreen() {
       <ScreenHeader
         title="Send"
         rightElement={
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/send/scan')}>
             <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
           </TouchableOpacity>
         }
