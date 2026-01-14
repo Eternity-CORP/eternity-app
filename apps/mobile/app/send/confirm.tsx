@@ -10,6 +10,8 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { truncateAddress } from '@/src/utils/format';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -23,16 +25,20 @@ export default function ConfirmScreen() {
   const selectedToken = balance.balances.find((t) => t.symbol === send.selectedToken);
   const ethPrice = balance.ethUsdPrice;
 
+  // Get the token address for send-service (contract address for ERC-20, 'ETH' for ETH)
+  const tokenAddress = selectedToken?.token || 'ETH';
+
   // Estimate gas when screen loads
   useEffect(() => {
-    if (currentAccount?.address && send.recipient && send.amount) {
+    if (currentAccount?.address && send.recipient && send.amount && selectedToken) {
       dispatch(estimateGasThunk({
         from: currentAccount.address,
         to: send.recipient,
         amount: send.amount,
+        token: tokenAddress,
       }));
     }
-  }, [currentAccount?.address, send.recipient, send.amount, dispatch]);
+  }, [currentAccount?.address, send.recipient, send.amount, tokenAddress, dispatch]);
 
   // Navigate to success screen when transaction is sent
   useEffect(() => {
@@ -43,14 +49,14 @@ export default function ConfirmScreen() {
 
   const handleConfirm = async () => {
     if (!wallet.mnemonic || !currentAccount) return;
-    
+
     const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
-    
+
     await dispatch(sendTransactionThunk({
       wallet: hdWallet,
       to: send.recipient,
       amount: send.amount,
-      token: send.selectedToken,
+      token: tokenAddress, // Use contract address for ERC-20, 'ETH' for ETH
     }));
   };
 
@@ -63,15 +69,7 @@ export default function ConfirmScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <View style={styles.backButtonCircle}>
-            <FontAwesome name="arrow-left" size={16} color={theme.colors.textPrimary} />
-          </View>
-        </TouchableOpacity>
-        <Text style={[styles.title, theme.typography.title]}>Confirm</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader title="Confirm" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <View style={styles.summaryCard}>
@@ -84,7 +82,7 @@ export default function ConfirmScreen() {
                 From
               </Text>
               <Text style={[styles.summaryValue, theme.typography.body]}>
-                {currentAccount?.address.slice(0, 6)}...{currentAccount?.address.slice(-4)}
+                {currentAccount ? truncateAddress(currentAccount.address) : ''}
               </Text>
             </View>
           </View>
@@ -98,7 +96,7 @@ export default function ConfirmScreen() {
                 To
               </Text>
               <Text style={[styles.summaryValue, theme.typography.body]}>
-                {send.recipient.slice(0, 6)}...{send.recipient.slice(-4)}
+                {truncateAddress(send.recipient)}
               </Text>
             </View>
           </View>
@@ -180,32 +178,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  backButtonCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    color: theme.colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
   },
   container: {
     flex: 1,
