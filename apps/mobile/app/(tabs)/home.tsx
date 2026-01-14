@@ -429,6 +429,20 @@ export default function HomeScreen() {
 
             <View style={styles.modalActions}>
               <TouchableOpacity
+                style={styles.usernameButton}
+                onPress={() => {
+                  setShowAccountSelector(false);
+                  router.push('/profile/username');
+                }}
+              >
+                <FontAwesome name="at" size={16} color={theme.colors.textPrimary} />
+                <Text style={[styles.usernameButtonText, theme.typography.body]}>
+                  Manage @username
+                </Text>
+                <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} style={styles.usernameButtonChevron} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[styles.addAccountButton, isAddingAccount && styles.addAccountButtonDisabled]}
                 onPress={handleAddAccount}
                 disabled={isAddingAccount}
@@ -605,6 +619,23 @@ const styles = StyleSheet.create({
   },
   addAccountText: {
     // Already styled
+  },
+  usernameButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  usernameButtonText: {
+    flex: 1,
+    color: theme.colors.textPrimary,
+  },
+  usernameButtonChevron: {
+    marginLeft: theme.spacing.sm,
   },
   balanceSection: {
     alignItems: 'center',

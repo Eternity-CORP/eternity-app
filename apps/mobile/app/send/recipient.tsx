@@ -1,40 +1,121 @@
 /**
  * Send Screen 2: Recipient Address Input
+ * Supports both direct address and @username lookup
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setRecipient, setStep } from '@/src/store/slices/send-slice';
 import { validateAddress } from '@/src/services/send-service';
+import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
+import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
+// Debounce helper
+function debounce<T extends (...args: string[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
 export default function RecipientScreen() {
   const dispatch = useAppDispatch();
   const send = useAppSelector((state) => state.send);
-  const [address, setAddress] = useState(send.recipient);
+  const [input, setInput] = useState(send.recipient);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+  const [resolvedUsername, setResolvedUsername] = useState<string | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if input is a username (starts with @)
+  const isUsernameInput = input.trim().startsWith('@');
+
+  // Debounced username lookup
+  const debouncedLookup = useMemo(
+    () =>
+      debounce(async (username: string) => {
+        setIsLookingUp(true);
+        setError(null);
+        try {
+          const address = await lookupUsername(username);
+          if (address) {
+            setResolvedAddress(address);
+            setResolvedUsername(username.startsWith('@') ? username : `@${username}`);
+            setError(null);
+          } else {
+            setResolvedAddress(null);
+            setResolvedUsername(null);
+            setError('Username not found');
+          }
+        } catch (err) {
+          setResolvedAddress(null);
+          setResolvedUsername(null);
+          setError('Connection error. Try again.');
+        } finally {
+          setIsLookingUp(false);
+        }
+      }, 300),
+    []
+  );
+
+  // Handle input changes
+  const handleInputChange = useCallback(
+    (text: string) => {
+      setInput(text);
+      setError(null);
+
+      const trimmed = text.trim();
+
+      if (trimmed.startsWith('@') && trimmed.length > 1) {
+        // Username input - trigger lookup
+        const username = trimmed.slice(1).toLowerCase();
+        if (isValidUsernameFormat(username)) {
+          debouncedLookup(username);
+        } else {
+          setResolvedAddress(null);
+          setResolvedUsername(null);
+          if (trimmed.length > 3) {
+            setError('Invalid username format');
+          }
+        }
+      } else if (validateAddress(trimmed)) {
+        // Direct address
+        setResolvedAddress(trimmed);
+        setResolvedUsername(null);
+        setIsLookingUp(false);
+      } else {
+        // Invalid or incomplete
+        setResolvedAddress(null);
+        setResolvedUsername(null);
+        setIsLookingUp(false);
+      }
+    },
+    [debouncedLookup]
+  );
+
   const handleContinue = () => {
-    if (!address.trim()) {
-      setError('Address is required');
+    if (!resolvedAddress) {
+      setError('Please enter a valid address or @username');
       return;
     }
-    
-    if (!validateAddress(address.trim())) {
-      setError('Invalid address format');
-      return;
-    }
-    
+
     setError(null);
-    dispatch(setRecipient(address.trim()));
+    dispatch(setRecipient(resolvedAddress));
     dispatch(setStep('amount'));
     router.push('/send/amount');
   };
+
+  const canContinue = resolvedAddress && !isLookingUp;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -53,28 +134,56 @@ export default function RecipientScreen() {
             style={[styles.input, theme.typography.body]}
             placeholder="Enter address or @username"
             placeholderTextColor={theme.colors.textTertiary}
-            value={address}
-            onChangeText={(text) => {
-              setAddress(text);
-              setError(null);
-            }}
+            value={input}
+            onChangeText={handleInputChange}
             autoCapitalize="none"
             autoCorrect={false}
           />
-          {error && (
-            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
-              {error}
-            </Text>
-          )}
+
+          {/* Status indicators */}
+          <View style={styles.statusContainer}>
+            {isLookingUp && (
+              <View style={styles.statusRow}>
+                <ActivityIndicator size="small" color={theme.colors.buttonPrimary} />
+                <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  Searching...
+                </Text>
+              </View>
+            )}
+
+            {!isLookingUp && resolvedAddress && resolvedUsername && (
+              <View style={styles.statusRow}>
+                <FontAwesome name="check-circle" size={16} color={theme.colors.success} />
+                <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.success }]}>
+                  {resolvedUsername} → {truncateAddress(resolvedAddress)}
+                </Text>
+              </View>
+            )}
+
+            {!isLookingUp && resolvedAddress && !resolvedUsername && !isUsernameInput && (
+              <View style={styles.statusRow}>
+                <FontAwesome name="check-circle" size={16} color={theme.colors.success} />
+                <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.success }]}>
+                  Valid address
+                </Text>
+              </View>
+            )}
+
+            {error && (
+              <View style={styles.statusRow}>
+                <FontAwesome name="times-circle" size={16} color={theme.colors.error} />
+                <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.error }]}>
+                  {error}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <TouchableOpacity
-          style={[
-            styles.continueButton,
-            (!address.trim() || !validateAddress(address.trim())) && styles.continueButtonDisabled,
-          ]}
+          style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
           onPress={handleContinue}
-          disabled={!address.trim() || !validateAddress(address.trim())}
+          disabled={!canContinue}
         >
           <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
         </TouchableOpacity>
@@ -103,8 +212,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     fontSize: 16,
   },
-  errorText: {
-    marginTop: theme.spacing.sm,
+  statusContainer: {
+    marginTop: theme.spacing.md,
+    minHeight: 24,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  statusText: {
+    flex: 1,
   },
   continueButton: {
     backgroundColor: theme.colors.buttonPrimary,
