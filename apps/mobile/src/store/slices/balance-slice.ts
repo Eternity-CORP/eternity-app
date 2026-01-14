@@ -4,7 +4,12 @@
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { fetchEthBalance, fetchEthUsdPrice, calculateTotalUsdValue, type TokenBalance } from '@/src/services/balance-service';
+import {
+  fetchAllBalances,
+  fetchEthUsdPrice,
+  calculateTotalUsdValue,
+  type TokenBalance
+} from '@/src/services/balance-service';
 
 interface BalanceState {
   balances: TokenBalance[];
@@ -37,32 +42,13 @@ export const fetchEthPriceThunk = createAsyncThunk(
 
 /**
  * Fetch balances for an address
- * Note: ETH price is cached for 1 minute to avoid CoinGecko rate limits
+ * Fetches ETH + all ERC-20 tokens with prices
  */
 export const fetchBalancesThunk = createAsyncThunk(
   'balance/fetchBalances',
   async (address: string) => {
-    // Fetch ETH balance and price in parallel (price uses cache internally)
-    const [ethBalance, ethPrice] = await Promise.all([
-      fetchEthBalance(address),
-      fetchEthUsdPrice(),
-    ]);
-    
-    // Calculate USD value
-    const ethUsdValue = parseFloat(ethBalance.balance) * ethPrice;
-    
-    const balances: TokenBalance[] = [
-      {
-        ...ethBalance,
-        usdValue: ethUsdValue,
-      },
-    ];
-    
-    return {
-      balances,
-      ethPrice,
-      totalUsdValue: calculateTotalUsdValue(balances),
-    };
+    const result = await fetchAllBalances(address);
+    return result;
   }
 );
 
