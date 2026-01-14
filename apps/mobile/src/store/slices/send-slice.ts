@@ -43,8 +43,8 @@ const initialState: SendState = {
  */
 export const estimateGasThunk = createAsyncThunk(
   'send/estimateGas',
-  async ({ from, to, amount }: { from: string; to: string; amount: string }) => {
-    return await estimateGas(from, to, amount);
+  async ({ from, to, amount, token }: { from: string; to: string; amount: string; token: string }) => {
+    return await estimateGas(from, to, amount, token);
   }
 );
 

@@ -3,9 +3,16 @@
  * Handles transaction signing and broadcasting
  */
 
-import { isAddress, parseEther, formatEther } from 'ethers';
-import { getProvider } from './balance-service';
+import { isAddress, parseEther, formatEther, Contract, parseUnits } from 'ethers';
+import { getProvider, fetchEthUsdPrice, fetchTokenMetadata } from './balance-service';
 import type { HDNodeWallet } from 'ethers';
+
+// Minimal ERC-20 ABI for transfer function
+const ERC20_ABI = [
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function balanceOf(address account) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+];
 
 export interface SendTransactionParams {
   wallet: HDNodeWallet;
@@ -33,32 +40,50 @@ export function validateAddress(address: string): boolean {
 }
 
 /**
- * Estimate gas for transaction
+ * Estimate gas for transaction (ETH or ERC-20)
  */
 export async function estimateGas(
   from: string,
   to: string,
-  amount: string
+  amount: string,
+  token: string = 'ETH'
 ): Promise<GasEstimate> {
   try {
     const provider = getProvider();
-    const value = parseEther(amount);
-    
-    const gasLimit = await provider.estimateGas({
-      from,
-      to,
-      value,
-    });
-    
+    let gasLimit: bigint;
+
+    if (token === 'ETH') {
+      // ETH transfer
+      const value = parseEther(amount);
+      gasLimit = await provider.estimateGas({
+        from,
+        to,
+        value,
+      });
+    } else {
+      // ERC-20 transfer - need to estimate gas for contract call
+      const tokenContract = new Contract(token, ERC20_ABI, provider);
+
+      // Get token decimals from metadata cache or contract
+      const metadata = await fetchTokenMetadata(token);
+      const decimals = metadata?.decimals ?? 18;
+
+      // Parse amount with correct decimals
+      const amountInUnits = parseUnits(amount, decimals);
+
+      // Estimate gas for transfer function
+      gasLimit = await tokenContract.transfer.estimateGas(to, amountInUnits, { from });
+    }
+
     const feeData = await provider.getFeeData();
     const gasPrice = feeData.gasPrice || BigInt(0);
     const totalGasCost = gasLimit * gasPrice;
-    
-    // Get ETH price for USD conversion
-    const ethPrice = await fetchEthPrice();
+
+    // Get ETH price for USD conversion (uses cached price from balance-service)
+    const ethPrice = await fetchEthUsdPrice();
     const totalGasCostEth = formatEther(totalGasCost);
     const totalGasCostUsd = parseFloat(totalGasCostEth) * ethPrice;
-    
+
     return {
       gasLimit: gasLimit.toString(),
       gasPrice: gasPrice.toString(),
@@ -72,51 +97,49 @@ export async function estimateGas(
 }
 
 /**
- * Fetch ETH price (reuse from balance service logic)
- */
-async function fetchEthPrice(): Promise<number> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-    const response = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
-      { signal: controller.signal }
-    );
-    clearTimeout(timeout);
-    const data = await response.json();
-    return data.ethereum?.usd || 0;
-  } catch {
-    return 0;
-  }
-}
-
-/**
- * Send transaction
+ * Send transaction (ETH or ERC-20)
  */
 export async function sendTransaction(
   params: SendTransactionParams
 ): Promise<string> {
   const { wallet, to, amount, token } = params;
-  
+
   if (!validateAddress(to)) {
     throw new Error('Invalid address');
   }
-  
-  if (token !== 'ETH') {
-    throw new Error('Only ETH transfers supported for now');
-  }
-  
+
   const provider = getProvider();
-  const value = parseEther(amount);
-  
-  // Connect wallet to provider - wallet.sendTransaction requires connected wallet
+
+  // Connect wallet to provider
   const connectedWallet = wallet.connect(provider);
-  
-  // Use connected wallet's sendTransaction method directly
-  const txResponse = await connectedWallet.sendTransaction({
-    to,
-    value,
-  });
-  
+
+  if (token === 'ETH') {
+    // ETH transfer
+    const value = parseEther(amount);
+    const txResponse = await connectedWallet.sendTransaction({
+      to,
+      value,
+    });
+    return txResponse.hash;
+  }
+
+  // ERC-20 transfer
+  if (!validateAddress(token)) {
+    throw new Error('Invalid token contract address');
+  }
+
+  // Get token decimals from metadata cache or contract
+  const metadata = await fetchTokenMetadata(token);
+  const decimals = metadata?.decimals ?? 18;
+
+  // Parse amount with correct decimals
+  const amountInUnits = parseUnits(amount, decimals);
+
+  // Create contract instance with connected wallet (for signing)
+  const tokenContract = new Contract(token, ERC20_ABI, connectedWallet);
+
+  // Execute transfer
+  const txResponse = await tokenContract.transfer(to, amountInUnits);
+
   return txResponse.hash;
 }
