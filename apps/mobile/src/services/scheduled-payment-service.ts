@@ -4,9 +4,29 @@
  */
 
 import Storage from '@/src/utils/storage';
-import * as Notifications from 'expo-notifications';
 
 const SCHEDULED_PAYMENTS_KEY = 'scheduled_payments';
+
+// Lazy-loaded notifications module (not available in Expo Go)
+let Notifications: typeof import('expo-notifications') | null = null;
+let notificationsInitialized = false;
+
+/**
+ * Try to load notifications module
+ */
+async function getNotifications(): Promise<typeof import('expo-notifications') | null> {
+  if (notificationsInitialized) return Notifications;
+
+  try {
+    Notifications = await import('expo-notifications');
+    notificationsInitialized = true;
+    return Notifications;
+  } catch (error) {
+    console.warn('expo-notifications not available (Expo Go?):', error);
+    notificationsInitialized = true;
+    return null;
+  }
+}
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
@@ -44,7 +64,10 @@ function generateId(): string {
  * Configure notifications
  */
 export async function configureNotifications(): Promise<void> {
-  await Notifications.setNotificationHandler({
+  const notifs = await getNotifications();
+  if (!notifs) return;
+
+  await notifs.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
@@ -59,21 +82,32 @@ export async function configureNotifications(): Promise<void> {
  * Request notification permissions
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
+  const notifs = await getNotifications();
+  if (!notifs) return false;
 
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+  try {
+    const { status: existingStatus } = await notifs.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await notifs.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    return finalStatus === 'granted';
+  } catch (error) {
+    console.warn('Error requesting notification permissions:', error);
+    return false;
   }
-
-  return finalStatus === 'granted';
 }
 
 /**
  * Schedule a local notification for a payment
  */
 async function scheduleNotification(payment: ScheduledPayment): Promise<string | null> {
+  const notifs = await getNotifications();
+  if (!notifs) return null;
+
   try {
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
@@ -83,7 +117,7 @@ async function scheduleNotification(payment: ScheduledPayment): Promise<string |
 
     // Cancel existing notification if any
     if (payment.notificationId) {
-      await Notifications.cancelScheduledNotificationAsync(payment.notificationId);
+      await notifs.cancelScheduledNotificationAsync(payment.notificationId);
     }
 
     const triggerDate = new Date(payment.scheduledAt);
@@ -99,7 +133,7 @@ async function scheduleNotification(payment: ScheduledPayment): Promise<string |
         ? payment.recipientName
         : `${payment.recipient.slice(0, 6)}...${payment.recipient.slice(-4)}`;
 
-    const notificationId = await Notifications.scheduleNotificationAsync({
+    const notificationId = await notifs.scheduleNotificationAsync({
       content: {
         title: 'Scheduled Payment Due',
         body: `Time to send ${payment.amount} ${payment.tokenSymbol} to ${recipientDisplay}`,
@@ -109,7 +143,7 @@ async function scheduleNotification(payment: ScheduledPayment): Promise<string |
         },
       },
       trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        type: notifs.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
       },
     });
@@ -125,8 +159,11 @@ async function scheduleNotification(payment: ScheduledPayment): Promise<string |
  * Cancel a scheduled notification
  */
 async function cancelNotification(notificationId: string): Promise<void> {
+  const notifs = await getNotifications();
+  if (!notifs) return;
+
   try {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    await notifs.cancelScheduledNotificationAsync(notificationId);
   } catch (error) {
     console.error('Error canceling notification:', error);
   }
