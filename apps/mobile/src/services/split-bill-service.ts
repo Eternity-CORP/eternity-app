@@ -1,43 +1,45 @@
 /**
  * Split Bill Service
- * Manages split bill requests with local storage
+ * Manages split bill requests with backend API and local cache
  */
 
+import { API_BASE_URL } from '@/src/config/api';
 import Storage from '@/src/utils/storage';
 
-const SPLIT_BILLS_KEY = 'split_bills';
+const SPLIT_BILLS_CACHE_KEY = 'split_bills_cache';
+const REQUEST_TIMEOUT = 15000;
 
 export type SplitBillStatus = 'active' | 'completed' | 'cancelled';
 export type ParticipantStatus = 'pending' | 'paid';
 
 export interface SplitParticipant {
+  id?: string;
   address: string;
   username?: string;
   name?: string;
   amount: string;
   status: ParticipantStatus;
   paidTxHash?: string;
-  paidAt?: number;
+  paidAt?: string;
 }
 
 export interface SplitBill {
   id: string;
   creatorAddress: string;
   creatorUsername?: string;
-  recipientAddress: string;
+  recipientAddress?: string;
   totalAmount: string;
   tokenSymbol: string;
   description?: string;
   participants: SplitParticipant[];
-  createdAt: number;
-  updatedAt: number;
+  createdAt: string;
+  updatedAt: string;
   status: SplitBillStatus;
 }
 
 export interface CreateSplitBillRequest {
   creatorAddress: string;
   creatorUsername?: string;
-  recipientAddress: string;
   totalAmount: string;
   tokenSymbol: string;
   description?: string;
@@ -49,36 +51,68 @@ export interface CreateSplitBillRequest {
   }>;
 }
 
-/**
- * Generate unique ID
- */
-function generateId(): string {
-  return `split_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+interface ApiError {
+  statusCode: number;
+  message: string;
+  error?: string;
 }
 
 /**
- * Load all split bills from storage
+ * Check if we're online
  */
-async function loadAllSplitBills(): Promise<SplitBill[]> {
+function isOnline(): boolean {
+  // In React Native, we could use NetInfo, but for simplicity assume online
+  return true;
+}
+
+/**
+ * Create fetch with timeout
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout: number = REQUEST_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
   try {
-    const data = await Storage.getItem(SPLIT_BILLS_KEY);
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * Load cached split bills
+ */
+async function loadCachedSplitBills(address: string): Promise<SplitBill[]> {
+  try {
+    const cacheKey = `${SPLIT_BILLS_CACHE_KEY}_${address.toLowerCase()}`;
+    const data = await Storage.getItem(cacheKey);
     if (!data) return [];
     return JSON.parse(data);
   } catch (error) {
-    console.error('Error loading split bills:', error);
+    console.error('Error loading cached split bills:', error);
     return [];
   }
 }
 
 /**
- * Save split bills to storage
+ * Save split bills to cache
  */
-async function saveSplitBills(bills: SplitBill[]): Promise<void> {
+async function cacheSplitBills(address: string, bills: SplitBill[]): Promise<void> {
   try {
-    await Storage.setItem(SPLIT_BILLS_KEY, JSON.stringify(bills));
+    const cacheKey = `${SPLIT_BILLS_CACHE_KEY}_${address.toLowerCase()}`;
+    await Storage.setItem(cacheKey, JSON.stringify(bills));
   } catch (error) {
-    console.error('Error saving split bills:', error);
-    throw error;
+    console.error('Error caching split bills:', error);
   }
 }
 
@@ -88,43 +122,55 @@ async function saveSplitBills(bills: SplitBill[]): Promise<void> {
 export async function createSplitBill(
   request: CreateSplitBillRequest
 ): Promise<SplitBill> {
-  const bills = await loadAllSplitBills();
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/splits`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-wallet-address': request.creatorAddress,
+      },
+      body: JSON.stringify(request),
+    }
+  );
 
-  const newBill: SplitBill = {
-    id: generateId(),
-    creatorAddress: request.creatorAddress,
-    creatorUsername: request.creatorUsername,
-    recipientAddress: request.recipientAddress,
-    totalAmount: request.totalAmount,
-    tokenSymbol: request.tokenSymbol,
-    description: request.description,
-    participants: request.participants.map((p) => ({
-      ...p,
-      status: 'pending' as ParticipantStatus,
-    })),
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    status: 'active',
-  };
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to create split bill');
+  }
 
-  bills.push(newBill);
-  await saveSplitBills(bills);
+  const bill: SplitBill = await response.json();
 
-  return newBill;
+  // Update cache
+  const cached = await loadCachedSplitBills(request.creatorAddress);
+  cached.unshift(bill);
+  await cacheSplitBills(request.creatorAddress, cached);
+
+  return bill;
 }
 
 /**
  * Get split bill by ID
  */
 export async function getSplitBill(id: string): Promise<SplitBill> {
-  const bills = await loadAllSplitBills();
-  const bill = bills.find((b) => b.id === id);
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/splits/${id}`,
+    {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    }
+  );
 
-  if (!bill) {
-    throw new Error('Split bill not found');
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Split bill not found');
+    }
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to get split bill');
   }
 
-  return bill;
+  return response.json();
 }
 
 /**
@@ -133,10 +179,34 @@ export async function getSplitBill(id: string): Promise<SplitBill> {
 export async function getCreatedSplitBills(
   creatorAddress: string
 ): Promise<SplitBill[]> {
-  const bills = await loadAllSplitBills();
-  return bills
-    .filter((b) => b.creatorAddress.toLowerCase() === creatorAddress.toLowerCase())
-    .sort((a, b) => b.createdAt - a.createdAt);
+  try {
+    if (!isOnline()) {
+      return loadCachedSplitBills(creatorAddress);
+    }
+
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/splits/creator/${encodeURIComponent(creatorAddress)}`,
+      {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      }
+    );
+
+    if (!response.ok) {
+      console.warn('Failed to fetch split bills, using cache');
+      return loadCachedSplitBills(creatorAddress);
+    }
+
+    const bills: SplitBill[] = await response.json();
+
+    // Update cache
+    await cacheSplitBills(creatorAddress, bills);
+
+    return bills;
+  } catch (error) {
+    console.warn('Error fetching split bills, using cache:', error);
+    return loadCachedSplitBills(creatorAddress);
+  }
 }
 
 /**
@@ -145,37 +215,71 @@ export async function getCreatedSplitBills(
 export async function getPendingSplitBills(
   address: string
 ): Promise<SplitBill[]> {
-  const bills = await loadAllSplitBills();
-  return bills
-    .filter((b) => {
-      // Find bills where this address is a participant with pending status
-      const participant = b.participants.find(
-        (p) => p.address.toLowerCase() === address.toLowerCase()
-      );
-      return participant && participant.status === 'pending' && b.status === 'active';
-    })
-    .sort((a, b) => b.createdAt - a.createdAt);
+  try {
+    if (!isOnline()) {
+      const cached = await loadCachedSplitBills(address);
+      return cached.filter((b) => {
+        const participant = b.participants.find(
+          (p) => p.address.toLowerCase() === address.toLowerCase()
+        );
+        return participant && participant.status === 'pending' && b.status === 'active';
+      });
+    }
+
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/splits/pending/${encodeURIComponent(address)}`,
+      {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      }
+    );
+
+    if (!response.ok) {
+      console.warn('Failed to fetch pending split bills');
+      return [];
+    }
+
+    return response.json();
+  } catch (error) {
+    console.warn('Error fetching pending split bills:', error);
+    return [];
+  }
 }
 
 /**
  * Cancel a split bill
  */
-export async function cancelSplitBill(id: string): Promise<SplitBill> {
-  const bills = await loadAllSplitBills();
-  const index = bills.findIndex((b) => b.id === id);
+export async function cancelSplitBill(
+  id: string,
+  walletAddress: string
+): Promise<SplitBill> {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/splits/${id}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'x-wallet-address': walletAddress,
+      },
+    }
+  );
 
-  if (index === -1) {
-    throw new Error('Split bill not found');
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to cancel split bill');
   }
 
-  bills[index] = {
-    ...bills[index],
-    status: 'cancelled',
-    updatedAt: Date.now(),
-  };
+  const bill: SplitBill = await response.json();
 
-  await saveSplitBills(bills);
-  return bills[index];
+  // Update cache
+  const cached = await loadCachedSplitBills(walletAddress);
+  const index = cached.findIndex((b) => b.id === id);
+  if (index !== -1) {
+    cached[index] = bill;
+    await cacheSplitBills(walletAddress, cached);
+  }
+
+  return bill;
 }
 
 /**
@@ -186,41 +290,28 @@ export async function markParticipantPaid(
   participantAddress: string,
   txHash: string
 ): Promise<SplitBill> {
-  const bills = await loadAllSplitBills();
-  const index = bills.findIndex((b) => b.id === splitId);
-
-  if (index === -1) {
-    throw new Error('Split bill not found');
-  }
-
-  const bill = bills[index];
-  const participantIndex = bill.participants.findIndex(
-    (p) => p.address.toLowerCase() === participantAddress.toLowerCase()
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/splits/${splitId}/pay`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-wallet-address': participantAddress,
+      },
+      body: JSON.stringify({
+        participantAddress,
+        txHash,
+      }),
+    }
   );
 
-  if (participantIndex === -1) {
-    throw new Error('Participant not found');
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to mark participant as paid');
   }
 
-  // Update participant
-  bill.participants[participantIndex] = {
-    ...bill.participants[participantIndex],
-    status: 'paid',
-    paidTxHash: txHash,
-    paidAt: Date.now(),
-  };
-
-  // Check if all participants have paid
-  const allPaid = bill.participants.every((p) => p.status === 'paid');
-  if (allPaid) {
-    bill.status = 'completed';
-  }
-
-  bill.updatedAt = Date.now();
-  bills[index] = bill;
-
-  await saveSplitBills(bills);
-  return bill;
+  return response.json();
 }
 
 /**
@@ -249,4 +340,16 @@ export function validateSplitAmounts(
   const sum = amounts.reduce((acc, amt) => acc + parseFloat(amt || '0'), 0);
   // Allow small rounding error
   return Math.abs(total - sum) < 0.000001;
+}
+
+/**
+ * Sync local cache with backend
+ */
+export async function syncSplitBills(address: string): Promise<void> {
+  try {
+    const bills = await getCreatedSplitBills(address);
+    await cacheSplitBills(address, bills);
+  } catch (error) {
+    console.warn('Failed to sync split bills:', error);
+  }
 }

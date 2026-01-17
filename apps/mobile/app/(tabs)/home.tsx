@@ -377,7 +377,7 @@ export default function HomeScreen() {
                 >
                   <View style={[styles.scheduledIcon, isPast && styles.scheduledIconOverdue]}>
                     <FontAwesome
-                      name={payment.recurring ? 'refresh' : 'calendar'}
+                      name={payment.recurringInterval ? 'refresh' : 'calendar'}
                       size={16}
                       color={isPast ? theme.colors.error : theme.colors.buttonPrimary}
                     />

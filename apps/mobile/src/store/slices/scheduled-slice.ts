@@ -12,8 +12,10 @@ import {
   deleteScheduledPayment,
   markPaymentExecuted,
   getPendingPayments,
+  syncScheduledPayments,
   type ScheduledPayment,
-  type RecurringInterval,
+  type CreateScheduledPaymentRequest,
+  type UpdateScheduledPaymentRequest,
 } from '@/src/services/scheduled-payment-service';
 
 interface ScheduledState {
@@ -36,6 +38,17 @@ const initialState: ScheduledState = {
 export const loadScheduledPaymentsThunk = createAsyncThunk(
   'scheduled/loadPayments',
   async (creatorAddress: string) => {
+    const payments = await loadScheduledPayments(creatorAddress);
+    return payments;
+  }
+);
+
+/**
+ * Load pending payments only
+ */
+export const loadPendingPaymentsThunk = createAsyncThunk(
+  'scheduled/loadPending',
+  async (creatorAddress: string) => {
     const payments = await getPendingPayments(creatorAddress);
     return payments;
   }
@@ -46,21 +59,8 @@ export const loadScheduledPaymentsThunk = createAsyncThunk(
  */
 export const createScheduledPaymentThunk = createAsyncThunk(
   'scheduled/createPayment',
-  async (payment: {
-    creatorAddress: string;
-    recipient: string;
-    recipientUsername?: string;
-    recipientName?: string;
-    amount: string;
-    tokenSymbol: string;
-    scheduledAt: number;
-    recurring?: {
-      interval: RecurringInterval;
-      endDate?: number;
-    };
-    description?: string;
-  }) => {
-    const newPayment = await createScheduledPayment(payment);
+  async (request: CreateScheduledPaymentRequest) => {
+    const newPayment = await createScheduledPayment(request);
     return newPayment;
   }
 );
@@ -73,23 +73,13 @@ export const updateScheduledPaymentThunk = createAsyncThunk(
   async ({
     id,
     updates,
+    walletAddress,
   }: {
     id: string;
-    updates: Partial<{
-      recipient: string;
-      recipientUsername?: string;
-      recipientName?: string;
-      amount: string;
-      tokenSymbol: string;
-      scheduledAt: number;
-      recurring?: {
-        interval: RecurringInterval;
-        endDate?: number;
-      };
-      description?: string;
-    }>;
+    updates: UpdateScheduledPaymentRequest;
+    walletAddress: string;
   }) => {
-    const updated = await updateScheduledPayment(id, updates);
+    const updated = await updateScheduledPayment(id, updates, walletAddress);
     if (!updated) {
       throw new Error('Payment not found');
     }
@@ -102,8 +92,8 @@ export const updateScheduledPaymentThunk = createAsyncThunk(
  */
 export const cancelScheduledPaymentThunk = createAsyncThunk(
   'scheduled/cancelPayment',
-  async (id: string) => {
-    const success = await cancelScheduledPayment(id);
+  async ({ id, walletAddress }: { id: string; walletAddress: string }) => {
+    const success = await cancelScheduledPayment(id, walletAddress);
     if (!success) {
       throw new Error('Payment not found');
     }
@@ -116,8 +106,8 @@ export const cancelScheduledPaymentThunk = createAsyncThunk(
  */
 export const deleteScheduledPaymentThunk = createAsyncThunk(
   'scheduled/deletePayment',
-  async (id: string) => {
-    const success = await deleteScheduledPayment(id);
+  async ({ id, walletAddress }: { id: string; walletAddress: string }) => {
+    const success = await deleteScheduledPayment(id, walletAddress);
     if (!success) {
       throw new Error('Payment not found');
     }
@@ -130,12 +120,24 @@ export const deleteScheduledPaymentThunk = createAsyncThunk(
  */
 export const markPaymentExecutedThunk = createAsyncThunk(
   'scheduled/markExecuted',
-  async ({ id, txHash }: { id: string; txHash: string }) => {
-    const updated = await markPaymentExecuted(id, txHash);
+  async ({ id, txHash, walletAddress }: { id: string; txHash: string; walletAddress: string }) => {
+    const updated = await markPaymentExecuted(id, txHash, walletAddress);
     if (!updated) {
       throw new Error('Payment not found');
     }
     return updated;
+  }
+);
+
+/**
+ * Sync local cache with backend
+ */
+export const syncScheduledPaymentsThunk = createAsyncThunk(
+  'scheduled/sync',
+  async (address: string) => {
+    await syncScheduledPayments(address);
+    const payments = await loadScheduledPayments(address);
+    return payments;
   }
 );
 
@@ -155,7 +157,7 @@ const scheduledSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Load payments
+      // Load all payments
       .addCase(loadScheduledPaymentsThunk.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -169,14 +171,22 @@ const scheduledSlice = createSlice({
         state.status = 'failed';
         state.error = action.error.message || 'Failed to load payments';
       })
+      // Load pending payments
+      .addCase(loadPendingPaymentsThunk.fulfilled, (state, action) => {
+        state.payments = action.payload;
+        state.status = 'succeeded';
+      })
       // Create payment
       .addCase(createScheduledPaymentThunk.pending, (state) => {
         state.status = 'loading';
         state.error = null;
       })
       .addCase(createScheduledPaymentThunk.fulfilled, (state, action) => {
-        state.payments.push(action.payload);
-        state.payments.sort((a, b) => a.scheduledAt - b.scheduledAt);
+        state.payments.unshift(action.payload);
+        // Sort by scheduledAt
+        state.payments.sort((a, b) =>
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+        );
         state.status = 'succeeded';
         state.error = null;
       })
@@ -189,7 +199,9 @@ const scheduledSlice = createSlice({
         const index = state.payments.findIndex((p) => p.id === action.payload.id);
         if (index !== -1) {
           state.payments[index] = action.payload;
-          state.payments.sort((a, b) => a.scheduledAt - b.scheduledAt);
+          state.payments.sort((a, b) =>
+            new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+          );
         }
         if (state.selectedPayment?.id === action.payload.id) {
           state.selectedPayment = action.payload;
@@ -220,6 +232,11 @@ const scheduledSlice = createSlice({
       .addCase(markPaymentExecutedThunk.fulfilled, (state, action) => {
         // Remove the executed payment from pending list
         state.payments = state.payments.filter((p) => p.id !== action.payload.id);
+        state.status = 'succeeded';
+      })
+      // Sync
+      .addCase(syncScheduledPaymentsThunk.fulfilled, (state, action) => {
+        state.payments = action.payload;
         state.status = 'succeeded';
       });
   },

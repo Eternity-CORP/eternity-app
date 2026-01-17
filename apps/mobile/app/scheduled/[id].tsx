@@ -65,7 +65,7 @@ export default function ScheduledPaymentDetailsScreen() {
           onPress: async () => {
             setActionLoading(true);
             try {
-              await dispatch(cancelScheduledPaymentThunk(payment.id)).unwrap();
+              await dispatch(cancelScheduledPaymentThunk({ id: payment.id, walletAddress: currentAccount?.address || '' })).unwrap();
               if (currentAccount?.address) {
                 dispatch(loadScheduledPaymentsThunk(currentAccount.address));
               }
@@ -96,7 +96,7 @@ export default function ScheduledPaymentDetailsScreen() {
           onPress: async () => {
             setActionLoading(true);
             try {
-              await dispatch(deleteScheduledPaymentThunk(payment.id)).unwrap();
+              await dispatch(deleteScheduledPaymentThunk({ id: payment.id, walletAddress: currentAccount?.address || '' })).unwrap();
               if (currentAccount?.address) {
                 dispatch(loadScheduledPaymentsThunk(currentAccount.address));
               }
@@ -197,11 +197,11 @@ export default function ScheduledPaymentDetailsScreen() {
           <Text style={[styles.amountText, theme.typography.displayLarge]}>
             {payment.amount} {payment.tokenSymbol}
           </Text>
-          {payment.recurring && (
+          {payment.recurringInterval && (
             <View style={styles.recurringBadge}>
               <FontAwesome name="refresh" size={12} color={theme.colors.buttonPrimary} />
               <Text style={[styles.recurringText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
-                {payment.recurring.interval.charAt(0).toUpperCase() + payment.recurring.interval.slice(1)}
+                {payment.recurringInterval.charAt(0).toUpperCase() + payment.recurringInterval.slice(1)}
               </Text>
             </View>
           )}

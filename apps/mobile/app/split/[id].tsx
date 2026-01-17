@@ -55,7 +55,7 @@ export default function SplitDetailsScreen() {
           onPress: async () => {
             setActionLoading(true);
             try {
-              await dispatch(cancelSplitBillThunk(bill.id)).unwrap();
+              await dispatch(cancelSplitBillThunk({ id: bill.id, walletAddress: currentAccount?.address || '' })).unwrap();
               router.back();
             } catch (err) {
               const message = err instanceof Error ? err.message : 'Failed to cancel';
@@ -71,7 +71,7 @@ export default function SplitDetailsScreen() {
 
   const handlePayShare = (participant: { address: string; amount: string }) => {
     dispatch(setSelectedToken(bill!.tokenSymbol));
-    dispatch(setRecipient(bill!.recipientAddress));
+    dispatch(setRecipient(bill!.creatorAddress));
     dispatch(setAmount(participant.amount));
     dispatch(setSplitBillContext({
       splitBillId: bill!.id,
@@ -172,7 +172,7 @@ export default function SplitDetailsScreen() {
               Payments go to
             </Text>
             <Text style={[styles.detailText, theme.typography.body]}>
-              {truncateAddress(bill.recipientAddress)}
+              {truncateAddress(bill.creatorAddress)}
             </Text>
           </View>
           <View style={styles.detailRow}>

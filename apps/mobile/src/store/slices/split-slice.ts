@@ -11,6 +11,7 @@ import {
   getPendingSplitBills,
   cancelSplitBill,
   markParticipantPaid,
+  syncSplitBills,
   type SplitBill,
   type CreateSplitBillRequest,
 } from '@/src/services/split-bill-service';
@@ -30,6 +31,20 @@ const initialState: SplitState = {
   status: 'idle',
   error: null,
 };
+
+/**
+ * Load split bills for user (both created and pending)
+ */
+export const loadSplitBillsThunk = createAsyncThunk(
+  'split/loadAll',
+  async (address: string) => {
+    const [created, pending] = await Promise.all([
+      getCreatedSplitBills(address),
+      getPendingSplitBills(address),
+    ]);
+    return { created, pending };
+  }
+);
 
 /**
  * Load split bills created by user
@@ -80,8 +95,8 @@ export const createSplitBillThunk = createAsyncThunk(
  */
 export const cancelSplitBillThunk = createAsyncThunk(
   'split/cancel',
-  async (id: string) => {
-    const split = await cancelSplitBill(id);
+  async ({ id, walletAddress }: { id: string; walletAddress: string }) => {
+    const split = await cancelSplitBill(id, walletAddress);
     return split;
   }
 );
@@ -105,6 +120,21 @@ export const markPaidThunk = createAsyncThunk(
   }
 );
 
+/**
+ * Sync local cache with backend
+ */
+export const syncSplitBillsThunk = createAsyncThunk(
+  'split/sync',
+  async (address: string) => {
+    await syncSplitBills(address);
+    const [created, pending] = await Promise.all([
+      getCreatedSplitBills(address),
+      getPendingSplitBills(address),
+    ]);
+    return { created, pending };
+  }
+);
+
 const splitSlice = createSlice({
   name: 'split',
   initialState,
@@ -121,6 +151,20 @@ const splitSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Load all splits
+      .addCase(loadSplitBillsThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(loadSplitBillsThunk.fulfilled, (state, action) => {
+        state.createdSplits = action.payload.created;
+        state.pendingSplits = action.payload.pending;
+        state.status = 'succeeded';
+      })
+      .addCase(loadSplitBillsThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message || 'Failed to load splits';
+      })
       // Load created splits
       .addCase(loadCreatedSplitsThunk.pending, (state) => {
         state.status = 'loading';
@@ -189,6 +233,12 @@ const splitSlice = createSlice({
         if (state.selectedSplit?.id === action.payload.id) {
           state.selectedSplit = action.payload;
         }
+        state.status = 'succeeded';
+      })
+      // Sync
+      .addCase(syncSplitBillsThunk.fulfilled, (state, action) => {
+        state.createdSplits = action.payload.created;
+        state.pendingSplits = action.payload.pending;
         state.status = 'succeeded';
       });
   },

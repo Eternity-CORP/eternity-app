@@ -46,6 +46,7 @@ export function useAutoScheduledPayments() {
       await dispatch(markPaymentExecutedThunk({
         id: payment.id,
         txHash,
+        walletAddress: currentAccount?.address || '',
       })).unwrap();
 
       console.log(`Scheduled payment ${payment.id} executed successfully. TxHash: ${txHash}`);

@@ -164,10 +164,8 @@ export default function CreateScheduledScreen() {
           recipientName: resolvedName || undefined,
           amount: amount,
           tokenSymbol: selectedToken,
-          scheduledAt: scheduledDate.getTime(),
-          recurring: isRecurring
-            ? { interval: recurringInterval }
-            : undefined,
+          scheduledAt: scheduledDate.toISOString(),
+          recurringInterval: isRecurring ? recurringInterval : undefined,
           description: description || undefined,
         })
       ).unwrap();

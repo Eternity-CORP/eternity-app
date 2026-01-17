@@ -223,15 +223,10 @@ export default function CreateSplitScreen() {
       return;
     }
 
-    const recipient = useCustomRecipient && validateAddress(recipientAddress)
-      ? recipientAddress
-      : currentAccount.address;
-
     try {
       await dispatch(
         createSplitBillThunk({
           creatorAddress: currentAccount.address,
-          recipientAddress: recipient,
           totalAmount,
           tokenSymbol: selectedToken,
           description: description || undefined,
