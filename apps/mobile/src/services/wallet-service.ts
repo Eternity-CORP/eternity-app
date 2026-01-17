@@ -4,13 +4,15 @@
  */
 
 import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system/legacy';
 import { generateMnemonic, deriveWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength, getAddressFromMnemonic } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
 import type { Account } from '@/src/store/slices/wallet-slice';
 
 const WALLET_MNEMONIC_KEY = 'wallet_mnemonic';
 const WALLET_ADDRESS_KEY = 'wallet_address';
-const ACCOUNTS_KEY = 'wallet_accounts'; // JSON array of accounts
+const ACCOUNTS_KEY = 'wallet_accounts'; // Legacy SecureStore key (for migration)
+const ACCOUNTS_FILE = `${FileSystem.documentDirectory}accounts.json`;
 
 export interface WalletData {
   mnemonic: string;
@@ -91,15 +93,31 @@ export async function loadWallet(): Promise<WalletData | null> {
 
 /**
  * Load all accounts from storage
+ * Uses file system (no size limit) instead of SecureStore
+ * Includes migration from legacy SecureStore storage
  */
 export async function loadAccounts(): Promise<Account[]> {
   try {
-    const accountsJson = await SecureStore.getItemAsync(ACCOUNTS_KEY);
-    if (!accountsJson) {
-      // If no accounts stored, return empty array (will be created from wallet)
-      return [];
+    // First, try to load from file system
+    const fileInfo = await FileSystem.getInfoAsync(ACCOUNTS_FILE);
+    if (fileInfo.exists) {
+      const accountsJson = await FileSystem.readAsStringAsync(ACCOUNTS_FILE);
+      return JSON.parse(accountsJson) as Account[];
     }
-    return JSON.parse(accountsJson) as Account[];
+
+    // Migration: check if accounts exist in legacy SecureStore
+    const legacyAccountsJson = await SecureStore.getItemAsync(ACCOUNTS_KEY);
+    if (legacyAccountsJson) {
+      const accounts = JSON.parse(legacyAccountsJson) as Account[];
+      // Migrate to file system
+      await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, legacyAccountsJson);
+      // Clean up legacy storage
+      await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
+      return accounts;
+    }
+
+    // No accounts stored
+    return [];
   } catch (error) {
     console.error('Error loading accounts:', error);
     return [];
@@ -108,10 +126,11 @@ export async function loadAccounts(): Promise<Account[]> {
 
 /**
  * Save accounts to storage
+ * Uses file system to avoid SecureStore 2048 byte limit
  */
 export async function saveAccounts(accounts: Account[]): Promise<void> {
   try {
-    await SecureStore.setItemAsync(ACCOUNTS_KEY, JSON.stringify(accounts));
+    await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(accounts));
   } catch (error) {
     console.error('Error saving accounts:', error);
     throw error;
@@ -213,5 +232,11 @@ export function getWalletFromMnemonic(mnemonic: string, accountIndex: number = 0
 export async function clearWallet(): Promise<void> {
   await SecureStore.deleteItemAsync(WALLET_MNEMONIC_KEY);
   await SecureStore.deleteItemAsync(WALLET_ADDRESS_KEY);
+  // Delete accounts file
+  const fileInfo = await FileSystem.getInfoAsync(ACCOUNTS_FILE);
+  if (fileInfo.exists) {
+    await FileSystem.deleteAsync(ACCOUNTS_FILE);
+  }
+  // Also clean up legacy SecureStore key if exists
   await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
 }

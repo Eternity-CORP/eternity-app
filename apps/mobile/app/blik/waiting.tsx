@@ -154,7 +154,7 @@ export default function BlikWaitingScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScreenHeader title="Request Payment" onBack={handleCancel} />
+      <ScreenHeader title="Request Payment" />
 
       <View style={styles.content}>
         {/* Share instruction */}

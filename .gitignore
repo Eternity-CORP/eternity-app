@@ -38,3 +38,8 @@ coverage/
 *.aab
 ios/Pods/
 android/.gradle/
+
+# Database
+*.sqlite
+*.sqlite3
+apps/api/data/

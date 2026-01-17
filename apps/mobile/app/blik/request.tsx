@@ -28,10 +28,12 @@ export default function BlikRequestScreen() {
   const [selectedToken, setSelectedToken] = useState('USDC');
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Reset state on mount
+  // Redirect to waiting if code is already active
   useEffect(() => {
-    dispatch(receiverReset());
-  }, [dispatch]);
+    if (blik.receiver.status === 'waiting' && blik.receiver.activeCode) {
+      router.replace('/blik/waiting');
+    }
+  }, [blik.receiver.status, blik.receiver.activeCode]);
 
   // Set up BLIK socket callbacks
   useEffect(() => {

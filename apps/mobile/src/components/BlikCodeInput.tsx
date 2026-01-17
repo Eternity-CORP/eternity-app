@@ -1,10 +1,18 @@
 /**
  * BLIK Code Input Component
- * 6-digit code input with auto-focus between boxes
+ * 6-digit code input with individual cells and paste support
  */
 
 import React, { useRef, useEffect } from 'react';
-import { View, TextInput, StyleSheet, Keyboard } from 'react-native';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  Keyboard,
+  Pressable,
+  Text,
+} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { theme } from '@/src/constants/theme';
 
 interface BlikCodeInputProps {
@@ -24,119 +32,144 @@ export function BlikCodeInput({
   autoFocus = true,
   editable = true,
 }: BlikCodeInputProps) {
-  const inputRefs = useRef<Array<TextInput | null>>([]);
-  const digits = value.padEnd(CODE_LENGTH, '').split('').slice(0, CODE_LENGTH);
+  const hiddenInputRef = useRef<TextInput | null>(null);
 
   useEffect(() => {
-    // Auto-focus first input on mount
     if (autoFocus && editable) {
       setTimeout(() => {
-        inputRefs.current[0]?.focus();
+        hiddenInputRef.current?.focus();
       }, 100);
     }
   }, [autoFocus, editable]);
 
   useEffect(() => {
-    // Check if complete
     if (value.length === CODE_LENGTH && onComplete) {
       onComplete(value);
       Keyboard.dismiss();
     }
   }, [value, onComplete]);
 
-  const handleChangeText = (text: string, index: number) => {
-    // Only allow digits
-    const digit = text.replace(/[^0-9]/g, '').slice(-1);
-
-    if (digit) {
-      // Update the value
-      const newDigits = [...digits];
-      newDigits[index] = digit;
-      const newValue = newDigits.join('').replace(/ /g, '');
-      onChange(newValue);
-
-      // Move to next input
-      if (index < CODE_LENGTH - 1) {
-        inputRefs.current[index + 1]?.focus();
-      }
-    }
+  const handleChangeText = (text: string) => {
+    const digitsOnly = text.replace(/[^0-9]/g, '').slice(0, CODE_LENGTH);
+    onChange(digitsOnly);
   };
 
-  const handleKeyPress = (e: { nativeEvent: { key: string } }, index: number) => {
-    if (e.nativeEvent.key === 'Backspace') {
-      if (digits[index] === '' || digits[index] === ' ') {
-        // Move to previous input and clear it
-        if (index > 0) {
-          const newDigits = [...digits];
-          newDigits[index - 1] = '';
-          onChange(newDigits.join('').replace(/ /g, ''));
-          inputRefs.current[index - 1]?.focus();
-        }
-      } else {
-        // Clear current input
-        const newDigits = [...digits];
-        newDigits[index] = '';
-        onChange(newDigits.join('').replace(/ /g, ''));
+  const handlePress = async () => {
+    if (!editable) return;
+
+    try {
+      const clipboardContent = await Clipboard.getStringAsync();
+      const digitsFromClipboard = clipboardContent.replace(/[^0-9]/g, '');
+      if (digitsFromClipboard.length === CODE_LENGTH) {
+        onChange(digitsFromClipboard);
+        return;
       }
+    } catch {
+      // Clipboard access failed
     }
+
+    hiddenInputRef.current?.focus();
   };
 
-  const handleFocus = (index: number) => {
-    // Select the text in the focused input
-    inputRefs.current[index]?.setNativeProps({ selection: { start: 0, end: 1 } });
+  const renderCells = () => {
+    const cells = [];
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      const digit = value[i] || '';
+      const isFilled = digit !== '';
+      const isActive = editable && i === value.length && value.length < CODE_LENGTH;
+
+      cells.push(
+        <View
+          key={i}
+          style={[
+            styles.cell,
+            isFilled && styles.cellFilled,
+            isActive && styles.cellActive,
+            !editable && styles.cellDisabled,
+          ]}
+        >
+          <Text style={[styles.cellText, !editable && styles.cellTextDisabled]}>
+            {digit}
+          </Text>
+          {isActive && <View style={styles.cursor} />}
+        </View>
+      );
+    }
+    return cells;
   };
 
   return (
-    <View style={styles.container}>
-      {digits.map((digit, index) => (
-        <TextInput
-          key={index}
-          ref={(ref) => {
-            inputRefs.current[index] = ref;
-          }}
-          style={[
-            styles.input,
-            digit !== '' && digit !== ' ' && styles.inputFilled,
-            !editable && styles.inputDisabled,
-          ]}
-          value={digit === ' ' ? '' : digit}
-          onChangeText={(text) => handleChangeText(text, index)}
-          onKeyPress={(e) => handleKeyPress(e, index)}
-          onFocus={() => handleFocus(index)}
-          keyboardType="number-pad"
-          maxLength={1}
-          selectTextOnFocus
-          editable={editable}
-          caretHidden
-        />
-      ))}
+    <View style={styles.wrapper}>
+      <TextInput
+        ref={hiddenInputRef}
+        style={styles.hiddenInput}
+        value={value}
+        onChangeText={handleChangeText}
+        keyboardType="number-pad"
+        maxLength={CODE_LENGTH}
+        autoComplete="one-time-code"
+        textContentType="oneTimeCode"
+        editable={editable}
+        caretHidden
+      />
+      <Pressable style={styles.container} onPress={handlePress}>
+        {renderCells()}
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: '100%',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    opacity: 0,
+    height: 1,
+    width: 1,
+  },
   container: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: theme.spacing.sm,
+    alignItems: 'center',
+    paddingVertical: 4,
   },
-  input: {
-    width: 48,
-    height: 56,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.surface,
-    textAlign: 'center',
+  cell: {
+    width: 46,
+    height: 54,
+    marginHorizontal: 4,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+  },
+  cellFilled: {
+    borderColor: '#000000',
+    borderWidth: 2,
+  },
+  cellActive: {
+    borderColor: '#000000',
+    borderWidth: 2,
+  },
+  cellDisabled: {
+    backgroundColor: '#EBEBEB',
+  },
+  cellText: {
     fontSize: 24,
     fontWeight: '600',
-    color: theme.colors.textPrimary,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    color: '#000000',
   },
-  inputFilled: {
-    borderColor: theme.colors.buttonPrimary,
+  cellTextDisabled: {
+    color: '#888888',
   },
-  inputDisabled: {
-    backgroundColor: theme.colors.surfaceHover,
-    color: theme.colors.textSecondary,
+  cursor: {
+    position: 'absolute',
+    bottom: 10,
+    width: 20,
+    height: 2,
+    backgroundColor: '#000000',
   },
 });

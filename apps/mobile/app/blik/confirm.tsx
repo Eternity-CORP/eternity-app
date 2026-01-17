@@ -3,7 +3,7 @@
  * Confirm payment details, select network, and send transaction
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Modal, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
@@ -16,6 +16,8 @@ import {
   senderError,
   senderReset,
 } from '@/src/store/slices/blik-slice';
+import { saveContactThunk } from '@/src/store/slices/contacts-slice';
+import { findContactByAddress } from '@/src/services/contacts-service';
 import { blikSocket } from '@/src/services/blik-service';
 import { sendTransaction, estimateGas, type GasEstimate } from '@/src/services/send-service';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
@@ -40,6 +42,8 @@ export default function BlikConfirmScreen() {
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [gasEstimateStatus, setGasEstimateStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle');
   const [showNetworkPicker, setShowNetworkPicker] = useState(false);
+  const [showSaveContactModal, setShowSaveContactModal] = useState(false);
+  const [contactName, setContactName] = useState('');
 
   const codeInfo = blik.sender.codeInfo;
   const selectedNetwork = blik.sender.selectedNetwork;
@@ -78,19 +82,81 @@ export default function BlikConfirmScreen() {
     fetchGasEstimate();
   }, [currentAccount?.address, codeInfo]);
 
+  // Handle successful payment - show save contact option
+  const handlePaymentSuccess = useCallback(async () => {
+    if (!codeInfo) {
+      dispatch(senderReset());
+      router.replace('/(tabs)/home');
+      return;
+    }
+
+    // Check if contact already exists
+    const existingContact = await findContactByAddress(codeInfo.receiverAddress);
+
+    if (existingContact) {
+      // Contact already exists, just show success
+      Alert.alert(
+        'Payment Sent!',
+        `Your payment of ${codeInfo.amount} ${codeInfo.tokenSymbol} has been sent.`,
+        [{ text: 'OK', onPress: () => {
+          dispatch(senderReset());
+          router.replace('/(tabs)/home');
+        }}]
+      );
+    } else {
+      // Offer to save contact
+      Alert.alert(
+        'Payment Sent!',
+        `Your payment of ${codeInfo.amount} ${codeInfo.tokenSymbol} has been sent.\n\nWould you like to save this recipient to contacts?`,
+        [
+          {
+            text: 'No Thanks',
+            style: 'cancel',
+            onPress: () => {
+              dispatch(senderReset());
+              router.replace('/(tabs)/home');
+            }
+          },
+          {
+            text: 'Save Contact',
+            onPress: () => {
+              // Set default name from username
+              setContactName(codeInfo.receiverUsername || '');
+              setShowSaveContactModal(true);
+            }
+          },
+        ]
+      );
+    }
+  }, [codeInfo, dispatch]);
+
+  // Handle save contact from modal
+  const handleSaveContact = useCallback(() => {
+    if (contactName.trim() && codeInfo) {
+      dispatch(saveContactThunk({
+        name: contactName.trim(),
+        address: codeInfo.receiverAddress,
+        username: codeInfo.receiverUsername,
+      }));
+    }
+    setShowSaveContactModal(false);
+    dispatch(senderReset());
+    router.replace('/(tabs)/home');
+  }, [contactName, codeInfo, dispatch]);
+
+  // Handle cancel save contact
+  const handleCancelSaveContact = useCallback(() => {
+    setShowSaveContactModal(false);
+    dispatch(senderReset());
+    router.replace('/(tabs)/home');
+  }, [dispatch]);
+
   // Set up BLIK socket callbacks
   useEffect(() => {
     blikSocket.setCallbacks({
       onPaymentAccepted: (payload) => {
         dispatch(senderPaymentConfirmed(payload.txHash));
-        Alert.alert(
-          'Payment Sent!',
-          `Your payment of ${codeInfo?.amount} ${codeInfo?.tokenSymbol} has been sent.`,
-          [{ text: 'OK', onPress: () => {
-            dispatch(senderReset());
-            router.replace('/(tabs)/home');
-          }}]
-        );
+        handlePaymentSuccess();
       },
       onCodeNotFound: (payload) => {
         dispatch(senderError(
@@ -107,7 +173,7 @@ export default function BlikConfirmScreen() {
     return () => {
       blikSocket.clearCallbacks();
     };
-  }, [dispatch, codeInfo]);
+  }, [dispatch, codeInfo, handlePaymentSuccess]);
 
   const handleConfirmPayment = useCallback(async () => {
     if (!wallet.mnemonic || !currentAccount || !codeInfo) return;
@@ -328,6 +394,55 @@ export default function BlikConfirmScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Save Contact Modal */}
+      <Modal
+        visible={showSaveContactModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelSaveContact}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={[styles.modalTitle, theme.typography.heading]}>
+              Save Contact
+            </Text>
+            <Text style={[styles.modalSubtitle, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              Enter a name for this contact
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Contact name"
+              placeholderTextColor={theme.colors.textTertiary}
+              value={contactName}
+              onChangeText={setContactName}
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={handleCancelSaveContact}
+              >
+                <Text style={[styles.modalButtonCancelText, theme.typography.body]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonSave, !contactName.trim() && styles.modalButtonSaveDisabled]}
+                onPress={handleSaveContact}
+                disabled={!contactName.trim()}
+              >
+                <Text style={[styles.modalButtonSaveText, theme.typography.body]}>
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -459,6 +574,65 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.textTertiary,
   },
   confirmButtonText: {
+    color: theme.colors.buttonPrimaryText,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    width: '100%',
+    maxWidth: 340,
+  },
+  modalTitle: {
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  modalSubtitle: {
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  modalInput: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    fontSize: 16,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  modalButtonCancel: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonSecondaryBorder,
+    alignItems: 'center',
+  },
+  modalButtonCancelText: {
+    color: theme.colors.textPrimary,
+  },
+  modalButtonSave: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.buttonPrimary,
+    alignItems: 'center',
+  },
+  modalButtonSaveDisabled: {
+    backgroundColor: theme.colors.textTertiary,
+  },
+  modalButtonSaveText: {
     color: theme.colors.buttonPrimaryText,
   },
 });

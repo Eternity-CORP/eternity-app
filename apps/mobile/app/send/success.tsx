@@ -11,6 +11,8 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { resetSend } from '@/src/store/slices/send-slice';
 import { fetchTransactionDetailsThunk } from '@/src/store/slices/transaction-slice';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { markPaidThunk } from '@/src/store/slices/split-slice';
+import { markPaymentExecutedThunk } from '@/src/store/slices/scheduled-slice';
 import { getProvider } from '@/src/services/balance-service';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -32,12 +34,29 @@ export default function SuccessScreen() {
       try {
         const provider = getProvider();
         const receipt = await provider.getTransactionReceipt(send.txHash!);
-        
+
         if (receipt) {
           const status = receipt.status === 1 ? 'confirmed' : 'failed';
           setTxStatus(status);
           setCheckingStatus(false);
-          
+
+          // If this was a split bill payment and transaction confirmed, mark as paid
+          if (status === 'confirmed' && send.splitBillId && send.splitParticipantAddress) {
+            dispatch(markPaidThunk({
+              splitId: send.splitBillId,
+              participantAddress: send.splitParticipantAddress,
+              txHash: send.txHash!,
+            }));
+          }
+
+          // If this was a scheduled payment and transaction confirmed, mark as executed
+          if (status === 'confirmed' && send.scheduledPaymentId) {
+            dispatch(markPaymentExecutedThunk({
+              id: send.scheduledPaymentId,
+              txHash: send.txHash!,
+            }));
+          }
+
           // Auto-redirect to home after 3 seconds
           setTimeout(() => {
             dispatch(resetSend());
@@ -47,7 +66,7 @@ export default function SuccessScreen() {
           // Transaction still pending
           setTxStatus('pending');
           setCheckingStatus(false);
-          
+
           // Check again after 2 seconds
           setTimeout(checkStatus, 2000);
         }
@@ -60,7 +79,7 @@ export default function SuccessScreen() {
     };
 
     checkStatus();
-  }, [send.txHash, currentAccount?.address, dispatch]);
+  }, [send.txHash, send.splitBillId, send.splitParticipantAddress, send.scheduledPaymentId, currentAccount?.address, dispatch]);
 
   const handleDone = () => {
     dispatch(resetSend());

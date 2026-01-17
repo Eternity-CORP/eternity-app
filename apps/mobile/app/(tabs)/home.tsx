@@ -10,6 +10,7 @@ import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
 import { fetchTransactionsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
 import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
 import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
+import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, type TokenBalance } from '@/src/services/balance-service';
 import { truncateAddress } from '@/src/utils/format';
@@ -27,9 +28,13 @@ export default function HomeScreen() {
   const currentAccount = getCurrentAccount(wallet);
   const transactions = useAppSelector((state) => selectTransactionsForAddress(state, currentAccount?.address || null));
   const [showAccountSelector, setShowAccountSelector] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
+
+  // Auto-execute overdue scheduled payments
+  useAutoScheduledPayments();
 
   // Load balances, transactions, scheduled payments, and pending splits when account changes
   useEffect(() => {
@@ -272,9 +277,9 @@ export default function HomeScreen() {
 
         <TouchableOpacity
           style={[styles.actionButton, styles.actionButtonIcon]}
-          onPress={() => router.push('/blik/enter-code')}
+          onPress={() => setShowActionsMenu(true)}
         >
-          <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
+          <FontAwesome name="ellipsis-h" size={20} color={theme.colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -609,6 +614,102 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Actions Menu Modal */}
+      <Modal
+        visible={showActionsMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowActionsMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.actionsMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setShowActionsMenu(false)}
+        >
+          <View style={styles.actionsMenuContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.actionsMenuHandle} />
+
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              onPress={() => {
+                setShowActionsMenu(false);
+                router.push('/send/token');
+              }}
+            >
+              <View style={styles.actionsMenuIcon}>
+                <FontAwesome name="arrow-up" size={18} color={theme.colors.textPrimary} />
+              </View>
+              <Text style={[styles.actionsMenuText, theme.typography.body]}>Send</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              onPress={() => {
+                setShowActionsMenu(false);
+                router.push('/receive');
+              }}
+            >
+              <View style={styles.actionsMenuIcon}>
+                <FontAwesome name="arrow-down" size={18} color={theme.colors.textPrimary} />
+              </View>
+              <Text style={[styles.actionsMenuText, theme.typography.body]}>Receive</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              onPress={() => {
+                setShowActionsMenu(false);
+                router.push('/blik');
+              }}
+            >
+              <View style={styles.actionsMenuIcon}>
+                <FontAwesome name="bolt" size={18} color={theme.colors.textPrimary} />
+              </View>
+              <Text style={[styles.actionsMenuText, theme.typography.body]}>BLIK</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              onPress={() => {
+                setShowActionsMenu(false);
+                router.push('/split');
+              }}
+            >
+              <View style={styles.actionsMenuIcon}>
+                <FontAwesome name="users" size={18} color={theme.colors.textPrimary} />
+              </View>
+              <Text style={[styles.actionsMenuText, theme.typography.body]}>Split Bill</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              onPress={() => {
+                setShowActionsMenu(false);
+                router.push('/scheduled');
+              }}
+            >
+              <View style={styles.actionsMenuIcon}>
+                <FontAwesome name="calendar" size={18} color={theme.colors.textPrimary} />
+              </View>
+              <Text style={[styles.actionsMenuText, theme.typography.body]}>Scheduled</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionsMenuItem}
+              onPress={() => {
+                setShowActionsMenu(false);
+                router.push('/send/scan');
+              }}
+            >
+              <View style={styles.actionsMenuIcon}>
+                <FontAwesome name="qrcode" size={18} color={theme.colors.textPrimary} />
+              </View>
+              <Text style={[styles.actionsMenuText, theme.typography.body]}>Scan QR</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -620,7 +721,7 @@ const styles = StyleSheet.create({
   },
   accountHeader: {
     paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.md,
+    paddingTop: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.buttonSecondaryBorder,
@@ -657,7 +758,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.xl,
-    paddingTop: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
   },
   modalOverlay: {
     flex: 1,
@@ -1099,5 +1200,44 @@ const styles = StyleSheet.create({
   },
   pendingSplitMoreText: {
     // color set inline
+  },
+  // Actions Menu Modal
+  actionsMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  actionsMenuContent: {
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xxl,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  actionsMenuHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: theme.colors.buttonSecondaryBorder,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  actionsMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.lg,
+  },
+  actionsMenuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.lg,
+  },
+  actionsMenuText: {
+    color: theme.colors.textPrimary,
   },
 });

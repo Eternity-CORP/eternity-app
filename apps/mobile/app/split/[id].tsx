@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { getSplitBillThunk, cancelSplitBillThunk } from '@/src/store/slices/split-slice';
-import { setSelectedToken, setRecipient, setAmount, setStep } from '@/src/store/slices/send-slice';
+import { setSelectedToken, setRecipient, setAmount, setStep, setSplitBillContext } from '@/src/store/slices/send-slice';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
@@ -73,6 +73,10 @@ export default function SplitDetailsScreen() {
     dispatch(setSelectedToken(bill!.tokenSymbol));
     dispatch(setRecipient(bill!.recipientAddress));
     dispatch(setAmount(participant.amount));
+    dispatch(setSplitBillContext({
+      splitBillId: bill!.id,
+      participantAddress: participant.address,
+    }));
     dispatch(setStep('confirm'));
     router.push('/send/confirm');
   };
