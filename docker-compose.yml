@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ey-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ey}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ey_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ey_dev}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-ey}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: ey-api
+    environment:
+      NODE_ENV: development
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-ey}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-ey_dev_password}
+      DATABASE_NAME: ${POSTGRES_DB:-ey_dev}
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+    command: pnpm --filter @e-y/api start:dev
+
+volumes:
+  postgres_data:
