@@ -54,6 +54,7 @@ export default function SuccessScreen() {
             dispatch(markPaymentExecutedThunk({
               id: send.scheduledPaymentId,
               txHash: send.txHash!,
+              walletAddress: currentAccount?.address || '',
             }));
           }
 

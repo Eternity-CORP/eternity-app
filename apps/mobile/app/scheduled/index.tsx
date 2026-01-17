@@ -45,15 +45,17 @@ export default function ScheduledListScreen() {
   // Sort payments: overdue first, then by date
   const sortedPayments = [...scheduled.payments].sort((a, b) => {
     const now = Date.now();
-    const aOverdue = a.scheduledAt < now;
-    const bOverdue = b.scheduledAt < now;
+    const aTime = new Date(a.scheduledAt).getTime();
+    const bTime = new Date(b.scheduledAt).getTime();
+    const aOverdue = aTime < now;
+    const bOverdue = bTime < now;
     if (aOverdue && !bOverdue) return -1;
     if (!aOverdue && bOverdue) return 1;
-    return a.scheduledAt - b.scheduledAt;
+    return aTime - bTime;
   });
 
-  const overduePayments = sortedPayments.filter((p) => p.scheduledAt < Date.now());
-  const upcomingPayments = sortedPayments.filter((p) => p.scheduledAt >= Date.now());
+  const overduePayments = sortedPayments.filter((p) => new Date(p.scheduledAt).getTime() < Date.now());
+  const upcomingPayments = sortedPayments.filter((p) => new Date(p.scheduledAt).getTime() >= Date.now());
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -138,7 +140,7 @@ export default function ScheduledListScreen() {
                 >
                   <View style={styles.paymentIcon}>
                     <FontAwesome
-                      name={payment.recurring ? 'refresh' : 'calendar'}
+                      name={payment.recurringInterval ? 'refresh' : 'calendar'}
                       size={16}
                       color={theme.colors.buttonPrimary}
                     />
@@ -152,7 +154,7 @@ export default function ScheduledListScreen() {
                     </Text>
                     <Text style={[styles.paymentDate, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                       {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      {payment.recurring && ` · ${payment.recurring.interval}`}
+                      {payment.recurringInterval && ` · ${payment.recurringInterval}`}
                     </Text>
                   </View>
                   <FontAwesome name="chevron-right" size={14} color={theme.colors.textTertiary} />

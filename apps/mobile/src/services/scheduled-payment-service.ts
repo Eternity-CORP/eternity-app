@@ -1,14 +1,16 @@
 /**
  * Scheduled Payment Service
- * Manages scheduled payments with local storage
+ * Manages scheduled payments with backend API and local cache
  *
  * Note: Notifications are disabled in Expo Go. Build a development client
  * for full notification support.
  */
 
+import { API_BASE_URL } from '@/src/config/api';
 import Storage from '@/src/utils/storage';
 
-const SCHEDULED_PAYMENTS_KEY = 'scheduled_payments';
+const SCHEDULED_PAYMENTS_CACHE_KEY = 'scheduled_payments_cache';
+const REQUEST_TIMEOUT = 15000;
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
@@ -21,25 +23,105 @@ export interface ScheduledPayment {
   recipientName?: string;
   amount: string;
   tokenSymbol: string;
-  scheduledAt: number;
-  recurring?: {
-    interval: RecurringInterval;
-    endDate?: number;
-  };
+  scheduledAt: string;
+  recurringInterval?: RecurringInterval | null;
+  recurringEndDate?: string | null;
   description?: string;
   status: ScheduledPaymentStatus;
-  executedTxHash?: string;
-  executedAt?: number;
-  createdAt: number;
-  updatedAt: number;
-  notificationId?: string;
+  executedTxHash?: string | null;
+  executedAt?: string | null;
+  reminderSent?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateScheduledPaymentRequest {
+  creatorAddress: string;
+  recipient: string;
+  recipientUsername?: string;
+  recipientName?: string;
+  amount: string;
+  tokenSymbol: string;
+  scheduledAt: string;
+  recurringInterval?: RecurringInterval;
+  recurringEndDate?: string;
+  description?: string;
+}
+
+export interface UpdateScheduledPaymentRequest {
+  recipient?: string;
+  recipientUsername?: string;
+  recipientName?: string;
+  amount?: string;
+  tokenSymbol?: string;
+  scheduledAt?: string;
+  recurringInterval?: RecurringInterval | null;
+  recurringEndDate?: string | null;
+  description?: string;
+}
+
+interface ApiError {
+  statusCode: number;
+  message: string;
+  error?: string;
 }
 
 /**
- * Generate unique ID
+ * Check if we're online
  */
-function generateId(): string {
-  return `sp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+function isOnline(): boolean {
+  return true;
+}
+
+/**
+ * Create fetch with timeout
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout: number = REQUEST_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * Load cached scheduled payments
+ */
+async function loadCachedPayments(address: string): Promise<ScheduledPayment[]> {
+  try {
+    const cacheKey = `${SCHEDULED_PAYMENTS_CACHE_KEY}_${address.toLowerCase()}`;
+    const data = await Storage.getItem(cacheKey);
+    if (!data) return [];
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error loading cached payments:', error);
+    return [];
+  }
+}
+
+/**
+ * Save payments to cache
+ */
+async function cachePayments(address: string, payments: ScheduledPayment[]): Promise<void> {
+  try {
+    const cacheKey = `${SCHEDULED_PAYMENTS_CACHE_KEY}_${address.toLowerCase()}`;
+    await Storage.setItem(cacheKey, JSON.stringify(payments));
+  } catch (error) {
+    console.error('Error caching payments:', error);
+  }
 }
 
 /**
@@ -57,31 +139,41 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 }
 
 /**
- * Load all scheduled payments from storage
+ * Load all scheduled payments from backend
  */
-export async function loadScheduledPayments(): Promise<ScheduledPayment[]> {
+export async function loadScheduledPayments(
+  creatorAddress: string
+): Promise<ScheduledPayment[]> {
   try {
-    const data = await Storage.getItem(SCHEDULED_PAYMENTS_KEY);
-    if (!data) return [];
+    if (!isOnline()) {
+      return loadCachedPayments(creatorAddress);
+    }
 
-    const payments: ScheduledPayment[] = JSON.parse(data);
-    // Sort by scheduledAt (soonest first)
-    return payments.sort((a, b) => a.scheduledAt - b.scheduledAt);
-  } catch (error) {
-    console.error('Error loading scheduled payments:', error);
-    return [];
-  }
-}
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/scheduled`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'x-wallet-address': creatorAddress,
+        },
+      }
+    );
 
-/**
- * Save scheduled payments to storage
- */
-async function saveScheduledPayments(payments: ScheduledPayment[]): Promise<void> {
-  try {
-    await Storage.setItem(SCHEDULED_PAYMENTS_KEY, JSON.stringify(payments));
+    if (!response.ok) {
+      console.warn('Failed to fetch scheduled payments, using cache');
+      return loadCachedPayments(creatorAddress);
+    }
+
+    const payments: ScheduledPayment[] = await response.json();
+
+    // Update cache
+    await cachePayments(creatorAddress, payments);
+
+    return payments;
   } catch (error) {
-    console.error('Error saving scheduled payments:', error);
-    throw error;
+    console.warn('Error fetching scheduled payments, using cache:', error);
+    return loadCachedPayments(creatorAddress);
   }
 }
 
@@ -89,22 +181,61 @@ async function saveScheduledPayments(payments: ScheduledPayment[]): Promise<void
  * Create a new scheduled payment
  */
 export async function createScheduledPayment(
-  payment: Omit<ScheduledPayment, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'notificationId'>
+  request: CreateScheduledPaymentRequest
 ): Promise<ScheduledPayment> {
-  const payments = await loadScheduledPayments();
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/scheduled`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-wallet-address': request.creatorAddress,
+      },
+      body: JSON.stringify(request),
+    }
+  );
 
-  const newPayment: ScheduledPayment = {
-    ...payment,
-    id: generateId(),
-    status: 'pending',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to create scheduled payment');
+  }
 
-  payments.push(newPayment);
-  await saveScheduledPayments(payments);
+  const payment: ScheduledPayment = await response.json();
 
-  return newPayment;
+  // Update cache
+  const cached = await loadCachedPayments(request.creatorAddress);
+  cached.unshift(payment);
+  await cachePayments(request.creatorAddress, cached);
+
+  return payment;
+}
+
+/**
+ * Get a single payment by ID
+ */
+export async function getScheduledPayment(id: string): Promise<ScheduledPayment | null> {
+  try {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/scheduled/${id}`,
+      {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error('Failed to get scheduled payment');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.warn('Error getting scheduled payment:', error);
+    return null;
+  }
 }
 
 /**
@@ -112,61 +243,104 @@ export async function createScheduledPayment(
  */
 export async function updateScheduledPayment(
   id: string,
-  updates: Partial<Omit<ScheduledPayment, 'id' | 'createdAt'>>
+  updates: UpdateScheduledPaymentRequest,
+  walletAddress: string
 ): Promise<ScheduledPayment | null> {
-  const payments = await loadScheduledPayments();
-  const index = payments.findIndex((p) => p.id === id);
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/scheduled/${id}`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-wallet-address': walletAddress,
+      },
+      body: JSON.stringify(updates),
+    }
+  );
 
-  if (index === -1) {
-    return null;
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to update scheduled payment');
   }
 
-  const updatedPayment: ScheduledPayment = {
-    ...payments[index],
-    ...updates,
-    updatedAt: Date.now(),
-  };
+  const payment: ScheduledPayment = await response.json();
 
-  payments[index] = updatedPayment;
-  await saveScheduledPayments(payments);
+  // Update cache
+  const cached = await loadCachedPayments(walletAddress);
+  const index = cached.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    cached[index] = payment;
+    await cachePayments(walletAddress, cached);
+  }
 
-  return updatedPayment;
+  return payment;
 }
 
 /**
  * Cancel a scheduled payment
  */
-export async function cancelScheduledPayment(id: string): Promise<boolean> {
-  const payments = await loadScheduledPayments();
-  const index = payments.findIndex((p) => p.id === id);
+export async function cancelScheduledPayment(
+  id: string,
+  walletAddress: string
+): Promise<boolean> {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/scheduled/${id}/cancel`,
+    {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'x-wallet-address': walletAddress,
+      },
+    }
+  );
 
-  if (index === -1) {
-    return false;
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to cancel scheduled payment');
   }
 
-  payments[index] = {
-    ...payments[index],
-    status: 'cancelled',
-    updatedAt: Date.now(),
-  };
+  const payment: ScheduledPayment = await response.json();
 
-  await saveScheduledPayments(payments);
+  // Update cache
+  const cached = await loadCachedPayments(walletAddress);
+  const index = cached.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    cached[index] = payment;
+    await cachePayments(walletAddress, cached);
+  }
+
   return true;
 }
 
 /**
  * Delete a scheduled payment permanently
  */
-export async function deleteScheduledPayment(id: string): Promise<boolean> {
-  const payments = await loadScheduledPayments();
-  const payment = payments.find((p) => p.id === id);
+export async function deleteScheduledPayment(
+  id: string,
+  walletAddress: string
+): Promise<boolean> {
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/scheduled/${id}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+        'x-wallet-address': walletAddress,
+      },
+    }
+  );
 
-  if (!payment) {
-    return false;
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to delete scheduled payment');
   }
 
-  const filtered = payments.filter((p) => p.id !== id);
-  await saveScheduledPayments(filtered);
+  // Update cache
+  const cached = await loadCachedPayments(walletAddress);
+  const filtered = cached.filter((p) => p.id !== id);
+  await cachePayments(walletAddress, filtered);
+
   return true;
 }
 
@@ -175,79 +349,33 @@ export async function deleteScheduledPayment(id: string): Promise<boolean> {
  */
 export async function markPaymentExecuted(
   id: string,
-  txHash: string
+  txHash: string,
+  walletAddress: string
 ): Promise<ScheduledPayment | null> {
-  const payments = await loadScheduledPayments();
-  const index = payments.findIndex((p) => p.id === id);
-
-  if (index === -1) {
-    return null;
-  }
-
-  const payment = payments[index];
-
-  // Update payment
-  const updatedPayment: ScheduledPayment = {
-    ...payment,
-    status: 'executed',
-    executedTxHash: txHash,
-    executedAt: Date.now(),
-    updatedAt: Date.now(),
-    notificationId: undefined,
-  };
-
-  // If recurring, schedule next occurrence
-  if (payment.recurring) {
-    const nextDate = calculateNextOccurrence(
-      payment.scheduledAt,
-      payment.recurring.interval
-    );
-
-    // Check if next occurrence is before end date
-    if (!payment.recurring.endDate || nextDate <= payment.recurring.endDate) {
-      const nextPayment: ScheduledPayment = {
-        ...payment,
-        id: generateId(),
-        scheduledAt: nextDate,
-        status: 'pending',
-        executedTxHash: undefined,
-        executedAt: undefined,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
-
-      payments.push(nextPayment);
+  const response = await fetchWithTimeout(
+    `${API_BASE_URL}/api/scheduled/${id}/execute`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-wallet-address': walletAddress,
+      },
+      body: JSON.stringify({ txHash }),
     }
+  );
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+    throw new Error(error.message || 'Failed to mark payment as executed');
   }
 
-  payments[index] = updatedPayment;
-  await saveScheduledPayments(payments);
+  const payment: ScheduledPayment = await response.json();
 
-  return updatedPayment;
-}
+  // Refresh cache to include any new recurring payment
+  await syncScheduledPayments(walletAddress);
 
-/**
- * Calculate next occurrence for recurring payments
- */
-function calculateNextOccurrence(
-  currentDate: number,
-  interval: RecurringInterval
-): number {
-  const date = new Date(currentDate);
-
-  switch (interval) {
-    case 'daily':
-      date.setDate(date.getDate() + 1);
-      break;
-    case 'weekly':
-      date.setDate(date.getDate() + 7);
-      break;
-    case 'monthly':
-      date.setMonth(date.getMonth() + 1);
-      break;
-  }
-
-  return date.getTime();
+  return payment;
 }
 
 /**
@@ -256,36 +384,76 @@ function calculateNextOccurrence(
 export async function getPendingPayments(
   creatorAddress: string
 ): Promise<ScheduledPayment[]> {
-  const payments = await loadScheduledPayments();
-  return payments
-    .filter(
-      (p) =>
-        p.creatorAddress.toLowerCase() === creatorAddress.toLowerCase() &&
-        p.status === 'pending'
-    )
-    .sort((a, b) => a.scheduledAt - b.scheduledAt);
+  try {
+    if (!isOnline()) {
+      const cached = await loadCachedPayments(creatorAddress);
+      return cached.filter((p) => p.status === 'pending');
+    }
+
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/scheduled/pending`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'x-wallet-address': creatorAddress,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const cached = await loadCachedPayments(creatorAddress);
+      return cached.filter((p) => p.status === 'pending');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.warn('Error getting pending payments:', error);
+    const cached = await loadCachedPayments(creatorAddress);
+    return cached.filter((p) => p.status === 'pending');
+  }
 }
 
 /**
- * Get upcoming payments (next 7 days)
+ * Get upcoming payments (next N days, default 7)
  */
 export async function getUpcomingPayments(
-  creatorAddress: string
+  creatorAddress: string,
+  days: number = 7
 ): Promise<ScheduledPayment[]> {
-  const payments = await getPendingPayments(creatorAddress);
-  const weekFromNow = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  try {
+    if (!isOnline()) {
+      const cached = await loadCachedPayments(creatorAddress);
+      const futureDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      return cached.filter(
+        (p) => p.status === 'pending' && new Date(p.scheduledAt) <= futureDate
+      );
+    }
 
-  return payments.filter((p) => p.scheduledAt <= weekFromNow);
-}
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/api/scheduled/upcoming?days=${days}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'x-wallet-address': creatorAddress,
+        },
+      }
+    );
 
-/**
- * Get a single payment by ID
- */
-export async function getScheduledPayment(
-  id: string
-): Promise<ScheduledPayment | null> {
-  const payments = await loadScheduledPayments();
-  return payments.find((p) => p.id === id) || null;
+    if (!response.ok) {
+      const cached = await loadCachedPayments(creatorAddress);
+      const futureDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+      return cached.filter(
+        (p) => p.status === 'pending' && new Date(p.scheduledAt) <= futureDate
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.warn('Error getting upcoming payments:', error);
+    return [];
+  }
 }
 
 /**
@@ -294,13 +462,20 @@ export async function getScheduledPayment(
 export async function getOverduePayments(
   creatorAddress: string
 ): Promise<ScheduledPayment[]> {
-  const payments = await loadScheduledPayments();
-  const now = Date.now();
+  const pending = await getPendingPayments(creatorAddress);
+  const now = new Date();
 
-  return payments.filter(
-    (p) =>
-      p.creatorAddress.toLowerCase() === creatorAddress.toLowerCase() &&
-      p.status === 'pending' &&
-      p.scheduledAt < now
-  );
+  return pending.filter((p) => new Date(p.scheduledAt) < now);
+}
+
+/**
+ * Sync local cache with backend
+ */
+export async function syncScheduledPayments(address: string): Promise<void> {
+  try {
+    const payments = await loadScheduledPayments(address);
+    await cachePayments(address, payments);
+  } catch (error) {
+    console.warn('Failed to sync scheduled payments:', error);
+  }
 }
