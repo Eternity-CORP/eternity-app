@@ -211,6 +211,25 @@ export default function RecipientScreen() {
             </View>
           </View>
 
+          {/* BLIK Option */}
+          <TouchableOpacity
+            style={styles.blikOption}
+            onPress={() => router.push('/blik/enter-code')}
+          >
+            <View style={styles.blikIconContainer}>
+              <FontAwesome name="bolt" size={20} color={theme.colors.buttonPrimary} />
+            </View>
+            <View style={styles.blikOptionContent}>
+              <Text style={[styles.blikOptionTitle, theme.typography.body]}>
+                Pay with BLIK code
+              </Text>
+              <Text style={[styles.blikOptionSubtitle, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                Enter 6-digit code to send instantly
+              </Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
+
           {/* Contacts List */}
           {filteredContacts.length > 0 && (
             <View style={styles.contactsSection}>
@@ -326,6 +345,36 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
   },
   contactAddress: {
+    marginTop: 2,
+  },
+  // BLIK option
+  blikOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginTop: theme.spacing.xl,
+    gap: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonPrimary + '30',
+  },
+  blikIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.buttonPrimary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blikOptionContent: {
+    flex: 1,
+  },
+  blikOptionTitle: {
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+  },
+  blikOptionSubtitle: {
     marginTop: 2,
   },
   // Continue button

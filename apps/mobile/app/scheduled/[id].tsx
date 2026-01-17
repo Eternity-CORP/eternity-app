@@ -22,7 +22,7 @@ import {
   cancelScheduledPaymentThunk,
   deleteScheduledPaymentThunk,
 } from '@/src/store/slices/scheduled-slice';
-import { setSelectedToken, setRecipient, setAmount, setStep } from '@/src/store/slices/send-slice';
+import { setSelectedToken, setRecipient, setAmount, setStep, setScheduledPaymentContext } from '@/src/store/slices/send-slice';
 import { getScheduledPayment, type ScheduledPayment } from '@/src/services/scheduled-payment-service';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
@@ -116,10 +116,11 @@ export default function ScheduledPaymentDetailsScreen() {
   const handlePayNow = () => {
     if (!payment) return;
 
-    // Pre-fill send flow
+    // Pre-fill send flow with scheduled payment context
     dispatch(setSelectedToken(payment.tokenSymbol));
     dispatch(setRecipient(payment.recipient));
     dispatch(setAmount(payment.amount));
+    dispatch(setScheduledPaymentContext(payment.id));
     dispatch(setStep('confirm'));
     router.push('/send/confirm');
   };

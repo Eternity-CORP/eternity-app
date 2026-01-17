@@ -127,7 +127,7 @@ export async function checkUsernameAvailable(username: string): Promise<boolean>
   } catch (error) {
     clearTimeout(timeoutId);
     console.warn('Error checking username availability:', error);
-    return false;
+    throw error; // Re-throw so UI can distinguish network errors from "taken"
   }
 }
 

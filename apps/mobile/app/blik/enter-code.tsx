@@ -6,7 +6,7 @@
 import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import {
@@ -24,13 +24,15 @@ import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { truncateAddress } from '@/src/utils/format';
 
+const CODE_LENGTH = 6;
+
 export default function BlikEnterCodeScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
   const currentAccount = getCurrentAccount(wallet);
 
-  const [isConnecting, setIsConnecting] = useState(false);
+  const code = blik.sender.enteredCode;
 
   // Reset sender state on mount
   useEffect(() => {
@@ -62,14 +64,24 @@ export default function BlikEnterCodeScreen() {
     };
   }, [dispatch]);
 
-  const handleCodeChange = useCallback((code: string) => {
-    dispatch(senderSetCode(code));
-  }, [dispatch]);
+  // Auto-lookup when code is complete
+  useEffect(() => {
+    if (code.length === CODE_LENGTH && currentAccount && blik.sender.status === 'idle') {
+      handleLookup();
+    }
+  }, [code, currentAccount]);
 
-  const handleCodeComplete = useCallback(async (code: string) => {
-    if (!currentAccount) return;
+  const handleCodeChange = (newCode: string) => {
+    // Reset status if editing
+    if (blik.sender.status !== 'idle' && newCode.length < CODE_LENGTH) {
+      dispatch(senderReset());
+    }
+    dispatch(senderSetCode(newCode));
+  };
 
-    setIsConnecting(true);
+  const handleLookup = useCallback(async () => {
+    if (!currentAccount || code.length !== CODE_LENGTH) return;
+
     dispatch(senderStartLookup());
 
     try {
@@ -80,10 +92,8 @@ export default function BlikEnterCodeScreen() {
       });
     } catch (error) {
       dispatch(senderError('Failed to connect to server'));
-    } finally {
-      setIsConnecting(false);
     }
-  }, [currentAccount, dispatch]);
+  }, [currentAccount, code, dispatch]);
 
   const handleContinue = useCallback(() => {
     if (blik.sender.codeInfo) {
@@ -91,7 +101,7 @@ export default function BlikEnterCodeScreen() {
     }
   }, [blik.sender.codeInfo]);
 
-  const isLookingUp = blik.sender.status === 'looking_up' || isConnecting;
+  const isLookingUp = blik.sender.status === 'looking_up';
   const isFound = blik.sender.status === 'found' && blik.sender.codeInfo;
   const isNotFound = blik.sender.status === 'not_found';
 
@@ -101,18 +111,17 @@ export default function BlikEnterCodeScreen() {
 
       <View style={styles.content}>
         {/* Instruction */}
-        <Text style={[styles.instruction, theme.typography.heading]}>
-          Enter 6-digit code
+        <Text style={[styles.instruction, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          Enter 6-digit code or tap to paste
         </Text>
 
         {/* Code Input */}
         <View style={styles.codeInputContainer}>
           <BlikCodeInput
-            value={blik.sender.enteredCode}
+            value={code}
             onChange={handleCodeChange}
-            onComplete={handleCodeComplete}
             autoFocus={true}
-            editable={!isLookingUp}
+            editable={!isLookingUp && !isFound}
           />
         </View>
 
@@ -206,12 +215,12 @@ const styles = StyleSheet.create({
   },
   instruction: {
     textAlign: 'center',
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xxl,
-    marginBottom: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
   codeInputContainer: {
     marginBottom: theme.spacing.xl,
+    minHeight: 60,
   },
   statusContainer: {
     flexDirection: 'row',

@@ -8,7 +8,7 @@ import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto } from './dto
 // Reserved usernames that cannot be claimed
 const RESERVED_USERNAMES = [
   'admin', 'administrator', 'support', 'help',
-  'eternity', 'eternaki', 'blik', 'system',
+  'eternity', 'blik', 'system',
   'root', 'api', 'www', 'app', 'wallet',
   'send', 'receive', 'settings', 'profile',
 ];

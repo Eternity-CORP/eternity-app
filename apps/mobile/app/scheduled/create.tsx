@@ -290,6 +290,8 @@ export default function CreateScheduledScreen() {
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             minimumDate={new Date()}
+            themeVariant="light"
+            textColor="#000000"
             onChange={(event, date) => {
               setShowDatePicker(Platform.OS === 'ios');
               if (date) {
@@ -307,6 +309,8 @@ export default function CreateScheduledScreen() {
             value={scheduledDate}
             mode="time"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            themeVariant="light"
+            textColor="#000000"
             onChange={(event, date) => {
               setShowTimePicker(Platform.OS === 'ios');
               if (date) {

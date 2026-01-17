@@ -1,9 +1,11 @@
 /**
  * Split Bill Service
- * Manages split bill requests via backend API
+ * Manages split bill requests with local storage
  */
 
-import { API_BASE_URL } from '@/src/config/api';
+import Storage from '@/src/utils/storage';
+
+const SPLIT_BILLS_KEY = 'split_bills';
 
 export type SplitBillStatus = 'active' | 'completed' | 'cancelled';
 export type ParticipantStatus = 'pending' | 'paid';
@@ -48,38 +50,81 @@ export interface CreateSplitBillRequest {
 }
 
 /**
+ * Generate unique ID
+ */
+function generateId(): string {
+  return `split_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Load all split bills from storage
+ */
+async function loadAllSplitBills(): Promise<SplitBill[]> {
+  try {
+    const data = await Storage.getItem(SPLIT_BILLS_KEY);
+    if (!data) return [];
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error loading split bills:', error);
+    return [];
+  }
+}
+
+/**
+ * Save split bills to storage
+ */
+async function saveSplitBills(bills: SplitBill[]): Promise<void> {
+  try {
+    await Storage.setItem(SPLIT_BILLS_KEY, JSON.stringify(bills));
+  } catch (error) {
+    console.error('Error saving split bills:', error);
+    throw error;
+  }
+}
+
+/**
  * Create a new split bill
  */
 export async function createSplitBill(
   request: CreateSplitBillRequest
 ): Promise<SplitBill> {
-  const response = await fetch(`${API_BASE_URL}/api/split`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
+  const bills = await loadAllSplitBills();
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to create split bill' }));
-    throw new Error(error.message || 'Failed to create split bill');
-  }
+  const newBill: SplitBill = {
+    id: generateId(),
+    creatorAddress: request.creatorAddress,
+    creatorUsername: request.creatorUsername,
+    recipientAddress: request.recipientAddress,
+    totalAmount: request.totalAmount,
+    tokenSymbol: request.tokenSymbol,
+    description: request.description,
+    participants: request.participants.map((p) => ({
+      ...p,
+      status: 'pending' as ParticipantStatus,
+    })),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    status: 'active',
+  };
 
-  return response.json();
+  bills.push(newBill);
+  await saveSplitBills(bills);
+
+  return newBill;
 }
 
 /**
  * Get split bill by ID
  */
 export async function getSplitBill(id: string): Promise<SplitBill> {
-  const response = await fetch(`${API_BASE_URL}/api/split/${id}`);
+  const bills = await loadAllSplitBills();
+  const bill = bills.find((b) => b.id === id);
 
-  if (!response.ok) {
+  if (!bill) {
     throw new Error('Split bill not found');
   }
 
-  return response.json();
+  return bill;
 }
 
 /**
@@ -88,15 +133,10 @@ export async function getSplitBill(id: string): Promise<SplitBill> {
 export async function getCreatedSplitBills(
   creatorAddress: string
 ): Promise<SplitBill[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/split/my/created?address=${creatorAddress}`
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch created split bills');
-  }
-
-  return response.json();
+  const bills = await loadAllSplitBills();
+  return bills
+    .filter((b) => b.creatorAddress.toLowerCase() === creatorAddress.toLowerCase())
+    .sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /**
@@ -105,30 +145,37 @@ export async function getCreatedSplitBills(
 export async function getPendingSplitBills(
   address: string
 ): Promise<SplitBill[]> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/split/my/pending?address=${address}`
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch pending split bills');
-  }
-
-  return response.json();
+  const bills = await loadAllSplitBills();
+  return bills
+    .filter((b) => {
+      // Find bills where this address is a participant with pending status
+      const participant = b.participants.find(
+        (p) => p.address.toLowerCase() === address.toLowerCase()
+      );
+      return participant && participant.status === 'pending' && b.status === 'active';
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
 }
 
 /**
  * Cancel a split bill
  */
 export async function cancelSplitBill(id: string): Promise<SplitBill> {
-  const response = await fetch(`${API_BASE_URL}/api/split/${id}/cancel`, {
-    method: 'PUT',
-  });
+  const bills = await loadAllSplitBills();
+  const index = bills.findIndex((b) => b.id === id);
 
-  if (!response.ok) {
-    throw new Error('Failed to cancel split bill');
+  if (index === -1) {
+    throw new Error('Split bill not found');
   }
 
-  return response.json();
+  bills[index] = {
+    ...bills[index],
+    status: 'cancelled',
+    updatedAt: Date.now(),
+  };
+
+  await saveSplitBills(bills);
+  return bills[index];
 }
 
 /**
@@ -139,22 +186,41 @@ export async function markParticipantPaid(
   participantAddress: string,
   txHash: string
 ): Promise<SplitBill> {
-  const response = await fetch(`${API_BASE_URL}/api/split/${splitId}/pay`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      participantAddress,
-      txHash,
-    }),
-  });
+  const bills = await loadAllSplitBills();
+  const index = bills.findIndex((b) => b.id === splitId);
 
-  if (!response.ok) {
-    throw new Error('Failed to mark payment');
+  if (index === -1) {
+    throw new Error('Split bill not found');
   }
 
-  return response.json();
+  const bill = bills[index];
+  const participantIndex = bill.participants.findIndex(
+    (p) => p.address.toLowerCase() === participantAddress.toLowerCase()
+  );
+
+  if (participantIndex === -1) {
+    throw new Error('Participant not found');
+  }
+
+  // Update participant
+  bill.participants[participantIndex] = {
+    ...bill.participants[participantIndex],
+    status: 'paid',
+    paidTxHash: txHash,
+    paidAt: Date.now(),
+  };
+
+  // Check if all participants have paid
+  const allPaid = bill.participants.every((p) => p.status === 'paid');
+  if (allPaid) {
+    bill.status = 'completed';
+  }
+
+  bill.updatedAt = Date.now();
+  bills[index] = bill;
+
+  await saveSplitBills(bills);
+  return bill;
 }
 
 /**

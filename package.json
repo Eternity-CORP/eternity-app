@@ -9,13 +9,16 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
-    "mobile": "pnpm --filter @e-y/mobile start",
-    "mobile:go": "pnpm --filter @e-y/mobile start:go",
+    "mobile": "concurrently --raw \"pnpm --filter @e-y/api start:dev\" \"pnpm --filter @e-y/mobile start\"",
+    "mobile:go": "concurrently --raw \"pnpm --filter @e-y/api start:dev\" \"pnpm --filter @e-y/mobile start:go\"",
     "mobile:ios": "pnpm --filter @e-y/mobile ios",
     "mobile:android": "pnpm --filter @e-y/mobile android",
+    "mobile:only": "pnpm --filter @e-y/mobile start",
+    "api": "pnpm --filter @e-y/api start:dev",
     "eas-build-pre-install": "cd apps/mobile && bash eas-build-pre-install.sh"
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "turbo": "^2.0.0",
     "typescript": "^5.3.3"
   },

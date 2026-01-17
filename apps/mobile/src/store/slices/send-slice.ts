@@ -10,20 +10,27 @@ import type { HDNodeWallet } from 'ethers';
 export interface SendState {
   // Flow state
   step: 'token' | 'recipient' | 'amount' | 'confirm' | 'success';
-  
+
   // Transaction data
   selectedToken: string; // 'ETH' or token address
   recipient: string;
   amount: string;
-  
+
   // Gas estimation
   gasEstimate: GasEstimate | null;
   gasEstimateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
-  
+
   // Transaction sending
   txHash: string | null;
   sendStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   sendError: string | null;
+
+  // Split bill payment context
+  splitBillId: string | null;
+  splitParticipantAddress: string | null;
+
+  // Scheduled payment context
+  scheduledPaymentId: string | null;
 }
 
 const initialState: SendState = {
@@ -36,6 +43,9 @@ const initialState: SendState = {
   txHash: null,
   sendStatus: 'idle',
   sendError: null,
+  splitBillId: null,
+  splitParticipantAddress: null,
+  scheduledPaymentId: null,
 };
 
 /**
@@ -83,6 +93,13 @@ const sendSlice = createSlice({
     },
     resetSend: (state) => {
       return initialState;
+    },
+    setSplitBillContext: (state, action: PayloadAction<{ splitBillId: string; participantAddress: string }>) => {
+      state.splitBillId = action.payload.splitBillId;
+      state.splitParticipantAddress = action.payload.participantAddress;
+    },
+    setScheduledPaymentContext: (state, action: PayloadAction<string>) => {
+      state.scheduledPaymentId = action.payload;
     },
     validateRecipient: (state) => {
       if (!state.recipient) {
@@ -134,6 +151,8 @@ export const {
   setRecipient,
   setAmount,
   resetSend,
+  setSplitBillContext,
+  setScheduledPaymentContext,
   validateRecipient,
 } = sendSlice.actions;
 

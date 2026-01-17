@@ -11,6 +11,7 @@ export default function BlikLayout() {
         headerShown: false,
       }}
     >
+      <Stack.Screen name="index" />
       <Stack.Screen name="request" />
       <Stack.Screen name="waiting" />
       <Stack.Screen name="enter-code" />
