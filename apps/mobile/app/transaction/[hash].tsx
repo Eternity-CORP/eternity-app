@@ -134,7 +134,12 @@ export default function TransactionDetailsScreen() {
           <Text style={[styles.directionText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
             {tx.direction === 'sent' ? 'SENT' : 'RECEIVED'}
           </Text>
-          <Text style={[styles.amountText, theme.typography.heading, { fontSize: 36 }]}>
+          <Text
+            style={styles.amountText}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+          >
             {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
           </Text>
 
@@ -380,6 +385,12 @@ const styles = StyleSheet.create({
   amountText: {
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+    width: '100%',
+    paddingHorizontal: theme.spacing.md,
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 40,
   },
   statusBadge: {
     flexDirection: 'row',

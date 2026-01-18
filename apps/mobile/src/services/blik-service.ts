@@ -20,24 +20,19 @@ import {
   type CodeCancelledPayload,
 } from '@e-y/shared';
 import { API_BASE_URL } from '@/src/config/api';
+import { createLogger } from '@/src/utils/logger';
 
-// Use shared API URL configuration
-const API_URL = API_BASE_URL;
+const log = createLogger('BlikService');
 
 export interface BlikCallbacks {
-  // Receiver callbacks
   onCodeCreated?: (payload: CodeCreatedPayload) => void;
   onCodeLookup?: (payload: CodeLookupPayload) => void;
   onPaymentConfirmed?: (payload: PaymentConfirmedPayload) => void;
   onCodeExpired?: (payload: CodeExpiredPayload) => void;
   onCodeCancelled?: (payload: CodeCancelledPayload) => void;
-
-  // Sender callbacks
   onCodeInfo?: (payload: CodeInfoPayload) => void;
   onCodeNotFound?: (payload: CodeNotFoundPayload) => void;
   onPaymentAccepted?: (payload: PaymentAcceptedPayload) => void;
-
-  // Error callback
   onError?: (error: { message: string }) => void;
 }
 
@@ -52,7 +47,6 @@ class BlikSocketService {
    */
   connect(address?: string): Promise<void> {
     if (this.socket?.connected) {
-      // Update address if provided
       if (address) {
         this.receiverAddress = address;
         this.register(address);
@@ -76,8 +70,8 @@ class BlikSocketService {
       this.receiverAddress = address;
     }
 
-    return new Promise((resolve, reject) => {
-      this.socket = io(`${API_URL}/blik`, {
+    return new Promise((resolve) => {
+      this.socket = io(`${API_BASE_URL}/blik`, {
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
@@ -85,10 +79,9 @@ class BlikSocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Connected to BLIK WebSocket');
+        log.info('Connected to BLIK WebSocket');
         this.isConnecting = false;
 
-        // Re-register on reconnect
         if (this.receiverAddress) {
           this.register(this.receiverAddress);
         }
@@ -97,36 +90,29 @@ class BlikSocketService {
       });
 
       this.socket.on('connect_error', (error) => {
-        console.warn('BLIK WebSocket connection error:', error.message);
+        log.warn('BLIK WebSocket connection error', { message: error.message });
         this.isConnecting = false;
-        // Don't reject - allow offline functionality
         resolve();
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log('Disconnected from BLIK WebSocket:', reason);
+        log.debug('Disconnected from BLIK WebSocket', { reason });
       });
 
-      // Set up event listeners
       this.setupEventListeners();
 
-      // Timeout after 5 seconds
       setTimeout(() => {
         if (this.isConnecting) {
           this.isConnecting = false;
-          resolve(); // Don't reject - allow offline functionality
+          resolve();
         }
       }, 5000);
     });
   }
 
-  /**
-   * Set up Socket.IO event listeners
-   */
   private setupEventListeners(): void {
     if (!this.socket) return;
 
-    // Receiver events
     this.socket.on(BLIK_EVENTS.CODE_CREATED, (payload: CodeCreatedPayload) => {
       this.callbacks.onCodeCreated?.(payload);
     });
@@ -147,7 +133,6 @@ class BlikSocketService {
       this.callbacks.onCodeCancelled?.(payload);
     });
 
-    // Sender events
     this.socket.on(BLIK_EVENTS.CODE_INFO, (payload: CodeInfoPayload) => {
       this.callbacks.onCodeInfo?.(payload);
     });
@@ -160,16 +145,12 @@ class BlikSocketService {
       this.callbacks.onPaymentAccepted?.(payload);
     });
 
-    // Error event
     this.socket.on('error', (error: { message: string }) => {
-      console.warn('BLIK WebSocket error:', error.message);
+      log.warn('BLIK WebSocket error', error);
       this.callbacks.onError?.(error);
     });
   }
 
-  /**
-   * Disconnect from the WebSocket server
-   */
   disconnect(): void {
     if (this.socket) {
       this.socket.disconnect();
@@ -179,23 +160,14 @@ class BlikSocketService {
     this.receiverAddress = null;
   }
 
-  /**
-   * Set callbacks for BLIK events
-   */
   setCallbacks(callbacks: BlikCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
   }
 
-  /**
-   * Clear all callbacks
-   */
   clearCallbacks(): void {
     this.callbacks = {};
   }
 
-  /**
-   * Register receiver address (for reconnection)
-   */
   register(receiverAddress: string): void {
     this.receiverAddress = receiverAddress;
     if (this.socket?.connected) {
@@ -203,13 +175,6 @@ class BlikSocketService {
     }
   }
 
-  // ============================================
-  // Receiver Actions
-  // ============================================
-
-  /**
-   * Create a new BLIK code
-   */
   createCode(payload: CreateCodePayload): void {
     if (!this.socket?.connected) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
@@ -218,9 +183,6 @@ class BlikSocketService {
     this.socket.emit(BLIK_EVENTS.CREATE_CODE, payload);
   }
 
-  /**
-   * Cancel an existing BLIK code
-   */
   cancelCode(payload: CancelCodePayload): void {
     if (!this.socket?.connected) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
@@ -229,13 +191,6 @@ class BlikSocketService {
     this.socket.emit(BLIK_EVENTS.CANCEL_CODE, payload);
   }
 
-  // ============================================
-  // Sender Actions
-  // ============================================
-
-  /**
-   * Look up a BLIK code
-   */
   lookupCode(payload: LookupCodePayload): void {
     if (!this.socket?.connected) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
@@ -244,9 +199,6 @@ class BlikSocketService {
     this.socket.emit(BLIK_EVENTS.LOOKUP_CODE, payload);
   }
 
-  /**
-   * Confirm payment for a BLIK code
-   */
   confirmPayment(payload: ConfirmPaymentPayload): void {
     if (!this.socket?.connected) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
@@ -255,13 +207,9 @@ class BlikSocketService {
     this.socket.emit(BLIK_EVENTS.CONFIRM_PAYMENT, payload);
   }
 
-  /**
-   * Check if connected
-   */
   isConnected(): boolean {
     return this.socket?.connected || false;
   }
 }
 
-// Export singleton instance
 export const blikSocket = new BlikSocketService();
