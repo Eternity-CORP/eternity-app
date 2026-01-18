@@ -9,7 +9,10 @@ import { API_BASE_URL } from '@/src/config/api';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { loadSplitBillsThunk } from '@/src/store/slices/split-slice';
+import { createLogger } from '@/src/utils/logger';
 import type { SplitBill } from '@/src/services/split-bill-service';
+
+const log = createLogger('SplitWebSocket');
 
 interface SplitWebSocketEvents {
   onCreated?: (bill: SplitBill) => void;
@@ -31,12 +34,10 @@ export function useSplitWebSocket(events?: SplitWebSocketEvents) {
 
     const address = currentAccount.address.toLowerCase();
 
-    // Disconnect existing socket
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
 
-    // Create new socket connection
     const socket = io(`${API_BASE_URL}/splits`, {
       transports: ['websocket'],
       reconnection: true,
@@ -47,46 +48,44 @@ export function useSplitWebSocket(events?: SplitWebSocketEvents) {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('[SplitWS] Connected');
-      // Subscribe to address-specific events
+      log.info('Connected');
       socket.emit('subscribe', { address });
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('[SplitWS] Disconnected:', reason);
+      log.debug('Disconnected', { reason });
     });
 
     socket.on('connect_error', (error) => {
-      console.warn('[SplitWS] Connection error:', error.message);
+      log.warn('Connection error', { message: error.message });
     });
 
-    // Split bill events
     socket.on('split:created', (bill: SplitBill) => {
-      console.log('[SplitWS] Split created:', bill.id);
+      log.debug('Split created', { id: bill.id });
       dispatch(loadSplitBillsThunk(address));
       events?.onCreated?.(bill);
     });
 
     socket.on('split:updated', (bill: SplitBill) => {
-      console.log('[SplitWS] Split updated:', bill.id);
+      log.debug('Split updated', { id: bill.id });
       dispatch(loadSplitBillsThunk(address));
       events?.onUpdated?.(bill);
     });
 
     socket.on('split:paid', (data: { bill: SplitBill; paidAddress: string }) => {
-      console.log('[SplitWS] Participant paid:', data.paidAddress);
+      log.debug('Participant paid', { address: data.paidAddress });
       dispatch(loadSplitBillsThunk(address));
       events?.onPaid?.(data);
     });
 
     socket.on('split:completed', (bill: SplitBill) => {
-      console.log('[SplitWS] Split completed:', bill.id);
+      log.debug('Split completed', { id: bill.id });
       dispatch(loadSplitBillsThunk(address));
       events?.onCompleted?.(bill);
     });
 
     socket.on('split:cancelled', (bill: SplitBill) => {
-      console.log('[SplitWS] Split cancelled:', bill.id);
+      log.debug('Split cancelled', { id: bill.id });
       dispatch(loadSplitBillsThunk(address));
       events?.onCancelled?.(bill);
     });
@@ -103,7 +102,6 @@ export function useSplitWebSocket(events?: SplitWebSocketEvents) {
     }
   }, []);
 
-  // Connect on mount and when app comes to foreground
   useEffect(() => {
     connect();
 

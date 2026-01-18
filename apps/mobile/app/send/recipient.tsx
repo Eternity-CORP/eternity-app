@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setRecipient, setStep } from '@/src/store/slices/send-slice';
+import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
@@ -33,7 +34,9 @@ function debounce<T extends (...args: string[]) => void>(
 export default function RecipientScreen() {
   const dispatch = useAppDispatch();
   const send = useAppSelector((state) => state.send);
+  const wallet = useAppSelector((state) => state.wallet);
   const contacts = useAppSelector((state) => state.contacts.contacts);
+  const currentAccount = getCurrentAccount(wallet);
   const [input, setInput] = useState(send.recipient);
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [resolvedUsername, setResolvedUsername] = useState<string | null>(null);
@@ -133,9 +136,19 @@ export default function RecipientScreen() {
     [debouncedLookup]
   );
 
+  // Check if recipient is the same as current wallet
+  const isSelfSend = resolvedAddress && currentAccount?.address
+    ? resolvedAddress.toLowerCase() === currentAccount.address.toLowerCase()
+    : false;
+
   const handleContinue = () => {
     if (!resolvedAddress) {
       setError('Please enter a valid address or @username');
+      return;
+    }
+
+    if (isSelfSend) {
+      setError('Cannot send to yourself');
       return;
     }
 
@@ -145,7 +158,7 @@ export default function RecipientScreen() {
     router.push('/send/amount');
   };
 
-  const canContinue = resolvedAddress && !isLookingUp;
+  const canContinue = resolvedAddress && !isLookingUp && !isSelfSend;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -211,24 +224,6 @@ export default function RecipientScreen() {
             </View>
           </View>
 
-          {/* BLIK Option */}
-          <TouchableOpacity
-            style={styles.blikOption}
-            onPress={() => router.push('/blik/enter-code')}
-          >
-            <View style={styles.blikIconContainer}>
-              <FontAwesome name="bolt" size={20} color={theme.colors.buttonPrimary} />
-            </View>
-            <View style={styles.blikOptionContent}>
-              <Text style={[styles.blikOptionTitle, theme.typography.body]}>
-                Pay with BLIK code
-              </Text>
-              <Text style={[styles.blikOptionSubtitle, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                Enter 6-digit code to send instantly
-              </Text>
-            </View>
-            <FontAwesome name="chevron-right" size={14} color={theme.colors.textTertiary} />
-          </TouchableOpacity>
 
           {/* Contacts List */}
           {filteredContacts.length > 0 && (
@@ -345,36 +340,6 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
   },
   contactAddress: {
-    marginTop: 2,
-  },
-  // BLIK option
-  blikOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginTop: theme.spacing.xl,
-    gap: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.buttonPrimary + '30',
-  },
-  blikIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.buttonPrimary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blikOptionContent: {
-    flex: 1,
-  },
-  blikOptionTitle: {
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-  },
-  blikOptionSubtitle: {
     marginTop: 2,
   },
   // Continue button

@@ -133,11 +133,16 @@ export default function TransactionsScreen() {
                   </Text>
                 </View>
                 <View style={styles.transactionAmount}>
-                  <Text style={[
-                    styles.transactionAmountText,
-                    theme.typography.heading,
-                    { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.buttonPrimary }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.transactionAmountText,
+                      theme.typography.heading,
+                      { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.buttonPrimary }
+                    ]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
                     {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
                   </Text>
                   {tx.gasUsed && tx.gasPrice && (
@@ -223,6 +228,8 @@ const styles = StyleSheet.create({
   },
   transactionAmount: {
     alignItems: 'flex-end',
+    flexShrink: 0,
+    maxWidth: '40%',
   },
   transactionAmountText: {
     marginBottom: theme.spacing.xs / 2,

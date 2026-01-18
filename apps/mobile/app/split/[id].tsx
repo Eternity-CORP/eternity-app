@@ -146,7 +146,12 @@ export default function SplitDetailsScreen() {
 
         {/* Amount */}
         <View style={styles.amountSection}>
-          <Text style={[styles.amountText, theme.typography.displayLarge]}>
+          <Text
+            style={[styles.amountText, theme.typography.displayLarge]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.5}
+          >
             {bill.totalAmount} {bill.tokenSymbol}
           </Text>
           {bill.description && (
@@ -217,7 +222,12 @@ export default function SplitDetailsScreen() {
                       {isPaid ? 'Paid' : 'Pending'}
                     </Text>
                   </View>
-                  <Text style={[styles.participantAmount, theme.typography.body]}>
+                  <Text
+                    style={[styles.participantAmount, theme.typography.body]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
                     {participant.amount} {bill.tokenSymbol}
                   </Text>
                 </View>
@@ -236,7 +246,12 @@ export default function SplitDetailsScreen() {
                 onPress={() => handlePayShare(myParticipation)}
               >
                 <FontAwesome name="send" size={16} color={theme.colors.buttonPrimaryText} />
-                <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+                <Text
+                  style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                >
                   Pay My Share ({myParticipation.amount} {bill.tokenSymbol})
                 </Text>
               </TouchableOpacity>
@@ -320,9 +335,11 @@ const styles = StyleSheet.create({
   amountSection: {
     alignItems: 'center',
     gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
   },
   amountText: {
     color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
   description: {
     fontStyle: 'italic',
@@ -390,6 +407,9 @@ const styles = StyleSheet.create({
   participantAmount: {
     color: theme.colors.textPrimary,
     fontWeight: '600',
+    flexShrink: 0,
+    maxWidth: 120,
+    textAlign: 'right',
   },
   // Actions
   actionsSection: {

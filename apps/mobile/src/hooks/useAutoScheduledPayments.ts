@@ -11,6 +11,9 @@ import { markPaymentExecutedThunk, loadScheduledPaymentsThunk } from '@/src/stor
 import { getOverduePayments, type ScheduledPayment } from '@/src/services/scheduled-payment-service';
 import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
 import { sendTransaction } from '@/src/services/send-service';
+import { createLogger } from '@/src/utils/logger';
+
+const log = createLogger('AutoScheduledPayments');
 
 const CHECK_INTERVAL = 60000; // Check every 60 seconds
 
@@ -23,18 +26,15 @@ export function useAutoScheduledPayments() {
 
   const executePayment = useCallback(async (payment: ScheduledPayment): Promise<boolean> => {
     try {
-      // Load wallet to get mnemonic for signing
       const walletData = await loadWallet();
       if (!walletData?.mnemonic) {
-        console.error('Cannot execute scheduled payment: wallet not found');
+        log.error('Cannot execute scheduled payment: wallet not found');
         return false;
       }
 
-      // Get account index for current account
       const accountIndex = currentAccount?.accountIndex ?? 0;
       const signerWallet = getWalletFromMnemonic(walletData.mnemonic, accountIndex);
 
-      // Execute the transaction
       const txHash = await sendTransaction({
         wallet: signerWallet,
         to: payment.recipient,
@@ -42,20 +42,19 @@ export function useAutoScheduledPayments() {
         token: payment.tokenSymbol,
       });
 
-      // Mark payment as executed
       await dispatch(markPaymentExecutedThunk({
         id: payment.id,
         txHash,
         walletAddress: currentAccount?.address || '',
       })).unwrap();
 
-      console.log(`Scheduled payment ${payment.id} executed successfully. TxHash: ${txHash}`);
+      log.info('Scheduled payment executed', { id: payment.id, txHash });
       return true;
     } catch (error) {
-      console.error(`Failed to execute scheduled payment ${payment.id}:`, error);
+      log.error('Failed to execute scheduled payment', { id: payment.id, error });
       return false;
     }
-  }, [currentAccount?.accountIndex, dispatch]);
+  }, [currentAccount?.accountIndex, currentAccount?.address, dispatch]);
 
   const processOverduePayments = useCallback(async () => {
     if (!currentAccount?.address || isProcessingRef.current) {
@@ -65,38 +64,31 @@ export function useAutoScheduledPayments() {
     isProcessingRef.current = true;
 
     try {
-      // Get overdue payments
       const overduePayments = await getOverduePayments(currentAccount.address);
 
       if (overduePayments.length === 0) {
         return;
       }
 
-      console.log(`Found ${overduePayments.length} overdue scheduled payments`);
+      log.info('Processing overdue payments', { count: overduePayments.length });
 
-      // Execute each payment
       for (const payment of overduePayments) {
         await executePayment(payment);
       }
 
-      // Reload payments list to update UI
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
     } catch (error) {
-      console.error('Error processing overdue payments:', error);
+      log.error('Error processing overdue payments', error);
     } finally {
       isProcessingRef.current = false;
     }
   }, [currentAccount?.address, executePayment, dispatch]);
 
-  // Process on mount and when app comes to foreground
   useEffect(() => {
-    // Initial check
     processOverduePayments();
 
-    // Set up interval for periodic checks
     intervalRef.current = setInterval(processOverduePayments, CHECK_INTERVAL);
 
-    // Listen for app state changes
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
         processOverduePayments();

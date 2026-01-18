@@ -58,11 +58,7 @@ export default function SuccessScreen() {
             }));
           }
 
-          // Auto-redirect to home after 3 seconds
-          setTimeout(() => {
-            dispatch(resetSend());
-            router.replace('/(tabs)/home');
-          }, 3000);
+          // User will manually press Done button to navigate away
         } else {
           // Transaction still pending
           setTxStatus('pending');

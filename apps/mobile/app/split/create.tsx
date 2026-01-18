@@ -21,7 +21,7 @@ import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
 import { calculateEqualSplit, validateSplitAmounts } from '@/src/services/split-bill-service';
-import { truncateAddress } from '@/src/utils/format';
+import { truncateAddress, sanitizeAmountInput } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -97,6 +97,10 @@ export default function CreateSplitScreen() {
       return;
     }
 
+    // Check if trying to add self as participant
+    const isSelf = (address: string) =>
+      currentAccount?.address && address.toLowerCase() === currentAccount.address.toLowerCase();
+
     // Check contacts first
     const contact = contacts.find(
       (c) =>
@@ -106,6 +110,16 @@ export default function CreateSplitScreen() {
     );
 
     if (contact) {
+      if (isSelf(contact.address)) {
+        setParticipants((prev) =>
+          prev.map((p, i) =>
+            i === index
+              ? { ...p, address: null, isLookingUp: false, error: 'Cannot add yourself' }
+              : p
+          )
+        );
+        return;
+      }
       setParticipants((prev) =>
         prev.map((p, i) =>
           i === index
@@ -133,13 +147,23 @@ export default function CreateSplitScreen() {
         try {
           const address = await lookupUsername(username);
           if (address) {
-            setParticipants((prev) =>
-              prev.map((p, i) =>
-                i === index
-                  ? { ...p, address, username: trimmed, isLookingUp: false }
-                  : p
-              )
-            );
+            if (isSelf(address)) {
+              setParticipants((prev) =>
+                prev.map((p, i) =>
+                  i === index
+                    ? { ...p, address: null, isLookingUp: false, error: 'Cannot add yourself' }
+                    : p
+                )
+              );
+            } else {
+              setParticipants((prev) =>
+                prev.map((p, i) =>
+                  i === index
+                    ? { ...p, address, username: trimmed, isLookingUp: false }
+                    : p
+                )
+              );
+            }
           } else {
             setParticipants((prev) =>
               prev.map((p, i) =>
@@ -164,6 +188,16 @@ export default function CreateSplitScreen() {
 
     // Check address
     if (validateAddress(trimmed)) {
+      if (isSelf(trimmed)) {
+        setParticipants((prev) =>
+          prev.map((p, i) =>
+            i === index
+              ? { ...p, address: null, isLookingUp: false, error: 'Cannot add yourself' }
+              : p
+          )
+        );
+        return;
+      }
       setParticipants((prev) =>
         prev.map((p, i) =>
           i === index
@@ -193,9 +227,12 @@ export default function CreateSplitScreen() {
     setParticipants((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateAmount = (index: number, amount: string) => {
+  const updateAmount = (index: number, newAmount: string) => {
+    const currentAmount = participants[index]?.amount || '';
+    const sanitized = sanitizeAmountInput(newAmount, currentAmount);
+    if (sanitized === null) return;
     setParticipants((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, amount } : p))
+      prev.map((p, i) => (i === index ? { ...p, amount: sanitized } : p))
     );
   };
 
@@ -274,7 +311,10 @@ export default function CreateSplitScreen() {
               placeholder="0.00"
               placeholderTextColor={theme.colors.textTertiary}
               value={totalAmount}
-              onChangeText={setTotalAmount}
+              onChangeText={(text) => {
+                const sanitized = sanitizeAmountInput(text, totalAmount);
+                if (sanitized !== null) setTotalAmount(sanitized);
+              }}
               keyboardType="decimal-pad"
             />
             <TouchableOpacity
@@ -340,26 +380,30 @@ export default function CreateSplitScreen() {
           </View>
 
           {participants.map((participant, index) => (
-            <View key={participant.id} style={styles.participantRow}>
-              <View style={styles.participantInputContainer}>
-                <TextInput
-                  style={[styles.participantInput, theme.typography.body]}
-                  placeholder="Address, @username, or name"
-                  placeholderTextColor={theme.colors.textTertiary}
-                  value={participant.input}
-                  onChangeText={(text) => resolveParticipant(index, text)}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                {participant.address && (
-                  <FontAwesome name="check-circle" size={16} color={theme.colors.success} style={styles.checkIcon} />
-                )}
-                {participant.isLookingUp && (
-                  <Text style={[styles.lookupText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                    ...
-                  </Text>
-                )}
-              </View>
+            <View key={participant.id} style={styles.participantWrapper}>
+              <View style={styles.participantRow}>
+                <View style={styles.participantInputContainer}>
+                  <TextInput
+                    style={[styles.participantInput, theme.typography.body]}
+                    placeholder="Address, @username, or name"
+                    placeholderTextColor={theme.colors.textTertiary}
+                    value={participant.input}
+                    onChangeText={(text) => resolveParticipant(index, text)}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {participant.address && (
+                    <FontAwesome name="check-circle" size={16} color={theme.colors.success} style={styles.checkIcon} />
+                  )}
+                  {participant.isLookingUp && (
+                    <Text style={[styles.lookupText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                      ...
+                    </Text>
+                  )}
+                  {participant.error && (
+                    <FontAwesome name="times-circle" size={16} color={theme.colors.error} style={styles.checkIcon} />
+                  )}
+                </View>
 
               {splitMode === 'custom' && (
                 <TextInput
@@ -382,6 +426,12 @@ export default function CreateSplitScreen() {
                 <TouchableOpacity onPress={() => removeParticipant(index)} style={styles.removeButton}>
                   <FontAwesome name="times-circle" size={20} color={theme.colors.error} />
                 </TouchableOpacity>
+              )}
+              </View>
+              {participant.error && (
+                <Text style={[styles.participantError, theme.typography.caption, { color: theme.colors.error }]}>
+                  {participant.error}
+                </Text>
               )}
             </View>
           ))}
@@ -525,10 +575,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Participants
+  participantWrapper: {
+    gap: theme.spacing.xs,
+  },
   participantRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
+  },
+  participantError: {
+    marginLeft: theme.spacing.sm,
   },
   participantInputContainer: {
     flex: 1,

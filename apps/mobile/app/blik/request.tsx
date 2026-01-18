@@ -85,7 +85,7 @@ export default function BlikRequestScreen() {
         amount,
         tokenSymbol: selectedToken,
         receiverAddress: currentAccount.address,
-        receiverUsername: undefined, // TODO: Get from user profile
+        receiverUsername: undefined,
       });
     } catch (error) {
       dispatch(receiverError('Failed to connect to server'));

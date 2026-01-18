@@ -22,7 +22,7 @@ import { createScheduledPaymentThunk } from '@/src/store/slices/scheduled-slice'
 import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
-import { truncateAddress } from '@/src/utils/format';
+import { truncateAddress, sanitizeAmountInput } from '@/src/utils/format';
 import { requestNotificationPermissions } from '@/src/services/scheduled-payment-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
@@ -133,6 +133,11 @@ export default function CreateScheduledScreen() {
     return () => clearTimeout(timeout);
   }, [recipient, contacts]);
 
+  // Check if recipient is the same as current wallet
+  const isSelfSend = resolvedAddress && currentAccount?.address
+    ? resolvedAddress.toLowerCase() === currentAccount.address.toLowerCase()
+    : false;
+
   const handleCreate = async () => {
     if (!currentAccount?.address) {
       Alert.alert('Error', 'No wallet connected');
@@ -141,6 +146,11 @@ export default function CreateScheduledScreen() {
 
     if (!resolvedAddress) {
       Alert.alert('Error', 'Please enter a valid recipient address');
+      return;
+    }
+
+    if (isSelfSend) {
+      Alert.alert('Error', 'Cannot send to yourself');
       return;
     }
 
@@ -181,6 +191,7 @@ export default function CreateScheduledScreen() {
 
   const canCreate =
     resolvedAddress &&
+    !isSelfSend &&
     parseFloat(amount) > 0 &&
     scheduledDate.getTime() > Date.now() &&
     !isLookingUp &&
@@ -223,6 +234,11 @@ export default function CreateScheduledScreen() {
               {error}
             </Text>
           )}
+          {isSelfSend && (
+            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+              Cannot send to yourself
+            </Text>
+          )}
         </View>
 
         {/* Amount & Token */}
@@ -236,7 +252,10 @@ export default function CreateScheduledScreen() {
               placeholder="0.00"
               placeholderTextColor={theme.colors.textTertiary}
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(text) => {
+                const sanitized = sanitizeAmountInput(text, amount);
+                if (sanitized !== null) setAmount(sanitized);
+              }}
               keyboardType="decimal-pad"
             />
             <TouchableOpacity
@@ -286,13 +305,11 @@ export default function CreateScheduledScreen() {
           <DateTimePicker
             value={scheduledDate}
             mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            display="default"
             minimumDate={new Date()}
-            themeVariant="light"
-            textColor="#000000"
             onChange={(event, date) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (date) {
+              setShowDatePicker(false);
+              if (event.type === 'set' && date) {
                 const newDate = new Date(scheduledDate);
                 newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
                 setScheduledDate(newDate);
@@ -306,12 +323,10 @@ export default function CreateScheduledScreen() {
           <DateTimePicker
             value={scheduledDate}
             mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            themeVariant="light"
-            textColor="#000000"
+            display="default"
             onChange={(event, date) => {
-              setShowTimePicker(Platform.OS === 'ios');
-              if (date) {
+              setShowTimePicker(false);
+              if (event.type === 'set' && date) {
                 const newDate = new Date(scheduledDate);
                 newDate.setHours(date.getHours(), date.getMinutes());
                 setScheduledDate(newDate);

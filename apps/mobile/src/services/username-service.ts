@@ -4,7 +4,10 @@
  */
 
 import type { HDNodeWallet } from 'ethers';
-import { API_BASE_URL } from '@/src/config/api';
+import { apiClient, ApiError } from './api-client';
+import { createLogger } from '@/src/utils/logger';
+
+const log = createLogger('UsernameService');
 
 interface UsernameData {
   username: string;
@@ -24,37 +27,18 @@ interface ApiResponse<T> {
  * Lookup username -> address
  */
 export async function lookupUsername(username: string): Promise<string | null> {
-  // Remove @ prefix if present
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/username/${encodeURIComponent(normalizedUsername)}`,
-      {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      }
+    const data = await apiClient.get<ApiResponse<UsernameData>>(
+      `/api/username/${encodeURIComponent(normalizedUsername)}`
     );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      console.warn('Username lookup failed:', response.status);
-      return null;
-    }
-
-    const data: ApiResponse<UsernameData> = await response.json();
     return data.data?.address || null;
   } catch (error) {
-    clearTimeout(timeoutId);
-    console.warn('Error looking up username:', error);
+    if (ApiError.isApiError(error) && error.statusCode === 404) {
+      return null;
+    }
+    log.warn('Username lookup failed', error);
     return null;
   }
 }
@@ -63,34 +47,16 @@ export async function lookupUsername(username: string): Promise<string | null> {
  * Reverse lookup: address -> username
  */
 export async function getUsernameByAddress(address: string): Promise<string | null> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/username/address/${encodeURIComponent(address)}`,
-      {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      }
+    const data = await apiClient.get<ApiResponse<UsernameData>>(
+      `/api/username/address/${encodeURIComponent(address)}`
     );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      console.warn('Username reverse lookup failed:', response.status);
-      return null;
-    }
-
-    const data: ApiResponse<UsernameData> = await response.json();
     return data.data?.username || null;
   } catch (error) {
-    clearTimeout(timeoutId);
-    console.warn('Error looking up username by address:', error);
+    if (ApiError.isApiError(error) && error.statusCode === 404) {
+      return null;
+    }
+    log.warn('Username reverse lookup failed', error);
     return null;
   }
 }
@@ -99,35 +65,16 @@ export async function getUsernameByAddress(address: string): Promise<string | nu
  * Check if username is available
  */
 export async function checkUsernameAvailable(username: string): Promise<boolean> {
-  // Remove @ prefix if present
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/username/check/${encodeURIComponent(normalizedUsername)}`,
-      {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      }
+    const data = await apiClient.get<ApiResponse<{ username: string; available: boolean }>>(
+      `/api/username/check/${encodeURIComponent(normalizedUsername)}`
     );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.warn('Username availability check failed:', response.status);
-      return false;
-    }
-
-    const data: ApiResponse<{ username: string; available: boolean }> = await response.json();
     return data.data?.available || false;
   } catch (error) {
-    clearTimeout(timeoutId);
-    console.warn('Error checking username availability:', error);
-    throw error; // Re-throw so UI can distinguish network errors from "taken"
+    log.warn('Username availability check failed', error);
+    throw error;
   }
 }
 
@@ -150,7 +97,6 @@ export async function registerUsername(
   username: string,
   wallet: HDNodeWallet
 ): Promise<void> {
-  // Remove @ prefix if present
   const normalizedUsername = username.startsWith('@')
     ? username.slice(1).toLowerCase()
     : username.toLowerCase();
@@ -158,39 +104,20 @@ export async function registerUsername(
   const address = wallet.address.toLowerCase();
   const timestamp = Date.now();
 
-  // Create and sign message
   const message = createSignatureMessage(normalizedUsername, address, timestamp, 'claim');
   const signature = await wallet.signMessage(message);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
   try {
-    const response = await fetch(`${API_BASE_URL}/api/username`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        username: normalizedUsername,
-        address,
-        signature,
-        timestamp,
-      }),
-      signal: controller.signal,
+    await apiClient.post('/api/username', {
+      username: normalizedUsername,
+      address,
+      signature,
+      timestamp,
     });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData: ApiResponse<never> = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to register username');
-    }
+    log.info('Username registered', { username: normalizedUsername });
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error) {
-      throw error;
+    if (ApiError.isApiError(error)) {
+      throw new Error(error.message);
     }
     throw new Error('Failed to register username');
   }
@@ -203,7 +130,6 @@ export async function updateUsername(
   newUsername: string,
   wallet: HDNodeWallet
 ): Promise<void> {
-  // Remove @ prefix if present
   const normalizedUsername = newUsername.startsWith('@')
     ? newUsername.slice(1).toLowerCase()
     : newUsername.toLowerCase();
@@ -211,39 +137,20 @@ export async function updateUsername(
   const address = wallet.address.toLowerCase();
   const timestamp = Date.now();
 
-  // Create and sign message
   const message = createSignatureMessage(normalizedUsername, address, timestamp, 'update');
   const signature = await wallet.signMessage(message);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
   try {
-    const response = await fetch(`${API_BASE_URL}/api/username`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        newUsername: normalizedUsername,
-        address,
-        signature,
-        timestamp,
-      }),
-      signal: controller.signal,
+    await apiClient.put('/api/username', {
+      newUsername: normalizedUsername,
+      address,
+      signature,
+      timestamp,
     });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData: ApiResponse<never> = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to update username');
-    }
+    log.info('Username updated', { username: normalizedUsername });
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error) {
-      throw error;
+    if (ApiError.isApiError(error)) {
+      throw new Error(error.message);
     }
     throw new Error('Failed to update username');
   }
@@ -256,7 +163,6 @@ export async function deleteUsername(
   currentUsername: string,
   wallet: HDNodeWallet
 ): Promise<void> {
-  // Remove @ prefix if present
   const normalizedUsername = currentUsername.startsWith('@')
     ? currentUsername.slice(1).toLowerCase()
     : currentUsername.toLowerCase();
@@ -264,38 +170,15 @@ export async function deleteUsername(
   const address = wallet.address.toLowerCase();
   const timestamp = Date.now();
 
-  // Create and sign message
   const message = createSignatureMessage(normalizedUsername, address, timestamp, 'delete');
   const signature = await wallet.signMessage(message);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
   try {
-    const response = await fetch(`${API_BASE_URL}/api/username`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({
-        address,
-        signature,
-        timestamp,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData: ApiResponse<never> = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to delete username');
-    }
+    await apiClient.delete('/api/username');
+    log.info('Username deleted', { username: normalizedUsername });
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error) {
-      throw error;
+    if (ApiError.isApiError(error)) {
+      throw new Error(error.message);
     }
     throw new Error('Failed to delete username');
   }
@@ -305,7 +188,6 @@ export async function deleteUsername(
  * Validate username format locally
  */
 export function isValidUsernameFormat(username: string): boolean {
-  // Remove @ prefix if present
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
   const regex = /^[a-z][a-z0-9_]{2,19}$/;
   return regex.test(normalizedUsername.toLowerCase());

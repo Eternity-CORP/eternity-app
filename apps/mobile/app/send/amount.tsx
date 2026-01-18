@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setAmount, setStep } from '@/src/store/slices/send-slice';
+import { sanitizeAmountInput } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -22,14 +23,11 @@ export default function AmountScreen() {
   const maxAmount = selectedToken ? parseFloat(selectedToken.balance) : 0;
 
   const handleNumberPress = (num: string) => {
-    if (num === '.' && amount.includes('.')) return;
-    if (num === '.' && amount === '') {
-      setAmountLocal('0.');
-      return;
-    }
-    const newAmount = amount + num;
-    if (parseFloat(newAmount) > maxAmount) return;
-    setAmountLocal(newAmount);
+    const newInput = amount + num;
+    const sanitized = sanitizeAmountInput(newInput, amount);
+    if (sanitized === null) return;
+    if (sanitized && parseFloat(sanitized) > maxAmount) return;
+    setAmountLocal(sanitized);
   };
 
   const handleBackspace = () => {
