@@ -157,3 +157,24 @@ export {
   type AggregatedTokenBalance,
   type MultiNetworkBalanceResult,
 } from './network-service';
+
+// Bridge Service (LI.FI integration)
+export {
+  getBridgeQuote,
+  executeBridge,
+  getBridgeStatus,
+  waitForBridgeCompletion,
+  networkToChainId,
+  chainIdToNetwork,
+  formatBridgeTime,
+  getNetworkName,
+  isBridgeSupported,
+  getSupportedBridgeDestinations,
+  BridgeError,
+  type BridgeQuoteRequest,
+  type BridgeQuote,
+  type BridgeExecutionResult,
+  type BridgeStatus,
+  type BridgeStatusResponse,
+  type BridgeErrorCode,
+} from './bridge-service';
