@@ -11,7 +11,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { UsernameService } from './username.service';
-import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto } from './dto';
+import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto, UpdatePreferencesDto } from './dto';
 
 @Controller('api/username')
 export class UsernameController {
@@ -112,5 +112,18 @@ export class UsernameController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async delete(@Body() dto: DeleteUsernameDto) {
     await this.usernameService.delete(dto);
+  }
+
+  /**
+   * Update network preferences
+   * PUT /api/username/preferences
+   */
+  @Put('preferences')
+  async updatePreferences(@Body() dto: UpdatePreferencesDto) {
+    const result = await this.usernameService.updatePreferences(dto);
+    return {
+      success: true,
+      data: result,
+    };
   }
 }

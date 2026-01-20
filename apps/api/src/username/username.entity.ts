@@ -7,6 +7,11 @@ import {
   Index,
 } from 'typeorm';
 
+/**
+ * Token symbol -> preferred network ID (null = any network)
+ */
+export type TokenNetworkPreferences = Record<string, string | null>;
+
 @Entity('usernames')
 export class Username {
   @PrimaryGeneratedColumn('uuid')
@@ -22,6 +27,14 @@ export class Username {
 
   @Column({ type: 'text' })
   signature: string;
+
+  /**
+   * Network preferences for receiving tokens
+   * { "USDC": "arbitrum", "USDT": null, ... }
+   * null means "any network" (receive on sender's network)
+   */
+  @Column({ type: 'jsonb', default: {} })
+  networkPreferences: TokenNetworkPreferences;
 
   @CreateDateColumn()
   createdAt: Date;

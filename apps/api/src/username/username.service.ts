@@ -2,8 +2,8 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { verifyMessage } from 'ethers';
-import { Username } from './username.entity';
-import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto } from './dto';
+import { Username, TokenNetworkPreferences } from './username.entity';
+import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto, UpdatePreferencesDto } from './dto';
 
 // Reserved usernames that cannot be claimed
 const RESERVED_USERNAMES = [
@@ -24,9 +24,13 @@ export class UsernameService {
   ) {}
 
   /**
-   * Lookup username -> address
+   * Lookup username -> address (includes network preferences)
    */
-  async lookup(username: string): Promise<{ username: string; address: string } | null> {
+  async lookup(username: string): Promise<{
+    username: string;
+    address: string;
+    networkPreferences: TokenNetworkPreferences;
+  } | null> {
     const normalizedUsername = username.toLowerCase();
     const record = await this.usernameRepository.findOne({
       where: { username: normalizedUsername },
@@ -39,6 +43,7 @@ export class UsernameService {
     return {
       username: record.username,
       address: record.address,
+      networkPreferences: record.networkPreferences || {},
     };
   }
 
@@ -227,6 +232,48 @@ export class UsernameService {
   }
 
   /**
+   * Update network preferences for a username
+   */
+  async updatePreferences(dto: UpdatePreferencesDto): Promise<{
+    username: string;
+    networkPreferences: TokenNetworkPreferences;
+  }> {
+    const normalizedAddress = dto.address.toLowerCase();
+
+    // Find existing record
+    const existingRecord = await this.usernameRepository.findOne({
+      where: { address: normalizedAddress },
+    });
+    if (!existingRecord) {
+      throw new NotFoundException({
+        code: 'USERNAME_NOT_FOUND',
+        message: 'No username found for this address',
+      });
+    }
+
+    // Verify signature
+    this.verifyPreferencesSignature(normalizedAddress, dto.signature, dto.timestamp);
+
+    // Validate preferences (clean up null values)
+    const cleanedPreferences: TokenNetworkPreferences = {};
+    for (const [symbol, networkId] of Object.entries(dto.tokenPreferences)) {
+      if (networkId !== null) {
+        // Only store non-null preferences
+        cleanedPreferences[symbol.toUpperCase()] = networkId;
+      }
+    }
+
+    // Update record
+    existingRecord.networkPreferences = cleanedPreferences;
+    await this.usernameRepository.save(existingRecord);
+
+    return {
+      username: existingRecord.username,
+      networkPreferences: existingRecord.networkPreferences,
+    };
+  }
+
+  /**
    * Validate username format
    */
   private isValidUsernameFormat(username: string): boolean {
@@ -255,6 +302,45 @@ export class UsernameService {
 
     // Construct message
     const message = `E-Y:${action}:@${username}:${address}:${timestamp}`;
+
+    try {
+      const recoveredAddress = verifyMessage(message, signature);
+      if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
+        throw new BadRequestException({
+          code: 'SIGNATURE_INVALID',
+          message: 'Invalid signature. Please sign with the correct wallet.',
+        });
+      }
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException({
+        code: 'SIGNATURE_INVALID',
+        message: 'Invalid signature format.',
+      });
+    }
+  }
+
+  /**
+   * Verify signature for preferences update
+   */
+  private verifyPreferencesSignature(
+    address: string,
+    signature: string,
+    timestamp: number,
+  ): void {
+    // Check timestamp
+    const now = Date.now();
+    if (now - timestamp > SIGNATURE_MAX_AGE_MS) {
+      throw new BadRequestException({
+        code: 'TIMESTAMP_EXPIRED',
+        message: 'Signature timestamp has expired. Please try again.',
+      });
+    }
+
+    // Construct message
+    const message = `E-Y:preferences:${address}:${timestamp}`;
 
     try {
       const recoveredAddress = verifyMessage(message, signature);
