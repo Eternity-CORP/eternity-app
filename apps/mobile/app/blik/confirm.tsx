@@ -26,11 +26,23 @@ import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { truncateAddress } from '@/src/utils/format';
 
-// Available networks
+// Available networks for sending
 const NETWORKS = [
-  { id: 'sepolia', name: 'Sepolia Testnet' },
-  { id: 'mainnet', name: 'Ethereum Mainnet' },
+  { id: 'ethereum', name: 'Ethereum' },
+  { id: 'polygon', name: 'Polygon' },
+  { id: 'arbitrum', name: 'Arbitrum' },
+  { id: 'base', name: 'Base' },
+  { id: 'optimism', name: 'Optimism' },
 ];
+
+// Network names for display
+const NETWORK_DISPLAY_NAMES: Record<string, string> = {
+  ethereum: 'Ethereum',
+  polygon: 'Polygon',
+  arbitrum: 'Arbitrum',
+  base: 'Base',
+  optimism: 'Optimism',
+};
 
 export default function BlikConfirmScreen() {
   const dispatch = useAppDispatch();
@@ -215,6 +227,13 @@ export default function BlikConfirmScreen() {
   const canConfirm = gasEstimateStatus === 'succeeded' && blik.sender.status !== 'confirming';
   const isConfirming = blik.sender.status === 'confirming';
 
+  // Check recipient's preferred network
+  const recipientPreferredNetwork = codeInfo?.preferredNetwork;
+  const hasNetworkMismatch = recipientPreferredNetwork && recipientPreferredNetwork !== selectedNetwork;
+  const preferredNetworkName = recipientPreferredNetwork
+    ? NETWORK_DISPLAY_NAMES[recipientPreferredNetwork] || recipientPreferredNetwork
+    : null;
+
   // Check if user has sufficient balance
   const hasToken = balance.balances.some(
     (b) => b.symbol === codeInfo?.tokenSymbol && parseFloat(b.balance) >= parseFloat(codeInfo?.amount || '0')
@@ -351,6 +370,38 @@ export default function BlikConfirmScreen() {
             </>
           )}
         </View>
+
+        {/* Recipient Network Preference */}
+        {recipientPreferredNetwork && (
+          <View style={styles.preferenceCard}>
+            <View style={styles.preferenceHeader}>
+              <FontAwesome name="info-circle" size={16} color={theme.colors.buttonPrimary} />
+              <Text style={[styles.preferenceTitle, theme.typography.caption]}>
+                Recipient's Preference
+              </Text>
+            </View>
+            <Text style={[styles.preferenceText, theme.typography.body]}>
+              {codeInfo.receiverUsername || 'Recipient'} prefers to receive on{' '}
+              <Text style={{ fontWeight: '600' }}>{preferredNetworkName}</Text>
+            </Text>
+            {hasNetworkMismatch && (
+              <View style={styles.mismatchWarning}>
+                <FontAwesome name="exchange" size={14} color={theme.colors.warning} />
+                <Text style={[styles.mismatchText, theme.typography.caption, { color: theme.colors.warning }]}>
+                  You're sending from {selectedNetworkInfo.name}. A bridge may be needed, which could incur additional fees.
+                </Text>
+              </View>
+            )}
+            {!hasNetworkMismatch && (
+              <View style={styles.matchSuccess}>
+                <FontAwesome name="check-circle" size={14} color={theme.colors.success} />
+                <Text style={[styles.matchText, theme.typography.caption, { color: theme.colors.success }]}>
+                  Network matches recipient's preference
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Balance Warnings */}
         {!hasToken && (
@@ -553,6 +604,45 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
   },
   warningText: {},
+  preferenceCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonPrimary + '30',
+  },
+  preferenceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  preferenceTitle: {
+    color: theme.colors.buttonPrimary,
+    fontWeight: '600',
+  },
+  preferenceText: {
+    color: theme.colors.textPrimary,
+  },
+  mismatchWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.warning + '15',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+  },
+  mismatchText: {
+    flex: 1,
+  },
+  matchSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+  },
+  matchText: {},
   errorCard: {
     backgroundColor: theme.colors.error + '10',
     borderRadius: theme.borderRadius.md,

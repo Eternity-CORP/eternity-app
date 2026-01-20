@@ -73,7 +73,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const { amount, tokenSymbol, receiverAddress, receiverUsername } = data;
+      const { amount, tokenSymbol, receiverAddress, receiverUsername, preferredNetwork } = data;
 
       if (!amount || !tokenSymbol || !receiverAddress) {
         client.emit('error', { message: 'Missing required fields: amount, tokenSymbol, receiverAddress' });
@@ -86,6 +86,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         amount,
         tokenSymbol,
         client.id,
+        preferredNetwork,
       );
 
       const response: CodeCreatedPayload = {
@@ -93,10 +94,11 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         expiresAt: blikCode.expiresAt,
         amount: blikCode.amount,
         tokenSymbol: blikCode.tokenSymbol,
+        preferredNetwork: blikCode.preferredNetwork,
       };
 
       client.emit(BLIK_EVENTS.CODE_CREATED, response);
-      this.logger.log(`Code created: ${blikCode.code} for ${receiverAddress}`);
+      this.logger.log(`Code created: ${blikCode.code} for ${receiverAddress}${preferredNetwork ? ` (prefers ${preferredNetwork})` : ''}`);
     } catch (error) {
       this.logger.error(`Error creating code: ${error.message}`);
       client.emit('error', { message: error.message });
@@ -173,6 +175,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         tokenSymbol: blikCode.tokenSymbol,
         receiverAddress: blikCode.receiverAddress,
         receiverUsername: blikCode.receiverUsername,
+        preferredNetwork: blikCode.preferredNetwork,
         expiresAt: blikCode.expiresAt,
       };
 
@@ -255,6 +258,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
           expiresAt: activeCode.expiresAt,
           amount: activeCode.amount,
           tokenSymbol: activeCode.tokenSymbol,
+          preferredNetwork: activeCode.preferredNetwork,
         };
         client.emit(BLIK_EVENTS.CODE_CREATED, response);
       }

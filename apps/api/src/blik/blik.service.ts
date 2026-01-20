@@ -77,6 +77,7 @@ export class BlikService implements OnModuleDestroy {
     amount: string,
     tokenSymbol: string,
     socketId: string,
+    preferredNetwork?: string,
   ): InternalBlikCode {
     // Check rate limit
     const existingCodes = this.countCodesForAddress(receiverAddress);
@@ -93,6 +94,7 @@ export class BlikService implements OnModuleDestroy {
       tokenSymbol,
       receiverAddress,
       receiverUsername,
+      preferredNetwork,
       receiverSocketId: socketId,
       status: 'active',
       createdAt: new Date(now).toISOString(),

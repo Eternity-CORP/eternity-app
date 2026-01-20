@@ -11,6 +11,7 @@ export interface BlikCode {
   tokenSymbol: string;
   receiverAddress: string;
   receiverUsername?: string;
+  preferredNetwork?: string; // Recipient's preferred receiving network (e.g., 'polygon', 'arbitrum')
   status: BlikCodeStatus;
   expiresAt: string;
   createdAt: string;
@@ -25,6 +26,7 @@ export interface CreateCodePayload {
   tokenSymbol: string;
   receiverAddress: string;
   receiverUsername?: string;
+  preferredNetwork?: string; // Recipient's preferred receiving network
 }
 
 export interface CancelCodePayload {
@@ -41,6 +43,7 @@ export interface CodeCreatedPayload {
   expiresAt: string;
   amount: string;
   tokenSymbol: string;
+  preferredNetwork?: string; // Recipient's preferred receiving network
 }
 
 export interface CodeLookupPayload {
@@ -87,6 +90,7 @@ export interface CodeInfoPayload {
   tokenSymbol: string;
   receiverAddress: string;
   receiverUsername?: string;
+  preferredNetwork?: string; // Recipient's preferred receiving network
   expiresAt: string;
 }
 
