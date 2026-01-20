@@ -157,3 +157,17 @@ export {
   type AggregatedTokenBalance,
   type MultiNetworkBalanceResult,
 } from './network-service';
+
+// Routing Service (Smart transfer routing)
+export {
+  calculateOptimalRoute,
+  formatFee,
+  formatTime,
+  type TokenNetworkPreference,
+  type RouteType,
+  type TransferStep,
+  type TransferRoute,
+  type RouteWarning,
+  type AlternativeRoute,
+  type RoutingResult,
+} from './routing-service';

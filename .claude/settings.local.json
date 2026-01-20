@@ -47,7 +47,8 @@
       "Bash(done)",
       "Bash(for service in send-service contacts-service blik-service)",
       "Bash(do echo \"=== $service ===\")",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
