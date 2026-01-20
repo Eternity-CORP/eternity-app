@@ -143,3 +143,17 @@ export {
   clearWallet,
   type WalletData,
 } from './wallet-service';
+
+// Network Service (Multi-network support)
+export {
+  getProvider as getNetworkProvider,
+  fetchAllNetworkBalances,
+  fetchSingleNetworkBalances,
+  getTokenBalanceOnNetwork,
+  getBestNetworkForToken,
+  hasSufficientBalance,
+  findNetworksWithSufficientBalance,
+  type NetworkTokenBalance,
+  type AggregatedTokenBalance,
+  type MultiNetworkBalanceResult,
+} from './network-service';
