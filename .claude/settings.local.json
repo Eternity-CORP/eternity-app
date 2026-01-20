@@ -47,7 +47,17 @@
       "Bash(done)",
       "Bash(for service in send-service contacts-service blik-service)",
       "Bash(do echo \"=== $service ===\")",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "mcp__linear__list_projects",
+      "mcp__linear__list_teams",
+      "mcp__linear__create_project",
+      "mcp__linear__create_issue",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git stash:*)",
+      "Bash(grep:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

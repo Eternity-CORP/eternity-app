@@ -157,3 +157,12 @@ export {
   type AggregatedTokenBalance,
   type MultiNetworkBalanceResult,
 } from './network-service';
+
+// Preferences Service
+export {
+  loadNetworkPreferences,
+  saveNetworkPreferences,
+  clearNetworkPreferences,
+  getTokenPreference,
+  setTokenPreference,
+} from './preferences-service';

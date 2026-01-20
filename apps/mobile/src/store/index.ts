@@ -13,6 +13,7 @@ import scheduledReducer from './slices/scheduled-slice';
 import splitReducer from './slices/split-slice';
 import scheduledCreateReducer from './slices/scheduled-create-slice';
 import splitCreateReducer from './slices/split-create-slice';
+import networkPreferencesReducer from './slices/network-preferences-slice';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     split: splitReducer,
     scheduledCreate: scheduledCreateReducer,
     splitCreate: splitCreateReducer,
+    networkPreferences: networkPreferencesReducer,
   },
 });
 
