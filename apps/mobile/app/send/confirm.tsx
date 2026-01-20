@@ -1,5 +1,6 @@
 /**
  * Send Screen 4: Confirm Transaction
+ * Shows network routing, bridge costs, and alternatives
  */
 
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
@@ -8,13 +9,33 @@ import { router } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
-import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
+import {
+  estimateGasThunk,
+  sendTransactionThunk,
+  calculateRouteThunk,
+  selectAlternativeRoute,
+  type TransferRoute,
+} from '@/src/store/slices/send-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { SUPPORTED_NETWORKS } from '@/src/constants/networks';
+
+// Helper functions for formatting
+function formatFee(fee: number): string {
+  if (fee < 0.01) return '<$0.01';
+  return `~$${fee.toFixed(2)}`;
+}
+
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)} hr`;
+  return `${Math.round(seconds / 86400)} days`;
+}
 
 export default function ConfirmScreen() {
   const dispatch = useAppDispatch();
@@ -38,10 +59,32 @@ export default function ConfirmScreen() {
     c => c.address.toLowerCase() === send.recipient.toLowerCase()
   );
 
+  // Get the active route (primary or selected alternative)
+  const activeRoute: TransferRoute | null =
+    send.selectedAlternativeIndex !== null
+      ? send.alternativeRoutes[send.selectedAlternativeIndex]?.route ?? null
+      : send.transferRoute;
+
   // Load contacts on mount
   useEffect(() => {
     dispatch(loadContactsThunk());
   }, [dispatch]);
+
+  // Calculate route when screen loads
+  useEffect(() => {
+    if (send.amount && selectedToken) {
+      const amountNum = parseFloat(send.amount);
+      const tokenUsdPrice = (selectedToken.usdValue ?? 0) / parseFloat(selectedToken.balance);
+      const amountUsdValue = amountNum * tokenUsdPrice;
+
+      dispatch(calculateRouteThunk({
+        symbol: send.selectedToken,
+        amount: amountNum,
+        recipientPreference: send.recipientPreference,
+        amountUsdValue,
+      }));
+    }
+  }, [send.amount, send.selectedToken, send.recipientPreference, selectedToken, dispatch]);
 
   // Estimate gas when screen loads
   useEffect(() => {
@@ -102,7 +145,9 @@ export default function ConfirmScreen() {
   const totalAmount = parseFloat(send.amount) || 0;
   const totalAmountUsd = selectedToken ? (totalAmount * (selectedToken.usdValue || 0) / parseFloat(selectedToken.balance)) : 0;
   const gasCostUsd = send.gasEstimate ? send.gasEstimate.totalGasCostUsd : 0;
-  const totalCostUsd = totalAmountUsd + gasCostUsd;
+  const bridgeCostUsd = activeRoute?.totalBridgeFee ?? 0;
+  const totalFeeUsd = gasCostUsd + bridgeCostUsd;
+  const totalCostUsd = totalAmountUsd + totalFeeUsd;
 
   const canConfirm = send.gasEstimateStatus === 'succeeded' && send.sendStatus !== 'loading';
 
@@ -195,6 +240,101 @@ export default function ConfirmScreen() {
           )}
         </View>
 
+        {/* Network Routing Card */}
+        {activeRoute && activeRoute.type !== 'direct' && (
+          <View style={styles.routingCard}>
+            {/* Recipient Preference */}
+            {send.recipientPreference && (
+              <View style={styles.routingRow}>
+                <FontAwesome name="star" size={14} color={theme.colors.warning} />
+                <Text style={[styles.routingText, theme.typography.caption]}>
+                  Recipient prefers {SUPPORTED_NETWORKS[send.recipientPreference]?.name}
+                </Text>
+              </View>
+            )}
+
+            {/* Bridge Info */}
+            {activeRoute.type === 'bridge' && (
+              <View style={styles.routingRow}>
+                <FontAwesome name="exchange" size={14} color={theme.colors.buttonPrimary} />
+                <Text style={[styles.routingText, theme.typography.caption]}>
+                  Converting via bridge (~{formatTime(activeRoute.estimatedTime)})
+                </Text>
+              </View>
+            )}
+
+            {/* Consolidation Warning */}
+            {activeRoute.type === 'consolidate' && (
+              <View style={styles.routingRow}>
+                <FontAwesome name="object-group" size={14} color={theme.colors.warning} />
+                <Text style={[styles.routingText, theme.typography.caption]}>
+                  Collecting from {activeRoute.steps.length} networks
+                </Text>
+              </View>
+            )}
+
+            {/* Expensive Bridge Warning */}
+            {activeRoute.warnings.includes('expensive_bridge') && (
+              <View style={[styles.routingRow, styles.warningRow]}>
+                <FontAwesome name="exclamation-triangle" size={14} color={theme.colors.error} />
+                <Text style={[styles.routingText, theme.typography.caption, { color: theme.colors.error }]}>
+                  High bridge fee ({formatFee(activeRoute.totalBridgeFee)})
+                </Text>
+              </View>
+            )}
+
+            {/* Bridge Cost */}
+            {activeRoute.totalBridgeFee > 0 && (
+              <View style={styles.routingRow}>
+                <FontAwesome name="dollar" size={14} color={theme.colors.textSecondary} />
+                <Text style={[styles.routingText, theme.typography.caption]}>
+                  Bridge fee: {formatFee(activeRoute.totalBridgeFee)}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Alternative Routes */}
+        {send.alternativeRoutes.length > 0 && (
+          <View style={styles.alternativesCard}>
+            <Text style={[styles.alternativesTitle, theme.typography.caption]}>
+              Alternatives
+            </Text>
+            {send.alternativeRoutes.map((alt, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.alternativeOption,
+                  send.selectedAlternativeIndex === index && styles.alternativeSelected,
+                ]}
+                onPress={() => dispatch(selectAlternativeRoute(
+                  send.selectedAlternativeIndex === index ? null : index
+                ))}
+              >
+                <View style={styles.alternativeInfo}>
+                  <Text style={[styles.alternativeText, theme.typography.body]}>
+                    {alt.description}
+                  </Text>
+                  {alt.savings > 0 && (
+                    <Text style={[styles.savingsText, theme.typography.caption]}>
+                      Save {formatFee(alt.savings)}
+                    </Text>
+                  )}
+                </View>
+                <FontAwesome
+                  name={send.selectedAlternativeIndex === index ? 'check-circle' : 'circle-o'}
+                  size={20}
+                  color={send.selectedAlternativeIndex === index
+                    ? theme.colors.success
+                    : theme.colors.textTertiary
+                  }
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
@@ -218,21 +358,35 @@ export default function ConfirmScreen() {
             <>
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                  Gas Fee
-                </Text>
-                <Text style={[styles.detailValue, theme.typography.body]}>
-                  {parseFloat(send.gasEstimate.totalGasCost).toFixed(6)} ETH
-                </Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                  Gas Fee (USD)
+                  Network Fee
                 </Text>
                 <Text style={[styles.detailValue, theme.typography.body]}>
                   ${send.gasEstimate.totalGasCostUsd.toFixed(2)}
                 </Text>
               </View>
             </>
+          )}
+
+          {bridgeCostUsd > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                Bridge Fee
+              </Text>
+              <Text style={[styles.detailValue, theme.typography.body]}>
+                ${bridgeCostUsd.toFixed(2)}
+              </Text>
+            </View>
+          )}
+
+          {totalFeeUsd > 0 && bridgeCostUsd > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                Total Fees
+              </Text>
+              <Text style={[styles.detailValue, theme.typography.body]}>
+                ${totalFeeUsd.toFixed(2)}
+              </Text>
+            </View>
           )}
 
           <View style={[styles.detailRow, styles.totalRow]}>
@@ -395,5 +549,64 @@ const styles = StyleSheet.create({
   },
   confirmButtonText: {
     color: theme.colors.buttonPrimaryText,
+  },
+  // Routing Card Styles
+  routingCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.buttonPrimary + '30',
+  },
+  routingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  routingText: {
+    color: theme.colors.textSecondary,
+    flex: 1,
+  },
+  warningRow: {
+    backgroundColor: theme.colors.error + '10',
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    marginVertical: theme.spacing.xs,
+  },
+  // Alternatives Styles
+  alternativesCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  alternativesTitle: {
+    color: theme.colors.textTertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  alternativeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    gap: theme.spacing.md,
+  },
+  alternativeSelected: {
+    backgroundColor: theme.colors.success + '15',
+    borderWidth: 1,
+    borderColor: theme.colors.success,
+  },
+  alternativeInfo: {
+    flex: 1,
+  },
+  alternativeText: {
+    color: theme.colors.textPrimary,
+  },
+  savingsText: {
+    color: theme.colors.success,
+    marginTop: 2,
   },
 });

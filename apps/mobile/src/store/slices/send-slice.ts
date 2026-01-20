@@ -1,11 +1,53 @@
 /**
  * Send Redux Slice
- * Manages send transaction flow state
+ * Manages send transaction flow state with multi-network routing
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
 import type { HDNodeWallet } from 'ethers';
+import type { NetworkId } from '@/src/constants/networks';
+
+/**
+ * Transfer route types (mirrored from routing-service for loose coupling)
+ */
+export type RouteType = 'direct' | 'bridge' | 'consolidate' | 'insufficient';
+
+export type RouteWarning =
+  | 'expensive_bridge'
+  | 'slow_bridge'
+  | 'consolidation_needed'
+  | 'preference_mismatch';
+
+export interface TransferStep {
+  type: 'send' | 'bridge';
+  sourceNetwork: NetworkId;
+  targetNetwork: NetworkId;
+  amount: string;
+  estimatedGasFee: number;
+  estimatedBridgeFee: number;
+  estimatedTime: number;
+}
+
+export interface TransferRoute {
+  type: RouteType;
+  steps: TransferStep[];
+  amount: string;
+  symbol: string;
+  totalGasFee: number;
+  totalBridgeFee: number;
+  totalFee: number;
+  recipientPreference: NetworkId | null;
+  finalNetwork: NetworkId;
+  estimatedTime: number;
+  warnings: RouteWarning[];
+}
+
+export interface AlternativeRoute {
+  route: TransferRoute;
+  description: string;
+  savings: number;
+}
 
 export interface SendState {
   // Flow state
@@ -19,6 +61,14 @@ export interface SendState {
   // Gas estimation
   gasEstimate: GasEstimate | null;
   gasEstimateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+
+  // Network routing
+  recipientPreference: NetworkId | null;
+  transferRoute: TransferRoute | null;
+  alternativeRoutes: AlternativeRoute[];
+  selectedAlternativeIndex: number | null; // null = use primary route
+  routeStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  routeError: string | null;
 
   // Transaction sending
   txHash: string | null;
@@ -40,6 +90,12 @@ const initialState: SendState = {
   amount: '',
   gasEstimate: null,
   gasEstimateStatus: 'idle',
+  recipientPreference: null,
+  transferRoute: null,
+  alternativeRoutes: [],
+  selectedAlternativeIndex: null,
+  routeStatus: 'idle',
+  routeError: null,
   txHash: null,
   sendStatus: 'idle',
   sendError: null,
@@ -66,6 +122,53 @@ export const sendTransactionThunk = createAsyncThunk(
   async ({ wallet, to, amount, token }: { wallet: HDNodeWallet; to: string; amount: string; token: string }) => {
     const txHash = await sendTransaction({ wallet, to, amount, token });
     return txHash;
+  }
+);
+
+/**
+ * Calculate transfer route
+ * This is called when navigating to confirm screen
+ */
+export const calculateRouteThunk = createAsyncThunk(
+  'send/calculateRoute',
+  async (
+    {
+      symbol,
+      amount,
+      recipientPreference,
+      amountUsdValue,
+    }: {
+      symbol: string;
+      amount: number;
+      recipientPreference: NetworkId | null;
+      amountUsdValue: number;
+    },
+    { getState }
+  ) => {
+    // Import dynamically to avoid circular deps and allow lazy loading
+    const { calculateOptimalRoute } = await import('@/src/services/routing-service');
+    const state = getState() as { balance: { aggregatedBalances: unknown[] } };
+
+    // Access aggregated balances from balance slice
+    const aggregatedBalances = state.balance.aggregatedBalances || [];
+
+    const result = calculateOptimalRoute(
+      symbol,
+      amount,
+      aggregatedBalances as Parameters<typeof calculateOptimalRoute>[2],
+      recipientPreference,
+      amountUsdValue
+    );
+
+    if (!result.success) {
+      throw new Error(result.error?.message || 'Failed to calculate route');
+    }
+
+    return {
+      primaryRoute: result.primaryRoute,
+      alternatives: result.alternatives,
+      recipientPreference,
+    };
   }
 );
 
@@ -112,6 +215,23 @@ const sendSlice = createSlice({
       }
       state.sendError = null;
     },
+    setRecipientPreference: (state, action: PayloadAction<NetworkId | null>) => {
+      state.recipientPreference = action.payload;
+      // Clear route when preference changes
+      state.transferRoute = null;
+      state.alternativeRoutes = [];
+      state.routeStatus = 'idle';
+    },
+    selectAlternativeRoute: (state, action: PayloadAction<number | null>) => {
+      state.selectedAlternativeIndex = action.payload;
+    },
+    clearRoute: (state) => {
+      state.transferRoute = null;
+      state.alternativeRoutes = [];
+      state.selectedAlternativeIndex = null;
+      state.routeStatus = 'idle';
+      state.routeError = null;
+    },
   },
   extraReducers: (builder) => {
     // Gas estimation
@@ -142,6 +262,24 @@ const sendSlice = createSlice({
         state.sendStatus = 'failed';
         state.sendError = action.error.message || 'Failed to send transaction';
       });
+
+    // Calculate route
+    builder
+      .addCase(calculateRouteThunk.pending, (state) => {
+        state.routeStatus = 'loading';
+        state.routeError = null;
+      })
+      .addCase(calculateRouteThunk.fulfilled, (state, action) => {
+        state.routeStatus = 'succeeded';
+        state.transferRoute = action.payload.primaryRoute;
+        state.alternativeRoutes = action.payload.alternatives;
+        state.recipientPreference = action.payload.recipientPreference;
+        state.selectedAlternativeIndex = null;
+      })
+      .addCase(calculateRouteThunk.rejected, (state, action) => {
+        state.routeStatus = 'failed';
+        state.routeError = action.error.message || 'Failed to calculate route';
+      });
   },
 });
 
@@ -154,6 +292,9 @@ export const {
   setSplitBillContext,
   setScheduledPaymentContext,
   validateRecipient,
+  setRecipientPreference,
+  selectAlternativeRoute,
+  clearRoute,
 } = sendSlice.actions;
 
 export default sendSlice.reducer;
