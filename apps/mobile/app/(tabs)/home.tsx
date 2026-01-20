@@ -13,6 +13,7 @@ import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
 import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
 import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
 import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
+import { resetContacts, loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service';
@@ -78,6 +79,9 @@ export default function HomeScreen() {
       dispatch(fetchTransactionsThunk(currentAccount.address));
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
       dispatch(loadPendingSplitsThunk(currentAccount.address));
+      // Reset and reload contacts for the new account
+      dispatch(resetContacts());
+      dispatch(loadContactsThunk());
     }
   }, [currentAccount?.address, dispatch]);
 
@@ -905,6 +909,10 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: theme.spacing.lg,
+  },
+  // Blur overlay for account selector
+  blurOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   // Account Selector Sheet
   accountSheet: {

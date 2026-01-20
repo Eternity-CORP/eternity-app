@@ -18,7 +18,7 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { getSplitBillThunk, cancelSplitBillThunk } from '@/src/store/slices/split-slice';
 import { setSelectedToken, setRecipient, setAmount, setStep, setSplitBillContext } from '@/src/store/slices/send-slice';
-import { truncateAddress } from '@/src/utils/format';
+import { truncateAddress, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -152,7 +152,7 @@ export default function SplitDetailsScreen() {
             adjustsFontSizeToFit
             minimumFontScale={0.5}
           >
-            {bill.totalAmount} {bill.tokenSymbol}
+            {formatAmount(bill.totalAmount)} {bill.tokenSymbol}
           </Text>
           {bill.description && (
             <Text style={[styles.description, theme.typography.body, { color: theme.colors.textSecondary }]}>
@@ -228,7 +228,7 @@ export default function SplitDetailsScreen() {
                     adjustsFontSizeToFit
                     minimumFontScale={0.7}
                   >
-                    {participant.amount} {bill.tokenSymbol}
+                    {formatAmount(participant.amount)} {bill.tokenSymbol}
                   </Text>
                 </View>
               );
@@ -252,7 +252,7 @@ export default function SplitDetailsScreen() {
                   adjustsFontSizeToFit
                   minimumFontScale={0.7}
                 >
-                  Pay My Share ({myParticipation.amount} {bill.tokenSymbol})
+                  Pay My Share ({formatAmount(myParticipation.amount)} {bill.tokenSymbol})
                 </Text>
               </TouchableOpacity>
             )}

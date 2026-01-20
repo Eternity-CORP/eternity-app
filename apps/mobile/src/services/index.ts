@@ -25,7 +25,7 @@ export {
 // BLIK Service
 export { blikSocket, type BlikCallbacks } from './blik-service';
 
-// Contacts Service
+// Contacts Service (account-isolated)
 export {
   loadContacts,
   saveContact,
@@ -34,6 +34,8 @@ export {
   deleteContact,
   findContactByAddress,
   searchContacts,
+  clearContacts,
+  clearAllContacts,
   type Contact,
 } from './contacts-service';
 

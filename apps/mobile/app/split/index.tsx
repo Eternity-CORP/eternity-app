@@ -16,7 +16,7 @@ import { useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { loadCreatedSplitsThunk, loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
-import { truncateAddress } from '@/src/utils/format';
+import { truncateAddress, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -101,7 +101,7 @@ export default function SplitListScreen() {
                   </View>
                   <View style={styles.splitInfo}>
                     <Text style={[styles.splitAmount, theme.typography.body]}>
-                      {myShare?.amount || bill.totalAmount} {bill.tokenSymbol}
+                      {formatAmount(myShare?.amount || bill.totalAmount)} {bill.tokenSymbol}
                     </Text>
                     <Text style={[styles.splitDescription, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                       {bill.description || `From ${bill.creatorUsername ? `@${bill.creatorUsername}` : truncateAddress(bill.creatorAddress)}`}
@@ -139,7 +139,7 @@ export default function SplitListScreen() {
                   </View>
                   <View style={styles.splitInfo}>
                     <Text style={[styles.splitAmount, theme.typography.body]}>
-                      {bill.totalAmount} {bill.tokenSymbol}
+                      {formatAmount(bill.totalAmount)} {bill.tokenSymbol}
                     </Text>
                     <Text style={[styles.splitDescription, theme.typography.caption, { color: theme.colors.textSecondary }]}>
                       {bill.description || `${paidCount}/${totalCount} paid`}

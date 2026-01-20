@@ -1,11 +1,19 @@
 /**
  * Contacts Service
  * Local storage for frequent recipients
+ * Each account has its own isolated contact book
  */
 
 import Storage from '@/src/utils/storage';
 
-const CONTACTS_STORAGE_KEY = 'e-y_contacts';
+const CONTACTS_STORAGE_PREFIX = 'e-y_contacts_';
+
+/**
+ * Get storage key for a specific account
+ */
+function getStorageKey(accountAddress: string): string {
+  return `${CONTACTS_STORAGE_PREFIX}${accountAddress.toLowerCase()}`;
+}
 
 export interface Contact {
   id: string;
@@ -17,11 +25,13 @@ export interface Contact {
 }
 
 /**
- * Load all contacts from storage
+ * Load all contacts from storage for a specific account
  */
-export async function loadContacts(): Promise<Contact[]> {
+export async function loadContacts(accountAddress: string): Promise<Contact[]> {
+  if (!accountAddress) return [];
+
   try {
-    const data = await Storage.getItem(CONTACTS_STORAGE_KEY);
+    const data = await Storage.getItem(getStorageKey(accountAddress));
     if (!data) return [];
 
     const contacts: Contact[] = JSON.parse(data);
@@ -34,10 +44,16 @@ export async function loadContacts(): Promise<Contact[]> {
 }
 
 /**
- * Save a new contact
+ * Save a new contact for a specific account
  */
-export async function saveContact(contact: Omit<Contact, 'id' | 'createdAt' | 'lastUsedAt'>): Promise<Contact> {
-  const contacts = await loadContacts();
+export async function saveContact(
+  accountAddress: string,
+  contact: Omit<Contact, 'id' | 'createdAt' | 'lastUsedAt'>
+): Promise<Contact> {
+  if (!accountAddress) throw new Error('Account address required');
+
+  const contacts = await loadContacts(accountAddress);
+  const storageKey = getStorageKey(accountAddress);
 
   // Check if contact with this address already exists
   const existingIndex = contacts.findIndex(
@@ -55,7 +71,7 @@ export async function saveContact(contact: Omit<Contact, 'id' | 'createdAt' | 'l
       lastUsedAt: now,
     };
     contacts[existingIndex] = updated;
-    await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+    await Storage.setItem(storageKey, JSON.stringify(contacts));
     return updated;
   }
 
@@ -70,33 +86,38 @@ export async function saveContact(contact: Omit<Contact, 'id' | 'createdAt' | 'l
   };
 
   contacts.unshift(newContact);
-  await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+  await Storage.setItem(storageKey, JSON.stringify(contacts));
   return newContact;
 }
 
 /**
- * Update contact's last used timestamp
+ * Update contact's last used timestamp for a specific account
  */
-export async function touchContact(address: string): Promise<void> {
-  const contacts = await loadContacts();
+export async function touchContact(accountAddress: string, contactAddress: string): Promise<void> {
+  if (!accountAddress) return;
+
+  const contacts = await loadContacts(accountAddress);
   const index = contacts.findIndex(
-    c => c.address.toLowerCase() === address.toLowerCase()
+    c => c.address.toLowerCase() === contactAddress.toLowerCase()
   );
 
   if (index >= 0) {
     contacts[index].lastUsedAt = Date.now();
-    await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+    await Storage.setItem(getStorageKey(accountAddress), JSON.stringify(contacts));
   }
 }
 
 /**
- * Update a contact
+ * Update a contact for a specific account
  */
 export async function updateContact(
+  accountAddress: string,
   id: string,
   updates: Partial<Pick<Contact, 'name' | 'username'>>
 ): Promise<Contact | null> {
-  const contacts = await loadContacts();
+  if (!accountAddress) return null;
+
+  const contacts = await loadContacts(accountAddress);
   const index = contacts.findIndex(c => c.id === id);
 
   if (index < 0) return null;
@@ -108,38 +129,47 @@ export async function updateContact(
   };
 
   contacts[index] = updated;
-  await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts));
+  await Storage.setItem(getStorageKey(accountAddress), JSON.stringify(contacts));
   return updated;
 }
 
 /**
- * Delete a contact
+ * Delete a contact for a specific account
  */
-export async function deleteContact(id: string): Promise<boolean> {
-  const contacts = await loadContacts();
+export async function deleteContact(accountAddress: string, id: string): Promise<boolean> {
+  if (!accountAddress) return false;
+
+  const contacts = await loadContacts(accountAddress);
   const filtered = contacts.filter(c => c.id !== id);
 
   if (filtered.length === contacts.length) return false;
 
-  await Storage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(filtered));
+  await Storage.setItem(getStorageKey(accountAddress), JSON.stringify(filtered));
   return true;
 }
 
 /**
- * Find contact by address
+ * Find contact by address for a specific account
  */
-export async function findContactByAddress(address: string): Promise<Contact | null> {
-  const contacts = await loadContacts();
+export async function findContactByAddress(
+  accountAddress: string,
+  contactAddress: string
+): Promise<Contact | null> {
+  if (!accountAddress) return null;
+
+  const contacts = await loadContacts(accountAddress);
   return contacts.find(
-    c => c.address.toLowerCase() === address.toLowerCase()
+    c => c.address.toLowerCase() === contactAddress.toLowerCase()
   ) || null;
 }
 
 /**
- * Search contacts by name or address
+ * Search contacts by name or address for a specific account
  */
-export async function searchContacts(query: string): Promise<Contact[]> {
-  const contacts = await loadContacts();
+export async function searchContacts(accountAddress: string, query: string): Promise<Contact[]> {
+  if (!accountAddress) return [];
+
+  const contacts = await loadContacts(accountAddress);
   const lowerQuery = query.toLowerCase();
 
   return contacts.filter(c =>
@@ -147,4 +177,20 @@ export async function searchContacts(query: string): Promise<Contact[]> {
     c.address.toLowerCase().includes(lowerQuery) ||
     (c.username && c.username.toLowerCase().includes(lowerQuery))
   );
+}
+
+/**
+ * Clear all contacts for a specific account (for debugging/reset)
+ */
+export async function clearContacts(accountAddress: string): Promise<void> {
+  if (!accountAddress) return;
+  await Storage.removeItem(getStorageKey(accountAddress));
+}
+
+/**
+ * Clear all contacts globally (removes old global key too)
+ */
+export async function clearAllContacts(): Promise<void> {
+  // Remove legacy global key
+  await Storage.removeItem('e-y_contacts');
 }

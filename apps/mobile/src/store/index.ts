@@ -11,6 +11,8 @@ import blikReducer from './slices/blik-slice';
 import contactsReducer from './slices/contacts-slice';
 import scheduledReducer from './slices/scheduled-slice';
 import splitReducer from './slices/split-slice';
+import scheduledCreateReducer from './slices/scheduled-create-slice';
+import splitCreateReducer from './slices/split-create-slice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +24,8 @@ export const store = configureStore({
     contacts: contactsReducer,
     scheduled: scheduledReducer,
     split: splitReducer,
+    scheduledCreate: scheduledCreateReducer,
+    splitCreate: splitCreateReducer,
   },
 });
 

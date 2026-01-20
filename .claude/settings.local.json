@@ -40,7 +40,14 @@
       "Bash(pkill:*)",
       "Bash(xargs kill:*)",
       "Bash(ln:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(git push:*)",
+      "Bash(for component in TokenIcon NotificationProvider ScreenHeader BlikCodeInput)",
+      "Bash(do echo \"=== $component ===\")",
+      "Bash(done)",
+      "Bash(for service in send-service contacts-service blik-service)",
+      "Bash(do echo \"=== $service ===\")",
+      "Bash(npx eslint:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
