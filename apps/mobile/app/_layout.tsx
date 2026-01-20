@@ -17,6 +17,7 @@ import { theme } from '@/src/constants/theme';
 import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
+import { clearLegacyContactsThunk } from '@/src/store/slices/contacts-slice';
 import { hasWallet } from '@/src/services/wallet-service';
 
 export {
@@ -90,6 +91,9 @@ function RootLayoutNav() {
   useEffect(() => {
     async function checkWallet() {
       try {
+        // Clear legacy global contacts on startup (one-time migration)
+        await dispatch(clearLegacyContactsThunk());
+
         const hasWalletData = await hasWallet();
         if (hasWalletData) {
           const walletResult = await dispatch(loadWalletThunk());

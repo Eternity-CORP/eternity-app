@@ -91,7 +91,9 @@ export default function BlikConfirmScreen() {
     }
 
     // Check if contact already exists
-    const existingContact = await findContactByAddress(codeInfo.receiverAddress);
+    const existingContact = currentAccount?.address
+      ? await findContactByAddress(currentAccount.address, codeInfo.receiverAddress)
+      : null;
 
     if (existingContact) {
       // Contact already exists, just show success
