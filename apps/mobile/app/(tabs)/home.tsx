@@ -1,42 +1,77 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Modal, Alert, TextInput, RefreshControl } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, TextInput, RefreshControl, Animated, Dimensions } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel, importWalletThunk, reorderAccounts, type Account } from '@/src/store/slices/wallet-slice';
 import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
-import { fetchTransactionsThunk, selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
+import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
 import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
 import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { saveAccounts } from '@/src/services/wallet-service';
-import { formatUsdValue, type TokenBalance } from '@/src/services/balance-service';
-import { truncateAddress } from '@/src/utils/format';
+import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Generate unique gradient colors from address (like web3 identicons)
+function generateAvatarColors(address: string): [string, string] {
+  // Use address bytes to generate colors
+  const hash = address.toLowerCase().replace('0x', '');
+
+  // First color from first 6 chars
+  const color1 = '#' + hash.slice(0, 6);
+
+  // Second color from chars 6-12, but rotate hue for contrast
+  const r = parseInt(hash.slice(6, 8), 16);
+  const g = parseInt(hash.slice(8, 10), 16);
+  const b = parseInt(hash.slice(10, 12), 16);
+
+  // Rotate colors for gradient effect
+  const color2 = `rgb(${(r + 128) % 256}, ${(g + 64) % 256}, ${(b + 192) % 256})`;
+
+  return [color1, color2];
+}
 
 export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
-  const transactionState = useAppSelector((state) => state.transaction);
-  const scheduled = useAppSelector((state) => state.scheduled);
   const split = useAppSelector((state) => state.split);
   const currentAccount = getCurrentAccount(wallet);
-  const transactions = useAppSelector((state) => selectTransactionsForAddress(state, currentAccount?.address || null));
+
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showAddWalletMenu, setShowAddWalletMenu] = useState(false);
+  const [showImportSheet, setShowImportSheet] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
+  const [seedPhraseInput, setSeedPhraseInput] = useState('');
+  const [newAccountName, setNewAccountName] = useState('');
+  const [accountBalances, setAccountBalances] = useState<Record<string, number>>({});
+
+  // Animation values for actions menu
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Animation values for account selector
+  const accountSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const accountFadeAnim = useRef(new Animated.Value(0)).current;
 
   // Auto-execute overdue scheduled payments
   useAutoScheduledPayments();
 
-  // Load balances, transactions, scheduled payments, and pending splits when account changes
+  // Load data when account changes
   useEffect(() => {
     if (currentAccount?.address) {
       dispatch(fetchBalancesThunk(currentAccount.address));
@@ -56,660 +91,609 @@ export default function HomeScreen() {
     }
   }, [currentAccount?.address, dispatch]);
 
-  // Get ETH balance
-  const ethBalance = balance.balances.find((b) => b.token === 'ETH');
   const totalBalance = formatUsdValue(balance.totalUsdValue);
 
+  // Actions menu animations
+  const openActionsMenu = () => {
+    slideAnim.setValue(SCREEN_HEIGHT); // Reset position
+    setShowActionsMenu(true);
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 11,
+    }).start();
+  };
+
+  const closeActionsMenu = () => {
+    Animated.timing(slideAnim, {
+      toValue: SCREEN_HEIGHT,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => setShowActionsMenu(false));
+  };
+
+  // Account selector animations
+  const openAccountSelector = async () => {
+    setShowAccountSelector(true);
+    setIsEditMode(false);
+    setShowAddWalletMenu(false);
+    setShowImportSheet(false);
+
+    // Fetch balances for all accounts in parallel
+    const balancePromises = wallet.accounts.map(async (account) => {
+      try {
+        const result = await fetchAllBalances(account.address);
+        return { address: account.address, balance: result.totalUsdValue };
+      } catch {
+        return { address: account.address, balance: 0 };
+      }
+    });
+
+    Promise.all(balancePromises).then((results) => {
+      const balances: Record<string, number> = {};
+      results.forEach(({ address, balance }) => {
+        balances[address] = balance;
+      });
+      setAccountBalances(balances);
+    });
+
+    Animated.parallel([
+      Animated.spring(accountSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }),
+      Animated.timing(accountFadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeAccountSelector = () => {
+    Animated.parallel([
+      Animated.timing(accountSlideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(accountFadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowAccountSelector(false);
+      setIsEditMode(false);
+      setShowAddWalletMenu(false);
+      setShowImportSheet(false);
+      setEditingAccountIndex(null);
+      setEditLabel('');
+      setSeedPhraseInput('');
+      setNewAccountName('');
+    });
+  };
+
+  // Account management
   const handleAddAccount = async () => {
+    if (!newAccountName.trim()) {
+      Alert.alert('Error', 'Please enter account name');
+      return;
+    }
     setIsAddingAccount(true);
     try {
-      await dispatch(addAccountThunk()).unwrap();
-      setShowAccountSelector(false);
-      Alert.alert('Success', 'New account created successfully!');
+      const result = await dispatch(addAccountThunk()).unwrap();
+      // Update the new account with the name
+      const newIndex = wallet.accounts.length;
+      dispatch(updateAccountLabel({ accountIndex: newIndex, label: newAccountName.trim() }));
+      setShowAddWalletMenu(false);
+      setNewAccountName('');
+      closeAccountSelector();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to create new account';
+      const message = error instanceof Error ? error.message : 'Failed to create account';
       Alert.alert('Error', message);
     } finally {
       setIsAddingAccount(false);
     }
   };
 
-  const handleSwitchAccount = (index: number) => {
-    dispatch(switchAccount(index));
-    setShowAccountSelector(false);
+  const handleImportWallet = async () => {
+    const words = seedPhraseInput.trim().split(/\s+/);
+    if (words.length !== 12 && words.length !== 24) {
+      Alert.alert('Error', 'Please enter 12 or 24 words');
+      return;
+    }
+    setIsAddingAccount(true);
+    try {
+      await dispatch(importWalletThunk(seedPhraseInput.trim())).unwrap();
+      setShowImportSheet(false);
+      setSeedPhraseInput('');
+      closeAccountSelector();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Success', 'Wallet imported successfully!');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to import wallet';
+      Alert.alert('Error', message);
+    } finally {
+      setIsAddingAccount(false);
+    }
   };
 
-  const handleEditAccount = (accountIndex: number, currentLabel?: string) => {
-    setEditingAccountIndex(accountIndex);
-    setEditLabel(currentLabel || '');
+  const handleSwitchAccount = (address: string) => {
+    if (isEditMode) return;
+    const index = wallet.accounts.findIndex(a => a.address === address);
+    if (index !== -1) {
+      dispatch(switchAccount(index));
+      closeAccountSelector();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
   const handleSaveLabel = async (accountIndex: number) => {
     const trimmedLabel = editLabel.trim();
-    
-    // Update Redux state
     dispatch(updateAccountLabel({ accountIndex, label: trimmedLabel || undefined }));
-    
-    // Save updated accounts to storage
-    // Get updated accounts from current state after dispatch
+
     const updatedAccounts = wallet.accounts.map((acc) =>
       acc.accountIndex === accountIndex ? { ...acc, label: trimmedLabel || undefined } : acc
     );
-    
+
     try {
       await saveAccounts(updatedAccounts);
       setEditingAccountIndex(null);
       setEditLabel('');
-    } catch (error) {
-      console.error('Error saving account label:', error);
-      Alert.alert('Error', 'Failed to save account label');
-      // Revert Redux state on error
-      dispatch(updateAccountLabel({ accountIndex, label: wallet.accounts.find(a => a.accountIndex === accountIndex)?.label }));
+    } catch {
+      Alert.alert('Error', 'Failed to save');
     }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingAccountIndex(null);
-    setEditLabel('');
   };
 
   const handleCopyAddress = async () => {
     if (!currentAccount?.address) return;
-    
     try {
       await Clipboard.setStringAsync(currentAccount.address);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Copied!', 'Wallet address copied to clipboard');
-    } catch (error) {
-      console.error('Error copying address:', error);
-      Alert.alert('Error', 'Failed to copy address');
+    } catch {
+      Alert.alert('Error', 'Failed to copy');
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      {/* Account Selector Header */}
-      <View style={styles.accountHeader}>
+      {/* Header */}
+      <View style={styles.header}>
         <TouchableOpacity
-          style={styles.accountSelector}
-          onPress={() => setShowAccountSelector(true)}
+          style={styles.headerButton}
+          onPress={() => router.push('/send/scan')}
         >
-          <View style={styles.accountInfo}>
-            <Text style={[styles.accountLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-              {currentAccount?.label || `Account ${currentAccount ? currentAccount.accountIndex + 1 : '1'}`}
-            </Text>
-            {currentAccount && (
-              <View style={styles.accountAddressRow}>
-                <Text style={[styles.accountAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                  {truncateAddress(currentAccount.address)}
-                </Text>
-                <TouchableOpacity
-                  style={styles.copyButton}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleCopyAddress();
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <FontAwesome name="copy" size={14} color={theme.colors.textTertiary} />
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-          <FontAwesome name="chevron-down" size={14} color={theme.colors.textSecondary} />
+          <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.accountButton}
+          onPress={openAccountSelector}
+        >
+          <Text style={styles.accountButtonText} numberOfLines={1}>
+            {currentAccount?.label || `Account ${(currentAccount?.accountIndex ?? 0) + 1}`}
+          </Text>
+          <FontAwesome name="chevron-down" size={10} color={theme.colors.textSecondary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.push('/(tabs)/transactions')}
+        >
+          <FontAwesome name="history" size={20} color={theme.colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={balance.status === 'loading'}
             onRefresh={onRefresh}
-            tintColor={theme.colors.buttonPrimary}
+            tintColor={theme.colors.accent}
           />
         }
       >
-      {/* Pending Split Bills Banner */}
-      {split.pendingSplits.length > 0 && (
-        <View style={styles.pendingSplitBanner}>
-          {split.pendingSplits.slice(0, 2).map((splitBill) => {
-            const myShare = splitBill.participants.find(
-              (p) => p.address.toLowerCase() === currentAccount?.address?.toLowerCase()
-            );
-            const creatorDisplay = splitBill.creatorUsername
-              ? `@${splitBill.creatorUsername}`
-              : truncateAddress(splitBill.creatorAddress);
-            return (
-              <View key={splitBill.id} style={styles.pendingSplitItem}>
-                <View style={styles.pendingSplitHeader}>
-                  <View style={styles.pendingSplitIcon}>
-                    <FontAwesome name="exclamation-circle" size={20} color="#FFA500" />
-                  </View>
-                  <View style={styles.pendingSplitInfo}>
-                    <Text style={[styles.pendingSplitTitle, theme.typography.heading]}>
-                      Payment Request
-                    </Text>
-                    <Text style={[styles.pendingSplitCreator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                      {creatorDisplay} requested {myShare?.amount || '?'} {splitBill.tokenSymbol}
-                    </Text>
-                    {splitBill.description && (
-                      <Text
-                        style={[styles.pendingSplitDescription, theme.typography.caption, { color: theme.colors.textTertiary }]}
-                        numberOfLines={1}
-                      >
-                        "{splitBill.description}"
-                      </Text>
-                    )}
-                  </View>
-                </View>
-                <View style={styles.pendingSplitActions}>
-                  <TouchableOpacity
-                    style={styles.pendingSplitPayButton}
-                    onPress={() => {
-                      router.push(`/split/${splitBill.id}`);
-                    }}
-                  >
-                    <Text style={[styles.pendingSplitPayText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
-                      Pay Now
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.pendingSplitDetailsButton}
-                    onPress={() => router.push(`/split/${splitBill.id}`)}
-                  >
-                    <Text style={[styles.pendingSplitDetailsText, theme.typography.body, { color: theme.colors.textSecondary }]}>
-                      Details
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          })}
-          {split.pendingSplits.length > 2 && (
+        {/* Pending Split Banner */}
+        {split.pendingSplits.length > 0 && (
+          <TouchableOpacity
+            style={styles.pendingBanner}
+            onPress={() => router.push(`/split/${split.pendingSplits[0].id}`)}
+          >
+            <FontAwesome name="exclamation-circle" size={16} color="#FFA500" />
+            <Text style={styles.pendingBannerText}>
+              {split.pendingSplits.length} pending payment request{split.pendingSplits.length > 1 ? 's' : ''}
+            </Text>
+            <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
+        )}
+
+        {/* Balance */}
+        <View style={styles.balanceSection}>
+          <Text style={styles.balance}>
+            {balance.status === 'loading' && !balance.lastUpdated ? '...' : totalBalance}
+          </Text>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity
+            style={styles.actionButtonPrimary}
+            onPress={() => router.push('/send/token')}
+          >
+            <Text style={styles.actionButtonPrimaryText}>Send</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButtonSecondary}
+            onPress={() => router.push('/receive')}
+          >
+            <Text style={styles.actionButtonSecondaryText}>Receive</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButtonMore}
+            onPress={openActionsMenu}
+          >
+            <FontAwesome name="ellipsis-h" size={18} color={theme.colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Tokens List */}
+        <View style={styles.tokensSection}>
+          <Text style={styles.sectionTitle}>Tokens</Text>
+
+          {balance.balances.map((token) => (
             <TouchableOpacity
-              style={styles.pendingSplitMoreButton}
-              onPress={() => router.push('/split/create')}
+              key={token.token}
+              style={styles.tokenItem}
+              onPress={() => router.push(`/token/${token.symbol}`)}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.pendingSplitMoreText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
-                +{split.pendingSplits.length - 2} more pending requests
-              </Text>
+              <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={44} />
+              <View style={styles.tokenInfo}>
+                <Text style={styles.tokenName}>{token.name || token.symbol}</Text>
+                <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+              </View>
+              <View style={styles.tokenBalance}>
+                <Text style={styles.tokenBalanceValue}>
+                  {parseFloat(token.balance).toFixed(4)}
+                </Text>
+                <Text style={styles.tokenBalanceUsd}>
+                  ${token.usdValue?.toFixed(2) || '0.00'}
+                </Text>
+              </View>
             </TouchableOpacity>
+          ))}
+
+          {balance.balances.length === 0 && balance.status !== 'loading' && (
+            <View style={styles.emptyState}>
+              <FontAwesome name="inbox" size={32} color={theme.colors.textTertiary} />
+              <Text style={styles.emptyStateText}>No tokens yet</Text>
+            </View>
           )}
         </View>
-      )}
-
-      {/* Balance Section */}
-      <View style={styles.balanceSection}>
-        <Text style={[styles.balance, theme.typography.displayLarge]}>
-          {balance.status === 'loading' && !balance.lastUpdated ? '...' : totalBalance}
-        </Text>
-        <Text style={[styles.balanceLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-          Total Balance
-        </Text>
-        {balance.error && (
-          <Text style={[styles.balanceError, theme.typography.caption, { color: theme.colors.error }]}>
-            {balance.error}
-          </Text>
-        )}
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionsRow}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonPrimary]}
-          onPress={() => router.push('/send/token')}
-        >
-          <Text style={[styles.actionButtonText, { color: theme.colors.buttonPrimaryText }]}>
-            Send
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonSecondary]}
-          onPress={() => router.push('/receive')}
-        >
-          <Text style={[styles.actionButtonText, { color: theme.colors.textPrimary }]}>
-            Receive
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.actionButton, styles.actionButtonIcon]}
-          onPress={() => setShowActionsMenu(true)}
-        >
-          <FontAwesome name="ellipsis-h" size={20} color={theme.colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Token Cards Section */}
-      <View style={styles.tokensSection}>
-        {/* Large Token Card (Primary) */}
-        {ethBalance && (
-          <TouchableOpacity
-            style={styles.tokenCardLarge}
-            onPress={() => router.push(`/token/${ethBalance.symbol}`)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.tokenCardHeader}>
-              <TokenIcon symbol={ethBalance.symbol} iconUrl={ethBalance.iconUrl} size={48} style={{ marginRight: theme.spacing.md }} />
-              <View style={styles.tokenInfo}>
-                <Text style={[styles.tokenName, theme.typography.heading]}>{ethBalance.name || 'Ethereum'}</Text>
-                <Text style={[styles.tokenTicker, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                  {ethBalance.symbol}
-                </Text>
-              </View>
-              <FontAwesome name="chevron-right" size={14} color={theme.colors.textTertiary} />
-            </View>
-            <View style={styles.tokenCardBody}>
-              <Text style={[styles.tokenBalance, theme.typography.title]}>
-                {ethBalance.balance} {ethBalance.symbol}
-              </Text>
-              <Text style={[styles.tokenValue, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                {ethBalance.usdValue ? formatUsdValue(ethBalance.usdValue) : '$0.00'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* Token Grid (2 columns) */}
-        {balance.balances.length > 1 && (
-          <View style={styles.tokenGrid}>
-            {balance.balances
-              .filter((b) => b.token !== 'ETH')
-              .map((token) => (
-                <TouchableOpacity
-                  key={token.token}
-                  style={styles.tokenCardSmall}
-                  onPress={() => router.push(`/token/${token.symbol}`)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.tokenCardHeader}>
-                    <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={32} style={{ marginRight: theme.spacing.md }} />
-                    <View style={styles.tokenInfo}>
-                      <Text style={[styles.tokenName, theme.typography.body]}>{token.name || token.symbol}</Text>
-                    </View>
-                  </View>
-                  <Text style={[styles.tokenBalanceSmall, theme.typography.body]}>
-                    {token.balance} {token.symbol}
-                  </Text>
-                  {token.usdValue !== undefined && token.usdValue > 0 && (
-                    <Text style={[styles.tokenValueSmall, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                      {formatUsdValue(token.usdValue)}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-          </View>
-        )}
-      </View>
-
-      {/* Scheduled Payments Section */}
-      {scheduled.payments.length > 0 && (
-        <View style={styles.scheduledSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, theme.typography.heading]}>Upcoming Payments</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/scheduled/create')}
-              style={styles.viewAllButton}
-            >
-              <FontAwesome name="plus" size={12} color={theme.colors.buttonPrimary} />
-              <Text style={[styles.viewAllText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
-                New
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.scheduledList}>
-            {scheduled.payments.slice(0, 3).map((payment) => {
-              const scheduledDate = new Date(payment.scheduledAt);
-              const isPast = scheduledDate.getTime() < Date.now();
-              const recipientDisplay = payment.recipientUsername
-                ? payment.recipientUsername
-                : payment.recipientName
-                  ? payment.recipientName
-                  : truncateAddress(payment.recipient);
-              return (
-                <TouchableOpacity
-                  key={payment.id}
-                  style={styles.scheduledItem}
-                  onPress={() => router.push(`/scheduled/${payment.id}`)}
-                >
-                  <View style={[styles.scheduledIcon, isPast && styles.scheduledIconOverdue]}>
-                    <FontAwesome
-                      name={payment.recurringInterval ? 'refresh' : 'calendar'}
-                      size={16}
-                      color={isPast ? theme.colors.error : theme.colors.buttonPrimary}
-                    />
-                  </View>
-                  <View style={styles.scheduledInfo}>
-                    <Text style={[styles.scheduledAmount, theme.typography.body]}>
-                      {payment.amount} {payment.tokenSymbol} → {recipientDisplay}
-                    </Text>
-                    <Text style={[styles.scheduledDate, theme.typography.caption, { color: isPast ? theme.colors.error : theme.colors.textSecondary }]}>
-                      {isPast ? 'Overdue - ' : ''}{scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </View>
-                  <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-      )}
-
-      {/* Create Scheduled Payment Button (when no payments) */}
-      {scheduled.payments.length === 0 && (
-        <TouchableOpacity
-          style={styles.createScheduledButton}
-          onPress={() => router.push('/scheduled/create')}
-        >
-          <FontAwesome name="calendar-plus-o" size={20} color={theme.colors.buttonPrimary} />
-          <Text style={[styles.createScheduledText, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
-            Schedule a Payment
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Recent Transactions Section */}
-      <View style={styles.transactionsSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, theme.typography.heading]}>Recent Transactions</Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/transactions')}
-            style={styles.viewAllButton}
-          >
-            <Text style={[styles.viewAllText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
-              View All
-            </Text>
-            <FontAwesome name="chevron-right" size={12} color={theme.colors.buttonPrimary} style={styles.viewAllIcon} />
-          </TouchableOpacity>
-        </View>
-
-        {transactionState.status === 'loading' && transactions.length === 0 ? (
-          <View style={styles.transactionEmpty}>
-            <Text style={[styles.transactionEmptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
-              Loading transactions...
-            </Text>
-          </View>
-        ) : transactions.length === 0 ? (
-          <View style={styles.transactionEmpty}>
-            <FontAwesome name="exchange" size={32} color={theme.colors.textTertiary} />
-            <Text style={[styles.transactionEmptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
-              No transactions yet
-            </Text>
-            <Text style={[styles.transactionEmptySubtext, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-              Your transaction history will appear here
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.transactionsList}>
-            {transactions.slice(0, 5).map((tx) => (
-              <TouchableOpacity
-                key={tx.hash}
-                style={styles.transactionItem}
-                onPress={() => router.push(`/transaction/${tx.hash}`)}
-              >
-                <View style={styles.transactionIcon}>
-                  <FontAwesome
-                    name={tx.direction === 'sent' ? 'arrow-up' : 'arrow-down'}
-                    size={16}
-                    color={tx.direction === 'sent' ? theme.colors.error : theme.colors.success || theme.colors.buttonPrimary}
-                  />
-                </View>
-                <View style={styles.transactionInfo}>
-                  <Text style={[styles.transactionDirection, theme.typography.body]}>
-                    {tx.direction === 'sent' ? 'Sent' : 'Received'}
-                  </Text>
-                  <Text style={[styles.transactionDate, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                    {new Date(tx.timestamp).toLocaleDateString()} {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Text>
-                </View>
-                <View style={styles.transactionAmount}>
-                  <Text style={[
-                    styles.transactionAmountText,
-                    theme.typography.body,
-                    { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.success || theme.colors.buttonPrimary }
-                  ]}>
-                    {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
-                  </Text>
-                  <View style={styles.transactionStatus}>
-                    <View style={[
-                      styles.statusDot,
-                      {
-                        backgroundColor:
-                          tx.status === 'confirmed' ? (theme.colors.success || theme.colors.buttonPrimary) :
-                          tx.status === 'pending' ? '#FFA500' :
-                          theme.colors.error
-                      }
-                    ]} />
-                    <Text style={[styles.transactionStatusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                      {tx.status}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-
       </ScrollView>
 
-      {/* Account Selector Modal */}
-      <Modal
-        visible={showAccountSelector}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowAccountSelector(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowAccountSelector(false)}
-        >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, theme.typography.title]}>Select Account</Text>
-              <TouchableOpacity onPress={() => setShowAccountSelector(false)}>
-                <FontAwesome name="times" size={20} color={theme.colors.textPrimary} />
+      {/* Actions Menu with Blur */}
+      {showActionsMenu && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            onPress={closeActionsMenu}
+            activeOpacity={1}
+          >
+            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+          </TouchableOpacity>
+
+          <Animated.View
+            style={[
+              styles.actionsMenuContainer,
+              { transform: [{ translateY: slideAnim }] },
+            ]}
+            pointerEvents="box-none"
+          >
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); router.push('/send/token'); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="arrow-up" size={20} color="#000" style={{ transform: [{ rotate: '45deg' }] }} />
+              </View>
+              <Text style={styles.actionMenuText}>Send</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); router.push('/receive'); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="arrow-down" size={20} color="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
+              </View>
+              <Text style={styles.actionMenuText}>Receive</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); router.push('/blik'); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="bolt" size={20} color="#000" />
+              </View>
+              <Text style={styles.actionMenuText}>BLIK</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); router.push('/scheduled/create'); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="calendar" size={20} color="#000" />
+              </View>
+              <Text style={styles.actionMenuText}>Scheduled</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); router.push('/split/create'); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="users" size={20} color="#000" />
+              </View>
+              <Text style={styles.actionMenuText}>Split Bill</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); handleCopyAddress(); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="copy" size={20} color="#000" />
+              </View>
+              <Text style={styles.actionMenuText}>Copy Address</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Account Selector Bottom Sheet */}
+      {showAccountSelector && (
+        <View style={StyleSheet.absoluteFill}>
+          <Animated.View style={[styles.blurOverlay, { opacity: accountFadeAnim }]}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeAccountSelector}>
+              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.accountSheet,
+              { transform: [{ translateY: accountSlideAnim }] },
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+
+            {/* Header */}
+            <View style={styles.accountSheetHeader}>
+              <TouchableOpacity
+                style={styles.editModeButton}
+                onPress={() => setIsEditMode(!isEditMode)}
+              >
+                <Text style={[styles.editModeText, isEditMode && styles.editModeTextActive]}>
+                  {isEditMode ? 'Done' : 'Edit'}
+                </Text>
+              </TouchableOpacity>
+
+              <Text style={styles.accountSheetTitle}>Wallets list</Text>
+
+              <TouchableOpacity
+                style={styles.closeSheetButton}
+                onPress={closeAccountSelector}
+              >
+                <FontAwesome name="times" size={18} color={theme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.accountsList}>
-              {wallet.accounts.map((account, index) => (
-                <View
-                  key={account.id}
-                  style={[
-                    styles.accountItem,
-                    index === wallet.currentAccountIndex && styles.accountItemActive,
-                  ]}
-                >
-                  {editingAccountIndex === account.accountIndex ? (
-                    <View style={styles.accountEditContainer}>
-                      <TextInput
-                        style={[styles.accountEditInput, theme.typography.heading]}
-                        value={editLabel}
-                        onChangeText={setEditLabel}
-                        placeholder="Account name (optional)"
-                        placeholderTextColor={theme.colors.textTertiary}
-                        autoFocus
-                        maxLength={30}
-                      />
-                      <View style={styles.accountEditActions}>
-                        <TouchableOpacity
-                          style={styles.accountEditButton}
-                          onPress={handleCancelEdit}
-                        >
-                          <Text style={[styles.accountEditButtonText, { color: theme.colors.textSecondary }]}>
-                            Cancel
-                          </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.accountEditButton, styles.accountEditButtonSave]}
-                          onPress={() => handleSaveLabel(account.accountIndex)}
-                        >
-                          <Text style={[styles.accountEditButtonText, { color: theme.colors.buttonPrimary }]}>
-                            Save
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ) : (
-                    <>
-                      <TouchableOpacity
-                        style={styles.accountItemTouchable}
-                        onPress={() => handleSwitchAccount(index)}
-                      >
-                        <View style={styles.accountItemContent}>
-                          <Text style={[styles.accountItemLabel, theme.typography.heading]}>
-                            {account.label || `Account ${account.accountIndex + 1}`}
-                          </Text>
-                          <Text style={[styles.accountItemAddress, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                            {truncateAddress(account.address, 8, 6)}
-                          </Text>
-                        </View>
-                        {index === wallet.currentAccountIndex && (
-                          <FontAwesome name="check" size={16} color={theme.colors.buttonPrimary} />
-                        )}
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.accountEditIcon}
-                        onPress={() => handleEditAccount(account.accountIndex, account.label)}
-                      >
-                        <FontAwesome name="pencil" size={14} color={theme.colors.textSecondary} />
-                      </TouchableOpacity>
-                    </>
-                  )}
+            {/* Accounts List or Add Wallet Menu or Import Sheet */}
+            {showImportSheet ? (
+              <View style={styles.importSheet}>
+                <Text style={styles.importTitle}>Import Wallet</Text>
+                <Text style={styles.importSubtitle}>
+                  Enter your 12 or 24 word recovery phrase
+                </Text>
+                <TextInput
+                  style={styles.seedInput}
+                  value={seedPhraseInput}
+                  onChangeText={setSeedPhraseInput}
+                  placeholder="Enter seed phrase..."
+                  placeholderTextColor={theme.colors.textTertiary}
+                  multiline
+                  numberOfLines={4}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View style={styles.importActions}>
+                  <TouchableOpacity
+                    style={styles.importCancelButton}
+                    onPress={() => { setShowImportSheet(false); setSeedPhraseInput(''); }}
+                  >
+                    <Text style={styles.importCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.importConfirmButton, isAddingAccount && { opacity: 0.5 }]}
+                    onPress={handleImportWallet}
+                    disabled={isAddingAccount}
+                  >
+                    <Text style={styles.importConfirmText}>
+                      {isAddingAccount ? 'Importing...' : 'Import'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              ))}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.usernameButton}
-                onPress={() => {
-                  setShowAccountSelector(false);
-                  router.push('/profile/username');
-                }}
-              >
-                <FontAwesome name="at" size={16} color={theme.colors.textPrimary} />
-                <Text style={[styles.usernameButtonText, theme.typography.body]}>
-                  Manage @username
-                </Text>
-                <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} style={styles.usernameButtonChevron} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.addAccountButton, isAddingAccount && styles.addAccountButtonDisabled]}
-                onPress={handleAddAccount}
-                disabled={isAddingAccount}
-              >
-                <FontAwesome name="plus" size={16} color={theme.colors.buttonPrimaryText} style={styles.addAccountIcon} />
-                <Text style={[styles.addAccountText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
-                  {isAddingAccount ? 'Creating...' : 'Add Account'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Actions Menu Modal */}
-      <Modal
-        visible={showActionsMenu}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowActionsMenu(false)}
-      >
-        <TouchableOpacity
-          style={styles.actionsMenuOverlay}
-          activeOpacity={1}
-          onPress={() => setShowActionsMenu(false)}
-        >
-          <View style={styles.actionsMenuContent} onStartShouldSetResponder={() => true}>
-            <View style={styles.actionsMenuHandle} />
-
-            <TouchableOpacity
-              style={styles.actionsMenuItem}
-              onPress={() => {
-                setShowActionsMenu(false);
-                router.push('/send/token');
-              }}
-            >
-              <View style={styles.actionsMenuIcon}>
-                <FontAwesome name="arrow-up" size={18} color={theme.colors.textPrimary} />
               </View>
-              <Text style={[styles.actionsMenuText, theme.typography.body]}>Send</Text>
-            </TouchableOpacity>
+            ) : showAddWalletMenu ? (
+              <View style={styles.addWalletMenu}>
+                <Text style={styles.addWalletTitle}>Add Wallet</Text>
 
-            <TouchableOpacity
-              style={styles.actionsMenuItem}
-              onPress={() => {
-                setShowActionsMenu(false);
-                router.push('/receive');
-              }}
-            >
-              <View style={styles.actionsMenuIcon}>
-                <FontAwesome name="arrow-down" size={18} color={theme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionsMenuText, theme.typography.body]}>Receive</Text>
-            </TouchableOpacity>
+                <TextInput
+                  style={styles.newAccountInput}
+                  value={newAccountName}
+                  onChangeText={setNewAccountName}
+                  placeholder="Wallet name"
+                  placeholderTextColor={theme.colors.textTertiary}
+                />
 
-            <TouchableOpacity
-              style={styles.actionsMenuItem}
-              onPress={() => {
-                setShowActionsMenu(false);
-                router.push('/blik');
-              }}
-            >
-              <View style={styles.actionsMenuIcon}>
-                <FontAwesome name="bolt" size={18} color={theme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionsMenuText, theme.typography.body]}>BLIK</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addWalletOption}
+                  onPress={handleAddAccount}
+                  disabled={isAddingAccount}
+                >
+                  <View style={[styles.addWalletIcon, { backgroundColor: theme.colors.accent + '20' }]}>
+                    <FontAwesome name="plus" size={18} color={theme.colors.accent} />
+                  </View>
+                  <View style={styles.addWalletOptionInfo}>
+                    <Text style={styles.addWalletOptionTitle}>New Wallet</Text>
+                    <Text style={styles.addWalletOptionDesc}>Create a new wallet account</Text>
+                  </View>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionsMenuItem}
-              onPress={() => {
-                setShowActionsMenu(false);
-                router.push('/split');
-              }}
-            >
-              <View style={styles.actionsMenuIcon}>
-                <FontAwesome name="users" size={18} color={theme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionsMenuText, theme.typography.body]}>Split Bill</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addWalletOption}
+                  onPress={() => { setShowAddWalletMenu(false); setShowImportSheet(true); }}
+                >
+                  <View style={[styles.addWalletIcon, { backgroundColor: '#8B5CF6' + '20' }]}>
+                    <FontAwesome name="download" size={18} color="#8B5CF6" />
+                  </View>
+                  <View style={styles.addWalletOptionInfo}>
+                    <Text style={styles.addWalletOptionTitle}>Existing Wallet</Text>
+                    <Text style={styles.addWalletOptionDesc}>Import using recovery phrase</Text>
+                  </View>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.actionsMenuItem}
-              onPress={() => {
-                setShowActionsMenu(false);
-                router.push('/scheduled');
-              }}
-            >
-              <View style={styles.actionsMenuIcon}>
-                <FontAwesome name="calendar" size={18} color={theme.colors.textPrimary} />
+                <TouchableOpacity
+                  style={styles.addWalletCancelButton}
+                  onPress={() => { setShowAddWalletMenu(false); setNewAccountName(''); }}
+                >
+                  <Text style={styles.addWalletCancelText}>Cancel</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={[styles.actionsMenuText, theme.typography.body]}>Scheduled</Text>
-            </TouchableOpacity>
+            ) : (
+              <>
+                <DraggableFlatList
+                  data={wallet.accounts}
+                  keyExtractor={(item) => item.id}
+                  onDragEnd={({ data }) => {
+                    dispatch(reorderAccounts(data));
+                    saveAccounts(data);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  }}
+                  onDragBegin={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                  containerStyle={styles.accountsList}
+                  renderItem={({ item: account, drag, isActive }: RenderItemParams<Account>) => {
+                    const [color1, color2] = generateAvatarColors(account.address);
+                    const accountIndex = wallet.accounts.findIndex(a => a.address === account.address);
+                    const isSelected = accountIndex === wallet.currentAccountIndex;
+                    const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
 
-            <TouchableOpacity
-              style={styles.actionsMenuItem}
-              onPress={() => {
-                setShowActionsMenu(false);
-                router.push('/send/scan');
-              }}
-            >
-              <View style={styles.actionsMenuIcon}>
-                <FontAwesome name="qrcode" size={18} color={theme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionsMenuText, theme.typography.body]}>Scan QR</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+                    if (editingAccountIndex === account.accountIndex) {
+                      return (
+                        <View style={styles.editAccountContainer}>
+                          <TextInput
+                            style={styles.editAccountInput}
+                            value={editLabel}
+                            onChangeText={setEditLabel}
+                            placeholder="Account name"
+                            placeholderTextColor={theme.colors.textTertiary}
+                            autoFocus
+                          />
+                          <View style={styles.editAccountActions}>
+                            <TouchableOpacity
+                              style={styles.editAccountCancel}
+                              onPress={() => { setEditingAccountIndex(null); setEditLabel(''); }}
+                            >
+                              <Text style={styles.editAccountCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.editAccountSave}
+                              onPress={() => handleSaveLabel(account.accountIndex)}
+                            >
+                              <Text style={styles.editAccountSaveText}>Save</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <ScaleDecorator>
+                        <TouchableOpacity
+                          style={[
+                            styles.accountListItem,
+                            isActive && styles.accountListItemDragging,
+                          ]}
+                          onPress={() => isEditMode
+                            ? (setEditingAccountIndex(account.accountIndex), setEditLabel(account.label || ''))
+                            : handleSwitchAccount(account.address)
+                          }
+                          activeOpacity={0.7}
+                          disabled={isActive}
+                        >
+                          {/* Drag handle - only in edit mode */}
+                          {isEditMode && (
+                            <TouchableOpacity
+                              onLongPress={drag}
+                              delayLongPress={100}
+                              style={styles.dragHandle}
+                              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                              <FontAwesome name="bars" size={16} color={theme.colors.textTertiary} />
+                            </TouchableOpacity>
+                          )}
+
+                          {/* Gradient avatar based on address */}
+                          <LinearGradient
+                            colors={[color1, color2]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.accountAvatar}
+                          />
+
+                          <View style={styles.accountListInfo}>
+                            <Text style={styles.accountListName}>
+                              {account.label || `Account ${account.accountIndex + 1}`}
+                            </Text>
+                            <Text style={styles.accountListBalance}>{accountBalance}</Text>
+                          </View>
+
+                          {isEditMode ? (
+                            <FontAwesome name="pencil" size={16} color={theme.colors.textTertiary} />
+                          ) : isSelected ? (
+                            <FontAwesome name="check" size={18} color={theme.colors.accent} />
+                          ) : null}
+                        </TouchableOpacity>
+                      </ScaleDecorator>
+                    );
+                  }}
+                />
+
+                {/* Add Wallet Button */}
+                <TouchableOpacity
+                  style={styles.addWalletButton}
+                  onPress={() => setShowAddWalletMenu(true)}
+                >
+                  <Text style={styles.addWalletButtonText}>Add Wallet</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </Animated.View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -719,525 +703,471 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  accountHeader: {
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.xs,
-    paddingBottom: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.buttonSecondaryBorder,
-  },
-  accountSelector: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
   },
-  accountInfo: {
-    flex: 1,
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  accountLabel: {
-    marginBottom: theme.spacing.xs / 2,
-  },
-  accountAddressRow: {
+  accountButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     gap: theme.spacing.xs,
+    maxWidth: 180,
   },
-  accountAddress: {
-    fontFamily: 'monospace',
+  accountButtonText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontWeight: '500',
+  },
+  scrollView: {
     flex: 1,
   },
-  copyButton: {
-    padding: theme.spacing.xs,
-    marginLeft: theme.spacing.xs,
+  scrollContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
   },
-  container: {
+  pendingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFA50015',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: '#FFA50030',
+  },
+  pendingBannerText: {
+    ...theme.typography.caption,
+    color: '#FFA500',
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
-  content: {
-    padding: theme.spacing.xl,
-    paddingTop: theme.spacing.lg,
+  balanceSection: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxl,
   },
-  modalOverlay: {
+  balance: {
+    fontSize: 52,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    letterSpacing: -1,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xxl,
+  },
+  actionButtonPrimary: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
+    backgroundColor: theme.colors.accent,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.full,
     alignItems: 'center',
   },
-  modalContent: {
+  actionButtonPrimaryText: {
+    ...theme.typography.body,
+    color: theme.colors.buttonPrimaryText,
+    fontWeight: '600',
+  },
+  actionButtonSecondary: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.full,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+  },
+  actionButtonSecondaryText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+  },
+  actionButtonMore: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  tokensSection: {
+    gap: theme.spacing.sm,
+  },
+  sectionTitle: {
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+  },
+  tokenItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    gap: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  tokenInfo: {
+    flex: 1,
+  },
+  tokenName: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  tokenSymbol: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+  },
+  tokenBalance: {
+    alignItems: 'flex-end',
+  },
+  tokenBalanceValue: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  tokenBalanceUsd: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xxl * 2,
+    gap: theme.spacing.md,
+  },
+  emptyStateText: {
+    ...theme.typography.body,
+    color: theme.colors.textTertiary,
+  },
+  // Actions Menu overlay
+  darkOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  actionsMenuContainer: {
+    position: 'absolute',
+    left: theme.spacing.xl,
+    bottom: theme.spacing.xl,
+    gap: theme.spacing.md,
+  },
+  actionMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.lg,
+  },
+  actionMenuIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionMenuText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  // Legacy sheet styles for account selector
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: theme.colors.borderLight,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  // Account Selector Sheet
+  accountSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xxl + 20,
+    maxHeight: SCREEN_HEIGHT * 0.7,
+  },
+  accountSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  editModeButton: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+  },
+  editModeText: {
+    ...theme.typography.caption,
+    color: theme.colors.textPrimary,
+    fontWeight: '500',
+  },
+  editModeTextActive: {
+    color: theme.colors.accent,
+  },
+  accountSheetTitle: {
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    fontSize: 18,
+  },
+  closeSheetButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountsList: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+  },
+  accountListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.lg,
-    width: '90%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    paddingBottom: theme.spacing.xl,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    gap: theme.spacing.md,
+  },
+  accountListItemDragging: {
+    backgroundColor: theme.colors.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: theme.spacing.xl,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.buttonSecondaryBorder,
-  },
-  modalTitle: {
-    color: theme.colors.textPrimary,
-  },
-  accountsList: {
-    maxHeight: 400,
-  },
-  accountItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.buttonSecondaryBorder,
-    position: 'relative',
-  },
-  accountItemActive: {
-    backgroundColor: theme.colors.surface,
-  },
-  accountItemTouchable: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: theme.spacing.lg,
-    paddingRight: theme.spacing.xl + 20, // Space for edit icon
-  },
-  accountItemContent: {
-    flex: 1,
-  },
-  accountItemLabel: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
-  },
-  accountItemAddress: {
-    fontFamily: 'monospace',
-  },
-  accountEditIcon: {
-    position: 'absolute',
-    right: theme.spacing.lg,
-    top: '50%',
-    transform: [{ translateY: -7 }],
+  dragHandle: {
     padding: theme.spacing.sm,
+    marginLeft: -theme.spacing.xs,
   },
-  accountEditContainer: {
-    padding: theme.spacing.lg,
-  },
-  accountEditInput: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.buttonSecondaryBorder,
-  },
-  accountEditActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: theme.spacing.md,
-  },
-  accountEditButton: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  accountEditButtonSave: {
-    // Additional styles if needed
-  },
-  accountEditButtonText: {
-    ...theme.typography.heading,
-  },
-  modalActions: {
-    padding: theme.spacing.xl,
-    paddingTop: theme.spacing.lg,
-  },
-  addAccountButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.buttonPrimary,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    gap: theme.spacing.sm,
-  },
-  addAccountButtonDisabled: {
-    opacity: 0.5,
-  },
-  addAccountIcon: {
-    marginRight: theme.spacing.xs,
-  },
-  addAccountText: {
-    // Already styled
-  },
-  usernameButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.lg,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.md,
-    gap: theme.spacing.md,
-  },
-  usernameButtonText: {
-    flex: 1,
-    color: theme.colors.textPrimary,
-  },
-  usernameButtonChevron: {
-    marginLeft: theme.spacing.sm,
-  },
-  balanceSection: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  balance: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
-  },
-  balanceLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  balanceError: {
-    marginTop: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.xxl,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
+  accountAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionButtonPrimary: {
-    backgroundColor: theme.colors.buttonPrimary,
-  },
-  actionButtonSecondary: {
-    backgroundColor: theme.colors.buttonSecondary,
-    borderWidth: 1,
-    borderColor: theme.colors.buttonSecondaryBorder,
-  },
-  actionButtonIcon: {
-    backgroundColor: theme.colors.surface,
-    flex: 0,
-    width: 56,
-    aspectRatio: 1,
-    borderRadius: theme.borderRadius.full,
-  },
-  actionButtonText: {
-    ...theme.typography.heading,
-  },
-  tokensSection: {
-    gap: theme.spacing.lg,
-  },
-  tokenCardLarge: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-  },
-  tokenCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  tokenInfo: {
+  accountListInfo: {
     flex: 1,
+    gap: 2,
   },
-  tokenName: {
+  accountListName: {
+    ...theme.typography.body,
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
-  },
-  tokenTicker: {
-    textTransform: 'uppercase',
-  },
-  tokenCardBody: {
-    alignItems: 'flex-start',
-  },
-  tokenBalance: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
-  },
-  tokenValue: {
-    // Already styled
-  },
-  tokenGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.md,
-  },
-  tokenCardSmall: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    width: '48%',
-  },
-  tokenBalanceSmall: {
-    color: theme.colors.textPrimary,
-    marginTop: theme.spacing.md,
-  },
-  tokenValueSmall: {
-    marginTop: theme.spacing.xs,
-  },
-  transactionsSection: {
-    marginTop: theme.spacing.xl,
-    paddingTop: theme.spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.buttonSecondaryBorder,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  sectionTitle: {
-    color: theme.colors.textPrimary,
-  },
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-  },
-  viewAllText: {
-    color: theme.colors.buttonPrimary,
-  },
-  viewAllIcon: {
-    marginLeft: theme.spacing.xs / 2,
-  },
-  transactionsList: {
-    gap: theme.spacing.sm,
-  },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    gap: theme.spacing.md,
-  },
-  transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  transactionInfo: {
-    flex: 1,
-  },
-  transactionDirection: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs / 2,
-  },
-  transactionDate: {
-    color: theme.colors.textSecondary,
-  },
-  transactionAmount: {
-    alignItems: 'flex-end',
-  },
-  transactionAmountText: {
-    marginBottom: theme.spacing.xs / 2,
-  },
-  transactionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs / 2,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  transactionStatusText: {
-    textTransform: 'capitalize',
-  },
-  transactionEmpty: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.xl * 2,
-    gap: theme.spacing.md,
-  },
-  transactionEmptyText: {
-    textAlign: 'center',
-  },
-  transactionEmptySubtext: {
-    textAlign: 'center',
-  },
-  // Scheduled Payments Section
-  scheduledSection: {
-    marginTop: theme.spacing.xl,
-    paddingTop: theme.spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.buttonSecondaryBorder,
-  },
-  scheduledList: {
-    gap: theme.spacing.sm,
-  },
-  scheduledItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.md,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    gap: theme.spacing.md,
-  },
-  scheduledIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.buttonPrimary + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scheduledIconOverdue: {
-    backgroundColor: theme.colors.error + '20',
-  },
-  scheduledInfo: {
-    flex: 1,
-  },
-  scheduledAmount: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs / 2,
-  },
-  scheduledDate: {
-    // color set inline
-  },
-  createScheduledButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
-    marginTop: theme.spacing.xl,
-    backgroundColor: theme.colors.buttonPrimary + '10',
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.buttonPrimary,
-    borderStyle: 'dashed',
-  },
-  createScheduledText: {
     fontWeight: '600',
   },
-  // Pending Split Banner
-  pendingSplitBanner: {
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.xl,
+  accountListBalance: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
   },
-  pendingSplitItem: {
-    backgroundColor: '#FFA50015',
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: '#FFA50040',
-  },
-  pendingSplitHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-  },
-  pendingSplitIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFA50020',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pendingSplitInfo: {
-    flex: 1,
-  },
-  pendingSplitTitle: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs / 2,
-  },
-  pendingSplitCreator: {
-    marginBottom: theme.spacing.xs / 2,
-  },
-  pendingSplitDescription: {
-    fontStyle: 'italic',
-  },
-  pendingSplitActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  pendingSplitPayButton: {
-    flex: 1,
-    backgroundColor: theme.colors.buttonPrimary,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-  },
-  pendingSplitPayText: {
-    // color set inline
-  },
-  pendingSplitDetailsButton: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.buttonSecondaryBorder,
-  },
-  pendingSplitDetailsText: {
-    // color set inline
-  },
-  pendingSplitMoreButton: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-  },
-  pendingSplitMoreText: {
-    // color set inline
-  },
-  // Actions Menu Modal
-  actionsMenuOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  actionsMenuContent: {
+  // Edit account inline
+  editAccountContainer: {
     backgroundColor: theme.colors.background,
-    borderTopLeftRadius: theme.borderRadius.xl,
-    borderTopRightRadius: theme.borderRadius.xl,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+  },
+  editAccountInput: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  editAccountActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: theme.spacing.md,
+  },
+  editAccountCancel: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+  },
+  editAccountCancelText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
+  editAccountSave: {
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.borderRadius.md,
+  },
+  editAccountSaveText: {
+    ...theme.typography.body,
+    color: theme.colors.buttonPrimaryText,
+    fontWeight: '600',
+  },
+  // Add Wallet Button
+  addWalletButton: {
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.full,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+  },
+  addWalletButtonText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+  },
+  // Add Wallet Menu
+  addWalletMenu: {
+    paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl,
-    paddingHorizontal: theme.spacing.xl,
   },
-  actionsMenuHandle: {
-    width: 36,
-    height: 4,
-    backgroundColor: theme.colors.buttonSecondaryBorder,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: theme.spacing.xl,
+  addWalletTitle: {
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
   },
-  actionsMenuItem: {
+  newAccountInput: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  addWalletOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.lg,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
-  actionsMenuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
+  addWalletIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
-    marginRight: theme.spacing.lg,
+    justifyContent: 'center',
   },
-  actionsMenuText: {
+  addWalletOptionInfo: {
+    flex: 1,
+  },
+  addWalletOptionTitle: {
+    ...theme.typography.body,
     color: theme.colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  addWalletOptionDesc: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+  },
+  addWalletCancelButton: {
+    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+  },
+  addWalletCancelText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
+  // Import Sheet
+  importSheet: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+  },
+  importTitle: {
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  importSubtitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
+  },
+  seedInput: {
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    color: theme.colors.textPrimary,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  importActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.lg,
+  },
+  importCancelButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.md,
+  },
+  importCancelText: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    fontWeight: '600',
+  },
+  importConfirmButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.borderRadius.md,
+  },
+  importConfirmText: {
+    ...theme.typography.body,
+    color: theme.colors.buttonPrimaryText,
+    fontWeight: '600',
   },
 });

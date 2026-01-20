@@ -14,9 +14,7 @@ import {
   selectTransactionsForAddress,
   subscribeToPendingTransactions,
   unsubscribeFromAllTransactions,
-  updateTransactionStatus,
 } from '@/src/store/slices/transaction-slice';
-import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -105,69 +103,52 @@ export default function TransactionsScreen() {
           </View>
         ) : (
           <View style={styles.transactionsList}>
-            {transactions.map((tx) => (
+            {transactions.map((tx) => {
+              const isReceived = tx.direction === 'received';
+              const txColor = isReceived ? theme.colors.success : theme.colors.error;
+              const statusColor = tx.status === 'confirmed' ? theme.colors.success :
+                                  tx.status === 'pending' ? '#FFA500' : theme.colors.error;
+
+              return (
               <TouchableOpacity
                 key={tx.hash}
                 style={styles.transactionItem}
                 onPress={() => handleTransactionPress(tx.hash)}
+                activeOpacity={0.7}
               >
-                <View style={styles.transactionIcon}>
+                <View style={[styles.transactionIcon, { backgroundColor: txColor + '15' }]}>
                   <FontAwesome
-                    name={tx.direction === 'sent' ? 'arrow-up' : 'arrow-down'}
-                    size={20}
-                    color={tx.direction === 'sent' ? theme.colors.error : theme.colors.buttonPrimary}
+                    name={isReceived ? 'arrow-down' : 'arrow-up'}
+                    size={18}
+                    color={txColor}
                   />
                 </View>
+
                 <View style={styles.transactionInfo}>
-                  <Text style={[styles.transactionDirection, theme.typography.heading]}>
-                    {tx.direction === 'sent' ? 'Sent' : 'Received'}
+                  <Text style={[styles.transactionType, { color: theme.colors.textPrimary }]}>
+                    {isReceived ? 'Received' : 'Sent'}
                   </Text>
-                  <Text style={[styles.transactionAddress, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                    {tx.direction === 'sent'
-                      ? `To: ${truncateAddress(tx.to)}`
-                      : `From: ${truncateAddress(tx.from)}`
-                    }
-                  </Text>
-                  <Text style={[styles.transactionDate, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                    {new Date(tx.timestamp).toLocaleDateString()} {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <Text style={[styles.transactionDate, { color: theme.colors.textTertiary }]}>
+                    {new Date(tx.timestamp).toLocaleDateString('ru-RU')} • {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
-                <View style={styles.transactionAmount}>
-                  <Text
-                    style={[
-                      styles.transactionAmountText,
-                      theme.typography.heading,
-                      { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.buttonPrimary }
-                    ]}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    minimumFontScale={0.7}
-                  >
-                    {tx.direction === 'sent' ? '-' : '+'}{tx.amount} {tx.token}
+
+                <View style={styles.transactionRight}>
+                  <Text style={[styles.transactionAmountText, { color: txColor }]}>
+                    {isReceived ? '+' : '-'}{tx.amount} {tx.token}
                   </Text>
-                  {tx.gasUsed && tx.gasPrice && (
-                    <Text style={[styles.transactionGas, theme.typography.caption, { color: theme.colors.textTertiary }]}>
-                      Gas: {(parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice) / 1e18).toFixed(6)} ETH
+                  <View style={styles.statusRow}>
+                    <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                    <Text style={[styles.statusText, { color: theme.colors.textTertiary }]}>
+                      {tx.status === 'confirmed' ? 'Confirmed' : tx.status === 'pending' ? 'Pending' : 'Failed'}
                     </Text>
-                  )}
-                  <View style={styles.transactionStatus}>
-                    <View style={[
-                      styles.statusDot,
-                      {
-                        backgroundColor:
-                          tx.status === 'confirmed' ? theme.colors.buttonPrimary :
-                          tx.status === 'pending' ? '#FFA500' :
-                          theme.colors.error
-                      }
-                    ]} />
-                    <Text style={[styles.transactionStatusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-                      {tx.status}
-                    </Text>
-                    <FontAwesome name="chevron-right" size={10} color={theme.colors.textTertiary} style={{ marginLeft: 4 }} />
                   </View>
                 </View>
+
+                <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
               </TouchableOpacity>
-            ))}
+            );
+            })}
           </View>
         )}
 
@@ -195,60 +176,54 @@ const styles = StyleSheet.create({
     padding: theme.spacing.xl,
   },
   transactionsList: {
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.lg,
+    padding: theme.spacing.md,
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
     gap: theme.spacing.md,
   },
   transactionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: theme.colors.background,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   transactionInfo: {
     flex: 1,
+    gap: 2,
   },
-  transactionDirection: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs / 2,
-  },
-  transactionAddress: {
-    marginBottom: theme.spacing.xs / 2,
+  transactionType: {
+    fontSize: 15,
+    fontWeight: '500',
   },
   transactionDate: {
-    // Already styled
+    fontSize: 12,
   },
-  transactionAmount: {
+  transactionRight: {
     alignItems: 'flex-end',
-    flexShrink: 0,
-    maxWidth: '40%',
+    gap: 2,
   },
   transactionAmountText: {
-    marginBottom: theme.spacing.xs / 2,
+    fontSize: 15,
+    fontWeight: '600',
   },
-  transactionGas: {
-    marginBottom: theme.spacing.xs / 2,
-  },
-  transactionStatus: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.xs / 2,
+    gap: 4,
   },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  transactionStatusText: {
-    textTransform: 'capitalize',
+  statusText: {
+    fontSize: 11,
   },
   emptyState: {
     alignItems: 'center',

@@ -145,6 +145,15 @@ const walletSlice = createSlice({
         account.label = action.payload.label;
       }
     },
+    reorderAccounts: (state, action: PayloadAction<Account[]>) => {
+      state.accounts = action.payload;
+      // Update currentAccountIndex to point to the same account after reorder
+      const currentAddress = state.accounts[state.currentAccountIndex]?.address;
+      const newIndex = action.payload.findIndex((acc) => acc.address === currentAddress);
+      if (newIndex !== -1) {
+        state.currentAccountIndex = newIndex;
+      }
+    },
     clearWallet: (state) => {
       state.mnemonic = null;
       state.accounts = [];
@@ -293,5 +302,5 @@ const walletSlice = createSlice({
   },
 });
 
-export const { addAccount, switchAccount, updateAccountLabel, clearWallet } = walletSlice.actions;
+export const { addAccount, switchAccount, updateAccountLabel, reorderAccounts, clearWallet } = walletSlice.actions;
 export default walletSlice.reducer;

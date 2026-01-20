@@ -1,6 +1,7 @@
 /**
  * Shared ScreenHeader Component
  * Displays a header with back button, title, and optional right element
+ * Dark theme matching website style
  */
 
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
@@ -40,7 +41,7 @@ export function ScreenHeader({
       ) : (
         <View style={styles.backButton} />
       )}
-      <Text style={[styles.title, theme.typography.title]}>{title}</Text>
+      <Text style={styles.title}>{title}</Text>
       {rightElement ? (
         <View style={styles.backButton}>{rightElement}</View>
       ) : (
@@ -57,6 +58,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
+    backgroundColor: theme.colors.background,
   },
   backButton: {
     width: 40,
@@ -65,14 +67,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
+    ...theme.typography.title,
     color: theme.colors.textPrimary,
     flex: 1,
     textAlign: 'center',

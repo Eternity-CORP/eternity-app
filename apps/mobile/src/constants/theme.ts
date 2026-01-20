@@ -1,33 +1,49 @@
 /**
  * E-Y Design System Theme Constants
- * Based on World App reference design
+ * Dark theme matching website style
  */
 
 export const colors = {
   // Backgrounds
-  background: '#FFFFFF',
-  surface: '#F5F5F5',      // Cards, inputs
-  surfaceHover: '#EBEBEB',
+  background: '#000000',
+  surface: '#0A0A0A',      // Cards, inputs
+  surfaceElevated: '#111111', // Elevated cards, modals
+  surfaceHover: '#1A1A1A',
 
   // Text
-  textPrimary: '#000000',
+  textPrimary: '#FFFFFF',
   textSecondary: '#888888',
-  textTertiary: '#AAAAAA',
+  textTertiary: '#666666',
 
   // Accents
+  accent: '#0066FF',       // Primary blue
+  accentCyan: '#00D4FF',   // Secondary cyan
   success: '#22C55E',      // Green - positive values
   error: '#EF4444',        // Red - negative values
+  warning: '#F59E0B',      // Orange - warnings
 
   // Buttons
-  buttonPrimary: '#000000',
+  buttonPrimary: '#0066FF',
   buttonPrimaryText: '#FFFFFF',
-  buttonSecondary: '#FFFFFF',
-  buttonSecondaryBorder: '#E5E5E5',
+  buttonSecondary: 'transparent',
+  buttonSecondaryBorder: '#333333',
+  buttonSecondaryText: '#FFFFFF',
+  buttonDisabled: '#1A1A1A',
+  buttonDisabledText: '#666666',
 
-  // Gradients (avatars)
-  gradientPink: ['#EC4899', '#8B5CF6'],
-  gradientBlue: ['#3B82F6', '#8B5CF6'],
+  // Borders
+  border: '#1A1A1A',
+  borderLight: '#333333',
+
+  // Gradients (for LinearGradient)
+  gradientBlue: ['#0066FF', '#00D4FF'],
+  gradientPurple: ['#8B5CF6', '#EC4899'],
   gradientGreen: ['#22C55E', '#84CC16'],
+
+  // Avatar gradients
+  avatarGradient1: ['#0066FF', '#00D4FF'],
+  avatarGradient2: ['#8B5CF6', '#EC4899'],
+  avatarGradient3: ['#22C55E', '#84CC16'],
 } as const;
 
 export const typography = {
@@ -91,9 +107,34 @@ export const borderRadius = {
   full: 9999,  // Circular buttons, avatars
 } as const;
 
+export const shadows = {
+  small: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  medium: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  glow: {
+    shadowColor: '#0066FF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+} as const;
+
 export const theme = {
   colors,
   typography,
   spacing,
   borderRadius,
+  shadows,
 } as const;
