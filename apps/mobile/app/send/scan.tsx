@@ -184,15 +184,23 @@ export default function ScanScreen() {
         onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
       >
         {/* Header overlay */}
-        <SafeAreaView style={styles.overlay} edges={['top']}>
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <SafeAreaView style={styles.overlay} edges={['top']} pointerEvents="box-none">
+          <View style={styles.header} pointerEvents="box-none">
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => router.back()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <FontAwesome name="arrow-left" size={20} color="white" />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, theme.typography.heading]}>
               Scan QR Code
             </Text>
-            <TouchableOpacity style={styles.headerButton} onPress={toggleFlash}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={toggleFlash}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <FontAwesome
                 name={flashOn ? 'flash' : 'bolt'}
                 size={20}
@@ -203,7 +211,7 @@ export default function ScanScreen() {
         </SafeAreaView>
 
         {/* Scanner frame */}
-        <View style={styles.scannerFrame}>
+        <View style={styles.scannerFrame} pointerEvents="none">
           <View style={styles.scannerBox}>
             <View style={[styles.corner, styles.cornerTopLeft]} />
             <View style={[styles.corner, styles.cornerTopRight]} />
@@ -270,6 +278,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 10,
   },
   header: {
     flexDirection: 'row',
@@ -279,10 +288,10 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
   },
   headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },

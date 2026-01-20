@@ -30,7 +30,17 @@
       "mcp__linear__get_issue",
       "mcp__linear__update_issue",
       "Bash(gh auth status:*)",
-      "Bash(gh auth switch:*)"
+      "Bash(gh auth switch:*)",
+      "Bash(git tag:*)",
+      "WebFetch(domain:bittensor.com)",
+      "WebFetch(domain:world.org)",
+      "Bash(npm run build:*)",
+      "Bash(PGPASSWORD=ey_dev_password psql:*)",
+      "Bash(npx expo:*)",
+      "Bash(pkill:*)",
+      "Bash(xargs kill:*)",
+      "Bash(ln:*)",
+      "Bash(curl:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

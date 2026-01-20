@@ -2,20 +2,22 @@
 import 'react-native-get-random-values';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
+
+import { NotificationProvider } from '@/src/components/NotificationProvider';
+import { theme } from '@/src/constants/theme';
 import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
 import { hasWallet } from '@/src/services/wallet-service';
-import { NotificationProvider } from '@/src/components/NotificationProvider';
-
-import { useColorScheme } from '@/components/useColorScheme';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -24,6 +26,25 @@ export {
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
+};
+
+// Custom dark theme matching website
+const EYDarkTheme = {
+  dark: true,
+  colors: {
+    primary: theme.colors.accent,
+    background: theme.colors.background,
+    card: theme.colors.surface,
+    text: theme.colors.textPrimary,
+    border: theme.colors.border,
+    notification: theme.colors.accent,
+  },
+  fonts: {
+    regular: { fontFamily: 'System', fontWeight: '400' as const },
+    medium: { fontFamily: 'System', fontWeight: '500' as const },
+    bold: { fontFamily: 'System', fontWeight: '700' as const },
+    heavy: { fontFamily: 'System', fontWeight: '800' as const },
+  },
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -51,14 +72,15 @@ export default function RootLayout() {
   }
 
   return (
-    <Provider store={store}>
-      <RootLayoutNav />
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <RootLayoutNav />
+      </Provider>
+    </GestureHandlerRootView>
   );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
   const router = useRouter();
   const segments = useSegments();
   const dispatch = useAppDispatch();
@@ -89,11 +111,17 @@ function RootLayoutNav() {
     if (isCheckingWallet) return;
 
     const inOnboarding = segments[0] === '(onboarding)';
+    const inTabs = segments[0] === '(tabs)';
     const hasWalletData = wallet.isInitialized;
 
     if (!hasWalletData && !inOnboarding) {
+      // No wallet - go to onboarding
       router.replace('/(onboarding)/welcome');
     } else if (hasWalletData && inOnboarding) {
+      // Has wallet but in onboarding - go to home
+      router.replace('/(tabs)/home');
+    } else if (hasWalletData && !inTabs && !inOnboarding && !segments[0]) {
+      // Has wallet but on unknown/root route - go to home
       router.replace('/(tabs)/home');
     }
   }, [isCheckingWallet, wallet.isInitialized, segments, router]);
@@ -104,8 +132,13 @@ function RootLayoutNav() {
 
   return (
     <NotificationProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
+      <ThemeProvider value={EYDarkTheme}>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            contentStyle: { backgroundColor: theme.colors.background },
+          }}
+        >
           <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="send" options={{ headerShown: false }} />
