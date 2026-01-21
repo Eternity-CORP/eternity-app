@@ -14,6 +14,9 @@ import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
 import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
 import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
 import { resetContacts, loadContactsThunk } from '@/src/store/slices/contacts-slice';
+import { checkAndScanThunk, dismissTokenAlert, snoozeTokenAlert } from '@/src/store/slices/scanning-slice';
+import { TokenFoundNotification, TokenFoundBadge } from '@/src/components/TokenFoundNotification';
+import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service';
@@ -47,7 +50,11 @@ export default function HomeScreen() {
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const split = useAppSelector((state) => state.split);
+  const scanning = useAppSelector((state) => state.scanning);
   const currentAccount = getCurrentAccount(wallet);
+
+  // Track if scanning alerts are expanded
+  const [showAllScanningAlerts, setShowAllScanningAlerts] = useState(false);
 
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
@@ -82,8 +89,39 @@ export default function HomeScreen() {
       // Reset and reload contacts for the new account
       dispatch(resetContacts());
       dispatch(loadContactsThunk());
+      // Check for tokens on Tier 2 networks (runs if scan is due)
+      dispatch(checkAndScanThunk(currentAccount.address));
     }
   }, [currentAccount?.address, dispatch]);
+
+  // Handle bridge action from scanning notification
+  const handleBridgeToken = useCallback((tokenBalance: Tier2TokenBalance, destinationNetwork: string) => {
+    // Navigate to bridge flow (would integrate with bridge-service in production)
+    Alert.alert(
+      'Bridge Token',
+      `Move ${tokenBalance.balanceFormatted} from ${tokenBalance.networkName} to ${destinationNetwork}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          onPress: () => {
+            // TODO: Integrate with bridge-service when ready
+            Alert.alert('Coming Soon', 'Bridge functionality will be available soon.');
+          },
+        },
+      ]
+    );
+  }, []);
+
+  // Handle dismiss scanning alert
+  const handleDismissAlert = useCallback((networkId: string, tokenSymbol: string) => {
+    dispatch(dismissTokenAlert({ networkId, tokenSymbol }));
+  }, [dispatch]);
+
+  // Handle snooze scanning alert
+  const handleSnoozeAlert = useCallback((networkId: string, tokenSymbol: string) => {
+    dispatch(snoozeTokenAlert({ networkId, tokenSymbol }));
+  }, [dispatch]);
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
@@ -317,6 +355,31 @@ export default function HomeScreen() {
             </Text>
             <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
           </TouchableOpacity>
+        )}
+
+        {/* Tokens Found on Other Networks */}
+        {scanning.visibleAlerts.length > 0 && (
+          <View style={styles.scanningSection}>
+            {scanning.visibleAlerts.length === 1 || showAllScanningAlerts ? (
+              // Show individual notifications
+              scanning.visibleAlerts.map((alert) => (
+                <TokenFoundNotification
+                  key={`${alert.networkId}-${alert.tokenSymbol}`}
+                  balance={alert}
+                  onBridge={handleBridgeToken}
+                  onDismiss={handleDismissAlert}
+                  onSnooze={handleSnoozeAlert}
+                />
+              ))
+            ) : (
+              // Show collapsed badge
+              <TokenFoundBadge
+                count={scanning.visibleAlerts.length}
+                totalUsdValue={scanning.totalUsdValue}
+                onPress={() => setShowAllScanningAlerts(true)}
+              />
+            )}
+          </View>
         )}
 
         {/* Balance */}
@@ -763,6 +826,9 @@ const styles = StyleSheet.create({
     ...theme.typography.caption,
     color: '#FFA500',
     flex: 1,
+  },
+  scanningSection: {
+    marginTop: theme.spacing.md,
   },
   balanceSection: {
     alignItems: 'center',

@@ -157,3 +157,20 @@ export {
   type AggregatedTokenBalance,
   type MultiNetworkBalanceResult,
 } from './network-service';
+
+// Smart Scanning Service (Tier 2 network detection)
+export {
+  scanTier2Networks,
+  shouldScan,
+  getLastScanTimestamp,
+  isAlertDismissed,
+  isAlertSnoozed,
+  dismissAlert,
+  snoozeAlert,
+  clearAlertStates,
+  getSuggestedBridgeDestination,
+  getBridgeDestinationInfo,
+  type Tier2TokenBalance,
+  type ScanResult,
+  type AlertState,
+} from './smart-scanning-service';

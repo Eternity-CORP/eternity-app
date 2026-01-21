@@ -171,6 +171,24 @@ export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
     alchemyNetwork: '', // Not supported by Alchemy
     coingeckoPlatform: 'avalanche',
   },
+  zksync: {
+    id: 'ethereum' as NetworkId, // placeholder
+    name: 'zkSync Era',
+    shortName: 'zkSync',
+    chainId: 324,
+    nativeCurrency: {
+      name: 'Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    rpcUrlTemplate: 'https://mainnet.era.zksync.io',
+    blockExplorer: 'https://explorer.zksync.io',
+    iconUrl: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/zksync/info/logo.png',
+    tier: 'tier2',
+    color: '#8C8DFC',
+    alchemyNetwork: '', // Not supported by Alchemy
+    coingeckoPlatform: 'zksync',
+  },
 };
 
 /**
