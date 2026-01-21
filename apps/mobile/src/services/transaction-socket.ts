@@ -4,6 +4,9 @@
  */
 
 import { io, Socket } from 'socket.io-client';
+import { createLogger } from '@/src/utils/logger';
+
+const log = createLogger('TransactionSocket');
 
 // API URL - use environment variable or default to localhost
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
@@ -54,20 +57,20 @@ class TransactionSocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Connected to transaction WebSocket');
+        log.info('Connected to transaction WebSocket');
         this.isConnecting = false;
         resolve();
       });
 
       this.socket.on('connect_error', (error) => {
-        console.warn('Transaction WebSocket connection error:', error.message);
+        log.warn('Connection error', { message: error.message });
         this.isConnecting = false;
         // Don't reject - allow offline functionality
         resolve();
       });
 
       this.socket.on('disconnect', (reason) => {
-        console.log('Disconnected from transaction WebSocket:', reason);
+        log.info('Disconnected', { reason });
       });
 
       this.socket.on('status-update', (update: TransactionStatusUpdate) => {
@@ -75,7 +78,7 @@ class TransactionSocketService {
       });
 
       this.socket.on('error', (error: { message: string }) => {
-        console.warn('Transaction WebSocket error:', error.message);
+        log.warn('Socket error', { message: error.message });
       });
 
       // Timeout after 5 seconds

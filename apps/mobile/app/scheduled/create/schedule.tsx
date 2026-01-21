@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setSchedule, setStep } from '@/src/store/slices/scheduled-create-slice';
-import { requestNotificationPermissions } from '@/src/services/scheduled-payment-service';
+import { requestNotificationPermissions } from '@/src/services/notification-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';

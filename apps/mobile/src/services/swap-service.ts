@@ -76,10 +76,6 @@ export interface SwapParams {
   slippage?: number; // Default 0.5%
 }
 
-export interface TokenListParams {
-  chainId: number;
-}
-
 /**
  * Get list of available tokens for a chain
  */

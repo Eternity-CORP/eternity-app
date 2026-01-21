@@ -5,11 +5,11 @@
 
 import { apiClient, ApiError } from './api-client';
 import { createLogger } from '@/src/utils/logger';
-import Storage from '@/src/utils/storage';
+import { loadCached, cache } from '@/src/utils/cache';
 
 const log = createLogger('ScheduledPaymentService');
 
-const SCHEDULED_PAYMENTS_CACHE_KEY = 'scheduled_payments_cache';
+const CACHE_KEY = 'scheduled_payments_cache';
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
@@ -59,40 +59,12 @@ export interface UpdateScheduledPaymentRequest {
   description?: string;
 }
 
-// Cache helpers
-async function loadCachedPayments(address: string): Promise<ScheduledPayment[]> {
-  try {
-    const cacheKey = `${SCHEDULED_PAYMENTS_CACHE_KEY}_${address.toLowerCase()}`;
-    const data = await Storage.getItem(cacheKey);
-    if (!data) return [];
-    return JSON.parse(data);
-  } catch (error) {
-    log.warn('Failed to load cached payments', error);
-    return [];
-  }
-}
-
-async function cachePayments(address: string, payments: ScheduledPayment[]): Promise<void> {
-  try {
-    const cacheKey = `${SCHEDULED_PAYMENTS_CACHE_KEY}_${address.toLowerCase()}`;
-    await Storage.setItem(cacheKey, JSON.stringify(payments));
-  } catch (error) {
-    log.warn('Failed to cache payments', error);
-  }
-}
-
 /**
- * Configure notifications (no-op in Expo Go)
+ * Configure notifications for scheduled payments
+ * @deprecated Use notification-service directly
  */
 export async function configureNotifications(): Promise<void> {
-  // Notifications require development build
-}
-
-/**
- * Request notification permissions (no-op in Expo Go)
- */
-export async function requestNotificationPermissions(): Promise<boolean> {
-  return false;
+  // No-op - use notification-service for notifications
 }
 
 /**
@@ -104,11 +76,11 @@ export async function loadScheduledPayments(
   try {
     const client = apiClient.withWallet(creatorAddress);
     const payments = await client.get<ScheduledPayment[]>('/api/scheduled');
-    await cachePayments(creatorAddress, payments);
+    await cache(CACHE_KEY, creatorAddress, payments);
     return payments;
   } catch (error) {
     log.warn('Failed to fetch scheduled payments, using cache', error);
-    return loadCachedPayments(creatorAddress);
+    return loadCached<ScheduledPayment>(CACHE_KEY, creatorAddress);
   }
 }
 
@@ -122,9 +94,9 @@ export async function createScheduledPayment(
   const payment = await client.post<ScheduledPayment>('/api/scheduled', request);
 
   // Update cache
-  const cached = await loadCachedPayments(request.creatorAddress);
+  const cached = await loadCached<ScheduledPayment>(CACHE_KEY, request.creatorAddress);
   cached.unshift(payment);
-  await cachePayments(request.creatorAddress, cached);
+  await cache(CACHE_KEY, request.creatorAddress, cached);
 
   log.info('Scheduled payment created', { id: payment.id });
   return payment;
@@ -157,11 +129,11 @@ export async function updateScheduledPayment(
   const payment = await client.put<ScheduledPayment>(`/api/scheduled/${id}`, updates);
 
   // Update cache
-  const cached = await loadCachedPayments(walletAddress);
+  const cached = await loadCached<ScheduledPayment>(CACHE_KEY, walletAddress);
   const index = cached.findIndex((p) => p.id === id);
   if (index !== -1) {
     cached[index] = payment;
-    await cachePayments(walletAddress, cached);
+    await cache(CACHE_KEY, walletAddress, cached);
   }
 
   log.info('Scheduled payment updated', { id });
@@ -179,11 +151,11 @@ export async function cancelScheduledPayment(
   const payment = await client.post<ScheduledPayment>(`/api/scheduled/${id}/cancel`);
 
   // Update cache
-  const cached = await loadCachedPayments(walletAddress);
+  const cached = await loadCached<ScheduledPayment>(CACHE_KEY, walletAddress);
   const index = cached.findIndex((p) => p.id === id);
   if (index !== -1) {
     cached[index] = payment;
-    await cachePayments(walletAddress, cached);
+    await cache(CACHE_KEY, walletAddress, cached);
   }
 
   log.info('Scheduled payment cancelled', { id });
@@ -201,9 +173,9 @@ export async function deleteScheduledPayment(
   await client.delete(`/api/scheduled/${id}`);
 
   // Update cache
-  const cached = await loadCachedPayments(walletAddress);
+  const cached = await loadCached<ScheduledPayment>(CACHE_KEY, walletAddress);
   const filtered = cached.filter((p) => p.id !== id);
-  await cachePayments(walletAddress, filtered);
+  await cache(CACHE_KEY, walletAddress, filtered);
 
   log.info('Scheduled payment deleted', { id });
   return true;
@@ -238,7 +210,7 @@ export async function getPendingPayments(
     return await client.get<ScheduledPayment[]>('/api/scheduled/pending');
   } catch (error) {
     log.warn('Failed to get pending payments', error);
-    const cached = await loadCachedPayments(creatorAddress);
+    const cached = await loadCached<ScheduledPayment>(CACHE_KEY, creatorAddress);
     return cached.filter((p) => p.status === 'pending');
   }
 }
@@ -255,7 +227,7 @@ export async function getUpcomingPayments(
     return await client.get<ScheduledPayment[]>(`/api/scheduled/upcoming?days=${days}`);
   } catch (error) {
     log.warn('Failed to get upcoming payments', error);
-    const cached = await loadCachedPayments(creatorAddress);
+    const cached = await loadCached<ScheduledPayment>(CACHE_KEY, creatorAddress);
     const futureDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     return cached.filter(
       (p) => p.status === 'pending' && new Date(p.scheduledAt) <= futureDate
@@ -280,7 +252,7 @@ export async function getOverduePayments(
 export async function syncScheduledPayments(address: string): Promise<void> {
   try {
     const payments = await loadScheduledPayments(address);
-    await cachePayments(address, payments);
+    await cache(CACHE_KEY, address, payments);
     log.debug('Scheduled payments synced');
   } catch (error) {
     log.warn('Failed to sync scheduled payments', error);

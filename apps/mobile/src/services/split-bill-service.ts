@@ -3,13 +3,13 @@
  * Manages split bill requests with backend API and local cache
  */
 
-import { apiClient, ApiError, getErrorMessage } from './api-client';
+import { apiClient, ApiError } from './api-client';
 import { createLogger } from '@/src/utils/logger';
-import Storage from '@/src/utils/storage';
+import { loadCached, cache } from '@/src/utils/cache';
 
 const log = createLogger('SplitBillService');
 
-const SPLIT_BILLS_CACHE_KEY = 'split_bills_cache';
+const CACHE_KEY = 'split_bills_cache';
 
 export type SplitBillStatus = 'active' | 'completed' | 'cancelled';
 export type ParticipantStatus = 'pending' | 'paid';
@@ -53,28 +53,6 @@ export interface CreateSplitBillRequest {
   }>;
 }
 
-// Cache helpers
-async function loadCachedSplitBills(address: string): Promise<SplitBill[]> {
-  try {
-    const cacheKey = `${SPLIT_BILLS_CACHE_KEY}_${address.toLowerCase()}`;
-    const data = await Storage.getItem(cacheKey);
-    if (!data) return [];
-    return JSON.parse(data);
-  } catch (error) {
-    log.warn('Failed to load cached split bills', error);
-    return [];
-  }
-}
-
-async function cacheSplitBills(address: string, bills: SplitBill[]): Promise<void> {
-  try {
-    const cacheKey = `${SPLIT_BILLS_CACHE_KEY}_${address.toLowerCase()}`;
-    await Storage.setItem(cacheKey, JSON.stringify(bills));
-  } catch (error) {
-    log.warn('Failed to cache split bills', error);
-  }
-}
-
 /**
  * Create a new split bill
  */
@@ -85,9 +63,9 @@ export async function createSplitBill(
   const bill = await client.post<SplitBill>('/api/splits', request);
 
   // Update cache
-  const cached = await loadCachedSplitBills(request.creatorAddress);
+  const cached = await loadCached<SplitBill>(CACHE_KEY, request.creatorAddress);
   cached.unshift(bill);
-  await cacheSplitBills(request.creatorAddress, cached);
+  await cache(CACHE_KEY, request.creatorAddress, cached);
 
   log.info('Split bill created', { id: bill.id });
   return bill;
@@ -117,11 +95,11 @@ export async function getCreatedSplitBills(
     const bills = await apiClient.get<SplitBill[]>(
       `/api/splits/creator/${encodeURIComponent(creatorAddress)}`
     );
-    await cacheSplitBills(creatorAddress, bills);
+    await cache(CACHE_KEY, creatorAddress, bills);
     return bills;
   } catch (error) {
     log.warn('Failed to fetch split bills, using cache', error);
-    return loadCachedSplitBills(creatorAddress);
+    return loadCached<SplitBill>(CACHE_KEY, creatorAddress);
   }
 }
 
@@ -152,11 +130,11 @@ export async function cancelSplitBill(
   const bill = await client.delete<SplitBill>(`/api/splits/${id}`);
 
   // Update cache
-  const cached = await loadCachedSplitBills(walletAddress);
+  const cached = await loadCached<SplitBill>(CACHE_KEY, walletAddress);
   const index = cached.findIndex((b) => b.id === id);
   if (index !== -1) {
     cached[index] = bill;
-    await cacheSplitBills(walletAddress, cached);
+    await cache(CACHE_KEY, walletAddress, cached);
   }
 
   log.info('Split bill cancelled', { id });
@@ -215,7 +193,7 @@ export function validateSplitAmounts(
 export async function syncSplitBills(address: string): Promise<void> {
   try {
     const bills = await getCreatedSplitBills(address);
-    await cacheSplitBills(address, bills);
+    await cache(CACHE_KEY, address, bills);
     log.debug('Split bills synced');
   } catch (error) {
     log.warn('Failed to sync split bills', error);

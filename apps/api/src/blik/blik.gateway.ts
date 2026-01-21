@@ -13,7 +13,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { BlikService } from './blik.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -37,8 +37,9 @@ import {
     origin: '*',
   },
 })
-export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
+export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(BlikGateway.name);
+  private cleanupInterval: NodeJS.Timeout;
 
   @WebSocketServer()
   server: Server;
@@ -50,7 +51,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
   onModuleInit() {
     // Set up periodic expiration check that notifies receivers
-    setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       const expiredCodes = this.blikService.cleanup();
       for (const code of expiredCodes) {
         // Notify receiver about expiration
@@ -58,6 +59,12 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         this.server.to(code.receiverSocketId).emit(BLIK_EVENTS.CODE_EXPIRED, expiredPayload);
       }
     }, 30000);
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
   }
 
   handleConnection(client: Socket) {
