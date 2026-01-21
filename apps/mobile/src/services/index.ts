@@ -174,3 +174,20 @@ export {
   type ScanResult,
   type AlertState,
 } from './smart-scanning-service';
+
+// Error Tracking Service (Sentry)
+export {
+  initErrorTracking,
+  setUserContext,
+  clearUserContext,
+  captureException,
+  captureMessage,
+  addBreadcrumb,
+  setTag,
+  setExtra,
+  startTransaction,
+  ErrorBoundary,
+  withSentry,
+  BreadcrumbCategory,
+  Sentry,
+} from './error-tracking-service';

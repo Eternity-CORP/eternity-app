@@ -35,7 +35,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "e-y",
+          "project": "mobile"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
