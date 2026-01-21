@@ -43,6 +43,13 @@
           "color": "#5E6AD2",
           "sounds": []
         }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "e-y",
+          "project": "mobile"
+        }
       ]
     ],
     "experiments": {

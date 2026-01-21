@@ -20,10 +20,20 @@
       "ios": {
         "simulator": false
       },
+      "env": {
+        "NODE_ENV": "production",
+        "SENTRY_PROJECT": "mobile",
+        "SENTRY_ORG": "e-y"
+      },
       "node": "22.14.0"
     },
     "production": {
       "distribution": "store",
+      "env": {
+        "NODE_ENV": "production",
+        "SENTRY_PROJECT": "mobile",
+        "SENTRY_ORG": "e-y"
+      },
       "node": "22.14.0"
     }
   },

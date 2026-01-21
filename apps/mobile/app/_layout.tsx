@@ -19,6 +19,10 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
 import { clearLegacyContactsThunk } from '@/src/store/slices/contacts-slice';
 import { hasWallet } from '@/src/services/wallet-service';
+import { initErrorTracking, setUserContext, clearUserContext } from '@/src/services/error-tracking-service';
+
+// Initialize Sentry at app startup
+initErrorTracking();
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -100,6 +104,11 @@ function RootLayoutNav() {
           // Load accounts after wallet is loaded
           if (walletResult.type === 'wallet/load/fulfilled') {
             await dispatch(loadAccountsThunk());
+            // Set user context for error tracking
+            const loadedWallet = walletResult.payload as { address: string };
+            if (loadedWallet?.address) {
+              setUserContext(loadedWallet.address);
+            }
           }
         }
       } catch (error) {
