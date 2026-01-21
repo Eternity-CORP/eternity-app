@@ -205,3 +205,26 @@ export {
   BreadcrumbCategory,
   Sentry,
 } from './error-tracking-service';
+
+// Swap Service (DEX Aggregator)
+export {
+  getTokens,
+  getPopularTokens,
+  getNativeToken,
+  getSwapQuote,
+  checkAllowance,
+  getApprovalData,
+  getLiFiContractAddress,
+  executeSwap,
+  formatTokenAmount,
+  parseTokenAmount,
+  isCrossChainSwap,
+  getChainName,
+  NATIVE_TOKEN_ADDRESS,
+  type SwapToken,
+  type SwapQuote,
+  type SwapRoute,
+  type SwapStep,
+  type SwapParams,
+  type TransactionRequest,
+} from './swap-service';
