@@ -153,6 +153,7 @@ function RootLayoutNav() {
           <Stack.Screen name="token" options={{ headerShown: false }} />
           <Stack.Screen name="scheduled" options={{ headerShown: false }} />
           <Stack.Screen name="split" options={{ headerShown: false }} />
+          <Stack.Screen name="swap" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
     </NotificationProvider>

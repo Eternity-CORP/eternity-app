@@ -519,6 +519,16 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.actionMenuItem}
+              onPress={() => { closeActionsMenu(); router.push('/swap' as any); }}
+            >
+              <View style={styles.actionMenuIcon}>
+                <FontAwesome name="exchange" size={20} color="#000" />
+              </View>
+              <Text style={styles.actionMenuText}>Swap</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); handleCopyAddress(); }}
             >
               <View style={styles.actionMenuIcon}>
