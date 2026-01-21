@@ -15,6 +15,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger, OnModuleInit } from '@nestjs/common';
 import { BlikService } from './blik.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   BLIK_EVENTS,
   type CreateCodePayload,
@@ -42,7 +43,10 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly blikService: BlikService) {}
+  constructor(
+    private readonly blikService: BlikService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   onModuleInit() {
     // Set up periodic expiration check that notifies receivers
@@ -164,6 +168,17 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       if (senderAddress) {
         const lookupPayload: CodeLookupPayload = { senderAddress };
         this.server.to(blikCode.receiverSocketId).emit(BLIK_EVENTS.CODE_LOOKUP, lookupPayload);
+
+        // Send push notification to receiver (for when app is in background)
+        this.notificationsService.sendBlikMatchedNotification(
+          blikCode.receiverAddress,
+          blikCode.code,
+          senderAddress,
+          blikCode.amount,
+          blikCode.tokenSymbol,
+        ).catch((error) => {
+          this.logger.warn(`Failed to send push notification: ${error.message}`);
+        });
       }
 
       // Send code info to sender
@@ -218,6 +233,17 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         network: result.network,
       };
       this.server.to(result.blikCode.receiverSocketId).emit(BLIK_EVENTS.PAYMENT_CONFIRMED, confirmedPayload);
+
+      // Send push notification to receiver (for when app is in background)
+      this.notificationsService.sendBlikConfirmedNotification(
+        result.blikCode.receiverAddress,
+        result.blikCode.amount,
+        result.blikCode.tokenSymbol,
+        result.senderAddress,
+        result.txHash,
+      ).catch((error) => {
+        this.logger.warn(`Failed to send push notification: ${error.message}`);
+      });
 
       // Notify sender that payment was accepted
       const acceptedPayload: PaymentAcceptedPayload = {

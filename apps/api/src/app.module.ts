@@ -9,10 +9,12 @@ import { UsernameModule } from './username/username.module';
 import { SplitModule } from './split/split.module';
 import { ScheduledModule } from './scheduled/scheduled.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { Username } from './username/username.entity';
 import { SplitBill, SplitParticipant } from './split/entities';
 import { ScheduledPayment } from './scheduled/entities';
 import { WaitlistEntry } from './waitlist/waitlist.entity';
+import { PushDevice } from './notifications/push-device.entity';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -31,7 +33,7 @@ import databaseConfig from './config/database.config';
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
-        entities: [Username, SplitBill, SplitParticipant, ScheduledPayment, WaitlistEntry],
+        entities: [Username, SplitBill, SplitParticipant, ScheduledPayment, WaitlistEntry, PushDevice],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') === 'development',
       }),
@@ -44,6 +46,7 @@ import databaseConfig from './config/database.config';
     SplitModule,
     ScheduledModule,
     WaitlistModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
