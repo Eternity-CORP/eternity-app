@@ -1,27 +1,30 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useAppDispatch } from '@/src/store/hooks';
-import { generateWalletThunk } from '@/src/store/slices/wallet-slice';
+import { generateWalletThunk, type AccountType } from '@/src/store/slices/wallet-slice';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 type WordCount = 12 | 24;
 
 export default function CreateWalletScreen() {
+  const { accountType: accountTypeParam } = useLocalSearchParams<{ accountType?: string }>();
+  const accountType: AccountType = (accountTypeParam === 'real' || accountTypeParam === 'test') ? accountTypeParam : 'test';
   const dispatch = useAppDispatch();
   const [isCreating, setIsCreating] = useState(false);
   const [wordCount, setWordCount] = useState<WordCount>(12);
+  const isTestWallet = accountType === 'test';
 
   const handleCreateWallet = async () => {
     setIsCreating(true);
     try {
-      await dispatch(generateWalletThunk({ wordCount })).unwrap();
+      await dispatch(generateWalletThunk({ wordCount, type: accountType })).unwrap();
       // Navigate to seed phrase screen (mnemonic is in Redux state)
       router.push({
         pathname: '/(onboarding)/seed-phrase',
-        params: { wordCount: wordCount.toString() },
+        params: { wordCount: wordCount.toString(), accountType },
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to generate wallet. Please try again.');
@@ -36,11 +39,21 @@ export default function CreateWalletScreen() {
       <View style={styles.container}>
       <View style={styles.content}>
         <Text style={[styles.title, theme.typography.title]}>
-          Create New Wallet
+          Create {isTestWallet ? 'Test' : 'New'} Wallet
         </Text>
         <Text style={[styles.description, theme.typography.body, { color: theme.colors.textSecondary }]}>
-          We'll generate a secure recovery phrase for you. Make sure to write it down and keep it safe.
+          {isTestWallet
+            ? 'Create a test wallet to explore features with free testnet tokens. No real funds involved.'
+            : "We'll generate a secure recovery phrase for you. Make sure to write it down and keep it safe."}
         </Text>
+        {isTestWallet && (
+          <View style={styles.testBadge}>
+            <FontAwesome name="flask" size={14} color="#F59E0B" />
+            <Text style={[styles.testBadgeText, theme.typography.caption, { color: '#F59E0B' }]}>
+              Test Mode - Testnet Only
+            </Text>
+          </View>
+        )}
 
         {/* Word Count Selection */}
         <View style={styles.wordCountSection}>
@@ -165,9 +178,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   description: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  testBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.xs,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.full,
+    marginBottom: theme.spacing.lg,
+  },
+  testBadgeText: {
+    fontWeight: '600',
   },
   wordCountSection: {
     marginBottom: theme.spacing.xl,

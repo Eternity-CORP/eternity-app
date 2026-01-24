@@ -3,11 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
-import { saveWalletThunk } from '@/src/store/slices/wallet-slice';
+import { saveWalletThunk, type AccountType } from '@/src/store/slices/wallet-slice';
 import { theme } from '@/src/constants/theme';
 
 export default function SeedPhraseScreen() {
-  const { wordCount } = useLocalSearchParams<{ wordCount?: string }>();
+  const { wordCount, accountType: accountTypeParam } = useLocalSearchParams<{ wordCount?: string; accountType?: string }>();
+  const accountType: AccountType = (accountTypeParam === 'real' || accountTypeParam === 'test') ? accountTypeParam : 'test';
   // Get mnemonic from Redux state (not from URL params for security)
   const mnemonic = useAppSelector((state) => state.wallet.mnemonic);
   const dispatch = useAppDispatch();
@@ -51,7 +52,7 @@ export default function SeedPhraseScreen() {
 
     setIsSaving(true);
     try {
-      await dispatch(saveWalletThunk({ mnemonic })).unwrap();
+      await dispatch(saveWalletThunk({ mnemonic, type: accountType })).unwrap();
       setIsVerified(true);
       // Navigate to home screen
       router.replace('/(tabs)/home');
