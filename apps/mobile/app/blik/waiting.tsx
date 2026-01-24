@@ -19,6 +19,7 @@ import {
 } from '@/src/store/slices/blik-slice';
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { TransactionPendingAnimation } from '@/src/components/TransactionPendingAnimation';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -153,10 +154,13 @@ export default function BlikWaitingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <ScreenHeader title="Request Payment" />
 
       <View style={styles.content}>
+        {/* Transaction Pending Animation */}
+        <TransactionPendingAnimation message="Waiting for payment..." />
+
         {/* Share instruction */}
         <Text style={[styles.instruction, theme.typography.heading]}>
           Share this code
@@ -201,11 +205,13 @@ export default function BlikWaitingScreen() {
             {copied ? 'Copied!' : 'Copy Code'}
           </Text>
         </TouchableOpacity>
+      </View>
 
-        {/* Cancel Button */}
-        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-          <Text style={[styles.cancelButtonText, theme.typography.body]}>
-            Cancel
+      {/* Fixed Footer with Done Button */}
+      <View style={styles.footer}>
+        <TouchableOpacity style={styles.doneButton} onPress={handleCancel}>
+          <Text style={[styles.doneButtonText, theme.typography.heading]}>
+            Done
           </Text>
         </TouchableOpacity>
       </View>
@@ -270,17 +276,25 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing.xxl,
     width: '100%',
-    marginBottom: theme.spacing.md,
   },
   copyButtonText: {
     color: theme.colors.buttonPrimaryText,
   },
-  cancelButton: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xxl,
+  footer: {
+    padding: theme.spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.buttonSecondaryBorder,
   },
-  cancelButtonText: {
-    color: theme.colors.error,
+  doneButton: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.buttonSecondaryBorder,
+  },
+  doneButtonText: {
+    color: theme.colors.textPrimary,
   },
   backButton: {
     marginTop: theme.spacing.xl,
