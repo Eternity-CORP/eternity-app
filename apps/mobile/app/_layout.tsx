@@ -13,6 +13,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 
 import { NotificationProvider } from '@/src/components/NotificationProvider';
+import { MigrationModal } from '@/src/components/MigrationModal';
 import { AiFab } from '@/src/components/ai';
 import { theme } from '@/src/constants/theme';
 import { store } from '@/src/store';
@@ -21,6 +22,10 @@ import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-sl
 import { clearLegacyContactsThunk } from '@/src/store/slices/contacts-slice';
 import { hasWallet } from '@/src/services/wallet-service';
 import { initErrorTracking, setUserContext, clearUserContext } from '@/src/services/error-tracking-service';
+import {
+  hasMigrationModalBeenShown,
+  markMigrationModalAsShown,
+} from '@/src/services/migration-service';
 
 // Initialize Sentry at app startup
 initErrorTracking();
@@ -92,6 +97,7 @@ function RootLayoutNav() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const [isCheckingWallet, setIsCheckingWallet] = useState(true);
+  const [showMigrationModal, setShowMigrationModal] = useState(false);
 
   useEffect(() => {
     async function checkWallet() {
@@ -109,6 +115,12 @@ function RootLayoutNav() {
             const loadedWallet = walletResult.payload as { address: string };
             if (loadedWallet?.address) {
               setUserContext(loadedWallet.address);
+            }
+
+            // Check if we need to show migration modal (existing users only)
+            const migrationShown = await hasMigrationModalBeenShown();
+            if (!migrationShown) {
+              setShowMigrationModal(true);
             }
           }
         }
@@ -147,10 +159,19 @@ function RootLayoutNav() {
   // Show FAB only when wallet is initialized and not in onboarding
   const showFab = wallet.isInitialized && segments[0] !== '(onboarding)';
 
+  const handleMigrationDismiss = async () => {
+    await markMigrationModalAsShown();
+    setShowMigrationModal(false);
+  };
+
   return (
     <NotificationProvider>
       <ThemeProvider value={EYDarkTheme}>
         <StatusBar style="light" />
+        <MigrationModal
+          visible={showMigrationModal}
+          onDismiss={handleMigrationDismiss}
+        />
         <Stack
           screenOptions={{
             contentStyle: { backgroundColor: theme.colors.background },
