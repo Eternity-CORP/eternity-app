@@ -15,6 +15,7 @@ import scheduledCreateReducer from './slices/scheduled-create-slice';
 import splitCreateReducer from './slices/split-create-slice';
 import scanningReducer from './slices/scanning-slice';
 import swapReducer from './slices/swap-slice';
+import aiReducer from './slices/ai-slice';
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ export const store = configureStore({
     splitCreate: splitCreateReducer,
     scanning: scanningReducer,
     swap: swapReducer,
+    ai: aiReducer,
   },
 });
 

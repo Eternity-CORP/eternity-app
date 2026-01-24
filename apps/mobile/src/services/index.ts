@@ -228,3 +228,18 @@ export {
   type SwapParams,
   type TransactionRequest,
 } from './swap-service';
+
+// AI Service (Chat with streaming)
+export {
+  aiSocket,
+  AI_EVENTS,
+  type ChatMessage,
+  type ToolCall,
+  type ToolResult,
+  type TransactionPreview,
+  type AiSuggestion,
+  type AiCallbacks,
+  type AiErrorPayload,
+  type ChunkPayload,
+  type DonePayload,
+} from './ai-service';

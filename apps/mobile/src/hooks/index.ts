@@ -3,3 +3,4 @@
  */
 
 export { useAutoScheduledPayments } from './useAutoScheduledPayments';
+export { useAiChat } from './useAiChat';
