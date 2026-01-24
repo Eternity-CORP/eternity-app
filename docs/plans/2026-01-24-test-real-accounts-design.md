@@ -248,6 +248,12 @@ src/components/AccountSelector.tsx    — Badge in account list
 
 app/send/confirm.tsx                  — Warning for TEST
 app/blik/*.tsx                        — Warning for TEST
+app/scheduled/*.tsx                   — Warning for TEST
+app/split/*.tsx                       — Warning for TEST
+app/swap/*.tsx                        — Warning for TEST
+src/components/ai/TransactionPreview.tsx — Warning for AI transactions
+src/components/ai/BlikPreview.tsx     — Warning for AI BLIK
+src/components/ai/SwapPreview.tsx     — Warning for AI Swap
 ```
 
 ### Redux Changes
