@@ -280,7 +280,20 @@ export default function SplitParticipantsScreen() {
 
   const validParticipants = participants.filter((p) => p.address);
   const isLookingUp = participants.some((p) => p.isLookingUp);
-  const canContinue = validParticipants.length > 0 && !isLookingUp;
+
+  // Calculate total of custom amounts (only in custom mode)
+  const totalCustomAmount = splitCreate.splitMode === 'custom'
+    ? participants.reduce(
+        (sum, p) => sum + parseFloat(p.amount || '0'),
+        0
+      )
+    : 0;
+
+  const totalBillAmount = parseFloat(splitCreate.totalAmount) || 0;
+  const remainingAmount = totalBillAmount - totalCustomAmount;
+  const isOverBudget = splitCreate.splitMode === 'custom' && totalCustomAmount > totalBillAmount;
+
+  const canContinue = validParticipants.length > 0 && !isLookingUp && !isOverBudget;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -303,6 +316,25 @@ export default function SplitParticipantsScreen() {
              splitCreate.splitMode === 'percentage' ? 'By Percentage' : 'Custom Amounts'}
           </Text>
         </View>
+
+        {/* Over budget warning */}
+        {isOverBudget && (
+          <View style={styles.warningBanner}>
+            <FontAwesome name="exclamation-triangle" size={16} color={theme.colors.warning} />
+            <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.warning }]}>
+              Total exceeds bill by {formatAmount(Math.abs(remainingAmount))} {splitCreate.selectedToken}
+            </Text>
+          </View>
+        )}
+
+        {/* Show remaining in custom mode */}
+        {splitCreate.splitMode === 'custom' && !isOverBudget && remainingAmount > 0 && (
+          <View style={styles.infoBanner}>
+            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              Remaining to distribute: {formatAmount(remainingAmount)} {splitCreate.selectedToken}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.participantsSection}>
           <View style={styles.sectionHeader}>
@@ -530,6 +562,27 @@ const styles = StyleSheet.create({
   },
   percentAmount: {
     flex: 1,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.warning + '15',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.warning + '30',
+  },
+  warningText: {
+    flex: 1,
+  },
+  infoBanner: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    alignItems: 'center',
   },
   footer: {
     padding: theme.spacing.xl,
