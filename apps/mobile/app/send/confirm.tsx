@@ -236,7 +236,7 @@ export default function ConfirmScreen() {
           )}
 
           <View style={[styles.detailRow, styles.totalRow]}>
-            <Text style={[styles.detailLabel, theme.typography.heading]}>Total</Text>
+            <Text style={[styles.detailLabel, theme.typography.heading, { color: theme.colors.textPrimary }]}>Total</Text>
             <Text style={[styles.detailValue, theme.typography.heading]}>
               ${totalCostUsd.toFixed(2)} USD
             </Text>
