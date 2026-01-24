@@ -307,16 +307,13 @@ export default function HomeScreen() {
 
   // Account management
   const handleAddAccount = async (accountType: AccountType) => {
-    if (!newAccountName.trim()) {
-      Alert.alert('Error', 'Please enter account name');
-      return;
-    }
     setIsAddingAccount(true);
     try {
       const result = await dispatch(addAccountThunk(accountType)).unwrap();
-      // Update the new account with the name
+      // Update the new account with the name (auto-generate if empty)
       const newIndex = wallet.accounts.length;
-      dispatch(updateAccountLabel({ accountIndex: newIndex, label: newAccountName.trim() }));
+      const accountLabel = newAccountName.trim() || `Wallet ${newIndex + 1}`;
+      dispatch(updateAccountLabel({ accountIndex: newIndex, label: accountLabel }));
       setShowAddWalletMenu(false);
       setNewAccountName('');
       closeAccountSelector();
@@ -755,7 +752,7 @@ export default function HomeScreen() {
                   style={styles.newAccountInput}
                   value={newAccountName}
                   onChangeText={setNewAccountName}
-                  placeholder="Wallet name"
+                  placeholder="Wallet name (optional)"
                   placeholderTextColor={theme.colors.textTertiary}
                 />
 
