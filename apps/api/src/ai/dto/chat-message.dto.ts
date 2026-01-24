@@ -35,6 +35,10 @@ export class AiResponseDto {
     name: string;
     arguments: Record<string, unknown>;
   }>;
+  toolResults?: Array<{
+    name: string;
+    result: unknown;
+  }>;
   pendingTransaction?: {
     to: string;
     amount: string;

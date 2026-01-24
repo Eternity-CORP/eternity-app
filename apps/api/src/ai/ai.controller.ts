@@ -62,6 +62,14 @@ export class AiController {
     };
   }
 
+  @Get('tools')
+  getTools() {
+    return {
+      tools: this.aiService.getToolDefinitions(),
+      available: this.aiService.registeredTools,
+    };
+  }
+
   @Post('chat')
   @HttpCode(HttpStatus.OK)
   async chat(@Body() dto: SendChatDto): Promise<AiResponseDto> {
@@ -83,15 +91,37 @@ export class AiController {
       content: dto.content,
     });
 
+    // Get tool definitions for AI
+    const tools = this.aiService.getToolDefinitions();
+
     const response = await this.aiService.chat({
       messages,
+      tools,
       systemPrompt: SYSTEM_PROMPT,
       userAddress: dto.userAddress,
     });
 
+    // If AI wants to call tools, execute them
+    let toolResults: { name: string; result: unknown }[] | undefined;
+    if (response.toolCalls && response.toolCalls.length > 0 && dto.userAddress) {
+      toolResults = await this.aiService.executeToolCalls(
+        response.toolCalls,
+        dto.userAddress,
+      );
+    }
+
     return {
       content: response.content,
       toolCalls: response.toolCalls,
+      toolResults,
     };
+  }
+
+  @Post('tool')
+  @HttpCode(HttpStatus.OK)
+  async executeTool(
+    @Body() dto: { tool: string; args: Record<string, unknown>; userAddress: string },
+  ) {
+    return this.aiService.executeTool(dto.tool, dto.args, dto.userAddress);
   }
 }

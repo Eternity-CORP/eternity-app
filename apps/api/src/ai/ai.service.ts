@@ -7,7 +7,18 @@ import {
   ChatMessage,
   AITool,
   AIResponse,
+  ToolCall,
 } from './providers/ai-provider.interface';
+import {
+  AIToolHandler,
+  ToolDefinition,
+  ToolResult,
+} from './tools/tool.interface';
+import { BalanceTool } from './tools/balance.tool';
+import { SendTool } from './tools/send.tool';
+import { HistoryTool } from './tools/history.tool';
+import { ContactsTool } from './tools/contacts.tool';
+import { ScheduledTool } from './tools/scheduled.tool';
 
 interface FallbackConfig {
   enabled: boolean;
@@ -26,6 +37,7 @@ export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly providers: Map<string, AIProvider> = new Map();
   private readonly providerHealth: Map<string, ProviderHealth> = new Map();
+  private readonly toolHandlers: Map<string, AIToolHandler> = new Map();
   private readonly fallbackConfig: FallbackConfig;
   private currentProvider: string;
 
@@ -33,6 +45,11 @@ export class AiService {
     private readonly configService: ConfigService,
     private readonly geminiProvider: GeminiProvider,
     private readonly groqProvider: GroqProvider,
+    private readonly balanceTool: BalanceTool,
+    private readonly sendTool: SendTool,
+    private readonly historyTool: HistoryTool,
+    private readonly contactsTool: ContactsTool,
+    private readonly scheduledTool: ScheduledTool,
   ) {
     // Register providers
     if (geminiProvider.isConfigured) {
@@ -61,10 +78,22 @@ export class AiService {
       timeoutMs: 10000,
     };
 
+    // Register tools
+    this.registerTool(balanceTool);
+    this.registerTool(sendTool);
+    this.registerTool(historyTool);
+    this.registerTool(contactsTool);
+    this.registerTool(scheduledTool);
+
     this.logger.log(
       `AI Service initialized with providers: ${[...this.providers.keys()].join(', ')}`,
     );
     this.logger.log(`Primary provider: ${this.currentProvider}`);
+    this.logger.log(`Registered tools: ${[...this.toolHandlers.keys()].join(', ')}`);
+  }
+
+  private registerTool(tool: AIToolHandler): void {
+    this.toolHandlers.set(tool.name, tool);
   }
 
   get availableProviders(): string[] {
@@ -73,6 +102,73 @@ export class AiService {
 
   get activeProvider(): string {
     return this.currentProvider;
+  }
+
+  get registeredTools(): string[] {
+    return [...this.toolHandlers.keys()];
+  }
+
+  /**
+   * Get tool definitions for AI providers
+   */
+  getToolDefinitions(): AITool[] {
+    return [...this.toolHandlers.values()].map((handler) => ({
+      name: handler.definition.name,
+      description: handler.definition.description,
+      parameters: handler.definition.parameters.properties,
+    }));
+  }
+
+  /**
+   * Execute a tool by name
+   */
+  async executeTool(
+    toolName: string,
+    args: Record<string, unknown>,
+    userAddress: string,
+  ): Promise<ToolResult> {
+    const handler = this.toolHandlers.get(toolName);
+
+    if (!handler) {
+      return {
+        success: false,
+        error: `Unknown tool: ${toolName}`,
+      };
+    }
+
+    try {
+      return await handler.execute({
+        userAddress,
+        ...args,
+      });
+    } catch (error) {
+      this.logger.error(`Tool ${toolName} execution failed`, error);
+      return {
+        success: false,
+        error: `Tool execution failed: ${(error as Error).message}`,
+      };
+    }
+  }
+
+  /**
+   * Execute multiple tool calls and return results
+   */
+  async executeToolCalls(
+    toolCalls: ToolCall[],
+    userAddress: string,
+  ): Promise<{ name: string; result: ToolResult }[]> {
+    const results: { name: string; result: ToolResult }[] = [];
+
+    for (const call of toolCalls) {
+      const result = await this.executeTool(
+        call.name,
+        call.arguments,
+        userAddress,
+      );
+      results.push({ name: call.name, result });
+    }
+
+    return results;
   }
 
   async getHealth(): Promise<{
