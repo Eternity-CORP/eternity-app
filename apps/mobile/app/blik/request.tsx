@@ -16,17 +16,20 @@ import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { sanitizeAmountInput } from '@/src/utils/format';
 
-// Available tokens for BLIK
-const TOKENS = ['ETH', 'USDC', 'USDT'];
-
 export default function BlikRequestScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
+  const balance = useAppSelector((state) => state.balance);
   const currentAccount = getCurrentAccount(wallet);
 
+  // Get available tokens from balance (only show tokens user actually has)
+  const availableTokens = balance.balances
+    .filter(t => parseFloat(t.balance) > 0)
+    .map(t => t.symbol);
+
   const [amount, setAmount] = useState('');
-  const [selectedToken, setSelectedToken] = useState('USDC');
+  const [selectedToken, setSelectedToken] = useState(availableTokens[0] || 'ETH');
   const [isConnecting, setIsConnecting] = useState(false);
 
   // Redirect to waiting if code is already active
@@ -35,6 +38,13 @@ export default function BlikRequestScreen() {
       router.replace('/blik/waiting');
     }
   }, [blik.receiver.status, blik.receiver.activeCode]);
+
+  // Update selected token when balance loads or changes
+  useEffect(() => {
+    if (availableTokens.length > 0 && !availableTokens.includes(selectedToken)) {
+      setSelectedToken(availableTokens[0]);
+    }
+  }, [availableTokens]);
 
   // Set up BLIK socket callbacks
   useEffect(() => {
@@ -93,7 +103,7 @@ export default function BlikRequestScreen() {
     }
   };
 
-  const isValid = amount && parseFloat(amount) > 0;
+  const isValid = amount && parseFloat(amount) > 0 && availableTokens.length > 0;
   const isLoading = blik.receiver.status === 'creating' || isConnecting;
 
   return (
@@ -118,26 +128,32 @@ export default function BlikRequestScreen() {
 
           {/* Token Selection */}
           <View style={styles.tokenSelector}>
-            {TOKENS.map((token) => (
-              <TouchableOpacity
-                key={token}
-                style={[
-                  styles.tokenChip,
-                  selectedToken === token && styles.tokenChipSelected,
-                ]}
-                onPress={() => setSelectedToken(token)}
-              >
-                <Text
+            {availableTokens.length > 0 ? (
+              availableTokens.map((token) => (
+                <TouchableOpacity
+                  key={token}
                   style={[
-                    styles.tokenChipText,
-                    theme.typography.body,
-                    selectedToken === token && styles.tokenChipTextSelected,
+                    styles.tokenChip,
+                    selectedToken === token && styles.tokenChipSelected,
                   ]}
+                  onPress={() => setSelectedToken(token)}
                 >
-                  {token}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.tokenChipText,
+                      theme.typography.body,
+                      selectedToken === token && styles.tokenChipTextSelected,
+                    ]}
+                  >
+                    {token}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={[theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                No tokens available
+              </Text>
+            )}
           </View>
 
           {/* Keypad */}
