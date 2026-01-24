@@ -15,8 +15,11 @@ import {
   type AggregatedTokenBalance,
   type NetworkTokenBalance,
   type MultiNetworkBalanceResult,
+  type AnyNetworkId,
 } from '@/src/services/network-service';
 import { NetworkId, TIER1_NETWORK_IDS } from '@/src/constants/networks';
+import { TESTNET_NETWORK_IDS, TestnetNetworkId } from '@/src/constants/networks-testnet';
+import { type AccountType, getCurrentAccount } from './wallet-slice';
 
 interface BalanceState {
   // Legacy: single-network balances (for backwards compatibility)
@@ -26,10 +29,10 @@ interface BalanceState {
   aggregatedBalances: AggregatedTokenBalance[];
 
   // New: per-network breakdown
-  networkBalances: Record<NetworkId, NetworkTokenBalance[]>;
+  networkBalances: Record<AnyNetworkId, NetworkTokenBalance[]>;
 
   // Networks that failed to fetch
-  failedNetworks: NetworkId[];
+  failedNetworks: AnyNetworkId[];
 
   totalUsdValue: number;
   ethUsdPrice: number;
@@ -39,12 +42,15 @@ interface BalanceState {
 
   // Track which mode we're in
   isMultiNetworkEnabled: boolean;
+
+  // Track the account type for the current balances
+  currentAccountType: AccountType | null;
 }
 
 const initialState: BalanceState = {
   balances: [],
   aggregatedBalances: [],
-  networkBalances: {} as Record<NetworkId, NetworkTokenBalance[]>,
+  networkBalances: {} as Record<AnyNetworkId, NetworkTokenBalance[]>,
   failedNetworks: [],
   totalUsdValue: 0,
   ethUsdPrice: 0,
@@ -52,6 +58,7 @@ const initialState: BalanceState = {
   error: null,
   lastUpdated: null,
   isMultiNetworkEnabled: true, // Enable by default
+  currentAccountType: null,
 };
 
 /**
@@ -79,12 +86,14 @@ export const fetchBalancesThunk = createAsyncThunk(
 
 /**
  * Fetch balances from all supported networks
- * This is the new multi-network approach
+ * This is the new multi-network approach that respects account type
+ * - TEST accounts: fetch from testnet networks (Sepolia, Amoy, etc.)
+ * - REAL accounts: fetch from mainnet networks (Ethereum, Polygon, etc.)
  */
 export const fetchMultiNetworkBalancesThunk = createAsyncThunk(
   'balance/fetchMultiNetworkBalances',
-  async (address: string): Promise<MultiNetworkBalanceResult> => {
-    const result = await fetchAllNetworkBalances(address, TIER1_NETWORK_IDS);
+  async ({ address, accountType }: { address: string; accountType: AccountType }): Promise<MultiNetworkBalanceResult> => {
+    const result = await fetchAllNetworkBalances(address, accountType);
     return result;
   }
 );
@@ -96,12 +105,13 @@ const balanceSlice = createSlice({
     clearBalances: (state) => {
       state.balances = [];
       state.aggregatedBalances = [];
-      state.networkBalances = {} as Record<NetworkId, NetworkTokenBalance[]>;
+      state.networkBalances = {} as Record<AnyNetworkId, NetworkTokenBalance[]>;
       state.failedNetworks = [];
       state.totalUsdValue = 0;
       state.status = 'idle';
       state.error = null;
       state.lastUpdated = null;
+      state.currentAccountType = null;
     },
     setMultiNetworkEnabled: (state, action: PayloadAction<boolean>) => {
       state.isMultiNetworkEnabled = action.payload;
@@ -152,6 +162,7 @@ const balanceSlice = createSlice({
         state.failedNetworks = action.payload.failedNetworks;
         state.totalUsdValue = action.payload.totalUsdValue;
         state.lastUpdated = action.payload.lastUpdated;
+        state.currentAccountType = action.payload.accountType;
         state.status = 'succeeded';
         state.error = null;
 
@@ -200,5 +211,8 @@ export const selectTokenNetworkBreakdown = (
 
 export const selectIsMultiNetworkEnabled = (state: { balance: BalanceState }) =>
   state.balance.isMultiNetworkEnabled;
+
+export const selectCurrentBalanceAccountType = (state: { balance: BalanceState }) =>
+  state.balance.currentAccountType;
 
 export default balanceSlice.reducer;

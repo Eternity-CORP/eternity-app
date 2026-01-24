@@ -12,31 +12,57 @@ import {
   getAlchemyUrl,
   getRpcUrl,
   getNetworkConfig,
+  NetworkConfig,
 } from '@/src/constants/networks';
+import {
+  TestnetNetworkId,
+  TESTNET_NETWORKS,
+  TESTNET_NETWORK_IDS,
+  getTestnetAlchemyUrl,
+  getTestnetRpcUrl,
+  getTestnetConfig,
+} from '@/src/constants/networks-testnet';
+import type { AccountType } from '@/src/store/slices/wallet-slice';
 
 const log = createLogger('NetworkService');
 
 // Request timeout
 const REQUEST_TIMEOUT = 15000;
 
-// Provider cache per network
-const providers: Partial<Record<NetworkId, JsonRpcProvider>> = {};
+// Provider cache per network (mainnet and testnet)
+const mainnetProviders: Partial<Record<NetworkId, JsonRpcProvider>> = {};
+const testnetProviders: Partial<Record<TestnetNetworkId, JsonRpcProvider>> = {};
 
 /**
- * Get or create provider for a network
+ * Get or create provider for a mainnet network
  */
 export function getProvider(networkId: NetworkId): JsonRpcProvider {
-  if (!providers[networkId]) {
-    providers[networkId] = new JsonRpcProvider(getRpcUrl(networkId));
+  if (!mainnetProviders[networkId]) {
+    mainnetProviders[networkId] = new JsonRpcProvider(getRpcUrl(networkId));
   }
-  return providers[networkId]!;
+  return mainnetProviders[networkId]!;
 }
+
+/**
+ * Get or create provider for a testnet network
+ */
+export function getTestnetProvider(networkId: TestnetNetworkId): JsonRpcProvider {
+  if (!testnetProviders[networkId]) {
+    testnetProviders[networkId] = new JsonRpcProvider(getTestnetRpcUrl(networkId));
+  }
+  return testnetProviders[networkId]!;
+}
+
+/**
+ * Combined network ID type for both mainnet and testnet
+ */
+export type AnyNetworkId = NetworkId | TestnetNetworkId;
 
 /**
  * Balance for a single token on a single network
  */
 export interface NetworkTokenBalance {
-  networkId: NetworkId;
+  networkId: AnyNetworkId;
   contractAddress: string; // 'native' for native currency
   symbol: string;
   name: string;
@@ -59,7 +85,7 @@ export interface AggregatedTokenBalance {
   iconUrl?: string;
   // Breakdown by network
   networks: {
-    networkId: NetworkId;
+    networkId: AnyNetworkId;
     balance: string;
     balanceRaw: string;
     usdValue: number;
@@ -76,11 +102,13 @@ export interface MultiNetworkBalanceResult {
   // Total USD value across all networks
   totalUsdValue: number;
   // Raw balances per network (for detailed view)
-  networkBalances: Record<NetworkId, NetworkTokenBalance[]>;
+  networkBalances: Record<AnyNetworkId, NetworkTokenBalance[]>;
   // Networks that failed to fetch
-  failedNetworks: NetworkId[];
+  failedNetworks: AnyNetworkId[];
   // Timestamp
   lastUpdated: number;
+  // Account type used for this fetch
+  accountType: AccountType;
 }
 
 interface AlchemyTokenBalance {
@@ -129,15 +157,24 @@ async function fetchWithTimeout(
 }
 
 /**
- * Fetch native token balance for a network
+ * Fetch native token balance for a network (mainnet or testnet)
  */
 async function fetchNativeBalance(
   address: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId,
+  accountType: AccountType
 ): Promise<NetworkTokenBalance | null> {
   try {
-    const provider = getProvider(networkId);
-    const network = getNetworkConfig(networkId);
+    let provider: JsonRpcProvider;
+    let network: NetworkConfig;
+
+    if (accountType === 'test') {
+      provider = getTestnetProvider(networkId as TestnetNetworkId);
+      network = getTestnetConfig(networkId as TestnetNetworkId);
+    } else {
+      provider = getProvider(networkId as NetworkId);
+      network = getNetworkConfig(networkId as NetworkId);
+    }
 
     const balanceWei = await Promise.race([
       provider.getBalance(address),
@@ -166,14 +203,17 @@ async function fetchNativeBalance(
 }
 
 /**
- * Fetch ERC-20 token balances for a network using Alchemy
+ * Fetch ERC-20 token balances for a network using Alchemy (mainnet or testnet)
  */
 async function fetchTokenBalances(
   address: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId,
+  accountType: AccountType
 ): Promise<AlchemyTokenBalance[]> {
   try {
-    const alchemyUrl = getAlchemyUrl(networkId);
+    const alchemyUrl = accountType === 'test'
+      ? getTestnetAlchemyUrl(networkId as TestnetNetworkId)
+      : getAlchemyUrl(networkId as NetworkId);
 
     const response = await fetchWithTimeout(alchemyUrl, {
       method: 'POST',
@@ -202,14 +242,17 @@ async function fetchTokenBalances(
 }
 
 /**
- * Fetch token metadata from Alchemy
+ * Fetch token metadata from Alchemy (mainnet or testnet)
  */
 async function fetchTokenMetadata(
   contractAddress: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId,
+  accountType: AccountType
 ): Promise<AlchemyTokenMetadata | null> {
   try {
-    const alchemyUrl = getAlchemyUrl(networkId);
+    const alchemyUrl = accountType === 'test'
+      ? getTestnetAlchemyUrl(networkId as TestnetNetworkId)
+      : getAlchemyUrl(networkId as NetworkId);
 
     const response = await fetchWithTimeout(alchemyUrl, {
       method: 'POST',
@@ -262,18 +305,19 @@ function formatTokenBalance(rawBalance: string, decimals: number): string {
 }
 
 /**
- * Fetch all balances for a single network
+ * Fetch all balances for a single network (mainnet or testnet)
  */
 async function fetchNetworkBalances(
   address: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId,
+  accountType: AccountType
 ): Promise<NetworkTokenBalance[]> {
   const balances: NetworkTokenBalance[] = [];
 
   // Fetch native and token balances in parallel
   const [nativeBalance, tokenBalances] = await Promise.all([
-    fetchNativeBalance(address, networkId),
-    fetchTokenBalances(address, networkId),
+    fetchNativeBalance(address, networkId, accountType),
+    fetchTokenBalances(address, networkId, accountType),
   ]);
 
   // Add native balance
@@ -283,7 +327,7 @@ async function fetchNetworkBalances(
 
   // Fetch metadata for each token
   const metadataPromises = tokenBalances.map((t) =>
-    fetchTokenMetadata(t.contractAddress, networkId)
+    fetchTokenMetadata(t.contractAddress, networkId, accountType)
   );
   const metadataResults = await Promise.all(metadataPromises);
 
@@ -319,7 +363,7 @@ async function fetchNetworkBalances(
  * Aggregate balances by token symbol across networks
  */
 function aggregateBalances(
-  networkBalances: Record<NetworkId, NetworkTokenBalance[]>
+  networkBalances: Record<AnyNetworkId, NetworkTokenBalance[]>
 ): AggregatedTokenBalance[] {
   const aggregated: Record<string, AggregatedTokenBalance> = {};
 
@@ -341,7 +385,7 @@ function aggregateBalances(
 
       // Add network breakdown
       aggregated[key].networks.push({
-        networkId: networkId as NetworkId,
+        networkId: networkId as AnyNetworkId,
         balance: balance.balance,
         balanceRaw: balance.balanceRaw,
         usdValue: balance.usdValue,
@@ -366,22 +410,32 @@ function aggregateBalances(
 }
 
 /**
- * Fetch balances from all supported networks
+ * Fetch balances from all supported networks based on account type
+ * - TEST accounts: fetch from testnet networks (Sepolia, Amoy, etc.)
+ * - REAL accounts: fetch from mainnet networks (Ethereum, Polygon, etc.)
  */
 export async function fetchAllNetworkBalances(
   address: string,
-  networks: NetworkId[] = TIER1_NETWORK_IDS
+  accountType: AccountType,
+  networks?: AnyNetworkId[]
 ): Promise<MultiNetworkBalanceResult> {
-  const networkBalances: Record<NetworkId, NetworkTokenBalance[]> = {} as Record<
-    NetworkId,
+  // Determine which networks to fetch based on account type
+  const networksToFetch: AnyNetworkId[] = networks || (
+    accountType === 'test' ? TESTNET_NETWORK_IDS : TIER1_NETWORK_IDS
+  );
+
+  const networkBalances: Record<AnyNetworkId, NetworkTokenBalance[]> = {} as Record<
+    AnyNetworkId,
     NetworkTokenBalance[]
   >;
-  const failedNetworks: NetworkId[] = [];
+  const failedNetworks: AnyNetworkId[] = [];
+
+  log.info(`Fetching balances for ${accountType} account from ${networksToFetch.length} networks`);
 
   // Fetch from all networks in parallel
   const results = await Promise.allSettled(
-    networks.map(async (networkId) => {
-      const balances = await fetchNetworkBalances(address, networkId);
+    networksToFetch.map(async (networkId) => {
+      const balances = await fetchNetworkBalances(address, networkId, accountType);
       return { networkId, balances };
     })
   );
@@ -393,7 +447,7 @@ export async function fetchAllNetworkBalances(
     } else {
       // Extract network ID from the error context
       const index = results.indexOf(result);
-      const networkId = networks[index];
+      const networkId = networksToFetch[index];
       failedNetworks.push(networkId);
       networkBalances[networkId] = [];
       log.warn(`Failed to fetch balances for ${networkId}`, result.reason);
@@ -415,6 +469,7 @@ export async function fetchAllNetworkBalances(
     networkBalances,
     failedNetworks,
     lastUpdated: Date.now(),
+    accountType,
   };
 }
 
@@ -423,9 +478,10 @@ export async function fetchAllNetworkBalances(
  */
 export async function fetchSingleNetworkBalances(
   address: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId,
+  accountType: AccountType
 ): Promise<NetworkTokenBalance[]> {
-  return fetchNetworkBalances(address, networkId);
+  return fetchNetworkBalances(address, networkId, accountType);
 }
 
 /**
@@ -434,7 +490,7 @@ export async function fetchSingleNetworkBalances(
 export function getTokenBalanceOnNetwork(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId
 ): { balance: string; usdValue: number } | null {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase()
@@ -456,7 +512,7 @@ export function getTokenBalanceOnNetwork(
 export function getBestNetworkForToken(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string
-): { networkId: NetworkId; balance: string } | null {
+): { networkId: AnyNetworkId; balance: string } | null {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase()
   );
@@ -479,7 +535,7 @@ export function hasSufficientBalance(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
   amount: string,
-  networkId: NetworkId
+  networkId: AnyNetworkId
 ): boolean {
   const balance = getTokenBalanceOnNetwork(aggregatedBalances, symbol, networkId);
   if (!balance) return false;
@@ -494,7 +550,7 @@ export function findNetworksWithSufficientBalance(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
   amount: string
-): NetworkId[] {
+): AnyNetworkId[] {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase()
   );

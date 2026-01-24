@@ -161,6 +161,7 @@ export {
 // Network Service (Multi-network support)
 export {
   getProvider as getNetworkProvider,
+  getTestnetProvider,
   fetchAllNetworkBalances,
   fetchSingleNetworkBalances,
   getTokenBalanceOnNetwork,
@@ -170,6 +171,7 @@ export {
   type NetworkTokenBalance,
   type AggregatedTokenBalance,
   type MultiNetworkBalanceResult,
+  type AnyNetworkId,
 } from './network-service';
 
 // Smart Scanning Service (Tier 2 network detection)
