@@ -12,6 +12,8 @@ export type NetworkId =
 
 export type NetworkTier = 'tier1' | 'tier2';
 
+export type NetworkEnvironment = 'mainnet' | 'testnet';
+
 export interface NetworkConfig {
   id: NetworkId;
   name: string;
@@ -31,6 +33,8 @@ export interface NetworkConfig {
   alchemyNetwork: string;
   // CoinGecko platform ID for token prices
   coingeckoPlatform: string;
+  // Network environment (mainnet or testnet)
+  environment: NetworkEnvironment;
 }
 
 const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '';
@@ -56,6 +60,7 @@ export const SUPPORTED_NETWORKS: Record<NetworkId, NetworkConfig> = {
     color: '#627EEA',
     alchemyNetwork: 'eth-mainnet',
     coingeckoPlatform: 'ethereum',
+    environment: 'mainnet',
   },
   polygon: {
     id: 'polygon',
@@ -74,6 +79,7 @@ export const SUPPORTED_NETWORKS: Record<NetworkId, NetworkConfig> = {
     color: '#8247E5',
     alchemyNetwork: 'polygon-mainnet',
     coingeckoPlatform: 'polygon-pos',
+    environment: 'mainnet',
   },
   arbitrum: {
     id: 'arbitrum',
@@ -92,6 +98,7 @@ export const SUPPORTED_NETWORKS: Record<NetworkId, NetworkConfig> = {
     color: '#28A0F0',
     alchemyNetwork: 'arb-mainnet',
     coingeckoPlatform: 'arbitrum-one',
+    environment: 'mainnet',
   },
   base: {
     id: 'base',
@@ -110,6 +117,7 @@ export const SUPPORTED_NETWORKS: Record<NetworkId, NetworkConfig> = {
     color: '#0052FF',
     alchemyNetwork: 'base-mainnet',
     coingeckoPlatform: 'base',
+    environment: 'mainnet',
   },
   optimism: {
     id: 'optimism',
@@ -128,6 +136,7 @@ export const SUPPORTED_NETWORKS: Record<NetworkId, NetworkConfig> = {
     color: '#FF0420',
     alchemyNetwork: 'opt-mainnet',
     coingeckoPlatform: 'optimistic-ethereum',
+    environment: 'mainnet',
   },
 };
 
@@ -152,6 +161,7 @@ export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
     color: '#F3BA2F',
     alchemyNetwork: '', // Not supported by Alchemy
     coingeckoPlatform: 'binance-smart-chain',
+    environment: 'mainnet',
   },
   avalanche: {
     id: 'ethereum' as NetworkId, // placeholder
@@ -170,6 +180,7 @@ export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
     color: '#E84142',
     alchemyNetwork: '', // Not supported by Alchemy
     coingeckoPlatform: 'avalanche',
+    environment: 'mainnet',
   },
   zksync: {
     id: 'ethereum' as NetworkId, // placeholder
@@ -188,6 +199,7 @@ export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
     color: '#8C8DFC',
     alchemyNetwork: '', // Not supported by Alchemy
     coingeckoPlatform: 'zksync',
+    environment: 'mainnet',
   },
 };
 
