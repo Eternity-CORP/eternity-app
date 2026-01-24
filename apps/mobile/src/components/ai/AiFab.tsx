@@ -70,6 +70,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
         styles.container,
         { bottom: actualBottom, transform: [{ scale: scaleAnim }] },
       ]}
+      pointerEvents="box-none"
     >
       <TouchableOpacity
         onPress={handlePress}
