@@ -16,6 +16,7 @@ import splitCreateReducer from './slices/split-create-slice';
 import scanningReducer from './slices/scanning-slice';
 import swapReducer from './slices/swap-slice';
 import aiReducer from './slices/ai-slice';
+import settingsReducer from './slices/settings-slice';
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +33,7 @@ export const store = configureStore({
     scanning: scanningReducer,
     swap: swapReducer,
     ai: aiReducer,
+    settings: settingsReducer,
   },
 });
 
