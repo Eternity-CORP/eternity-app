@@ -81,6 +81,14 @@ export default function AiScreen() {
       throw new Error('Wallet not available');
     }
 
+    // Check if test account and non-native token
+    const isTestAccount = currentAccount.type === 'test';
+    const isNativeToken = tx.token.toUpperCase() === 'ETH' || tx.token.toUpperCase() === 'MATIC';
+
+    if (isTestAccount && !isNativeToken) {
+      throw new Error(`On test accounts, only native tokens (ETH) are supported. ${tx.token} transfers are not available on testnets.`);
+    }
+
     const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
 
     // Send the transaction
@@ -88,7 +96,7 @@ export default function AiScreen() {
       wallet: hdWallet,
       to: tx.to,
       amount: tx.amount,
-      token: tx.token === 'ETH' ? 'ETH' : tx.token,
+      token: isNativeToken ? 'ETH' : tx.token,
     });
 
     return txHash;
@@ -114,6 +122,14 @@ export default function AiScreen() {
       throw new Error('Wallet not available');
     }
 
+    // Check if test account and non-native token
+    const isTestAccount = currentAccount.type === 'test';
+    const isNativeToken = blik.token.toUpperCase() === 'ETH' || blik.token.toUpperCase() === 'MATIC';
+
+    if (isTestAccount && !isNativeToken) {
+      throw new Error(`On test accounts, only native tokens (ETH) are supported. ${blik.token} transfers are not available on testnets.`);
+    }
+
     const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
 
     // Send the BLIK payment
@@ -121,7 +137,7 @@ export default function AiScreen() {
       wallet: hdWallet,
       to: blik.receiverAddress,
       amount: blik.amount,
-      token: blik.token === 'ETH' ? 'ETH' : blik.token,
+      token: isNativeToken ? 'ETH' : blik.token,
     });
 
     return txHash;
@@ -277,6 +293,7 @@ export default function AiScreen() {
                   onComplete={handleTransactionComplete}
                   onSaveContact={handleSaveContact}
                   isInContacts={isInContacts(pendingTransaction.to)}
+                  isTestAccount={currentAccount?.type === 'test'}
                 />
               )}
               {pendingBlik && (
@@ -287,6 +304,7 @@ export default function AiScreen() {
                   onComplete={handleBlikComplete}
                   onSaveContact={handleSaveContact}
                   isInContacts={pendingBlik.type === 'pay' ? isInContacts(pendingBlik.receiverAddress) : false}
+                  isTestAccount={currentAccount?.type === 'test'}
                 />
               )}
               {pendingSwap && (
@@ -296,6 +314,7 @@ export default function AiScreen() {
                   onConfirm={handleConfirmSwap}
                   onCancel={handleCancelSwap}
                   onComplete={handleSwapComplete}
+                  isTestAccount={currentAccount?.type === 'test'}
                 />
               )}
             </>
