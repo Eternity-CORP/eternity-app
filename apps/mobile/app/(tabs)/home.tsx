@@ -306,14 +306,14 @@ export default function HomeScreen() {
   };
 
   // Account management
-  const handleAddAccount = async () => {
+  const handleAddAccount = async (accountType: AccountType) => {
     if (!newAccountName.trim()) {
       Alert.alert('Error', 'Please enter account name');
       return;
     }
     setIsAddingAccount(true);
     try {
-      const result = await dispatch(addAccountThunk('test')).unwrap();
+      const result = await dispatch(addAccountThunk(accountType)).unwrap();
       // Update the new account with the name
       const newIndex = wallet.accounts.length;
       dispatch(updateAccountLabel({ accountIndex: newIndex, label: newAccountName.trim() }));
@@ -760,16 +760,30 @@ export default function HomeScreen() {
                 />
 
                 <TouchableOpacity
-                  style={styles.addWalletOption}
-                  onPress={handleAddAccount}
+                  style={[styles.addWalletOption, { borderColor: '#10B981', borderWidth: 1 }]}
+                  onPress={() => handleAddAccount('real')}
                   disabled={isAddingAccount}
                 >
-                  <View style={[styles.addWalletIcon, { backgroundColor: theme.colors.accent + '20' }]}>
-                    <FontAwesome name="plus" size={18} color={theme.colors.accent} />
+                  <View style={[styles.addWalletIcon, { backgroundColor: '#10B981' + '20' }]}>
+                    <FontAwesome name="diamond" size={18} color="#10B981" />
                   </View>
                   <View style={styles.addWalletOptionInfo}>
                     <Text style={styles.addWalletOptionTitle}>New Wallet</Text>
-                    <Text style={styles.addWalletOptionDesc}>Create a new wallet account</Text>
+                    <Text style={styles.addWalletOptionDesc}>Create a real mainnet wallet</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.addWalletOption, { borderColor: '#F59E0B', borderWidth: 1 }]}
+                  onPress={() => handleAddAccount('test')}
+                  disabled={isAddingAccount}
+                >
+                  <View style={[styles.addWalletIcon, { backgroundColor: '#F59E0B' + '20' }]}>
+                    <FontAwesome name="flask" size={18} color="#F59E0B" />
+                  </View>
+                  <View style={styles.addWalletOptionInfo}>
+                    <Text style={styles.addWalletOptionTitle}>New Test Wallet</Text>
+                    <Text style={styles.addWalletOptionDesc}>For testing with free tokens</Text>
                   </View>
                 </TouchableOpacity>
 
