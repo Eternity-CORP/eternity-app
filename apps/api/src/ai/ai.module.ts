@@ -20,12 +20,14 @@ import {
 import { ProactiveService } from './proactive';
 import { AiSuggestion } from './entities';
 import { ScheduledModule } from '../scheduled/scheduled.module';
+import { UsernameModule } from '../username/username.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([AiSuggestion]),
     forwardRef(() => ScheduledModule),
+    UsernameModule,
   ],
   controllers: [AiController],
   providers: [

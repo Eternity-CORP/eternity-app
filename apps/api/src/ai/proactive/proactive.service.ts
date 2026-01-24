@@ -15,6 +15,7 @@ import {
 } from '../entities';
 import { AiGateway } from '../ai.gateway';
 import { ScheduledService } from '../../scheduled/scheduled.service';
+import { UsernameService } from '../../username/username.service';
 
 export interface CreateSuggestionParams {
   userAddress: string;
@@ -38,6 +39,7 @@ export class ProactiveService {
     private readonly aiGateway: AiGateway,
     @Inject(forwardRef(() => ScheduledService))
     private readonly scheduledService: ScheduledService,
+    private readonly usernameService: UsernameService,
   ) {}
 
   /**
@@ -334,6 +336,124 @@ export class ProactiveService {
         payload: { alertType },
       },
       metadata: { alertType, ...metadata },
+    });
+  }
+
+  // ========================================
+  // Smart Suggestion Methods
+  // ========================================
+
+  /**
+   * Suggest username setup for users who don't have one
+   * Called when user makes transactions
+   */
+  async suggestUsernameSetup(userAddress: string, transactionCount: number): Promise<AiSuggestion | null> {
+    // Only suggest after 5+ transactions
+    if (transactionCount < 5) {
+      return null;
+    }
+
+    // Check if user already has a username
+    const existingUsername = await this.usernameService.lookupByAddress(userAddress);
+    if (existingUsername) {
+      return null;
+    }
+
+    // Check if we already suggested this
+    const existingSuggestion = await this.suggestionRepository.findOne({
+      where: {
+        userAddress: userAddress.toLowerCase(),
+        type: 'transaction_tip',
+        metadata: { suggestionType: 'setup_username' } as any,
+      },
+    });
+
+    if (existingSuggestion) {
+      return null;
+    }
+
+    return this.createSuggestion({
+      userAddress,
+      type: 'transaction_tip',
+      title: 'Создай @username',
+      message: 'Друзьям будет проще отправлять тебе крипту!',
+      priority: 'low',
+      action: {
+        label: 'Создать',
+        route: '/profile/username',
+        type: 'navigate',
+        payload: { suggestionType: 'setup_username' },
+      },
+      metadata: { suggestionType: 'setup_username' },
+    });
+  }
+
+  /**
+   * Suggest adding frequent recipient to contacts
+   * Called from frontend when pattern is detected
+   */
+  async suggestAddContact(params: {
+    userAddress: string;
+    recipientAddress: string;
+    transactionCount: number;
+  }): Promise<AiSuggestion | null> {
+    const { userAddress, recipientAddress, transactionCount } = params;
+
+    // Only suggest for 3+ transactions
+    if (transactionCount < 3) {
+      return null;
+    }
+
+    // Check if we already suggested this
+    const existingSuggestion = await this.suggestionRepository.findOne({
+      where: {
+        userAddress: userAddress.toLowerCase(),
+        type: 'transaction_tip',
+        metadata: { recipientAddress: recipientAddress.toLowerCase() } as any,
+      },
+    });
+
+    if (existingSuggestion) {
+      return null;
+    }
+
+    // Format short address
+    const shortAddress = `${recipientAddress.slice(0, 6)}...${recipientAddress.slice(-4)}`;
+
+    return this.createSuggestion({
+      userAddress,
+      type: 'transaction_tip',
+      title: 'Добавить в контакты?',
+      message: `Ты часто отправляешь на ${shortAddress}. Дать имя?`,
+      priority: 'low',
+      action: {
+        label: 'Добавить',
+        route: '/contacts/add',
+        type: 'navigate',
+        payload: { address: recipientAddress },
+      },
+      metadata: { recipientAddress: recipientAddress.toLowerCase(), suggestionType: 'add_contact' },
+    });
+  }
+
+  /**
+   * Create a savings tip suggestion
+   */
+  async createSavingsTip(params: {
+    userAddress: string;
+    title: string;
+    message: string;
+    tipType: string;
+  }): Promise<AiSuggestion> {
+    const { userAddress, title, message, tipType } = params;
+
+    return this.createSuggestion({
+      userAddress,
+      type: 'savings_tip',
+      title,
+      message,
+      priority: 'low',
+      metadata: { tipType },
     });
   }
 }

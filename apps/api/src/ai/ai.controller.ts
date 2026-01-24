@@ -375,4 +375,58 @@ export class AiController {
       suggestionId: suggestion.id,
     };
   }
+
+  // ========================================
+  // Smart Suggestion Endpoints
+  // ========================================
+
+  @Post('smart/suggest-username')
+  @HttpCode(HttpStatus.OK)
+  async suggestUsername(
+    @Body() dto: { userAddress: string; transactionCount: number },
+  ) {
+    if (!dto.userAddress) {
+      throw new HttpException(
+        { code: 'INVALID_PARAMS', message: 'userAddress is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const suggestion = await this.proactiveService.suggestUsernameSetup(
+      dto.userAddress,
+      dto.transactionCount || 0,
+    );
+
+    return {
+      success: true,
+      suggestionId: suggestion?.id || null,
+      created: !!suggestion,
+    };
+  }
+
+  @Post('smart/suggest-contact')
+  @HttpCode(HttpStatus.OK)
+  async suggestContact(
+    @Body()
+    dto: {
+      userAddress: string;
+      recipientAddress: string;
+      transactionCount: number;
+    },
+  ) {
+    if (!dto.userAddress || !dto.recipientAddress) {
+      throw new HttpException(
+        { code: 'INVALID_PARAMS', message: 'userAddress and recipientAddress are required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const suggestion = await this.proactiveService.suggestAddContact(dto);
+
+    return {
+      success: true,
+      suggestionId: suggestion?.id || null,
+      created: !!suggestion,
+    };
+  }
 }
