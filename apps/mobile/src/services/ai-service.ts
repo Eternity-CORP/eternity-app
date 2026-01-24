@@ -82,14 +82,16 @@ export interface TransactionPreview {
 
 export interface AiSuggestion {
   id: string;
-  type: 'reminder' | 'security' | 'smart';
+  type: 'payment_reminder' | 'security_alert' | 'transaction_tip' | 'savings_tip';
   title: string;
   message: string;
   priority: 'low' | 'medium' | 'high';
   createdAt: Date;
   action?: {
-    type: string;
-    payload: unknown;
+    label: string;
+    route?: string;
+    type?: string;
+    payload?: unknown;
   };
 }
 

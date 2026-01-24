@@ -36,10 +36,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="wallet"
+        name="ai"
         options={{
-          title: 'Wallet',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="credit-card" color={color} focused={focused} />,
+          title: 'AI',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name="magic" color={color} focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -47,6 +48,13 @@ export default function TabLayout() {
         options={{
           title: 'Shard',
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="id-card" color={color} focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          href: null, // Hide from tab bar (accessible via Home)
+          headerShown: false,
         }}
       />
       <Tabs.Screen
