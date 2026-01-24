@@ -7,6 +7,7 @@ export interface AITool {
   name: string;
   description: string;
   parameters: Record<string, unknown>;
+  required?: string[];
 }
 
 export interface ToolCall {

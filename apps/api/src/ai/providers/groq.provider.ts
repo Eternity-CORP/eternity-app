@@ -158,7 +158,7 @@ export class GroqProvider implements AIProvider {
         parameters: {
           type: 'object',
           properties: tool.parameters,
-          required: Object.keys(tool.parameters),
+          required: tool.required ?? [],
         },
       },
     }));

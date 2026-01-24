@@ -165,7 +165,7 @@ export class GeminiProvider implements AIProvider {
       parameters: {
         type: SchemaType.OBJECT,
         properties: tool.parameters as { [k: string]: Schema },
-        required: Object.keys(tool.parameters),
+        required: tool.required ?? [],
       },
     }));
   }

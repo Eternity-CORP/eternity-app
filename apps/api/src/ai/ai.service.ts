@@ -116,6 +116,7 @@ export class AiService {
       name: handler.definition.name,
       description: handler.definition.description,
       parameters: handler.definition.parameters.properties,
+      required: handler.definition.parameters.required,
     }));
   }
 
