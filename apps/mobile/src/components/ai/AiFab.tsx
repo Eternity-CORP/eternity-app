@@ -31,13 +31,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Don't show FAB on AI screen
-  if (pathname === '/ai' || pathname === '/(tabs)/ai') {
-    return null;
-  }
-
   // Calculate bottom position: base offset + tab bar height + safe area
-  const tabBarHeight = 50; // Approximate tab bar content height
   const actualBottom = bottomOffset + Math.max(insets.bottom, 0);
 
   // Pulse animation when there are suggestions
@@ -62,6 +56,11 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
       pulseAnim.setValue(1);
     }
   }, [suggestions.length, pulseAnim]);
+
+  // Don't show FAB on AI screen - MUST be after all hooks
+  if (pathname === '/ai' || pathname === '/(tabs)/ai') {
+    return null;
+  }
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
