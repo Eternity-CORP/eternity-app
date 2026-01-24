@@ -6,3 +6,5 @@ export * from './dto';
 export * from './providers';
 export * from './tools';
 export * from './security';
+export * from './proactive';
+export * from './entities';

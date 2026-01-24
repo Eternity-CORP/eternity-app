@@ -16,6 +16,7 @@ import { SplitBill, SplitParticipant } from './split/entities';
 import { ScheduledPayment } from './scheduled/entities';
 import { WaitlistEntry } from './waitlist/waitlist.entity';
 import { PushDevice } from './notifications/push-device.entity';
+import { AiSuggestion } from './ai/entities';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -34,7 +35,7 @@ import databaseConfig from './config/database.config';
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
-        entities: [Username, SplitBill, SplitParticipant, ScheduledPayment, WaitlistEntry, PushDevice],
+        entities: [Username, SplitBill, SplitParticipant, ScheduledPayment, WaitlistEntry, PushDevice, AiSuggestion],
         synchronize: configService.get<string>('NODE_ENV') !== 'production',
         logging: configService.get<string>('NODE_ENV') === 'development',
       }),

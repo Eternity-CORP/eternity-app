@@ -69,13 +69,18 @@ export interface DonePayload {
 }
 
 export interface SuggestionPayload {
-  type: 'reminder' | 'security' | 'smart';
+  id: string;
+  type: string;
   title: string;
   message: string;
+  priority: string;
   action?: {
-    type: string;
-    payload: unknown;
-  };
+    label: string;
+    route?: string;
+    type?: string;
+    payload?: unknown;
+  } | null;
+  createdAt: Date;
 }
 
 export interface ErrorPayload {

@@ -3,12 +3,15 @@ import {
   Post,
   Get,
   Body,
+  Param,
+  Query,
   HttpCode,
   HttpStatus,
   HttpException,
 } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
+import { ProactiveService } from './proactive';
 import { SendChatDto, AiResponseDto } from './dto';
 import { ChatMessage } from './providers';
 
@@ -52,6 +55,7 @@ export class AiController {
   constructor(
     private readonly aiService: AiService,
     private readonly securityService: AiSecurityService,
+    private readonly proactiveService: ProactiveService,
   ) {}
 
   @Get('health')
@@ -250,5 +254,67 @@ export class AiController {
     }
 
     return this.securityService.getRateLimitUsage(dto.userAddress);
+  }
+
+  // ========================================
+  // Suggestion Endpoints
+  // ========================================
+
+  @Get('suggestions')
+  async getSuggestions(@Query('address') address: string) {
+    if (!address) {
+      throw new HttpException(
+        { code: 'MISSING_ADDRESS', message: 'Address query parameter is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const suggestions = await this.proactiveService.getPendingSuggestions(address);
+
+    return {
+      suggestions: suggestions.map((s) => ({
+        id: s.id,
+        type: s.type,
+        title: s.title,
+        message: s.message,
+        priority: s.priority,
+        action: s.action,
+        createdAt: s.createdAt,
+      })),
+    };
+  }
+
+  @Post('suggestions/:id/dismiss')
+  @HttpCode(HttpStatus.OK)
+  async dismissSuggestion(@Param('id') id: string) {
+    const suggestion = await this.proactiveService.getSuggestionById(id);
+
+    if (!suggestion) {
+      throw new HttpException(
+        { code: 'NOT_FOUND', message: 'Suggestion not found' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.proactiveService.dismissSuggestion(id);
+
+    return { success: true };
+  }
+
+  @Post('suggestions/:id/action')
+  @HttpCode(HttpStatus.OK)
+  async actionSuggestion(@Param('id') id: string) {
+    const suggestion = await this.proactiveService.getSuggestionById(id);
+
+    if (!suggestion) {
+      throw new HttpException(
+        { code: 'NOT_FOUND', message: 'Suggestion not found' },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    await this.proactiveService.markAsActioned(id);
+
+    return { success: true };
   }
 }
