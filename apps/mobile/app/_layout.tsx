@@ -13,6 +13,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 
 import { NotificationProvider } from '@/src/components/NotificationProvider';
+import { AiFab } from '@/src/components/ai';
 import { theme } from '@/src/constants/theme';
 import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
@@ -143,6 +144,9 @@ function RootLayoutNav() {
     return null; // Show splash screen while checking
   }
 
+  // Show FAB only when wallet is initialized and not in onboarding
+  const showFab = wallet.isInitialized && segments[0] !== '(onboarding)';
+
   return (
     <NotificationProvider>
       <ThemeProvider value={EYDarkTheme}>
@@ -164,6 +168,7 @@ function RootLayoutNav() {
           <Stack.Screen name="split" options={{ headerShown: false }} />
           <Stack.Screen name="swap" options={{ headerShown: false }} />
         </Stack>
+        {showFab && <AiFab />}
       </ThemeProvider>
     </NotificationProvider>
   );
