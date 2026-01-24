@@ -54,6 +54,7 @@ export default function HomeScreen() {
   const balance = useAppSelector((state) => state.balance);
   const split = useAppSelector((state) => state.split);
   const scanning = useAppSelector((state) => state.scanning);
+  const scheduled = useAppSelector((state) => state.scheduled);
   const aiSuggestions = useAppSelector((state) => state.ai.suggestions);
   const currentAccount = getCurrentAccount(wallet);
 
@@ -380,6 +381,20 @@ export default function HomeScreen() {
             <FontAwesome name="exclamation-circle" size={16} color="#FFA500" />
             <Text style={styles.pendingBannerText}>
               {split.pendingSplits.length} pending payment request{split.pendingSplits.length > 1 ? 's' : ''}
+            </Text>
+            <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
+          </TouchableOpacity>
+        )}
+
+        {/* Scheduled Payments Banner */}
+        {scheduled.payments.filter(p => p.status === 'pending').length > 0 && (
+          <TouchableOpacity
+            style={styles.scheduledBanner}
+            onPress={() => router.push('/scheduled')}
+          >
+            <FontAwesome name="calendar" size={16} color={theme.colors.accent} />
+            <Text style={styles.scheduledBannerText}>
+              {scheduled.payments.filter(p => p.status === 'pending').length} scheduled payment{scheduled.payments.filter(p => p.status === 'pending').length > 1 ? 's' : ''} pending
             </Text>
             <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
           </TouchableOpacity>
@@ -879,6 +894,22 @@ const styles = StyleSheet.create({
   pendingBannerText: {
     ...theme.typography.caption,
     color: '#FFA500',
+    flex: 1,
+  },
+  scheduledBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.accent + '15',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.accent + '30',
+  },
+  scheduledBannerText: {
+    ...theme.typography.caption,
+    color: theme.colors.accent,
     flex: 1,
   },
   scanningSection: {
