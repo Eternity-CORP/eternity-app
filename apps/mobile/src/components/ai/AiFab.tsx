@@ -14,6 +14,7 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useAppSelector } from '@/src/store/hooks';
 import { theme } from '@/src/constants/theme';
@@ -23,8 +24,9 @@ interface AiFabProps {
   bottomOffset?: number;
 }
 
-export function AiFab({ bottomOffset = 100 }: AiFabProps) {
+export function AiFab({ bottomOffset = 80 }: AiFabProps) {
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const suggestions = useAppSelector((state) => state.ai.suggestions);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -32,6 +34,10 @@ export function AiFab({ bottomOffset = 100 }: AiFabProps) {
   if (pathname === '/ai' || pathname === '/(tabs)/ai') {
     return null;
   }
+
+  // Calculate bottom position: base offset + tab bar height + safe area
+  const tabBarHeight = 50; // Approximate tab bar content height
+  const actualBottom = bottomOffset + Math.max(insets.bottom, 0);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -62,8 +68,9 @@ export function AiFab({ bottomOffset = 100 }: AiFabProps) {
     <Animated.View
       style={[
         styles.container,
-        { bottom: bottomOffset, transform: [{ scale: scaleAnim }] },
+        { bottom: actualBottom, transform: [{ scale: scaleAnim }] },
       ]}
+      pointerEvents="box-none"
     >
       <TouchableOpacity
         onPress={handlePress}
@@ -96,6 +103,8 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     right: 20,
+    width: 56,
+    height: 56,
     zIndex: 1000,
   },
   fab: {
