@@ -200,7 +200,9 @@ export default function SplitDetailsScreen() {
               const isMe = participant.address.toLowerCase() === currentAccount?.address.toLowerCase();
               const isPaid = participant.status === 'paid';
               const displayName = participant.username
-                ? `@${participant.username}`
+                ? participant.username.startsWith('@')
+                  ? participant.username
+                  : `@${participant.username}`
                 : participant.name
                   ? participant.name
                   : truncateAddress(participant.address);
