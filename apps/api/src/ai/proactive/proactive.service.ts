@@ -14,6 +14,7 @@ import {
   SuggestionAction,
 } from '../entities';
 import { AiGateway } from '../ai.gateway';
+import { ScheduledService } from '../../scheduled/scheduled.service';
 
 export interface CreateSuggestionParams {
   userAddress: string;
@@ -35,6 +36,8 @@ export class ProactiveService {
     private readonly suggestionRepository: Repository<AiSuggestion>,
     @Inject(forwardRef(() => AiGateway))
     private readonly aiGateway: AiGateway,
+    @Inject(forwardRef(() => ScheduledService))
+    private readonly scheduledService: ScheduledService,
   ) {}
 
   /**
@@ -184,6 +187,78 @@ export class ProactiveService {
 
     if (suggestions.length > 0) {
       this.logger.log(`Sent ${suggestions.length} pending suggestions to ${userAddress}`);
+    }
+  }
+
+  /**
+   * Check for upcoming scheduled payments and create reminders
+   * Runs every 5 minutes
+   */
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async checkPaymentReminders(): Promise<void> {
+    this.logger.debug('Checking for upcoming payment reminders...');
+
+    // Get all unique user addresses with pending payments in next 24 hours
+    const result = await this.suggestionRepository.query(`
+      SELECT DISTINCT creator_address
+      FROM scheduled_payments
+      WHERE status = 'pending'
+        AND scheduled_at > NOW()
+        AND scheduled_at <= NOW() + INTERVAL '24 hours'
+    `);
+
+    for (const row of result) {
+      await this.checkUserPaymentReminders(row.creator_address);
+    }
+  }
+
+  /**
+   * Check payment reminders for a specific user
+   */
+  private async checkUserPaymentReminders(userAddress: string): Promise<void> {
+    // Get payments due within 24 hours
+    const upcoming = await this.scheduledService.findUpcoming(userAddress, 1);
+
+    for (const payment of upcoming) {
+      // Check if we already reminded for this payment
+      const existingReminder = await this.suggestionRepository.findOne({
+        where: {
+          userAddress: userAddress.toLowerCase(),
+          type: 'payment_reminder',
+          metadata: { paymentId: payment.id } as any,
+        },
+      });
+
+      if (existingReminder) continue;
+
+      // Calculate hours until payment
+      const now = new Date();
+      const hoursUntil = Math.round(
+        (payment.scheduledAt.getTime() - now.getTime()) / (1000 * 60 * 60),
+      );
+
+      // Determine recipient display name
+      const recipientDisplay =
+        payment.recipientName || payment.recipientUsername || payment.recipient;
+
+      // Create reminder suggestion
+      await this.createSuggestion({
+        userAddress,
+        type: 'payment_reminder',
+        title: 'Запланированный платёж',
+        message: `Через ${hoursUntil}ч: ${payment.amount} ${payment.tokenSymbol} → ${recipientDisplay}`,
+        priority: 'medium',
+        action: {
+          label: 'Посмотреть',
+          route: `/scheduled/${payment.id}`,
+          type: 'navigate',
+          payload: { paymentId: payment.id },
+        },
+        metadata: { paymentId: payment.id },
+        expiresAt: payment.scheduledAt,
+      });
+
+      this.logger.log(`Created payment reminder for ${userAddress}, payment ${payment.id}`);
     }
   }
 }
