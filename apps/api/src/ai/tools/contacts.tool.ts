@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SchemaType } from '@google/generative-ai';
+import { UsernameService } from '../../username/username.service';
 import {
   AIToolHandler,
   ToolDefinition,
@@ -7,32 +8,35 @@ import {
   ToolResult,
 } from './tool.interface';
 
-interface Contact {
-  address: string;
-  username?: string;
-  displayName?: string;
-  lastTransactionAt: string;
-  transactionCount: number;
-}
-
 @Injectable()
 export class ContactsTool implements AIToolHandler {
   readonly name = 'get_contacts';
   private readonly logger = new Logger(ContactsTool.name);
 
+  constructor(private readonly usernameService: UsernameService) {}
+
   readonly definition: ToolDefinition = {
     name: 'get_contacts',
     description:
-      'Get frequent contacts (recipients the user has sent to before). Useful for autocomplete and suggestions.',
+      'Get user profile information including their username. Also can lookup username by address or address by username.',
     parameters: {
       type: SchemaType.OBJECT,
-      properties: {},
+      properties: {
+        lookupAddress: {
+          type: SchemaType.STRING,
+          description: 'Optional: Address to lookup username for',
+        },
+        lookupUsername: {
+          type: SchemaType.STRING,
+          description: 'Optional: Username to lookup address for (without @)',
+        },
+      },
       required: [],
     },
   };
 
-  async execute(params: ToolParams): Promise<ToolResult> {
-    const { userAddress } = params;
+  async execute(params: ToolParams & { lookupAddress?: string; lookupUsername?: string }): Promise<ToolResult> {
+    const { userAddress, lookupAddress, lookupUsername } = params;
 
     if (!userAddress) {
       return {
@@ -41,52 +45,75 @@ export class ContactsTool implements AIToolHandler {
       };
     }
 
-    this.logger.debug(`Getting contacts for ${userAddress}`);
+    this.logger.debug(`Getting contacts/profile for ${userAddress}`);
 
     try {
-      // TODO: Integrate with transaction history to extract frequent contacts
-      // For now, return simulated contacts
-      const contacts: Contact[] = [
-        {
-          address: '0x1234567890abcdef1234567890abcdef12345678',
-          username: 'ivan',
-          displayName: 'Ivan Petrov',
-          lastTransactionAt: new Date(Date.now() - 3600000).toISOString(),
-          transactionCount: 15,
-        },
-        {
-          address: '0xabcdef1234567890abcdef1234567890abcdef12',
-          username: 'maria',
-          displayName: 'Maria Sidorova',
-          lastTransactionAt: new Date(Date.now() - 7200000).toISOString(),
-          transactionCount: 8,
-        },
-        {
-          address: '0x9876543210fedcba9876543210fedcba98765432',
-          displayName: 'Coffee Shop',
-          lastTransactionAt: new Date(Date.now() - 86400000).toISOString(),
-          transactionCount: 5,
-        },
-        {
-          address: '0xfedcba9876543210fedcba9876543210fedcba98',
-          username: 'alex',
-          lastTransactionAt: new Date(Date.now() - 172800000).toISOString(),
-          transactionCount: 3,
-        },
-      ];
+      // If looking up a specific address
+      if (lookupAddress) {
+        const result = await this.usernameService.lookupByAddress(lookupAddress);
+        if (result) {
+          return {
+            success: true,
+            data: {
+              lookup: {
+                address: result.address,
+                username: `@${result.username}`,
+              },
+            },
+          };
+        }
+        return {
+          success: true,
+          data: {
+            lookup: null,
+            message: 'No username found for this address',
+          },
+        };
+      }
+
+      // If looking up a username
+      if (lookupUsername) {
+        const cleanUsername = lookupUsername.replace('@', '');
+        const result = await this.usernameService.lookup(cleanUsername);
+        if (result) {
+          return {
+            success: true,
+            data: {
+              lookup: {
+                address: result.address,
+                username: `@${result.username}`,
+              },
+            },
+          };
+        }
+        return {
+          success: true,
+          data: {
+            lookup: null,
+            message: `Username @${cleanUsername} not found`,
+          },
+        };
+      }
+
+      // Default: get user's own profile
+      const userProfile = await this.usernameService.lookupByAddress(userAddress);
 
       return {
         success: true,
         data: {
-          contacts,
-          total: contacts.length,
+          profile: {
+            address: userAddress,
+            username: userProfile ? `@${userProfile.username}` : null,
+            hasUsername: !!userProfile,
+          },
+          note: 'Contacts are stored locally on your device. Use the app to manage contacts.',
         },
       };
     } catch (error) {
-      this.logger.error('Failed to get contacts', error);
+      this.logger.error('Failed to get profile/contacts', error);
       return {
         success: false,
-        error: 'Failed to fetch contacts',
+        error: 'Failed to fetch profile information',
       };
     }
   }

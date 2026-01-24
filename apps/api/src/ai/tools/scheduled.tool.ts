@@ -95,43 +95,9 @@ export class ScheduledTool implements AIToolHandler {
       };
     } catch (error) {
       this.logger.error('Failed to get scheduled payments', error);
-
-      // Fallback to simulated data on error
-      const simulatedPayments: ScheduledPayment[] = [
-        {
-          id: 'sched_001',
-          recipient: '0x1234...5678',
-          recipientUsername: 'landlord',
-          amount: '500.00',
-          token: 'USDC',
-          amountUsd: '500.00',
-          frequency: 'monthly',
-          nextExecutionAt: new Date(
-            Date.now() + 7 * 24 * 3600000,
-          ).toISOString(),
-          status: 'active',
-        },
-        {
-          id: 'sched_002',
-          recipient: '0xabcd...efgh',
-          recipientUsername: 'gym',
-          amount: '30.00',
-          token: 'USDC',
-          amountUsd: '30.00',
-          frequency: 'monthly',
-          nextExecutionAt: new Date(
-            Date.now() + 14 * 24 * 3600000,
-          ).toISOString(),
-          status: 'active',
-        },
-      ];
-
       return {
-        success: true,
-        data: {
-          payments: simulatedPayments,
-          total: simulatedPayments.length,
-        },
+        success: false,
+        error: 'Failed to fetch scheduled payments',
       };
     }
   }

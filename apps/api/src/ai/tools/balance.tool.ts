@@ -6,23 +6,18 @@ import {
   ToolParams,
   ToolResult,
 } from './tool.interface';
+import { BalanceServiceAi } from '../services';
 
 interface BalanceParams extends ToolParams {
   token?: string;
-}
-
-interface TokenBalance {
-  symbol: string;
-  name: string;
-  balance: string;
-  balanceUsd: string;
-  price: number;
 }
 
 @Injectable()
 export class BalanceTool implements AIToolHandler {
   readonly name = 'get_balance';
   private readonly logger = new Logger(BalanceTool.name);
+
+  constructor(private readonly balanceService: BalanceServiceAi) {}
 
   readonly definition: ToolDefinition = {
     name: 'get_balance',
@@ -54,73 +49,32 @@ export class BalanceTool implements AIToolHandler {
     this.logger.debug(`Getting balance for ${userAddress}, token: ${token}`);
 
     try {
-      // TODO: Integrate with Alchemy or mobile app data
-      // For now, return simulated balances
-      const allBalances: TokenBalance[] = [
-        {
-          symbol: 'USDC',
-          name: 'USD Coin',
-          balance: '500.00',
-          balanceUsd: '500.00',
-          price: 1.0,
-        },
-        {
-          symbol: 'ETH',
-          name: 'Ethereum',
-          balance: '0.25',
-          balanceUsd: '625.00',
-          price: 2500.0,
-        },
-        {
-          symbol: 'MATIC',
-          name: 'Polygon',
-          balance: '150.00',
-          balanceUsd: '135.00',
-          price: 0.9,
-        },
-      ];
+      const result = await this.balanceService.getBalances(userAddress, token);
 
-      if (token) {
-        const tokenBalance = allBalances.find(
-          (b) => b.symbol.toLowerCase() === token.toLowerCase(),
-        );
-
-        if (!tokenBalance) {
-          return {
-            success: true,
-            data: {
-              message: `No ${token} balance found`,
-              balances: [],
-              totalUsd: '0.00',
-            },
-          };
-        }
-
+      if (token && result.balances.length === 0) {
         return {
           success: true,
           data: {
-            balances: [tokenBalance],
-            totalUsd: tokenBalance.balanceUsd,
+            message: `No ${token} balance found`,
+            balances: [],
+            totalUsd: '0.00',
           },
         };
       }
 
-      const totalUsd = allBalances
-        .reduce((sum, b) => sum + parseFloat(b.balanceUsd), 0)
-        .toFixed(2);
-
       return {
         success: true,
         data: {
-          balances: allBalances,
-          totalUsd,
+          balances: result.balances,
+          totalUsd: result.totalUsd,
+          ethPrice: result.ethPrice,
         },
       };
     } catch (error) {
       this.logger.error('Failed to get balance', error);
       return {
         success: false,
-        error: 'Failed to fetch balance',
+        error: 'Failed to fetch balance from blockchain',
       };
     }
   }

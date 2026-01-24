@@ -19,6 +19,7 @@ import {
 } from './security';
 import { ProactiveService } from './proactive';
 import { AiSuggestion } from './entities';
+import { BalanceServiceAi, HistoryServiceAi } from './services';
 import { ScheduledModule } from '../scheduled/scheduled.module';
 import { UsernameModule } from '../username/username.module';
 
@@ -35,6 +36,8 @@ import { UsernameModule } from '../username/username.module';
     AiGateway,
     GeminiProvider,
     GroqProvider,
+    BalanceServiceAi,
+    HistoryServiceAi,
     BalanceTool,
     SendTool,
     HistoryTool,
