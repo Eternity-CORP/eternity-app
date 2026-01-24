@@ -3,7 +3,7 @@
  * Floating action button for quick AI access from any screen
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   TouchableOpacity,
   View,
@@ -29,6 +29,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
   const insets = useSafeAreaInsets();
   const suggestions = useAppSelector((state) => state.ai.suggestions);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Don't show FAB on AI screen
   if (pathname === '/ai' || pathname === '/(tabs)/ai') {
@@ -38,6 +39,29 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
   // Calculate bottom position: base offset + tab bar height + safe area
   const tabBarHeight = 50; // Approximate tab bar content height
   const actualBottom = bottomOffset + Math.max(insets.bottom, 0);
+
+  // Pulse animation when there are suggestions
+  useEffect(() => {
+    if (suggestions.length > 0) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.08,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.stopAnimation();
+      pulseAnim.setValue(1);
+    }
+  }, [suggestions.length, pulseAnim]);
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -68,7 +92,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
     <Animated.View
       style={[
         styles.container,
-        { bottom: actualBottom, transform: [{ scale: scaleAnim }] },
+        { bottom: actualBottom, transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }] },
       ]}
       pointerEvents="box-none"
     >
@@ -79,7 +103,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
         activeOpacity={1}
       >
         <LinearGradient
-          colors={['#8B5CF6', '#7C3AED']}
+          colors={[theme.colors.accent, theme.colors.accentCyan]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fab}
@@ -113,11 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    ...theme.shadows.glow,
   },
   badge: {
     position: 'absolute',
