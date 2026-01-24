@@ -4,3 +4,5 @@ export * from './send.tool';
 export * from './history.tool';
 export * from './contacts.tool';
 export * from './scheduled.tool';
+export * from './blik.tool';
+export * from './swap.tool';

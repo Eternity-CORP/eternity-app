@@ -11,6 +11,9 @@ import {
   HistoryTool,
   ContactsTool,
   ScheduledTool,
+  BlikGenerateTool,
+  BlikLookupTool,
+  SwapTool,
 } from './tools';
 import {
   AiSecurityService,
@@ -22,6 +25,7 @@ import { AiSuggestion } from './entities';
 import { BalanceServiceAi, HistoryServiceAi } from './services';
 import { ScheduledModule } from '../scheduled/scheduled.module';
 import { UsernameModule } from '../username/username.module';
+import { BlikModule } from '../blik/blik.module';
 
 @Module({
   imports: [
@@ -29,6 +33,7 @@ import { UsernameModule } from '../username/username.module';
     TypeOrmModule.forFeature([AiSuggestion]),
     forwardRef(() => ScheduledModule),
     UsernameModule,
+    BlikModule,
   ],
   controllers: [AiController],
   providers: [
@@ -43,6 +48,9 @@ import { UsernameModule } from '../username/username.module';
     HistoryTool,
     ContactsTool,
     ScheduledTool,
+    BlikGenerateTool,
+    BlikLookupTool,
+    SwapTool,
     AiSecurityService,
     AiRateLimiter,
     AiAuditLogger,

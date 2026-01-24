@@ -62,10 +62,16 @@ export interface DonePayload {
   pendingTransaction?: {
     id: string;
     to: string;
+    toUsername?: string;
     amount: string;
     token: string;
+    amountUsd: string;
     estimatedGas: string;
+    estimatedGasUsd: string;
+    network: string;
   };
+  pendingBlik?: unknown;
+  pendingSwap?: unknown;
 }
 
 export interface SuggestionPayload {
@@ -100,6 +106,8 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент кошелька E-Y. Тв
 ## Что ты умеешь
 - Показывать балансы токенов (используй get_balance)
 - Помогать отправлять крипту (используй prepare_send, пользователь подтверждает)
+- BLIK-переводы: получатель генерирует код (blik_generate), отправитель оплачивает по коду (blik_lookup)
+- Обмен токенов/swap (используй prepare_swap)
 - Показывать историю транзакций (используй get_history)
 - Работать с контактами (используй get_contacts)
 - Показывать scheduled payments (используй get_scheduled)
@@ -107,10 +115,19 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент кошелька E-Y. Тв
 
 ## Важные правила
 1. НИКОГДА не проси seed phrase или private key — это мошенничество
-2. Для любых транзакций ВСЕГДА используй prepare_send — пользователь должен подтвердить
+2. Для любых транзакций ВСЕГДА используй соответствующий инструмент — пользователь должен подтвердить
 3. Если спрашивают про другие кошельки/приложения — вежливо говори что не знаешь
 4. Если что-то не можешь сделать — честно скажи об этом
 5. Суммы всегда показывай и в крипте, и в USD
+
+## BLIK
+- Если пользователь хочет ПОЛУЧИТЬ деньги через BLIK — используй blik_generate
+- Если пользователь хочет ОТПРАВИТЬ/оплатить BLIK код — используй blik_lookup
+- BLIK код действует 2 минуты
+
+## Swap
+- Если пользователь хочет обменять токены (ETH на USDC и т.д.) — используй prepare_swap
+- Swap выполняется через DEX агрегатор
 
 ## Язык
 - Определяй язык пользователя по первому сообщению
@@ -359,16 +376,37 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             ? (sendResult.result as { data?: { preview?: unknown } }).data?.preview
             : undefined;
 
+          // Check for pending BLIK
+          const blikResult = toolResults.find((r) => r.name === 'blik_generate' || r.name === 'blik_lookup');
+          const pendingBlik = blikResult?.result?.success
+            ? (blikResult.result as { data?: { pendingBlik?: unknown } }).data?.pendingBlik
+            : undefined;
+
+          // Check for pending Swap
+          const swapResult = toolResults.find((r) => r.name === 'prepare_swap');
+          const pendingSwap = swapResult?.result?.success
+            ? (swapResult.result as { data?: { pendingSwap?: unknown } }).data?.pendingSwap
+            : undefined;
+
           // Make follow-up AI call with tool results to generate natural language response
+          // Format tool results clearly for the AI to understand
+          const toolResultsSummary = toolResults.map(r => {
+            if (r.result.success) {
+              return `${r.name}: ${JSON.stringify(r.result.data)}`;
+            } else {
+              return `${r.name}: Error - ${r.result.error}`;
+            }
+          }).join('\n');
+
           const followUpMessages: ChatMessage[] = [
             ...messages,
             {
               role: 'assistant' as const,
-              content: `I called the following tools: ${response.toolCalls.map(tc => tc.name).join(', ')}`,
+              content: `Вызываю инструменты для получения данных...`,
             },
             {
               role: 'user' as const,
-              content: `Tool results: ${JSON.stringify(toolResults.map(r => ({ tool: r.name, result: r.result })))}. Please respond to the user based on these results.`,
+              content: `[SYSTEM: Tool execution completed. Results below. Respond naturally to the user's original question using this data.]\n\n${toolResultsSummary}`,
             },
           ];
 
@@ -394,6 +432,8 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             toolCalls: response.toolCalls,
             toolResults,
             pendingTransaction: pendingTx,
+            pendingBlik,
+            pendingSwap,
           } as DonePayload);
 
           // Log response

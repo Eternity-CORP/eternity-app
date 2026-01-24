@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SchemaType } from '@google/generative-ai';
+import { ConfigService } from '@nestjs/config';
 import {
   AIToolHandler,
   ToolDefinition,
   ToolParams,
   ToolResult,
 } from './tool.interface';
+import { UsernameService } from '../../username/username.service';
 
 interface SendParams extends ToolParams {
   recipient: string;
@@ -31,6 +33,14 @@ interface TransactionPreview {
 export class SendTool implements AIToolHandler {
   readonly name = 'prepare_send';
   private readonly logger = new Logger(SendTool.name);
+  private readonly network: string;
+
+  constructor(
+    private readonly usernameService: UsernameService,
+    private readonly configService: ConfigService,
+  ) {
+    this.network = this.configService.get<string>('NETWORK') || 'sepolia';
+  }
 
   readonly definition: ToolDefinition = {
     name: 'prepare_send',
@@ -93,9 +103,19 @@ export class SendTool implements AIToolHandler {
       let recipientUsername: string | undefined;
 
       if (recipient.startsWith('@')) {
-        // TODO: Resolve username to address via UsernameService
+        // Resolve username to address via UsernameService
         recipientUsername = recipient.slice(1);
-        resolvedAddress = '0x' + '0'.repeat(40); // Placeholder
+        const userRecord = await this.usernameService.lookup(recipientUsername);
+
+        if (!userRecord) {
+          return {
+            success: false,
+            error: `Username @${recipientUsername} not found. Please check the spelling.`,
+          };
+        }
+
+        resolvedAddress = userRecord.address;
+        this.logger.debug(`Resolved @${recipientUsername} to ${resolvedAddress}`);
       }
 
       // Get token price for USD conversion
@@ -125,7 +145,7 @@ export class SendTool implements AIToolHandler {
         amountUsd,
         estimatedGas,
         estimatedGasUsd,
-        network: 'polygon',
+        network: this.network,
         status: 'pending_confirmation',
       };
 

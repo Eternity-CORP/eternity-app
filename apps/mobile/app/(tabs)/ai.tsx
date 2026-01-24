@@ -18,8 +18,24 @@ import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAiChat } from '@/src/hooks/useAiChat';
-import { ChatBubble, ChatInput, TypingIndicator, SuggestionCard } from '@/src/components/ai';
+import {
+  ChatBubble,
+  ChatInput,
+  TypingIndicator,
+  SuggestionCard,
+  TransactionCard,
+  BlikCard,
+  SwapCard,
+  type PendingTransaction,
+  type PendingBlik,
+  type PendingBlikPay,
+  type PendingSwap,
+} from '@/src/components/ai';
 import { theme } from '@/src/constants/theme';
+import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
+import { sendTransaction } from '@/src/services/send-service';
+import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { saveContactThunk, loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import type { ChatMessage, AiSuggestion } from '@/src/services/ai-service';
 
 export default function AiScreen() {
@@ -30,13 +46,117 @@ export default function AiScreen() {
     isConnected,
     isStreaming,
     streamingContent,
+    pendingTransaction,
+    pendingBlik,
+    pendingSwap,
     error,
     sendMessage,
     dismissSuggestion,
     clearChat,
+    clearPendingTransaction,
+    clearPendingBlik,
+    clearPendingSwap,
   } = useAiChat();
 
   const flatListRef = useRef<FlatList>(null);
+  const dispatch = useAppDispatch();
+  const wallet = useAppSelector((state) => state.wallet);
+  const contacts = useAppSelector((state) => state.contacts.contacts);
+  const currentAccountIndex = wallet.currentAccountIndex;
+  const currentAccount = wallet.accounts[currentAccountIndex];
+
+  // Load contacts on mount
+  useEffect(() => {
+    dispatch(loadContactsThunk());
+  }, [dispatch]);
+
+  // Check if address is already in contacts
+  const isInContacts = useCallback((address: string) => {
+    return contacts.some(c => c.address.toLowerCase() === address.toLowerCase());
+  }, [contacts]);
+
+  // Handle transaction confirmation
+  const handleConfirmTransaction = useCallback(async (tx: PendingTransaction): Promise<string> => {
+    if (!wallet.mnemonic || !currentAccount) {
+      throw new Error('Wallet not available');
+    }
+
+    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+
+    // Send the transaction
+    const txHash = await sendTransaction({
+      wallet: hdWallet,
+      to: tx.to,
+      amount: tx.amount,
+      token: tx.token === 'ETH' ? 'ETH' : tx.token,
+    });
+
+    return txHash;
+  }, [wallet.mnemonic, currentAccount]);
+
+  // Handle saving contact
+  const handleSaveContact = useCallback(async (address: string, name: string) => {
+    await dispatch(saveContactThunk({ address, name }));
+  }, [dispatch]);
+
+  // Handle transaction complete (success card dismissed)
+  const handleTransactionComplete = useCallback(() => {
+    clearPendingTransaction();
+  }, [clearPendingTransaction]);
+
+  const handleCancelTransaction = useCallback(() => {
+    clearPendingTransaction();
+  }, [clearPendingTransaction]);
+
+  // Handle BLIK pay confirmation
+  const handleConfirmBlikPay = useCallback(async (blik: PendingBlikPay): Promise<string> => {
+    if (!wallet.mnemonic || !currentAccount) {
+      throw new Error('Wallet not available');
+    }
+
+    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+
+    // Send the BLIK payment
+    const txHash = await sendTransaction({
+      wallet: hdWallet,
+      to: blik.receiverAddress,
+      amount: blik.amount,
+      token: blik.token === 'ETH' ? 'ETH' : blik.token,
+    });
+
+    return txHash;
+  }, [wallet.mnemonic, currentAccount]);
+
+  // Handle BLIK complete
+  const handleBlikComplete = useCallback(() => {
+    clearPendingBlik();
+  }, [clearPendingBlik]);
+
+  const handleCancelBlik = useCallback(() => {
+    clearPendingBlik();
+  }, [clearPendingBlik]);
+
+  // Handle Swap confirmation
+  const handleConfirmSwap = useCallback(async (swap: PendingSwap): Promise<string> => {
+    // For now, swap is not fully implemented on mobile
+    // This would integrate with LI.FI SDK
+    throw new Error('Swap via AI chat not yet implemented. Use the Swap tab.');
+  }, []);
+
+  // Handle Swap approval
+  const handleApproveSwap = useCallback(async (): Promise<void> => {
+    // Token approval logic would go here
+    throw new Error('Swap approval via AI chat not yet implemented. Use the Swap tab.');
+  }, []);
+
+  // Handle Swap complete
+  const handleSwapComplete = useCallback(() => {
+    clearPendingSwap();
+  }, [clearPendingSwap]);
+
+  const handleCancelSwap = useCallback(() => {
+    clearPendingSwap();
+  }, [clearPendingSwap]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -147,9 +267,38 @@ export default function AiScreen() {
             </View>
           }
           ListFooterComponent={
-            isStreaming ? (
-              <TypingIndicator streamingContent={streamingContent} />
-            ) : null
+            <>
+              {isStreaming && <TypingIndicator streamingContent={streamingContent} />}
+              {pendingTransaction && (
+                <TransactionCard
+                  transaction={pendingTransaction as PendingTransaction}
+                  onConfirm={handleConfirmTransaction}
+                  onCancel={handleCancelTransaction}
+                  onComplete={handleTransactionComplete}
+                  onSaveContact={handleSaveContact}
+                  isInContacts={isInContacts(pendingTransaction.to)}
+                />
+              )}
+              {pendingBlik && (
+                <BlikCard
+                  blik={pendingBlik as PendingBlik}
+                  onConfirmPay={handleConfirmBlikPay}
+                  onCancel={handleCancelBlik}
+                  onComplete={handleBlikComplete}
+                  onSaveContact={handleSaveContact}
+                  isInContacts={pendingBlik.type === 'pay' ? isInContacts(pendingBlik.receiverAddress) : false}
+                />
+              )}
+              {pendingSwap && (
+                <SwapCard
+                  swap={pendingSwap as PendingSwap}
+                  onApprove={pendingSwap.requiresApproval ? handleApproveSwap : undefined}
+                  onConfirm={handleConfirmSwap}
+                  onCancel={handleCancelSwap}
+                  onComplete={handleSwapComplete}
+                />
+              )}
+            </>
           }
         />
 

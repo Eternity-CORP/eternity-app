@@ -19,6 +19,8 @@ import { SendTool } from './tools/send.tool';
 import { HistoryTool } from './tools/history.tool';
 import { ContactsTool } from './tools/contacts.tool';
 import { ScheduledTool } from './tools/scheduled.tool';
+import { BlikGenerateTool, BlikLookupTool } from './tools/blik.tool';
+import { SwapTool } from './tools/swap.tool';
 
 interface FallbackConfig {
   enabled: boolean;
@@ -50,6 +52,9 @@ export class AiService {
     private readonly historyTool: HistoryTool,
     private readonly contactsTool: ContactsTool,
     private readonly scheduledTool: ScheduledTool,
+    private readonly blikGenerateTool: BlikGenerateTool,
+    private readonly blikLookupTool: BlikLookupTool,
+    private readonly swapTool: SwapTool,
   ) {
     // Register providers
     if (geminiProvider.isConfigured) {
@@ -75,7 +80,7 @@ export class AiService {
     this.fallbackConfig = {
       enabled: true,
       maxConsecutiveErrors: 3,
-      timeoutMs: 10000,
+      timeoutMs: 30000, // 30 seconds - tools need time for external API calls
     };
 
     // Register tools
@@ -84,6 +89,9 @@ export class AiService {
     this.registerTool(historyTool);
     this.registerTool(contactsTool);
     this.registerTool(scheduledTool);
+    this.registerTool(blikGenerateTool);
+    this.registerTool(blikLookupTool);
+    this.registerTool(swapTool);
 
     this.logger.log(
       `AI Service initialized with providers: ${[...this.providers.keys()].join(', ')}`,

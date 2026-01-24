@@ -36,7 +36,7 @@ export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: Date;
+  timestamp: string; // ISO string for Redux serialization
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
 }
@@ -60,11 +60,63 @@ export interface ChunkPayload {
   index: number;
 }
 
+export interface BlikGeneratePreview {
+  type: 'generate';
+  id: string;
+  code: string;
+  amount: string;
+  token: string;
+  amountUsd: string;
+  expiresAt: number;
+  status: 'pending' | 'paid' | 'expired';
+}
+
+export interface BlikPayPreview {
+  type: 'pay';
+  id: string;
+  code: string;
+  receiverAddress: string;
+  receiverUsername?: string;
+  amount: string;
+  token: string;
+  amountUsd: string;
+  estimatedGas: string;
+  estimatedGasUsd: string;
+  network: string;
+  status: 'pending_confirmation';
+}
+
+export type BlikPreview = BlikGeneratePreview | BlikPayPreview;
+
+export interface SwapPreview {
+  id: string;
+  fromToken: {
+    symbol: string;
+    amount: string;
+    amountUsd: string;
+  };
+  toToken: {
+    symbol: string;
+    amount: string;
+    amountUsd: string;
+  };
+  rate: string;
+  priceImpact: string;
+  estimatedGas: string;
+  estimatedGasUsd: string;
+  slippage: string;
+  network: string;
+  requiresApproval: boolean;
+  status: 'pending_confirmation';
+}
+
 export interface DonePayload {
   content: string;
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
   pendingTransaction?: TransactionPreview;
+  pendingBlik?: BlikPreview;
+  pendingSwap?: SwapPreview;
 }
 
 export interface TransactionPreview {

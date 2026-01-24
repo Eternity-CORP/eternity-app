@@ -22,6 +22,8 @@ import {
   receiveChunk,
   streamingComplete,
   setPendingTransaction,
+  setPendingBlik,
+  setPendingSwap,
   addSuggestion,
   dismissSuggestion as dismissSuggestionAction,
   setError,
@@ -44,6 +46,8 @@ interface UseAiChatReturn {
   isStreaming: boolean;
   streamingContent: string;
   pendingTransaction: AiState['pendingTransaction'];
+  pendingBlik: AiState['pendingBlik'];
+  pendingSwap: AiState['pendingSwap'];
   error: string | null;
   rateLimit: AiState['rateLimit'];
 
@@ -54,6 +58,8 @@ interface UseAiChatReturn {
   dismissSuggestion: (id: string) => void;
   clearChat: () => void;
   clearPendingTransaction: () => void;
+  clearPendingBlik: () => void;
+  clearPendingSwap: () => void;
 }
 
 export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
@@ -75,6 +81,8 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     streamingContent,
     streamingMessageId,
     pendingTransaction,
+    pendingBlik,
+    pendingSwap,
     error,
     rateLimit,
   } = aiState;
@@ -142,6 +150,16 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     dispatch(setPendingTransaction(null));
   }, [dispatch]);
 
+  // Clear pending BLIK
+  const clearPendingBlikAction = useCallback(() => {
+    dispatch(setPendingBlik(null));
+  }, [dispatch]);
+
+  // Clear pending swap
+  const clearPendingSwapAction = useCallback(() => {
+    dispatch(setPendingSwap(null));
+  }, [dispatch]);
+
   // Setup socket callbacks
   useEffect(() => {
     aiSocket.setCallbacks({
@@ -172,6 +190,16 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         // Handle pending transaction
         if (payload.pendingTransaction) {
           dispatch(setPendingTransaction(payload.pendingTransaction));
+        }
+
+        // Handle pending BLIK
+        if (payload.pendingBlik) {
+          dispatch(setPendingBlik(payload.pendingBlik));
+        }
+
+        // Handle pending swap
+        if (payload.pendingSwap) {
+          dispatch(setPendingSwap(payload.pendingSwap));
         }
       },
 
@@ -227,6 +255,8 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     isStreaming,
     streamingContent,
     pendingTransaction,
+    pendingBlik,
+    pendingSwap,
     error,
     rateLimit,
 
@@ -237,5 +267,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     dismissSuggestion,
     clearChat,
     clearPendingTransaction: clearPendingTx,
+    clearPendingBlik: clearPendingBlikAction,
+    clearPendingSwap: clearPendingSwapAction,
   };
 }

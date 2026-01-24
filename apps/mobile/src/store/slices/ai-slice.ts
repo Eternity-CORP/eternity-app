@@ -10,6 +10,8 @@ import type {
   ToolResult,
   TransactionPreview,
   AiSuggestion,
+  BlikPreview,
+  SwapPreview,
 } from '@/src/services/ai-service';
 
 // ============================================
@@ -36,6 +38,12 @@ export interface AiState {
   // Pending transaction from AI (awaiting user confirmation)
   pendingTransaction: TransactionPreview | null;
 
+  // Pending BLIK from AI (awaiting user confirmation)
+  pendingBlik: BlikPreview | null;
+
+  // Pending swap from AI (awaiting user confirmation)
+  pendingSwap: SwapPreview | null;
+
   // Error state
   error: string | null;
   errorCode: string | null;
@@ -56,6 +64,8 @@ const initialState: AiState = {
   streamingMessageId: null,
   suggestions: [],
   pendingTransaction: null,
+  pendingBlik: null,
+  pendingSwap: null,
   error: null,
   errorCode: null,
   rateLimit: null,
@@ -205,6 +215,42 @@ const aiSlice = createSlice({
     },
 
     // ========================================
+    // BLIK Actions
+    // ========================================
+
+    /**
+     * Set pending BLIK from AI
+     */
+    setPendingBlik: (state, action: PayloadAction<BlikPreview | null>) => {
+      state.pendingBlik = action.payload;
+    },
+
+    /**
+     * Clear pending BLIK (after confirm/cancel)
+     */
+    clearPendingBlik: (state) => {
+      state.pendingBlik = null;
+    },
+
+    // ========================================
+    // Swap Actions
+    // ========================================
+
+    /**
+     * Set pending swap from AI
+     */
+    setPendingSwap: (state, action: PayloadAction<SwapPreview | null>) => {
+      state.pendingSwap = action.payload;
+    },
+
+    /**
+     * Clear pending swap (after confirm/cancel)
+     */
+    clearPendingSwap: (state) => {
+      state.pendingSwap = null;
+    },
+
+    // ========================================
     // Suggestion Actions
     // ========================================
 
@@ -303,6 +349,14 @@ export const {
   // Transactions
   setPendingTransaction,
   clearPendingTransaction,
+
+  // BLIK
+  setPendingBlik,
+  clearPendingBlik,
+
+  // Swap
+  setPendingSwap,
+  clearPendingSwap,
 
   // Suggestions
   addSuggestion,
