@@ -5,8 +5,10 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  HttpException,
 } from '@nestjs/common';
 import { AiService } from './ai.service';
+import { AiSecurityService } from './security';
 import { SendChatDto, AiResponseDto } from './dto';
 import { ChatMessage } from './providers';
 
@@ -47,7 +49,10 @@ const SYSTEM_PROMPT = `Ты — AI-ассистент кошелька E-Y. Тв
 
 @Controller('ai')
 export class AiController {
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly securityService: AiSecurityService,
+  ) {}
 
   @Get('health')
   async getHealth() {
@@ -73,6 +78,40 @@ export class AiController {
   @Post('chat')
   @HttpCode(HttpStatus.OK)
   async chat(@Body() dto: SendChatDto): Promise<AiResponseDto> {
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const startTime = Date.now();
+
+    // Validate user address
+    if (!dto.userAddress) {
+      throw new HttpException(
+        { code: 'MISSING_ADDRESS', message: 'User address is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Security check
+    const securityCheck = await this.securityService.checkMessage(
+      dto.userAddress,
+      dto.content,
+      requestId,
+    );
+
+    if (!securityCheck.allowed) {
+      throw new HttpException(
+        {
+          code: securityCheck.code,
+          message: securityCheck.reason,
+          rateLimit: securityCheck.rateLimit,
+        },
+        securityCheck.code === 'RATE_LIMIT_EXCEEDED'
+          ? HttpStatus.TOO_MANY_REQUESTS
+          : HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Sanitize message
+    const validated = this.securityService.validateMessage(dto.content);
+
     const messages: ChatMessage[] = [];
 
     // Add history if provided
@@ -88,7 +127,7 @@ export class AiController {
     // Add current user message
     messages.push({
       role: 'user',
-      content: dto.content,
+      content: validated.content,
     });
 
     // Get tool definitions for AI
@@ -101,14 +140,57 @@ export class AiController {
       userAddress: dto.userAddress,
     });
 
-    // If AI wants to call tools, execute them
+    // Record the request for rate limiting
+    this.securityService.recordRequest(dto.userAddress);
+
+    // If AI wants to call tools, validate and execute them
     let toolResults: { name: string; result: unknown }[] | undefined;
-    if (response.toolCalls && response.toolCalls.length > 0 && dto.userAddress) {
-      toolResults = await this.aiService.executeToolCalls(
-        response.toolCalls,
-        dto.userAddress,
-      );
+    if (response.toolCalls && response.toolCalls.length > 0) {
+      toolResults = [];
+
+      for (const toolCall of response.toolCalls) {
+        // Validate tool call
+        const toolCheck = this.securityService.validateToolCall(
+          dto.userAddress,
+          toolCall.name,
+          toolCall.arguments,
+          requestId,
+        );
+
+        if (!toolCheck.allowed) {
+          toolResults.push({
+            name: toolCall.name,
+            result: { success: false, error: toolCheck.reason },
+          });
+          continue;
+        }
+
+        // Execute tool
+        const result = await this.aiService.executeTool(
+          toolCall.name,
+          toolCall.arguments,
+          dto.userAddress,
+        );
+
+        this.securityService.logToolResult(
+          dto.userAddress,
+          toolCall.name,
+          result.success,
+          requestId,
+        );
+
+        toolResults.push({ name: toolCall.name, result });
+      }
     }
+
+    // Log response
+    this.securityService.logChatResponse(
+      dto.userAddress,
+      response.content.length,
+      this.aiService.activeProvider,
+      Date.now() - startTime,
+      requestId,
+    );
 
     return {
       content: response.content,
@@ -122,6 +204,51 @@ export class AiController {
   async executeTool(
     @Body() dto: { tool: string; args: Record<string, unknown>; userAddress: string },
   ) {
-    return this.aiService.executeTool(dto.tool, dto.args, dto.userAddress);
+    const requestId = `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    if (!dto.userAddress) {
+      throw new HttpException(
+        { code: 'MISSING_ADDRESS', message: 'User address is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    // Validate tool call
+    const toolCheck = this.securityService.validateToolCall(
+      dto.userAddress,
+      dto.tool,
+      dto.args,
+      requestId,
+    );
+
+    if (!toolCheck.allowed) {
+      throw new HttpException(
+        { code: toolCheck.code, message: toolCheck.reason },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.aiService.executeTool(dto.tool, dto.args, dto.userAddress);
+
+    this.securityService.logToolResult(
+      dto.userAddress,
+      dto.tool,
+      result.success,
+      requestId,
+    );
+
+    return result;
+  }
+
+  @Get('rate-limit')
+  getRateLimit(@Body() dto: { userAddress: string }) {
+    if (!dto.userAddress) {
+      throw new HttpException(
+        { code: 'MISSING_ADDRESS', message: 'User address is required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.securityService.getRateLimitUsage(dto.userAddress);
   }
 }

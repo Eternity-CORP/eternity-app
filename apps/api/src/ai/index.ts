@@ -5,3 +5,4 @@ export * from './ai.gateway';
 export * from './dto';
 export * from './providers';
 export * from './tools';
+export * from './security';

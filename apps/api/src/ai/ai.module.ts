@@ -11,6 +11,11 @@ import {
   ContactsTool,
   ScheduledTool,
 } from './tools';
+import {
+  AiSecurityService,
+  AiRateLimiter,
+  AiAuditLogger,
+} from './security';
 import { ScheduledModule } from '../scheduled/scheduled.module';
 
 @Module({
@@ -26,7 +31,10 @@ import { ScheduledModule } from '../scheduled/scheduled.module';
     HistoryTool,
     ContactsTool,
     ScheduledTool,
+    AiSecurityService,
+    AiRateLimiter,
+    AiAuditLogger,
   ],
-  exports: [AiService, AiGateway],
+  exports: [AiService, AiGateway, AiSecurityService],
 })
 export class AiModule {}

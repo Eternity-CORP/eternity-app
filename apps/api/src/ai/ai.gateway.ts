@@ -15,6 +15,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { AiService } from './ai.service';
+import { AiSecurityService } from './security';
 import { ChatMessage } from './providers';
 
 // AI WebSocket Events
@@ -130,7 +131,10 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly securityService: AiSecurityService,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected to AI gateway: ${client.id}`);
@@ -222,6 +226,8 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     const userAddress = this.socketToAddress.get(client.id);
+    const requestId = `ws_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const startTime = Date.now();
 
     if (!userAddress) {
       client.emit(AI_EVENTS.ERROR, {
@@ -239,7 +245,26 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    this.logger.log(`Chat from ${userAddress}: ${data.content.substring(0, 50)}...`);
+    // Security check
+    const securityCheck = await this.securityService.checkMessage(
+      userAddress,
+      data.content,
+      requestId,
+    );
+
+    if (!securityCheck.allowed) {
+      client.emit(AI_EVENTS.ERROR, {
+        code: securityCheck.code || 'SECURITY_ERROR',
+        message: securityCheck.reason || 'Request blocked',
+        rateLimit: securityCheck.rateLimit,
+      } as ErrorPayload & { rateLimit?: unknown });
+      return;
+    }
+
+    // Sanitize message
+    const validated = this.securityService.validateMessage(data.content);
+
+    this.logger.log(`Chat from ${userAddress}: ${validated.content.substring(0, 50)}...`);
 
     try {
       // Build messages array
@@ -256,8 +281,11 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       messages.push({
         role: 'user',
-        content: data.content,
+        content: validated.content,
       });
+
+      // Record the request for rate limiting
+      this.securityService.recordRequest(userAddress);
 
       // Get tool definitions
       const tools = this.aiService.getToolDefinitions();
@@ -336,6 +364,15 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit(AI_EVENTS.DONE, {
         content: fullContent,
       } as DonePayload);
+
+      // Log response
+      this.securityService.logChatResponse(
+        userAddress,
+        fullContent.length,
+        this.aiService.activeProvider,
+        Date.now() - startTime,
+        requestId,
+      );
 
       this.logger.debug(`Chat completed for ${userAddress}`);
     } catch (error) {
