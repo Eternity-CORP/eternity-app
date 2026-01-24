@@ -6,10 +6,11 @@ import { router } from 'expo-router';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel, importWalletThunk, reorderAccounts, type Account } from '@/src/store/slices/wallet-slice';
-import { fetchBalancesThunk } from '@/src/store/slices/balance-slice';
+import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel, importWalletThunk, reorderAccounts, selectIsTestAccount, selectCurrentAccountType, type Account, type AccountType } from '@/src/store/slices/wallet-slice';
+import { fetchMultiNetworkBalancesThunk } from '@/src/store/slices/balance-slice';
 import { fetchTransactionsThunk } from '@/src/store/slices/transaction-slice';
 import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
 import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
@@ -17,6 +18,7 @@ import { resetContacts, loadContactsThunk } from '@/src/store/slices/contacts-sl
 import { checkAndScanThunk, dismissTokenAlert, snoozeTokenAlert } from '@/src/store/slices/scanning-slice';
 import { TokenFoundNotification, TokenFoundBadge } from '@/src/components/TokenFoundNotification';
 import { SuggestionBannerList } from '@/src/components/ai';
+import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
 import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { dismissSuggestion } from '@/src/store/slices/ai-slice';
@@ -25,6 +27,7 @@ import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service
 import { getUsernameByAddress } from '@/src/services/username-service';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { theme } from '@/src/constants/theme';
+import { FAUCETS, type FaucetInfo } from '@/src/constants/faucets';
 import { FontAwesome } from '@expo/vector-icons';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -56,6 +59,8 @@ export default function HomeScreen() {
   const scanning = useAppSelector((state) => state.scanning);
   const scheduled = useAppSelector((state) => state.scheduled);
   const aiSuggestions = useAppSelector((state) => state.ai.suggestions);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
+  const currentAccountType = useAppSelector(selectCurrentAccountType);
   const currentAccount = getCurrentAccount(wallet);
 
   // Track if scanning alerts are expanded
@@ -65,6 +70,7 @@ export default function HomeScreen() {
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showAddWalletMenu, setShowAddWalletMenu] = useState(false);
   const [showImportSheet, setShowImportSheet] = useState(false);
+  const [showFaucetSheet, setShowFaucetSheet] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [editingAccountIndex, setEditingAccountIndex] = useState<number | null>(null);
@@ -82,23 +88,29 @@ export default function HomeScreen() {
   const accountSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const accountFadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Animation values for faucet sheet
+  const faucetSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const faucetFadeAnim = useRef(new Animated.Value(0)).current;
+
   // Auto-execute overdue scheduled payments
   useAutoScheduledPayments();
 
   // Load data when account changes
   useEffect(() => {
-    if (currentAccount?.address) {
-      dispatch(fetchBalancesThunk(currentAccount.address));
+    if (currentAccount?.address && currentAccountType) {
+      dispatch(fetchMultiNetworkBalancesThunk({ address: currentAccount.address, accountType: currentAccountType }));
       dispatch(fetchTransactionsThunk(currentAccount.address));
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
       dispatch(loadPendingSplitsThunk(currentAccount.address));
       // Reset and reload contacts for the new account
       dispatch(resetContacts());
       dispatch(loadContactsThunk());
-      // Check for tokens on Tier 2 networks (runs if scan is due)
-      dispatch(checkAndScanThunk(currentAccount.address));
+      // Check for tokens on Tier 2 networks (runs if scan is due) - only for real accounts
+      if (currentAccountType === 'real') {
+        dispatch(checkAndScanThunk(currentAccount.address));
+      }
     }
-  }, [currentAccount?.address, dispatch]);
+  }, [currentAccount?.address, currentAccountType, dispatch]);
 
   // Handle bridge action from scanning notification
   const handleBridgeToken = useCallback((tokenBalance: Tier2TokenBalance, destinationNetwork: string) => {
@@ -136,13 +148,13 @@ export default function HomeScreen() {
 
   // Pull to refresh
   const onRefresh = useCallback(() => {
-    if (currentAccount?.address) {
-      dispatch(fetchBalancesThunk(currentAccount.address));
+    if (currentAccount?.address && currentAccountType) {
+      dispatch(fetchMultiNetworkBalancesThunk({ address: currentAccount.address, accountType: currentAccountType }));
       dispatch(fetchTransactionsThunk(currentAccount.address));
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
       dispatch(loadPendingSplitsThunk(currentAccount.address));
     }
-  }, [currentAccount?.address, dispatch]);
+  }, [currentAccount?.address, currentAccountType, dispatch]);
 
   const totalBalance = formatUsdValue(balance.totalUsdValue);
 
@@ -248,6 +260,51 @@ export default function HomeScreen() {
     });
   };
 
+  // Faucet sheet animations
+  const openFaucetSheet = () => {
+    setShowFaucetSheet(true);
+    Animated.parallel([
+      Animated.spring(faucetSlideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }),
+      Animated.timing(faucetFadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeFaucetSheet = () => {
+    Animated.parallel([
+      Animated.timing(faucetSlideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(faucetFadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowFaucetSheet(false);
+    });
+  };
+
+  // Handle faucet link press
+  const handleFaucetPress = async (faucet: FaucetInfo) => {
+    try {
+      await Linking.openURL(faucet.url);
+      closeFaucetSheet();
+    } catch {
+      Alert.alert('Error', 'Could not open faucet link');
+    }
+  };
+
   // Account management
   const handleAddAccount = async () => {
     if (!newAccountName.trim()) {
@@ -349,6 +406,9 @@ export default function HomeScreen() {
           <Text style={styles.accountButtonText} numberOfLines={1}>
             {currentAccount?.label || `Account ${(currentAccount?.accountIndex ?? 0) + 1}`}
           </Text>
+          {currentAccount?.type && (
+            <AccountTypeBadge type={currentAccount.type} size="small" />
+          )}
           <FontAwesome name="chevron-down" size={10} color={theme.colors.textSecondary} />
         </TouchableOpacity>
 
@@ -372,6 +432,25 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* Test Mode Banner */}
+        {isTestAccount && (
+          <View style={styles.testModeBanner}>
+            <Text style={styles.testModeBannerIcon}>🧪</Text>
+            <Text style={styles.testModeBannerText}>Test Mode — tokens have no real value</Text>
+          </View>
+        )}
+
+        {/* Get Test Tokens Button */}
+        {isTestAccount && (
+          <TouchableOpacity
+            style={styles.getTestTokensButton}
+            onPress={openFaucetSheet}
+          >
+            <FontAwesome name="gift" size={16} color={theme.colors.accent} />
+            <Text style={styles.getTestTokensText}>Get Test Tokens</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Pending Split Banner */}
         {split.pendingSplits.length > 0 && (
           <TouchableOpacity
@@ -796,9 +875,12 @@ export default function HomeScreen() {
                           />
 
                           <View style={styles.accountListInfo}>
-                            <Text style={styles.accountListName}>
-                              {account.label || `Account ${account.accountIndex + 1}`}
-                            </Text>
+                            <View style={styles.accountNameRow}>
+                              <Text style={styles.accountListName}>
+                                {account.label || `Account ${account.accountIndex + 1}`}
+                              </Text>
+                              <AccountTypeBadge type={account.type} size="small" />
+                            </View>
                             {accountUsernames[account.address] && (
                               <Text style={[theme.typography.caption, { color: theme.colors.success, marginTop: 2 }]}>
                                 @{accountUsernames[account.address]}
@@ -827,6 +909,61 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </>
             )}
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Faucet Bottom Sheet */}
+      {showFaucetSheet && (
+        <View style={StyleSheet.absoluteFill}>
+          <Animated.View style={[styles.blurOverlay, { opacity: faucetFadeAnim }]}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeFaucetSheet}>
+              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View
+            style={[
+              styles.faucetSheet,
+              { transform: [{ translateY: faucetSlideAnim }] },
+            ]}
+          >
+            <View style={styles.sheetHandle} />
+
+            {/* Header */}
+            <View style={styles.faucetSheetHeader}>
+              <Text style={styles.faucetSheetTitle}>Get Test Tokens</Text>
+              <TouchableOpacity
+                style={styles.closeSheetButton}
+                onPress={closeFaucetSheet}
+              >
+                <FontAwesome name="times" size={18} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.faucetSheetSubtitle}>
+              Visit these faucets to get free test tokens for development
+            </Text>
+
+            {/* Faucet List */}
+            <ScrollView style={styles.faucetList} showsVerticalScrollIndicator={false}>
+              {FAUCETS.map((faucet) => (
+                <TouchableOpacity
+                  key={faucet.networkId}
+                  style={styles.faucetItem}
+                  onPress={() => handleFaucetPress(faucet)}
+                >
+                  <View style={styles.faucetItemIcon}>
+                    <FontAwesome name="tint" size={20} color={theme.colors.accent} />
+                  </View>
+                  <View style={styles.faucetItemInfo}>
+                    <Text style={styles.faucetItemName}>{faucet.name}</Text>
+                    <Text style={styles.faucetItemDesc}>{faucet.description}</Text>
+                  </View>
+                  <FontAwesome name="external-link" size={14} color={theme.colors.textTertiary} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </Animated.View>
         </View>
       )}
@@ -879,6 +1016,45 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xxl,
+  },
+  // Test Mode Banner
+  testModeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F59E0B20',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: '#F59E0B40',
+  },
+  testModeBannerIcon: {
+    fontSize: 16,
+  },
+  testModeBannerText: {
+    ...theme.typography.caption,
+    color: '#F59E0B',
+    flex: 1,
+    fontWeight: '500',
+  },
+  // Get Test Tokens Button
+  getTestTokensButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.accent + '15',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.accent + '30',
+  },
+  getTestTokensText: {
+    ...theme.typography.body,
+    color: theme.colors.accent,
+    fontWeight: '600',
   },
   pendingBanner: {
     flexDirection: 'row',
@@ -1153,6 +1329,11 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  accountNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
   accountListName: {
     ...theme.typography.body,
     color: theme.colors.textPrimary,
@@ -1331,5 +1512,75 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.buttonPrimaryText,
     fontWeight: '600',
+  },
+  // Faucet Sheet
+  faucetSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.xxl + 20,
+    maxHeight: SCREEN_HEIGHT * 0.6,
+  },
+  faucetSheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  faucetSheetTitle: {
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+    fontSize: 18,
+    flex: 1,
+    textAlign: 'center',
+    marginLeft: 36, // Balance out the close button
+  },
+  faucetSheetSubtitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+  },
+  faucetList: {
+    paddingHorizontal: theme.spacing.lg,
+  },
+  faucetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    gap: theme.spacing.md,
+  },
+  faucetItemIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.accent + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  faucetItemInfo: {
+    flex: 1,
+  },
+  faucetItemName: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  faucetItemDesc: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
   },
 });
