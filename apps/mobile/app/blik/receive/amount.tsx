@@ -14,6 +14,7 @@ import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { sanitizeAmountInput } from '@/src/utils/format';
 
 export default function BlikReceiveAmountScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -44,17 +45,15 @@ export default function BlikReceiveAmountScreen() {
   }, [dispatch]);
 
   const handleNumberPress = (num: string) => {
-    if (num === '.' && amount.includes('.')) return;
-    if (num === '.' && amount === '') {
-      setAmount('0.');
-      return;
+    const newInput = amount + num;
+    const sanitized = sanitizeAmountInput(newInput, amount);
+    if (sanitized === null) return;
+    // Limit to 6 decimal places
+    if (sanitized.includes('.')) {
+      const decimalPlaces = sanitized.split('.')[1]?.length || 0;
+      if (decimalPlaces > 6) return;
     }
-    // Limit decimal places
-    if (amount.includes('.')) {
-      const decimalPlaces = amount.split('.')[1]?.length || 0;
-      if (decimalPlaces >= 6) return;
-    }
-    setAmount(amount + num);
+    setAmount(sanitized);
   };
 
   const handleBackspace = () => {
