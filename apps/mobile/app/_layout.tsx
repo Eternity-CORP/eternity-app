@@ -8,6 +8,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import 'react-native-reanimated';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
@@ -168,7 +169,11 @@ function RootLayoutNav() {
           <Stack.Screen name="split" options={{ headerShown: false }} />
           <Stack.Screen name="swap" options={{ headerShown: false }} />
         </Stack>
-        {showFab && <AiFab />}
+        {showFab && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} pointerEvents="box-none">
+            <AiFab />
+          </View>
+        )}
       </ThemeProvider>
     </NotificationProvider>
   );

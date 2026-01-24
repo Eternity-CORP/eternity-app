@@ -313,8 +313,12 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
           } as ChunkPayload);
         }
       } catch (streamError) {
-        // Fallback to non-streaming if streaming fails
         this.logger.warn('Streaming failed, falling back to regular chat');
+      }
+
+      // If stream returned empty content (e.g., AI wants to call tools), fallback to regular chat
+      if (!fullContent.trim()) {
+        this.logger.debug('Empty stream content, using regular chat for tool handling');
 
         const response = await this.aiService.chat({
           messages,
@@ -325,11 +329,13 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         fullContent = response.content;
 
-        // Send as single chunk
-        client.emit(AI_EVENTS.CHUNK, {
-          content: fullContent,
-          index: 0,
-        } as ChunkPayload);
+        // Send content as single chunk if we have any
+        if (fullContent) {
+          client.emit(AI_EVENTS.CHUNK, {
+            content: fullContent,
+            index: 0,
+          } as ChunkPayload);
+        }
 
         // Handle tool calls if any
         if (response.toolCalls && response.toolCalls.length > 0) {
@@ -353,7 +359,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             ? (sendResult.result as { data?: { preview?: unknown } }).data?.preview
             : undefined;
 
-          // Send done event
+          // Send done event with tool results
           client.emit(AI_EVENTS.DONE, {
             content: fullContent,
             toolCalls: response.toolCalls,
@@ -361,6 +367,16 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             pendingTransaction: pendingTx,
           } as DonePayload);
 
+          // Log response
+          this.securityService.logChatResponse(
+            userAddress,
+            fullContent.length,
+            this.aiService.activeProvider,
+            Date.now() - startTime,
+            requestId,
+          );
+
+          this.logger.debug(`Chat with tools completed for ${userAddress}`);
           return;
         }
       }

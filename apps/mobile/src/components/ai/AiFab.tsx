@@ -65,14 +65,12 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
   const badgeCount = suggestions.length;
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      <Animated.View
-        style={[
-          styles.container,
-          { bottom: actualBottom, transform: [{ scale: scaleAnim }] },
-        ]}
-        pointerEvents="box-none"
-      >
+    <Animated.View
+      style={[
+        styles.container,
+        { bottom: actualBottom, transform: [{ scale: scaleAnim }] },
+      ]}
+    >
       <TouchableOpacity
         onPress={handlePress}
         onPressIn={handlePressIn}
@@ -96,8 +94,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
           </View>
         )}
       </TouchableOpacity>
-      </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
