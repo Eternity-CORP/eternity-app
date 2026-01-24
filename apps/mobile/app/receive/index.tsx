@@ -1,6 +1,6 @@
 /**
  * Receive Screen
- * Shows address, QR code, and BLIK request options
+ * Shows address and QR code options
  */
 
 import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
@@ -18,7 +18,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
-type Tab = 'address' | 'qr' | 'blik';
+type Tab = 'address' | 'qr';
 
 export default function ReceiveScreen() {
   const wallet = useAppSelector((state) => state.wallet);
@@ -59,10 +59,6 @@ export default function ReceiveScreen() {
     } catch (error) {
       Alert.alert('Error', 'Failed to copy username');
     }
-  };
-
-  const handleRequestBlik = () => {
-    router.push('/blik/request');
   };
 
   const address = currentAccount?.address || '';
@@ -113,25 +109,6 @@ export default function ReceiveScreen() {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'blik' && styles.tabActive]}
-          onPress={() => setActiveTab('blik')}
-        >
-          <FontAwesome
-            name="bolt"
-            size={16}
-            color={activeTab === 'blik' ? theme.colors.buttonPrimary : theme.colors.textTertiary}
-          />
-          <Text
-            style={[
-              styles.tabText,
-              theme.typography.caption,
-              { color: activeTab === 'blik' ? theme.colors.buttonPrimary : theme.colors.textTertiary },
-            ]}
-          >
-            BLIK
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.container}>
@@ -213,29 +190,6 @@ export default function ReceiveScreen() {
           </View>
         )}
 
-        {/* BLIK Tab */}
-        {activeTab === 'blik' && (
-          <View style={styles.content}>
-            <View style={styles.blikInfo}>
-              <View style={styles.blikIconContainer}>
-                <FontAwesome name="bolt" size={48} color={theme.colors.buttonPrimary} />
-              </View>
-              <Text style={[styles.blikTitle, theme.typography.title]}>
-                Request Payment
-              </Text>
-              <Text style={[styles.blikDescription, theme.typography.body, { color: theme.colors.textSecondary }]}>
-                Generate a 6-digit code that someone can use to send you crypto instantly. The code expires in 2 minutes.
-              </Text>
-            </View>
-
-            <TouchableOpacity style={styles.blikButton} onPress={handleRequestBlik}>
-              <FontAwesome name="bolt" size={20} color={theme.colors.buttonPrimaryText} />
-              <Text style={[styles.blikButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
-                Generate BLIK Code
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
     </SafeAreaView>
   );
@@ -369,43 +323,5 @@ const styles = StyleSheet.create({
   },
   shareButtonText: {
     color: theme.colors.textPrimary,
-  },
-  // BLIK Tab
-  blikInfo: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xl,
-  },
-  blikIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xl,
-  },
-  blikTitle: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
-    textAlign: 'center',
-  },
-  blikDescription: {
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  blikButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.buttonPrimary,
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.lg,
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.xl,
-  },
-  blikButtonText: {
-    // Styled inline
   },
 });
