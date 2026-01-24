@@ -22,6 +22,7 @@ import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { dismissSuggestion } from '@/src/store/slices/ai-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service';
+import { getUsernameByAddress } from '@/src/services/username-service';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
@@ -70,6 +71,7 @@ export default function HomeScreen() {
   const [seedPhraseInput, setSeedPhraseInput] = useState('');
   const [newAccountName, setNewAccountName] = useState('');
   const [accountBalances, setAccountBalances] = useState<Record<string, number>>({});
+  const [accountUsernames, setAccountUsernames] = useState<Record<string, string | null>>({});
 
   // Animation values for actions menu
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -186,6 +188,24 @@ export default function HomeScreen() {
         balances[address] = balance;
       });
       setAccountBalances(balances);
+    });
+
+    // Fetch usernames for all accounts
+    const usernamePromises = wallet.accounts.map(async (account) => {
+      try {
+        const username = await getUsernameByAddress(account.address);
+        return { address: account.address, username };
+      } catch {
+        return { address: account.address, username: null };
+      }
+    });
+
+    Promise.all(usernamePromises).then((results) => {
+      const usernames: Record<string, string | null> = {};
+      results.forEach(({ address, username }) => {
+        usernames[address] = username;
+      });
+      setAccountUsernames(usernames);
     });
 
     Animated.parallel([
@@ -764,6 +784,11 @@ export default function HomeScreen() {
                             <Text style={styles.accountListName}>
                               {account.label || `Account ${account.accountIndex + 1}`}
                             </Text>
+                            {accountUsernames[account.address] && (
+                              <Text style={[theme.typography.caption, { color: theme.colors.success, marginTop: 2 }]}>
+                                @{accountUsernames[account.address]}
+                              </Text>
+                            )}
                             <Text style={styles.accountListBalance}>{accountBalance}</Text>
                           </View>
 
