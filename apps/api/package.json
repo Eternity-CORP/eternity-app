@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@e-y/shared": "workspace:*",
+    "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.2.0",
     "@nestjs/core": "^10.3.0",
@@ -33,6 +34,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "ethers": "^6.16.0",
+    "groq-sdk": "^0.37.0",
     "pg": "^8.11.3",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",

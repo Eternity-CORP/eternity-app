@@ -10,6 +10,7 @@ import { SplitModule } from './split/split.module';
 import { ScheduledModule } from './scheduled/scheduled.module';
 import { WaitlistModule } from './waitlist/waitlist.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AiModule } from './ai/ai.module';
 import { Username } from './username/username.entity';
 import { SplitBill, SplitParticipant } from './split/entities';
 import { ScheduledPayment } from './scheduled/entities';
@@ -47,6 +48,7 @@ import databaseConfig from './config/database.config';
     ScheduledModule,
     WaitlistModule,
     NotificationsModule,
+    AiModule,
   ],
 })
 export class AppModule {}
