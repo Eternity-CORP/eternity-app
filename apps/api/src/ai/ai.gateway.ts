@@ -359,6 +359,35 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             ? (sendResult.result as { data?: { preview?: unknown } }).data?.preview
             : undefined;
 
+          // Make follow-up AI call with tool results to generate natural language response
+          const followUpMessages: ChatMessage[] = [
+            ...messages,
+            {
+              role: 'assistant' as const,
+              content: `I called the following tools: ${response.toolCalls.map(tc => tc.name).join(', ')}`,
+            },
+            {
+              role: 'user' as const,
+              content: `Tool results: ${JSON.stringify(toolResults.map(r => ({ tool: r.name, result: r.result })))}. Please respond to the user based on these results.`,
+            },
+          ];
+
+          const followUpResponse = await this.aiService.chat({
+            messages: followUpMessages,
+            systemPrompt: SYSTEM_PROMPT,
+            userAddress,
+          });
+
+          fullContent = followUpResponse.content;
+
+          // Send final response as chunk
+          if (fullContent) {
+            client.emit(AI_EVENTS.CHUNK, {
+              content: fullContent,
+              index: 0,
+            } as ChunkPayload);
+          }
+
           // Send done event with tool results
           client.emit(AI_EVENTS.DONE, {
             content: fullContent,
