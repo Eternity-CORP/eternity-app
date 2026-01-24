@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 import {
   senderSetNetwork,
   senderStartConfirming,
@@ -38,6 +39,7 @@ export default function BlikConfirmScreen() {
   const blik = useAppSelector((state) => state.blik);
   const balance = useAppSelector((state) => state.balance);
   const currentAccount = getCurrentAccount(wallet);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
 
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [gasEstimateStatus, setGasEstimateStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle');
@@ -379,6 +381,9 @@ export default function BlikConfirmScreen() {
             </Text>
           </View>
         )}
+
+        {/* Test Account Warning */}
+        {isTestAccount && <TestModeWarning />}
       </ScrollView>
 
       {/* Confirm Button */}

@@ -22,7 +22,8 @@ import { ethers } from 'ethers';
 
 import { theme } from '@/src/constants/theme';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 import {
   setFromToken,
   setToToken,
@@ -56,6 +57,7 @@ export default function SwapScreen() {
   const wallet = useAppSelector((state) => state.wallet);
   const swap = useAppSelector((state) => state.swap);
   const currentAccount = getCurrentAccount(wallet);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
   const walletAddress = currentAccount?.address || '';
 
   const [showFromTokenSelector, setShowFromTokenSelector] = useState(false);
@@ -405,6 +407,9 @@ export default function SwapScreen() {
             <Text style={styles.errorText}>{swap.quoteError}</Text>
           </View>
         )}
+
+        {/* Test Account Warning */}
+        {isTestAccount && <TestModeWarning style={{ marginTop: 16 }} />}
       </ScrollView>
 
       {/* Action Button */}

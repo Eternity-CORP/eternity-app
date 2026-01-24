@@ -15,6 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingBlikGenerate {
   type: 'generate';
@@ -51,6 +52,7 @@ interface BlikCardProps {
   onComplete: () => void;
   onSaveContact?: (address: string, name: string) => Promise<void>;
   isInContacts?: boolean;
+  isTestAccount?: boolean;
 }
 
 export function BlikCard({
@@ -60,6 +62,7 @@ export function BlikCard({
   onComplete,
   onSaveContact,
   isInContacts = false,
+  isTestAccount = false,
 }: BlikCardProps) {
   const [status, setStatus] = useState<'idle' | 'confirming' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -320,6 +323,13 @@ export function BlikCard({
           <View style={styles.errorBanner}>
             <FontAwesome name="exclamation-circle" size={14} color={theme.colors.error} />
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* Test Account Warning */}
+        {isTestAccount && (
+          <View style={{ marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md }}>
+            <TestModeWarning />
           </View>
         )}
 

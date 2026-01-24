@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
@@ -23,6 +24,7 @@ export default function ConfirmScreen() {
   const send = useAppSelector((state) => state.send);
   const contacts = useAppSelector((state) => state.contacts.contacts);
   const currentAccount = getCurrentAccount(wallet);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
 
   // Contact-related state
   const [showSaveContact, setShowSaveContact] = useState(false);
@@ -250,6 +252,8 @@ export default function ConfirmScreen() {
             </Text>
           </View>
         )}
+
+        {isTestAccount && <TestModeWarning />}
       </ScrollView>
 
       <View style={styles.footer}>

@@ -6,7 +6,8 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { createScheduledPaymentThunk } from '@/src/store/slices/scheduled-slice';
 import { resetScheduledCreate } from '@/src/store/slices/scheduled-create-slice';
 import { truncateAddress } from '@/src/utils/format';
@@ -21,6 +22,7 @@ export default function ScheduledConfirmScreen() {
   const scheduled = useAppSelector((state) => state.scheduled);
   const scheduledCreate = useAppSelector((state) => state.scheduledCreate);
   const currentAccount = getCurrentAccount(wallet);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
 
   const selectedToken = balance.balances.find(
     (t) => t.symbol === scheduledCreate.selectedToken
@@ -193,6 +195,9 @@ export default function ScheduledConfirmScreen() {
             sufficient funds at the scheduled time.
           </Text>
         </View>
+
+        {/* Test Account Warning */}
+        {isTestAccount && <TestModeWarning />}
       </ScrollView>
 
       {/* Confirm Button */}

@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingSwap {
   id: string;
@@ -45,6 +46,7 @@ interface SwapCardProps {
   onConfirm: (swap: PendingSwap) => Promise<string>; // Returns txHash
   onCancel: () => void;
   onComplete: () => void;
+  isTestAccount?: boolean;
 }
 
 export function SwapCard({
@@ -53,6 +55,7 @@ export function SwapCard({
   onConfirm,
   onCancel,
   onComplete,
+  isTestAccount = false,
 }: SwapCardProps) {
   const [status, setStatus] = useState<'idle' | 'approving' | 'confirming' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -224,6 +227,13 @@ export function SwapCard({
           <View style={styles.errorBanner}>
             <FontAwesome name="exclamation-circle" size={14} color={theme.colors.error} />
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {/* Test Account Warning */}
+        {isTestAccount && (
+          <View style={{ marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md }}>
+            <TestModeWarning />
           </View>
         )}
 

@@ -6,7 +6,8 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
+import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { createSplitBillThunk } from '@/src/store/slices/split-slice';
 import { resetSplitCreate } from '@/src/store/slices/split-create-slice';
 import { truncateAddress, formatAmount } from '@/src/utils/format';
@@ -21,6 +22,7 @@ export default function SplitConfirmScreen() {
   const split = useAppSelector((state) => state.split);
   const splitCreate = useAppSelector((state) => state.splitCreate);
   const currentAccount = getCurrentAccount(wallet);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
 
   const selectedToken = balance.balances.find(
     (t) => t.symbol === splitCreate.selectedToken
@@ -225,6 +227,9 @@ export default function SplitConfirmScreen() {
             collected at the delivery address.
           </Text>
         </View>
+
+        {/* Test Account Warning */}
+        {isTestAccount && <TestModeWarning />}
       </ScrollView>
 
       {/* Confirm Button */}
