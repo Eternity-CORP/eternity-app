@@ -339,13 +339,41 @@ class AiSocketService {
    */
   sendMessage(content: string): void {
     if (!this.socket?.connected) {
+      // Try to reconnect before failing
+      if (this.userAddress) {
+        log.info('Attempting to reconnect before sending message');
+        this.connect(this.userAddress)
+          .then(() => {
+            if (this.socket?.connected) {
+              this.sendMessageInternal(content);
+            } else {
+              this.callbacks.onError?.({
+                code: 'CONNECTION_FAILED',
+                message: 'Unable to connect to AI server. Please check your connection and try again.',
+              });
+            }
+          })
+          .catch(() => {
+            this.callbacks.onError?.({
+              code: 'CONNECTION_FAILED',
+              message: 'Unable to connect to AI server. Please check your connection and try again.',
+            });
+          });
+        return;
+      }
       this.callbacks.onError?.({
         code: 'NOT_CONNECTED',
-        message: 'Not connected to AI server',
+        message: 'Not connected to AI server. Please try again.',
       });
       return;
     }
+    this.sendMessageInternal(content);
+  }
 
+  /**
+   * Internal method to actually send the message
+   */
+  private sendMessageInternal(content: string): void {
     if (!this.userAddress) {
       this.callbacks.onError?.({
         code: 'NOT_SUBSCRIBED',
@@ -358,7 +386,7 @@ class AiSocketService {
     this.messageHistory.push({ role: 'user', content });
 
     // Send with history for context
-    this.socket.emit(AI_EVENTS.CHAT, {
+    this.socket!.emit(AI_EVENTS.CHAT, {
       content,
       history: this.messageHistory.slice(-10), // Last 10 messages for context
     });
