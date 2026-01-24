@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
+import { AiGateway } from './ai.gateway';
 import { GeminiProvider, GroqProvider } from './providers';
 import {
   BalanceTool,
@@ -17,6 +18,7 @@ import { ScheduledModule } from '../scheduled/scheduled.module';
   controllers: [AiController],
   providers: [
     AiService,
+    AiGateway,
     GeminiProvider,
     GroqProvider,
     BalanceTool,
@@ -25,6 +27,6 @@ import { ScheduledModule } from '../scheduled/scheduled.module';
     ContactsTool,
     ScheduledTool,
   ],
-  exports: [AiService],
+  exports: [AiService, AiGateway],
 })
 export class AiModule {}
