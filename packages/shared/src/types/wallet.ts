@@ -2,6 +2,13 @@
  * Wallet-related types
  */
 
+/**
+ * Account type for TEST/REAL account separation
+ * - 'test': Account for testnet networks only
+ * - 'real': Account for mainnet networks only
+ */
+export type AccountType = 'test' | 'real';
+
 export interface Wallet {
   address: string;
   publicKey: string;
@@ -13,6 +20,7 @@ export interface WalletAccount {
   address: string;
   accountIndex: number;
   label?: string;
+  type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets
   createdAt: string;
 }
 
