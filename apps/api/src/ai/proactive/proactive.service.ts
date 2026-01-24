@@ -261,4 +261,79 @@ export class ProactiveService {
       this.logger.log(`Created payment reminder for ${userAddress}, payment ${payment.id}`);
     }
   }
+
+  // ========================================
+  // Security Alert Methods
+  // ========================================
+
+  /**
+   * Create security alert for large transaction
+   * Called from frontend when a large transaction is detected
+   */
+  async createLargeTransactionAlert(params: {
+    userAddress: string;
+    txHash: string;
+    amount: string;
+    token: string;
+    usdValue: number;
+  }): Promise<AiSuggestion> {
+    const { userAddress, txHash, amount, token, usdValue } = params;
+
+    // Check if we already alerted for this transaction
+    const existingAlert = await this.suggestionRepository.findOne({
+      where: {
+        userAddress: userAddress.toLowerCase(),
+        type: 'security_alert',
+        metadata: { txHash } as any,
+      },
+    });
+
+    if (existingAlert) {
+      this.logger.debug(`Already alerted for transaction ${txHash}`);
+      return existingAlert;
+    }
+
+    return this.createSuggestion({
+      userAddress,
+      type: 'security_alert',
+      title: 'Крупная транзакция',
+      message: `Отправлено ${amount} ${token} (~$${usdValue.toFixed(0)})`,
+      priority: 'high',
+      action: {
+        label: 'Посмотреть',
+        route: `/transaction/${txHash}`,
+        type: 'navigate',
+        payload: { txHash },
+      },
+      metadata: { txHash, amount, token, usdValue },
+    });
+  }
+
+  /**
+   * Create security alert for suspicious activity
+   */
+  async createSecurityAlert(params: {
+    userAddress: string;
+    alertType: 'new_device' | 'failed_auth' | 'unusual_activity';
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<AiSuggestion> {
+    const { userAddress, alertType, title, message, metadata } = params;
+
+    return this.createSuggestion({
+      userAddress,
+      type: 'security_alert',
+      title,
+      message,
+      priority: 'high',
+      action: {
+        label: 'Проверить',
+        route: '/settings/security',
+        type: 'navigate',
+        payload: { alertType },
+      },
+      metadata: { alertType, ...metadata },
+    });
+  }
 }

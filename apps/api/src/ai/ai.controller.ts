@@ -317,4 +317,62 @@ export class AiController {
 
     return { success: true };
   }
+
+  // ========================================
+  // Security Alert Endpoints
+  // ========================================
+
+  @Post('security/large-transaction')
+  @HttpCode(HttpStatus.CREATED)
+  async reportLargeTransaction(
+    @Body()
+    dto: {
+      userAddress: string;
+      txHash: string;
+      amount: string;
+      token: string;
+      usdValue: number;
+    },
+  ) {
+    if (!dto.userAddress || !dto.txHash) {
+      throw new HttpException(
+        { code: 'INVALID_PARAMS', message: 'userAddress and txHash are required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const suggestion = await this.proactiveService.createLargeTransactionAlert(dto);
+
+    return {
+      success: true,
+      suggestionId: suggestion.id,
+    };
+  }
+
+  @Post('security/alert')
+  @HttpCode(HttpStatus.CREATED)
+  async reportSecurityAlert(
+    @Body()
+    dto: {
+      userAddress: string;
+      alertType: 'new_device' | 'failed_auth' | 'unusual_activity';
+      title: string;
+      message: string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    if (!dto.userAddress || !dto.alertType || !dto.title || !dto.message) {
+      throw new HttpException(
+        { code: 'INVALID_PARAMS', message: 'userAddress, alertType, title, and message are required' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const suggestion = await this.proactiveService.createSecurityAlert(dto);
+
+    return {
+      success: true,
+      suggestionId: suggestion.id,
+    };
+  }
 }
