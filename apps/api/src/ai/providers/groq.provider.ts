@@ -18,7 +18,7 @@ export class GroqProvider implements AIProvider {
   readonly name = 'groq';
   private readonly logger = new Logger(GroqProvider.name);
   private client: Groq | null = null;
-  private readonly model = 'llama-3.1-70b-versatile';
+  private readonly model = 'llama-3.3-70b-versatile';
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GROQ_API_KEY');

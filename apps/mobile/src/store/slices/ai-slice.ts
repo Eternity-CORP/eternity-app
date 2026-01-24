@@ -120,7 +120,7 @@ const aiSlice = createSlice({
         id: generateMessageId(),
         role: 'user',
         content: action.payload,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
       };
 
       state.messages.push(message);
@@ -157,7 +157,7 @@ const aiSlice = createSlice({
           id: state.streamingMessageId,
           role: 'assistant',
           content: action.payload.content,
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           toolCalls: action.payload.toolCalls,
           toolResults: action.payload.toolResults,
         };

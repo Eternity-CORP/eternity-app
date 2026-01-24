@@ -29,7 +29,7 @@ export class GeminiProvider implements AIProvider {
     if (apiKey) {
       this.client = new GoogleGenerativeAI(apiKey);
       this.model = this.client.getGenerativeModel({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash',
       });
       this.logger.log('Gemini provider initialized');
     } else {
