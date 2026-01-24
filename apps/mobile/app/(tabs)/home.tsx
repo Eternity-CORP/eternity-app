@@ -256,7 +256,7 @@ export default function HomeScreen() {
     }
     setIsAddingAccount(true);
     try {
-      const result = await dispatch(addAccountThunk()).unwrap();
+      const result = await dispatch(addAccountThunk('test')).unwrap();
       // Update the new account with the name
       const newIndex = wallet.accounts.length;
       dispatch(updateAccountLabel({ accountIndex: newIndex, label: newAccountName.trim() }));

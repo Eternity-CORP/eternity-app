@@ -17,7 +17,7 @@ export default function CreateWalletScreen() {
   const handleCreateWallet = async () => {
     setIsCreating(true);
     try {
-      await dispatch(generateWalletThunk(wordCount)).unwrap();
+      await dispatch(generateWalletThunk({ wordCount })).unwrap();
       // Navigate to seed phrase screen (mnemonic is in Redux state)
       router.push({
         pathname: '/(onboarding)/seed-phrase',

@@ -51,7 +51,7 @@ export default function SeedPhraseScreen() {
 
     setIsSaving(true);
     try {
-      await dispatch(saveWalletThunk(mnemonic)).unwrap();
+      await dispatch(saveWalletThunk({ mnemonic })).unwrap();
       setIsVerified(true);
       // Navigate to home screen
       router.replace('/(tabs)/home');

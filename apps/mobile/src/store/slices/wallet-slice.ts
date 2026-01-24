@@ -60,23 +60,28 @@ export const loadWalletThunk = createAsyncThunk(
 
 /**
  * Generate new wallet (does NOT save to storage)
- * @param wordCount - Number of words: 12 or 24 (default: 12)
+ * @param params.wordCount - Number of words: 12 or 24 (default: 12)
+ * @param params.type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
 export const generateWalletThunk = createAsyncThunk(
   'wallet/generate',
-  async (wordCount: 12 | 24 = 12) => {
-    const walletData = await generateWallet(wordCount);
+  async (params: { wordCount?: 12 | 24; type?: AccountType } = {}) => {
+    const { wordCount = 12, type = 'test' } = params;
+    const walletData = await generateWallet(wordCount, type);
     return walletData;
   }
 );
 
 /**
  * Save wallet to storage (call after verification)
+ * @param params.mnemonic - The mnemonic phrase to save
+ * @param params.type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
 export const saveWalletThunk = createAsyncThunk(
   'wallet/save',
-  async (mnemonic: string) => {
-    const walletData = await saveWallet(mnemonic);
+  async (params: { mnemonic: string; type?: AccountType }) => {
+    const { mnemonic, type = 'test' } = params;
+    const walletData = await saveWallet(mnemonic, type);
     return walletData;
   }
 );
@@ -105,15 +110,16 @@ export const loadAccountsThunk = createAsyncThunk(
 
 /**
  * Add new account
+ * @param type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
 export const addAccountThunk = createAsyncThunk(
   'wallet/addAccount',
-  async (_, { getState }) => {
+  async (type: AccountType = 'test', { getState }) => {
     const state = getState() as { wallet: WalletState };
     if (!state.wallet.mnemonic) {
       throw new Error('No mnemonic available. Please create or import a wallet first.');
     }
-    const newAccount = await createNewAccount(state.wallet.mnemonic, state.wallet.accounts);
+    const newAccount = await createNewAccount(state.wallet.mnemonic, state.wallet.accounts, type);
     return newAccount;
   }
 );
@@ -122,13 +128,14 @@ const walletSlice = createSlice({
   name: 'wallet',
   initialState,
   reducers: {
-    setWallet: (state, action: PayloadAction<WalletData>) => {
+    setWallet: (state, action: PayloadAction<WalletData & { type?: AccountType }>) => {
       // Legacy support: convert single wallet to account
       if (state.accounts.length === 0) {
         state.accounts.push({
           id: '0',
           address: action.payload.address,
           accountIndex: 0,
+          type: action.payload.type || 'test',
         });
         state.currentAccountIndex = 0;
       }
@@ -182,11 +189,13 @@ const walletSlice = createSlice({
           state.mnemonic = action.payload.mnemonic;
           // Create temporary default account (will be replaced by loadAccountsThunk)
           // This ensures UI has something to display while accounts load
+          // Default to 'test' for migration, loadAccountsThunk will provide actual type
           if (state.accounts.length === 0) {
             state.accounts.push({
               id: '0',
               address: action.payload.address,
               accountIndex: 0,
+              type: 'test',
             });
             state.currentAccountIndex = 0;
           }
@@ -209,10 +218,12 @@ const walletSlice = createSlice({
         } else if (state.accounts.length === 0 && state.mnemonic) {
           // If no accounts stored but wallet exists, create default account
           // This handles migration from old wallet format
+          // Default to 'test' for backwards compatibility
           state.accounts.push({
             id: '0',
             address: getAddressFromMnemonic(state.mnemonic, 0),
             accountIndex: 0,
+            type: 'test',
           });
           state.currentAccountIndex = 0;
         }
@@ -247,6 +258,7 @@ const walletSlice = createSlice({
             id: '0',
             address: action.payload.address,
             accountIndex: 0,
+            type: action.payload.type,
           });
           state.currentAccountIndex = 0;
         }
@@ -269,11 +281,13 @@ const walletSlice = createSlice({
             id: '0',
             address: action.payload.address,
             accountIndex: 0,
+            type: action.payload.type,
           });
           state.currentAccountIndex = 0;
         } else {
-          // Update first account address if it changed
+          // Update first account address and type if it changed
           state.accounts[0].address = action.payload.address;
+          state.accounts[0].type = action.payload.type;
         }
         state.status = 'succeeded';
         state.isInitialized = true;
@@ -289,16 +303,19 @@ const walletSlice = createSlice({
       .addCase(importWalletThunk.fulfilled, (state, action) => {
         state.mnemonic = action.payload.mnemonic;
         // Ensure default account exists
+        // Imported wallets are always 'real' accounts
         if (state.accounts.length === 0) {
           state.accounts.push({
             id: '0',
             address: action.payload.address,
             accountIndex: 0,
+            type: 'real',
           });
           state.currentAccountIndex = 0;
         } else {
-          // Update first account address if it changed
+          // Update first account address and set to 'real' type
           state.accounts[0].address = action.payload.address;
+          state.accounts[0].type = 'real';
         }
         state.status = 'succeeded';
         state.isInitialized = true;
@@ -311,4 +328,26 @@ const walletSlice = createSlice({
 });
 
 export const { addAccount, switchAccount, updateAccountLabel, reorderAccounts, clearWallet } = walletSlice.actions;
+
+// Selectors
+type RootState = { wallet: WalletState };
+
+/**
+ * Select the type of the current account
+ * @returns AccountType ('test' or 'real') or null if no current account
+ */
+export const selectCurrentAccountType = (state: RootState): AccountType | null => {
+  const currentAccount = getCurrentAccount(state.wallet);
+  return currentAccount?.type ?? null;
+};
+
+/**
+ * Check if the current account is a test account
+ * @returns true if current account is 'test' type, false otherwise
+ */
+export const selectIsTestAccount = (state: RootState): boolean => {
+  const accountType = selectCurrentAccountType(state);
+  return accountType === 'test';
+};
+
 export default walletSlice.reducer;

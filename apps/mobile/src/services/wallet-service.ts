@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
 import { generateMnemonic, deriveWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength, getAddressFromMnemonic } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
-import type { Account } from '@/src/store/slices/wallet-slice';
+import type { Account, AccountType } from '@/src/store/slices/wallet-slice';
 
 const WALLET_MNEMONIC_KEY = 'wallet_mnemonic';
 const WALLET_ADDRESS_KEY = 'wallet_address';
@@ -24,8 +24,9 @@ export interface WalletData {
  * Generate a new wallet with mnemonic (does NOT save to storage)
  * Use saveWallet() after verification to persist
  * @param wordCount - Number of words: 12 or 24 (default: 12)
+ * @param type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
-export async function generateWallet(wordCount: 12 | 24 = 12): Promise<WalletData> {
+export async function generateWallet(wordCount: 12 | 24 = 12, type: AccountType = 'test'): Promise<WalletData & { type: AccountType }> {
   const mnemonic = generateMnemonic(wordCount);
   const wallet = deriveWalletFromMnemonic(mnemonic, 0);
   const address = wallet.address;
@@ -34,13 +35,16 @@ export async function generateWallet(wordCount: 12 | 24 = 12): Promise<WalletDat
   return {
     mnemonic,
     address,
+    type,
   };
 }
 
 /**
  * Save wallet to secure storage (call after verification)
+ * @param mnemonic - The mnemonic phrase to save
+ * @param type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
-export async function saveWallet(mnemonic: string): Promise<WalletData> {
+export async function saveWallet(mnemonic: string, type: AccountType = 'test'): Promise<WalletData & { type: AccountType }> {
   const wallet = deriveWalletFromMnemonic(mnemonic, 0);
   const address = wallet.address;
 
@@ -55,6 +59,7 @@ export async function saveWallet(mnemonic: string): Promise<WalletData> {
       id: '0',
       address,
       accountIndex: 0,
+      type,
     };
     await saveAccounts([defaultAccount]);
   }
@@ -63,6 +68,7 @@ export async function saveWallet(mnemonic: string): Promise<WalletData> {
   return {
     mnemonic,
     address,
+    type,
   };
 }
 
@@ -95,6 +101,8 @@ export async function loadWallet(): Promise<WalletData | null> {
  * Load all accounts from storage
  * Uses file system (no size limit) instead of SecureStore
  * Includes migration from legacy SecureStore storage
+ *
+ * Migration: Accounts without 'type' field will default to 'test'
  */
 export async function loadAccounts(): Promise<Account[]> {
   try {
@@ -102,18 +110,27 @@ export async function loadAccounts(): Promise<Account[]> {
     const fileInfo = await FileSystem.getInfoAsync(ACCOUNTS_FILE);
     if (fileInfo.exists) {
       const accountsJson = await FileSystem.readAsStringAsync(ACCOUNTS_FILE);
-      return JSON.parse(accountsJson) as Account[];
+      const accounts = JSON.parse(accountsJson) as Account[];
+      // Migration: add type field to accounts that don't have it
+      const migratedAccounts = migrateAccountsWithType(accounts);
+      // Save back if migration occurred
+      if (migratedAccounts.some((acc, i) => acc.type !== accounts[i]?.type)) {
+        await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(migratedAccounts));
+      }
+      return migratedAccounts;
     }
 
     // Migration: check if accounts exist in legacy SecureStore
     const legacyAccountsJson = await SecureStore.getItemAsync(ACCOUNTS_KEY);
     if (legacyAccountsJson) {
       const accounts = JSON.parse(legacyAccountsJson) as Account[];
-      // Migrate to file system
-      await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, legacyAccountsJson);
+      // Migration: add type field to accounts that don't have it
+      const migratedAccounts = migrateAccountsWithType(accounts);
+      // Migrate to file system with type field
+      await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(migratedAccounts));
       // Clean up legacy storage
       await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
-      return accounts;
+      return migratedAccounts;
     }
 
     // No accounts stored
@@ -122,6 +139,17 @@ export async function loadAccounts(): Promise<Account[]> {
     console.error('Error loading accounts:', error);
     return [];
   }
+}
+
+/**
+ * Migrate accounts that don't have a type field
+ * Default to 'test' for backwards compatibility
+ */
+function migrateAccountsWithType(accounts: Partial<Account>[]): Account[] {
+  return accounts.map((acc) => ({
+    ...acc,
+    type: acc.type || 'test',
+  })) as Account[];
 }
 
 /**
@@ -139,13 +167,16 @@ export async function saveAccounts(accounts: Account[]): Promise<void> {
 
 /**
  * Create a new account from mnemonic at the next account index
+ * @param mnemonic - The mnemonic phrase
+ * @param existingAccounts - List of existing accounts
+ * @param type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
-export async function createNewAccount(mnemonic: string, existingAccounts: Account[]): Promise<Account> {
+export async function createNewAccount(mnemonic: string, existingAccounts: Account[], type: AccountType = 'test'): Promise<Account> {
   // Find the highest accountIndex
   const maxIndex = existingAccounts.length > 0
     ? Math.max(...existingAccounts.map((acc) => acc.accountIndex))
     : -1;
-  
+
   const newAccountIndex = maxIndex + 1;
   const address = getAddressFromMnemonic(mnemonic, newAccountIndex);
 
@@ -153,6 +184,7 @@ export async function createNewAccount(mnemonic: string, existingAccounts: Accou
     id: newAccountIndex.toString(),
     address,
     accountIndex: newAccountIndex,
+    type,
   };
 
   // Save updated accounts list
@@ -177,8 +209,9 @@ export async function hasWallet(): Promise<boolean> {
 /**
  * Import wallet from mnemonic phrase
  * Validates the mnemonic before saving
+ * Imported wallets are always 'real' accounts (users import real wallets)
  */
-export async function importWallet(mnemonic: string): Promise<WalletData> {
+export async function importWallet(mnemonic: string): Promise<WalletData & { type: AccountType }> {
   // Normalize mnemonic (trim, normalize whitespace)
   const normalizedMnemonic = mnemonic.trim().replace(/\s+/g, ' ');
 
@@ -201,12 +234,14 @@ export async function importWallet(mnemonic: string): Promise<WalletData> {
   await SecureStore.setItemAsync(WALLET_ADDRESS_KEY, address);
 
   // Create default account if accounts don't exist
+  // Imported wallets are always 'real' accounts
   const existingAccounts = await loadAccounts();
   if (existingAccounts.length === 0) {
     const defaultAccount: Account = {
       id: '0',
       address,
       accountIndex: 0,
+      type: 'real',
     };
     await saveAccounts([defaultAccount]);
   }
@@ -215,6 +250,7 @@ export async function importWallet(mnemonic: string): Promise<WalletData> {
   return {
     mnemonic: normalizedMnemonic,
     address,
+    type: 'real',
   };
 }
 
