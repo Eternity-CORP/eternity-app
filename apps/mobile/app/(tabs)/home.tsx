@@ -16,8 +16,10 @@ import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
 import { resetContacts, loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { checkAndScanThunk, dismissTokenAlert, snoozeTokenAlert } from '@/src/store/slices/scanning-slice';
 import { TokenFoundNotification, TokenFoundBadge } from '@/src/components/TokenFoundNotification';
+import { SuggestionBannerList } from '@/src/components/ai';
 import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
+import { dismissSuggestion } from '@/src/store/slices/ai-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service';
 import { TokenIcon } from '@/src/components/TokenIcon';
@@ -51,6 +53,7 @@ export default function HomeScreen() {
   const balance = useAppSelector((state) => state.balance);
   const split = useAppSelector((state) => state.split);
   const scanning = useAppSelector((state) => state.scanning);
+  const aiSuggestions = useAppSelector((state) => state.ai.suggestions);
   const currentAccount = getCurrentAccount(wallet);
 
   // Track if scanning alerts are expanded
@@ -121,6 +124,11 @@ export default function HomeScreen() {
   // Handle snooze scanning alert
   const handleSnoozeAlert = useCallback((networkId: string, tokenSymbol: string) => {
     dispatch(snoozeTokenAlert({ networkId, tokenSymbol }));
+  }, [dispatch]);
+
+  // Handle dismiss AI suggestion
+  const handleDismissSuggestion = useCallback((id: string) => {
+    dispatch(dismissSuggestion(id));
   }, [dispatch]);
 
   // Pull to refresh
@@ -379,6 +387,17 @@ export default function HomeScreen() {
                 onPress={() => setShowAllScanningAlerts(true)}
               />
             )}
+          </View>
+        )}
+
+        {/* AI Suggestions */}
+        {aiSuggestions.length > 0 && (
+          <View style={styles.aiSuggestionsSection}>
+            <SuggestionBannerList
+              suggestions={aiSuggestions}
+              onDismiss={handleDismissSuggestion}
+              maxVisible={2}
+            />
           </View>
         )}
 
@@ -838,6 +857,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scanningSection: {
+    marginTop: theme.spacing.md,
+  },
+  aiSuggestionsSection: {
     marginTop: theme.spacing.md,
   },
   balanceSection: {

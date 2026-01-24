@@ -7,3 +7,4 @@ export { ChatBubble } from './ChatBubble';
 export { ChatInput } from './ChatInput';
 export { TypingIndicator } from './TypingIndicator';
 export { SuggestionCard } from './SuggestionCard';
+export { SuggestionBanner, SuggestionBannerList } from './SuggestionBanner';
