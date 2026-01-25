@@ -45,3 +45,6 @@ export {
   type ConsolidationBannerProps,
   type Source as ConsolidationSource,
 } from './ConsolidationBanner';
+
+// Bridge Progress
+export { BridgeProgressSteps } from './BridgeProgressSteps';
