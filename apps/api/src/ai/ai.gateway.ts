@@ -17,24 +17,19 @@ import { Logger } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
 import { ChatMessage } from './providers';
+import {
+  AI_EVENTS,
+  ChunkPayload,
+  DonePayload,
+  AiErrorPayload,
+  AiSuggestion,
+  ChatRequest,
+} from '@e-y/shared';
 
-// AI WebSocket Events
-export const AI_EVENTS = {
-  // Incoming
-  CHAT: 'chat',
-  SUBSCRIBE: 'subscribe',
-  UNSUBSCRIBE: 'unsubscribe',
+// Re-export for convenience
+export { AI_EVENTS };
 
-  // Outgoing
-  CHUNK: 'chunk',
-  DONE: 'done',
-  TOOL_CALL: 'tool_call',
-  TOOL_RESULT: 'tool_result',
-  SUGGESTION: 'suggestion',
-  ERROR: 'error',
-} as const;
-
-// Payload types
+// Gateway-specific payload types (not in shared)
 export interface ChatPayload {
   content: string;
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
@@ -44,55 +39,9 @@ export interface SubscribePayload {
   address: string;
 }
 
-export interface ChunkPayload {
-  content: string;
-  index: number;
-}
-
-export interface DonePayload {
-  content: string;
-  toolCalls?: Array<{
-    name: string;
-    arguments: Record<string, unknown>;
-  }>;
-  toolResults?: Array<{
-    name: string;
-    result: unknown;
-  }>;
-  pendingTransaction?: {
-    id: string;
-    to: string;
-    toUsername?: string;
-    amount: string;
-    token: string;
-    amountUsd: string;
-    estimatedGas: string;
-    estimatedGasUsd: string;
-    network: string;
-  };
-  pendingBlik?: unknown;
-  pendingSwap?: unknown;
-}
-
-export interface SuggestionPayload {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  priority: string;
-  action?: {
-    label: string;
-    route?: string;
-    type?: string;
-    payload?: unknown;
-  } | null;
-  createdAt: Date;
-}
-
-export interface ErrorPayload {
-  code: string;
-  message: string;
-}
+// Alias for consistency with existing code
+export type ErrorPayload = AiErrorPayload;
+export type SuggestionPayload = AiSuggestion;
 
 const SYSTEM_PROMPT = `Ты — AI-ассистент кошелька E-Y. Твоё имя — E (произносится "И").
 

@@ -5,6 +5,9 @@
 
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
+import { createLogger } from '@/src/utils/logger';
+
+const log = createLogger('ErrorTracking');
 
 // Environment-based configuration
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
@@ -16,7 +19,7 @@ const IS_DEV = __DEV__;
  */
 export function initErrorTracking(): void {
   if (!SENTRY_DSN) {
-    console.log('Sentry DSN not configured, error tracking disabled');
+    log.debug('Sentry DSN not configured, error tracking disabled');
     return;
   }
 
@@ -51,7 +54,7 @@ export function initErrorTracking(): void {
     sessionTrackingIntervalMillis: 30000,
   });
 
-  console.log('Sentry initialized');
+  log.info('Sentry initialized');
 }
 
 /**

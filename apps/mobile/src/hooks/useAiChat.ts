@@ -12,7 +12,7 @@ import {
   type ToolCall,
   type ToolResult,
   type AiSuggestion,
-  type AiErrorPayload,
+  type AiErrorPayloadExtended,
 } from '@/src/services/ai-service';
 import {
   connecting,
@@ -215,7 +215,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         dispatch(addSuggestion(payload));
       },
 
-      onError: (payload: AiErrorPayload) => {
+      onError: (payload: AiErrorPayloadExtended) => {
         dispatch(
           setError({
             message: payload.message,

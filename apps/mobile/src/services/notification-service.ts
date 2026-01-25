@@ -8,6 +8,9 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { apiClient } from './api-client';
+import { createLogger } from '@/src/utils/logger';
+
+const log = createLogger('NotificationService');
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -140,10 +143,10 @@ export async function registerPushToken(walletAddress: string): Promise<boolean>
       deviceName: Device.deviceName || 'Unknown',
     });
 
-    console.log('Push token registered with backend');
+    log.info('Push token registered with backend');
     return true;
   } catch (error) {
-    console.error('Failed to register push token:', error);
+    log.error('Failed to register push token', error);
     return false;
   }
 }

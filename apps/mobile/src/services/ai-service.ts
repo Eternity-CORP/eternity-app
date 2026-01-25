@@ -6,150 +6,40 @@
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
+import {
+  AI_EVENTS,
+  ChatMessage,
+  ToolCall,
+  ToolResult,
+  ChunkPayload,
+  BlikPreview,
+  SwapPreview,
+  TransactionPreview,
+  DonePayload,
+  AiSuggestion,
+  AiErrorPayload,
+} from '@e-y/shared';
 
 const log = createLogger('AiService');
 
-// ============================================
-// Event Constants
-// ============================================
+// Re-export types for consumers of this service
+export {
+  AI_EVENTS,
+  ChatMessage,
+  ToolCall,
+  ToolResult,
+  ChunkPayload,
+  BlikPreview,
+  SwapPreview,
+  TransactionPreview,
+  DonePayload,
+  AiSuggestion,
+  AiErrorPayload,
+};
+export type { BlikGeneratePreview, BlikPayPreview } from '@e-y/shared';
 
-export const AI_EVENTS = {
-  // Incoming (to server)
-  CHAT: 'chat',
-  SUBSCRIBE: 'subscribe',
-  UNSUBSCRIBE: 'unsubscribe',
-
-  // Outgoing (from server)
-  CHUNK: 'chunk',
-  DONE: 'done',
-  TOOL_CALL: 'tool_call',
-  TOOL_RESULT: 'tool_result',
-  SUGGESTION: 'suggestion',
-  ERROR: 'error',
-} as const;
-
-// ============================================
-// Types
-// ============================================
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string; // ISO string for Redux serialization
-  toolCalls?: ToolCall[];
-  toolResults?: ToolResult[];
-}
-
-export interface ToolCall {
-  name: string;
-  arguments: Record<string, unknown>;
-}
-
-export interface ToolResult {
-  name: string;
-  result: {
-    success: boolean;
-    data?: unknown;
-    error?: string;
-  };
-}
-
-export interface ChunkPayload {
-  content: string;
-  index: number;
-}
-
-export interface BlikGeneratePreview {
-  type: 'generate';
-  id: string;
-  code: string;
-  amount: string;
-  token: string;
-  amountUsd: string;
-  expiresAt: number;
-  status: 'pending' | 'paid' | 'expired';
-}
-
-export interface BlikPayPreview {
-  type: 'pay';
-  id: string;
-  code: string;
-  receiverAddress: string;
-  receiverUsername?: string;
-  amount: string;
-  token: string;
-  amountUsd: string;
-  estimatedGas: string;
-  estimatedGasUsd: string;
-  network: string;
-  status: 'pending_confirmation';
-}
-
-export type BlikPreview = BlikGeneratePreview | BlikPayPreview;
-
-export interface SwapPreview {
-  id: string;
-  fromToken: {
-    symbol: string;
-    amount: string;
-    amountUsd: string;
-  };
-  toToken: {
-    symbol: string;
-    amount: string;
-    amountUsd: string;
-  };
-  rate: string;
-  priceImpact: string;
-  estimatedGas: string;
-  estimatedGasUsd: string;
-  slippage: string;
-  network: string;
-  requiresApproval: boolean;
-  status: 'pending_confirmation';
-}
-
-export interface DonePayload {
-  content: string;
-  toolCalls?: ToolCall[];
-  toolResults?: ToolResult[];
-  pendingTransaction?: TransactionPreview;
-  pendingBlik?: BlikPreview;
-  pendingSwap?: SwapPreview;
-}
-
-export interface TransactionPreview {
-  id: string;
-  from: string;
-  to: string;
-  toUsername?: string;
-  amount: string;
-  token: string;
-  amountUsd: string;
-  estimatedGas: string;
-  estimatedGasUsd: string;
-  network: string;
-}
-
-export interface AiSuggestion {
-  id: string;
-  type: 'payment_reminder' | 'security_alert' | 'transaction_tip' | 'savings_tip';
-  title: string;
-  message: string;
-  priority: 'low' | 'medium' | 'high';
-  createdAt: Date;
-  action?: {
-    label: string;
-    route?: string;
-    type?: string;
-    payload?: unknown;
-  };
-}
-
-export interface AiErrorPayload {
-  code: string;
-  message: string;
+// Extended error payload with rate limit info (mobile-specific)
+export interface AiErrorPayloadExtended extends AiErrorPayload {
   rateLimit?: {
     remaining: number;
     resetIn: number;
@@ -167,7 +57,7 @@ export interface AiCallbacks {
   onToolCall?: (payload: ToolCall) => void;
   onToolResult?: (payload: ToolResult) => void;
   onSuggestion?: (payload: AiSuggestion) => void;
-  onError?: (payload: AiErrorPayload) => void;
+  onError?: (payload: AiErrorPayloadExtended) => void;
   onConnect?: () => void;
   onDisconnect?: (reason: string) => void;
 }

@@ -13,6 +13,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { Logger } from '@nestjs/common';
 
 interface PendingTransaction {
   txHash: string;
@@ -36,6 +37,8 @@ const getAlchemyUrl = (): string | null => {
   },
 })
 export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(TransactionGateway.name);
+
   @WebSocketServer()
   server: Server;
 
@@ -43,12 +46,12 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
   private pollingInterval: NodeJS.Timeout | null = null;
 
   handleConnection(client: Socket) {
-    console.log(`Client connected to Transaction gateway: ${client.id}`);
+    this.logger.log(`Client connected to Transaction gateway: ${client.id}`);
     this.startPollingIfNeeded();
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected from Transaction gateway: ${client.id}`);
+    this.logger.log(`Client disconnected from Transaction gateway: ${client.id}`);
     // Remove all pending transactions for this client
     for (const [txHash, tx] of this.pendingTransactions.entries()) {
       if (tx.clientId === client.id) {
@@ -81,7 +84,7 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
     // Join room for this transaction
     client.join(`tx:${txHash}`);
 
-    console.log(`Client ${client.id} subscribed to transaction ${txHash}`);
+    this.logger.log(`Client ${client.id} subscribed to transaction ${txHash}`);
 
     // Immediately check status
     this.checkTransactionStatus(txHash);
@@ -99,7 +102,7 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
     this.pendingTransactions.delete(txHash);
     client.leave(`tx:${txHash}`);
 
-    console.log(`Client ${client.id} unsubscribed from transaction ${txHash}`);
+    this.logger.log(`Client ${client.id} unsubscribed from transaction ${txHash}`);
 
     return { unsubscribed: true, txHash };
   }
@@ -114,14 +117,14 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
       this.pollPendingTransactions();
     }, 3000);
 
-    console.log('Started transaction polling');
+    this.logger.debug('Started transaction polling');
   }
 
   private stopPollingIfNotNeeded() {
     if (this.pendingTransactions.size === 0 && this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
-      console.log('Stopped transaction polling');
+      this.logger.debug('Stopped transaction polling');
     }
   }
 
@@ -173,7 +176,7 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
         this.pendingTransactions.delete(txHash);
         this.stopPollingIfNotNeeded();
 
-        console.log(`Transaction ${txHash} ${status}`);
+        this.logger.log(`Transaction ${txHash} ${status}`);
       } else {
         // Still pending - emit pending status
         this.server.to(`tx:${txHash}`).emit('status-update', {
