@@ -10,7 +10,8 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
-import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
+import { estimateGasThunk, sendTransactionThunk, executeSmartSendThunk } from '@/src/store/slices/send-slice';
+import { resetBridge } from '@/src/store/slices/bridge-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { truncateAddress } from '@/src/utils/format';
@@ -116,6 +117,13 @@ export default function ConfirmScreen() {
     }
   }, [send.step, send.txHash]);
 
+  // Cleanup bridge state when unmounting
+  useEffect(() => {
+    return () => {
+      dispatch(resetBridge());
+    };
+  }, [dispatch]);
+
   const handleConfirm = useCallback(async () => {
     if (!wallet.mnemonic || !currentAccount) return;
 
@@ -126,13 +134,32 @@ export default function ConfirmScreen() {
       dispatch(touchContactThunk(send.recipient));
     }
 
-    await dispatch(sendTransactionThunk({
-      wallet: hdWallet,
-      to: send.recipient,
-      amount: send.amount,
-      token: tokenAddress,
-    }));
-  }, [wallet.mnemonic, currentAccount, existingContact, dispatch, send.recipient, send.amount, tokenAddress]);
+    // Check if bridge/consolidation is needed
+    const route = routingResult?.route;
+    const needsBridge = route && (route.type === 'bridge' || route.type === 'consolidation');
+
+    if (needsBridge) {
+      // Navigate to bridging screen first
+      router.push('/send/bridging');
+
+      // Execute smart send with bridge
+      await dispatch(executeSmartSendThunk({
+        wallet: hdWallet,
+        route,
+        recipient: send.recipient,
+        amount: send.amount,
+        token: tokenAddress,
+      }));
+    } else {
+      // Direct send - use existing flow
+      await dispatch(sendTransactionThunk({
+        wallet: hdWallet,
+        to: send.recipient,
+        amount: send.amount,
+        token: tokenAddress,
+      }));
+    }
+  }, [wallet.mnemonic, currentAccount, existingContact, dispatch, send.recipient, send.amount, tokenAddress, routingResult]);
 
   const handleSaveContact = useCallback(async () => {
     if (!contactName.trim()) {
