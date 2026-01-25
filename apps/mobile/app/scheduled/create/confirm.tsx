@@ -2,7 +2,8 @@
  * Scheduled Payment Create - Step 5: Confirm & Create
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
@@ -14,6 +15,11 @@ import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { signScheduledTransaction } from '@/src/services/scheduled-signing';
+import { TIER1_NETWORK_IDS, type NetworkId } from '@/src/constants/networks';
+import { TESTNET_NETWORK_IDS, type TestnetNetworkId } from '@/src/constants/networks-testnet';
+import type { AnyNetworkId } from '@/src/services/network-service';
 
 export default function ScheduledConfirmScreen() {
   const dispatch = useAppDispatch();
@@ -24,10 +30,49 @@ export default function ScheduledConfirmScreen() {
   const currentAccount = getCurrentAccount(wallet);
   const isTestAccount = useAppSelector(selectIsTestAccount);
 
+  const [isSigningTx, setIsSigningTx] = useState(false);
+
   const selectedToken = balance.balances.find(
     (t) => t.symbol === scheduledCreate.selectedToken
   );
+
+  // Get token info from aggregated balances for network/contract info
+  const aggregatedToken = balance.aggregatedBalances.find(
+    (t) => t.symbol.toUpperCase() === scheduledCreate.selectedToken.toUpperCase()
+  );
   const scheduledDate = new Date(scheduledCreate.scheduledDate);
+
+  // Determine network and token address for signing
+  const getNetworkAndTokenInfo = (): { networkId: AnyNetworkId; tokenAddress: string | null; decimals: number } => {
+    const accountType = currentAccount?.type || 'test';
+
+    // Default network based on account type
+    const defaultNetwork: AnyNetworkId = accountType === 'test'
+      ? TESTNET_NETWORK_IDS[0]
+      : TIER1_NETWORK_IDS[0];
+
+    // Native token (ETH/etc)
+    const isNativeToken = scheduledCreate.selectedToken === 'ETH' ||
+      scheduledCreate.selectedToken === 'MATIC' ||
+      scheduledCreate.selectedToken === 'POL';
+
+    if (isNativeToken) {
+      return { networkId: defaultNetwork, tokenAddress: null, decimals: 18 };
+    }
+
+    // For ERC-20 tokens, find the contract address from aggregated balances
+    if (aggregatedToken && aggregatedToken.networks.length > 0) {
+      const networkData = aggregatedToken.networks[0];
+      return {
+        networkId: networkData.networkId,
+        tokenAddress: networkData.contractAddress,
+        decimals: aggregatedToken.decimals,
+      };
+    }
+
+    // Fallback - shouldn't happen if token selection works correctly
+    return { networkId: defaultNetwork, tokenAddress: null, decimals: 18 };
+  };
 
   const handleConfirm = async () => {
     if (!currentAccount?.address) {
@@ -35,7 +80,34 @@ export default function ScheduledConfirmScreen() {
       return;
     }
 
+    setIsSigningTx(true);
+
     try {
+      // Load wallet for signing
+      const walletData = await loadWallet();
+      if (!walletData?.mnemonic) {
+        throw new Error('Unable to access wallet for signing');
+      }
+
+      // Get signing wallet
+      const signingWallet = getWalletFromMnemonic(walletData.mnemonic, currentAccount.accountIndex);
+
+      // Get network and token info
+      const { networkId, tokenAddress, decimals } = getNetworkAndTokenInfo();
+      const accountType = currentAccount.type || 'test';
+
+      // Sign the transaction
+      const signedData = await signScheduledTransaction({
+        privateKey: signingWallet.privateKey,
+        recipient: scheduledCreate.recipient,
+        amount: scheduledCreate.amount,
+        tokenAddress,
+        networkId,
+        accountType,
+        decimals,
+      });
+
+      // Create scheduled payment with signed transaction
       await dispatch(
         createScheduledPaymentThunk({
           creatorAddress: currentAccount.address,
@@ -49,12 +121,16 @@ export default function ScheduledConfirmScreen() {
             ? scheduledCreate.recurringInterval
             : undefined,
           description: scheduledCreate.description || undefined,
+          signedTransaction: signedData.signedTransaction,
+          estimatedGasPrice: signedData.estimatedGasPrice,
+          nonce: signedData.nonce,
+          chainId: signedData.chainId,
         })
       ).unwrap();
 
       dispatch(resetScheduledCreate());
 
-      Alert.alert('Success', 'Scheduled payment created', [
+      Alert.alert('Success', 'Scheduled payment created and pre-signed for automatic execution', [
         {
           text: 'OK',
           onPress: () => router.replace('/scheduled'),
@@ -64,10 +140,12 @@ export default function ScheduledConfirmScreen() {
       const message =
         err instanceof Error ? err.message : 'Failed to create scheduled payment';
       Alert.alert('Error', message);
+    } finally {
+      setIsSigningTx(false);
     }
   };
 
-  const isCreating = scheduled.status === 'loading';
+  const isCreating = scheduled.status === 'loading' || isSigningTx;
 
   // Calculate USD value
   const amountValue = parseFloat(scheduledCreate.amount) || 0;
@@ -187,12 +265,22 @@ export default function ScheduledConfirmScreen() {
           )}
         </View>
 
+        {/* Gas Price Warning */}
+        <View style={styles.warningCard}>
+          <FontAwesome name="exclamation-triangle" size={16} color="#FFA500" />
+          <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            Gas prices may change before execution. If network fees increase significantly
+            (more than 50%), the transaction may fail. You can edit or cancel anytime before
+            the scheduled time.
+          </Text>
+        </View>
+
         {/* Info Note */}
         <View style={styles.infoCard}>
           <FontAwesome name="info-circle" size={16} color={theme.colors.buttonPrimary} />
           <Text style={[styles.infoText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-            You will receive a notification when the payment is due. Make sure you have
-            sufficient funds at the scheduled time.
+            Your payment will be automatically executed at the scheduled time. The transaction
+            is pre-signed for automatic processing.
           </Text>
         </View>
 
@@ -207,9 +295,18 @@ export default function ScheduledConfirmScreen() {
           onPress={handleConfirm}
           disabled={isCreating}
         >
-          <Text style={[styles.confirmButtonText, theme.typography.heading]}>
-            {isCreating ? 'Creating...' : 'Schedule Payment'}
-          </Text>
+          {isCreating ? (
+            <View style={styles.buttonLoadingContent}>
+              <ActivityIndicator size="small" color={theme.colors.buttonPrimaryText} />
+              <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+                {isSigningTx ? 'Signing Transaction...' : 'Creating...'}
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+              Sign & Schedule Payment
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -299,6 +396,20 @@ const styles = StyleSheet.create({
   descriptionText: {
     flex: 2,
   },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFA50015',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: '#FFA50030',
+  },
+  warningText: {
+    flex: 1,
+    lineHeight: 18,
+  },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -310,6 +421,11 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     lineHeight: 18,
+  },
+  buttonLoadingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   footer: {
     padding: theme.spacing.xl,

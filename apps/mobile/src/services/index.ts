@@ -281,3 +281,11 @@ export {
   POPULAR_TOKENS,
   type NetworkPreferences,
 } from './preferences-service';
+
+// Scheduled Transaction Signing Service
+export {
+  signScheduledTransaction,
+  verifySignedTransaction,
+  type SignedScheduledPayment,
+  type SignScheduledParams,
+} from './scheduled-signing';

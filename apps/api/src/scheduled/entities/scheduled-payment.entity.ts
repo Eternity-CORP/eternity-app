@@ -56,6 +56,21 @@ export class ScheduledPayment {
   @Column({ name: 'reminder_sent', type: 'boolean', default: false })
   reminderSent: boolean;
 
+  @Column({ name: 'signed_transaction', type: 'text', nullable: true })
+  signedTransaction: string | null;
+
+  @Column({ name: 'estimated_gas_price', type: 'bigint', nullable: true })
+  estimatedGasPrice: string | null;
+
+  @Column({ type: 'integer', nullable: true })
+  nonce: number | null;
+
+  @Column({ name: 'chain_id', type: 'integer', nullable: true })
+  chainId: number | null;
+
+  @Column({ name: 'failure_reason', type: 'text', nullable: true })
+  failureReason: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

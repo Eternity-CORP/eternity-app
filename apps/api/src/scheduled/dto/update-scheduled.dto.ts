@@ -4,6 +4,7 @@ import {
   Matches,
   IsDateString,
   IsEnum,
+  IsNumber,
 } from 'class-validator';
 
 export class UpdateScheduledDto {
@@ -43,4 +44,20 @@ export class UpdateScheduledDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsString()
+  @IsOptional()
+  signedTransaction?: string;
+
+  @IsString()
+  @IsOptional()
+  estimatedGasPrice?: string;
+
+  @IsNumber()
+  @IsOptional()
+  nonce?: number;
+
+  @IsNumber()
+  @IsOptional()
+  chainId?: number;
 }

@@ -30,6 +30,11 @@ export interface ScheduledPayment {
   executedTxHash?: string | null;
   executedAt?: string | null;
   reminderSent?: boolean;
+  signedTransaction?: string | null;
+  estimatedGasPrice?: string | null;
+  nonce?: number | null;
+  chainId?: number | null;
+  failureReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +50,10 @@ export interface CreateScheduledPaymentRequest {
   recurringInterval?: RecurringInterval;
   recurringEndDate?: string;
   description?: string;
+  signedTransaction?: string;
+  estimatedGasPrice?: string;
+  nonce?: number;
+  chainId?: number;
 }
 
 export interface UpdateScheduledPaymentRequest {
@@ -57,6 +66,10 @@ export interface UpdateScheduledPaymentRequest {
   recurringInterval?: RecurringInterval | null;
   recurringEndDate?: string | null;
   description?: string;
+  signedTransaction?: string;
+  estimatedGasPrice?: string;
+  nonce?: number;
+  chainId?: number;
 }
 
 /**
