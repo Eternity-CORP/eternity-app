@@ -13,11 +13,12 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import {
-  selectPreferredNetwork,
-  setTokenPreference,
-  saveNetworkPreferencesThunk,
-  loadNetworkPreferencesThunk,
-  selectNetworkPreferencesLoaded,
+  selectPreferredNetworkForToken,
+  setTokenOverride,
+  removeTokenOverride,
+  savePreferencesThunk,
+  loadPreferencesThunk,
+  selectPreferencesLoaded,
 } from '@/src/store/slices/network-preferences-slice';
 import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
 import type { AggregatedTokenBalance } from '@/src/services/network-service';
@@ -36,9 +37,9 @@ interface TokenPickerItemProps {
 }
 
 const TokenPickerItem = memo(({ token, onPreferenceChange }: TokenPickerItemProps) => {
-  // Get current preference for this token
+  // Get current preference for this token (returns override or default network)
   const selectedNetwork = useAppSelector((state) =>
-    selectPreferredNetwork(state, token.symbol)
+    selectPreferredNetworkForToken(state, token.symbol)
   );
 
   // Get available networks for this token
@@ -77,12 +78,12 @@ export default function NetworkSettingsScreen() {
   const aggregatedBalances = useAppSelector(selectAggregatedBalances);
 
   // Check if network preferences are loaded
-  const preferencesLoaded = useAppSelector(selectNetworkPreferencesLoaded);
+  const preferencesLoaded = useAppSelector(selectPreferencesLoaded);
 
   // Load network preferences on mount
   useEffect(() => {
     if (!preferencesLoaded) {
-      dispatch(loadNetworkPreferencesThunk());
+      dispatch(loadPreferencesThunk());
     }
   }, [dispatch, preferencesLoaded]);
 
@@ -99,8 +100,14 @@ export default function NetworkSettingsScreen() {
   const handleTokenPreferenceChange = useCallback(
     async (symbol: string, networkId: NetworkId | null) => {
       try {
-        dispatch(setTokenPreference({ symbol, networkId }));
-        await dispatch(saveNetworkPreferencesThunk()).unwrap();
+        // If null, remove the override (falls back to default network)
+        // If a specific network, set it as an override for this token
+        if (networkId === null) {
+          dispatch(removeTokenOverride(symbol));
+        } else {
+          dispatch(setTokenOverride({ symbol, networkId }));
+        }
+        await dispatch(savePreferencesThunk()).unwrap();
         logger.info('Network preference saved', { symbol, networkId });
       } catch (error) {
         logger.error('Failed to save network preference', { symbol, error });

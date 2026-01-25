@@ -1,92 +1,139 @@
 /**
  * Network Preferences Slice
- * Per-token network preferences for receiving tokens
+ * User's preferred networks for receiving tokens
+ * Uses defaultNetwork + tokenOverrides model
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NetworkId } from '@/src/constants/networks';
+import {
+  savePreferences,
+  type NetworkPreferences,
+} from '@/src/services/preferences-service';
+import { getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { createLogger } from '@/src/utils/logger';
 
-const NETWORK_PREFERENCES_STORAGE_KEY = '@ey_network_preferences';
+const log = createLogger('NetworkPreferencesSlice');
 
-/**
- * Default behavior when no preference is set for a token
- * - 'sender_network': Receive on sender's network (no bridging)
- * - 'cheapest_gas': Auto-select network with lowest gas fees
- */
-export type DefaultNetworkBehavior = 'sender_network' | 'cheapest_gas';
-
-/**
- * Per-token network preference
- */
-export interface TokenNetworkPreference {
-  preferredNetwork: NetworkId | null; // null = no preference (any network)
-  updatedAt: string; // ISO timestamp
-}
+const STORAGE_KEY = '@ey_network_preferences_v2';
 
 /**
  * Network preferences state
  */
 interface NetworkPreferencesState {
-  // Per-token preferences: which network user prefers to receive each token on
-  tokenPreferences: {
-    [tokenSymbol: string]: TokenNetworkPreference;
-  };
-  // Default behavior when no preference is set
-  defaultBehavior: DefaultNetworkBehavior;
-  // Loading state
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  /** User's default network for receiving all tokens (null = sender's choice) */
+  defaultNetwork: NetworkId | null;
+  /** Token-specific network overrides (e.g., receive USDC on Arbitrum) */
+  tokenOverrides: Record<string, NetworkId>;
+
+  /** Sync state */
+  status: 'idle' | 'loading' | 'saving' | 'succeeded' | 'failed';
   error: string | null;
-  // Whether preferences have been loaded from storage
   loaded: boolean;
+  lastSyncedAt: string | null;
+  pendingSync: boolean;
+}
+
+/**
+ * Data structure for local storage
+ */
+interface StoredPreferences {
+  defaultNetwork: NetworkId | null;
+  tokenOverrides: Record<string, NetworkId>;
+  lastSyncedAt: string | null;
 }
 
 const initialState: NetworkPreferencesState = {
-  tokenPreferences: {},
-  defaultBehavior: 'sender_network',
+  defaultNetwork: null,
+  tokenOverrides: {},
   status: 'idle',
   error: null,
   loaded: false,
+  lastSyncedAt: null,
+  pendingSync: false,
 };
 
 /**
- * Data structure for storage (excludes transient state)
+ * Load preferences from AsyncStorage
  */
-interface StoredNetworkPreferences {
-  tokenPreferences: NetworkPreferencesState['tokenPreferences'];
-  defaultBehavior: DefaultNetworkBehavior;
-}
-
-/**
- * Load network preferences from AsyncStorage
- */
-export const loadNetworkPreferencesThunk = createAsyncThunk(
+export const loadPreferencesThunk = createAsyncThunk(
   'networkPreferences/load',
   async () => {
-    const stored = await AsyncStorage.getItem(NETWORK_PREFERENCES_STORAGE_KEY);
+    log.debug('Loading preferences from storage');
+    const stored = await AsyncStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored) as StoredNetworkPreferences;
+      const data = JSON.parse(stored) as StoredPreferences;
+      log.debug('Preferences loaded', data);
+      return data;
     }
+    log.debug('No stored preferences found');
     return null;
   }
 );
 
 /**
- * Save network preferences to AsyncStorage
+ * Save preferences locally and sync to backend
+ * If backend sync fails, marks pendingSync = true for later retry
  */
-export const saveNetworkPreferencesThunk = createAsyncThunk(
+export const savePreferencesThunk = createAsyncThunk(
   'networkPreferences/save',
   async (_, { getState }) => {
-    const state = getState() as { networkPreferences: NetworkPreferencesState };
-    const dataToStore: StoredNetworkPreferences = {
-      tokenPreferences: state.networkPreferences.tokenPreferences,
-      defaultBehavior: state.networkPreferences.defaultBehavior,
+    const state = getState() as {
+      networkPreferences: NetworkPreferencesState;
+      wallet: { mnemonic: string | null };
     };
-    await AsyncStorage.setItem(
-      NETWORK_PREFERENCES_STORAGE_KEY,
-      JSON.stringify(dataToStore)
-    );
-    return dataToStore;
+
+    const { defaultNetwork, tokenOverrides } = state.networkPreferences;
+    const { mnemonic } = state.wallet;
+
+    // Prepare data for storage
+    const dataToStore: StoredPreferences = {
+      defaultNetwork,
+      tokenOverrides,
+      lastSyncedAt: state.networkPreferences.lastSyncedAt,
+    };
+
+    // Save to local storage first (offline-first approach)
+    log.debug('Saving preferences to local storage');
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
+
+    // Attempt to sync to backend if wallet is available
+    let syncedAt: string | null = null;
+    let syncFailed = false;
+
+    if (mnemonic) {
+      try {
+        log.debug('Syncing preferences to backend');
+        const wallet = getWalletFromMnemonic(mnemonic, 0);
+        const preferences: NetworkPreferences = {
+          defaultNetwork,
+          tokenOverrides,
+        };
+        await savePreferences(preferences, wallet);
+        syncedAt = new Date().toISOString();
+
+        // Update local storage with sync timestamp
+        dataToStore.lastSyncedAt = syncedAt;
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore));
+
+        log.info('Preferences synced to backend', { syncedAt });
+      } catch (error) {
+        log.warn('Failed to sync preferences to backend', error);
+        syncFailed = true;
+        // Don't throw - local save succeeded, just mark pending sync
+      }
+    } else {
+      log.debug('No mnemonic available, skipping backend sync');
+      syncFailed = true;
+    }
+
+    return {
+      defaultNetwork,
+      tokenOverrides,
+      lastSyncedAt: syncedAt,
+      pendingSync: syncFailed,
+    };
   }
 );
 
@@ -95,90 +142,95 @@ const networkPreferencesSlice = createSlice({
   initialState,
   reducers: {
     /**
-     * Set preferred network for a specific token
-     * @param symbol - Token symbol (e.g., 'USDC', 'ETH')
-     * @param networkId - Preferred network or null for "any network"
+     * Set the default network for receiving all tokens
+     * @param networkId - Preferred network or null for "sender's choice"
      */
-    setTokenPreference: (
+    setDefaultNetwork: (state, action: PayloadAction<NetworkId | null>) => {
+      state.defaultNetwork = action.payload;
+      state.pendingSync = true; // Mark for sync
+    },
+
+    /**
+     * Set a token-specific network override
+     * @param symbol - Token symbol (e.g., 'USDC', 'ETH')
+     * @param networkId - Preferred network for this token
+     */
+    setTokenOverride: (
       state,
-      action: PayloadAction<{ symbol: string; networkId: NetworkId | null }>
+      action: PayloadAction<{ symbol: string; networkId: NetworkId }>
     ) => {
       const { symbol, networkId } = action.payload;
-      state.tokenPreferences[symbol] = {
-        preferredNetwork: networkId,
-        updatedAt: new Date().toISOString(),
-      };
+      const normalizedSymbol = symbol.toUpperCase();
+      state.tokenOverrides[normalizedSymbol] = networkId;
+      state.pendingSync = true; // Mark for sync
     },
 
     /**
-     * Clear preference for a specific token (removes from preferences)
-     * Different from setting to null - this removes the entry entirely
+     * Remove a token-specific override (falls back to defaultNetwork)
+     * @param symbol - Token symbol to remove override for
      */
-    clearTokenPreference: (state, action: PayloadAction<string>) => {
-      const symbol = action.payload;
-      delete state.tokenPreferences[symbol];
-    },
-
-    /**
-     * Set default behavior when no preference is set
-     */
-    setDefaultBehavior: (
-      state,
-      action: PayloadAction<DefaultNetworkBehavior>
-    ) => {
-      state.defaultBehavior = action.payload;
+    removeTokenOverride: (state, action: PayloadAction<string>) => {
+      const normalizedSymbol = action.payload.toUpperCase();
+      delete state.tokenOverrides[normalizedSymbol];
+      state.pendingSync = true; // Mark for sync
     },
 
     /**
      * Clear all preferences (reset to initial state)
      */
-    clearAllPreferences: (state) => {
-      state.tokenPreferences = {};
-      state.defaultBehavior = 'sender_network';
+    clearPreferences: (state) => {
+      state.defaultNetwork = null;
+      state.tokenOverrides = {};
+      state.lastSyncedAt = null;
+      state.pendingSync = true; // Mark for sync
     },
   },
   extraReducers: (builder) => {
     builder
       // Load preferences
-      .addCase(loadNetworkPreferencesThunk.pending, (state) => {
+      .addCase(loadPreferencesThunk.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(loadNetworkPreferencesThunk.fulfilled, (state, action) => {
+      .addCase(loadPreferencesThunk.fulfilled, (state, action) => {
         if (action.payload) {
-          state.tokenPreferences = action.payload.tokenPreferences || {};
-          state.defaultBehavior =
-            action.payload.defaultBehavior || 'sender_network';
+          state.defaultNetwork = action.payload.defaultNetwork ?? null;
+          state.tokenOverrides = action.payload.tokenOverrides ?? {};
+          state.lastSyncedAt = action.payload.lastSyncedAt ?? null;
         }
         state.status = 'succeeded';
         state.error = null;
         state.loaded = true;
       })
-      .addCase(loadNetworkPreferencesThunk.rejected, (state, action) => {
+      .addCase(loadPreferencesThunk.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Failed to load network preferences';
+        state.error = action.error.message || 'Failed to load preferences';
         state.loaded = true; // Mark as loaded even on error to prevent infinite retries
       })
       // Save preferences
-      .addCase(saveNetworkPreferencesThunk.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(saveNetworkPreferencesThunk.fulfilled, (state) => {
-        state.status = 'succeeded';
+      .addCase(savePreferencesThunk.pending, (state) => {
+        state.status = 'saving';
         state.error = null;
       })
-      .addCase(saveNetworkPreferencesThunk.rejected, (state, action) => {
+      .addCase(savePreferencesThunk.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.error = null;
+        state.lastSyncedAt = action.payload.lastSyncedAt;
+        state.pendingSync = action.payload.pendingSync;
+      })
+      .addCase(savePreferencesThunk.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Failed to save network preferences';
+        state.error = action.error.message || 'Failed to save preferences';
+        state.pendingSync = true; // Mark for retry
       });
   },
 });
 
 // Export actions
 export const {
-  setTokenPreference,
-  clearTokenPreference,
-  setDefaultBehavior,
-  clearAllPreferences,
+  setDefaultNetwork,
+  setTokenOverride,
+  removeTokenOverride,
+  clearPreferences,
 } = networkPreferencesSlice.actions;
 
 // ============================================================================
@@ -188,65 +240,62 @@ export const {
 type RootState = { networkPreferences: NetworkPreferencesState };
 
 /**
- * Select the full preference object for a token (includes updatedAt)
+ * Select the default network preference
  */
-export const selectTokenPreference = (
-  state: RootState,
-  symbol: string
-): TokenNetworkPreference | undefined => {
-  return state.networkPreferences.tokenPreferences[symbol];
+export const selectDefaultNetwork = (state: RootState): NetworkId | null => {
+  return state.networkPreferences.defaultNetwork;
 };
 
 /**
- * Select just the preferred network for a token (or null if no preference)
+ * Select all token overrides
  */
-export const selectPreferredNetwork = (
-  state: RootState,
-  symbol: string
-): NetworkId | null => {
-  const preference = state.networkPreferences.tokenPreferences[symbol];
-  return preference?.preferredNetwork ?? null;
-};
-
-/**
- * Select the default behavior setting
- */
-export const selectDefaultBehavior = (state: RootState): DefaultNetworkBehavior => {
-  return state.networkPreferences.defaultBehavior;
-};
-
-/**
- * Select all token preferences
- */
-export const selectAllTokenPreferences = (
+export const selectTokenOverrides = (
   state: RootState
-): NetworkPreferencesState['tokenPreferences'] => {
-  return state.networkPreferences.tokenPreferences;
+): Record<string, NetworkId> => {
+  return state.networkPreferences.tokenOverrides;
 };
 
 /**
- * Select whether preferences have been loaded
+ * Select whether preferences have been loaded from storage
  */
-export const selectNetworkPreferencesLoaded = (state: RootState): boolean => {
+export const selectPreferencesLoaded = (state: RootState): boolean => {
   return state.networkPreferences.loaded;
 };
 
 /**
- * Select the loading status
+ * Select the current status
  */
-export const selectNetworkPreferencesStatus = (
+export const selectPreferencesStatus = (
   state: RootState
 ): NetworkPreferencesState['status'] => {
   return state.networkPreferences.status;
 };
 
 /**
- * Select any error message
+ * Select whether there's a pending sync to backend
  */
-export const selectNetworkPreferencesError = (
-  state: RootState
-): string | null => {
-  return state.networkPreferences.error;
+export const selectPendingSync = (state: RootState): boolean => {
+  return state.networkPreferences.pendingSync;
+};
+
+/**
+ * Select the preferred network for a specific token
+ * Priority: tokenOverrides[symbol] > defaultNetwork > null (sender's choice)
+ *
+ * @param state - Redux state
+ * @param symbol - Token symbol (e.g., 'USDC', 'ETH')
+ * @returns The preferred network or null if no preference
+ */
+export const selectPreferredNetworkForToken = (
+  state: RootState,
+  symbol: string
+): NetworkId | null => {
+  const normalizedSymbol = symbol.toUpperCase();
+  const override = state.networkPreferences.tokenOverrides[normalizedSymbol];
+  if (override) {
+    return override;
+  }
+  return state.networkPreferences.defaultNetwork;
 };
 
 export default networkPreferencesSlice.reducer;
