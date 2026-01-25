@@ -271,3 +271,13 @@ export {
   type TransferRoute,
   type RoutingResult,
 } from './routing-service';
+
+// Preferences Service (Network preferences by address)
+export {
+  getAddressPreferences,
+  getAddressPreferencesWithRetry,
+  savePreferences,
+  resolvePreferredNetwork,
+  POPULAR_TOKENS,
+  type NetworkPreferences,
+} from './preferences-service';
