@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { setRecipient, setStep } from '@/src/store/slices/send-slice';
+import { setRecipient, setStep, fetchRecipientPreferencesThunk, clearRecipientPreferences } from '@/src/store/slices/send-slice';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
@@ -47,6 +47,11 @@ export default function RecipientScreen() {
   useEffect(() => {
     dispatch(loadContactsThunk());
   }, [dispatch]);
+
+  // Clear recipient preferences when input changes
+  useEffect(() => {
+    dispatch(clearRecipientPreferences());
+  }, [input, dispatch]);
 
   // Check if input is a username (starts with @)
   const isUsernameInput = input.trim().startsWith('@');
@@ -154,6 +159,10 @@ export default function RecipientScreen() {
 
     setError(null);
     dispatch(setRecipient(resolvedAddress));
+
+    // Fetch recipient preferences in background (username if resolved, otherwise address)
+    dispatch(fetchRecipientPreferencesThunk(resolvedUsername || resolvedAddress));
+
     dispatch(setStep('amount'));
     router.push('/send/amount');
   };
