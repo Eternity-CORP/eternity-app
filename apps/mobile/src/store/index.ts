@@ -18,6 +18,7 @@ import swapReducer from './slices/swap-slice';
 import aiReducer from './slices/ai-slice';
 import settingsReducer from './slices/settings-slice';
 import networkPreferencesReducer from './slices/network-preferences-slice';
+import bridgeReducer from './slices/bridge-slice';
 
 export const store = configureStore({
   reducer: {
@@ -36,6 +37,7 @@ export const store = configureStore({
     ai: aiReducer,
     settings: settingsReducer,
     networkPreferences: networkPreferencesReducer,
+    bridge: bridgeReducer,
   },
 });
 
