@@ -23,7 +23,8 @@ import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { dismissSuggestion } from '@/src/store/slices/ai-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
-import { formatUsdValue, fetchAllBalances } from '@/src/services/balance-service';
+import { formatUsdValue } from '@/src/services/balance-service';
+import { fetchAllNetworkBalances } from '@/src/services/network-service';
 import { getUsernameByAddress } from '@/src/services/username-service';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { theme } from '@/src/constants/theme';
@@ -185,10 +186,11 @@ export default function HomeScreen() {
     setShowAddWalletMenu(false);
     setShowImportSheet(false);
 
-    // Fetch balances for all accounts in parallel
+    // Fetch balances for all accounts in parallel (using account-type-aware fetch)
     const balancePromises = wallet.accounts.map(async (account) => {
       try {
-        const result = await fetchAllBalances(account.address);
+        // Use fetchAllNetworkBalances which respects account type (TEST vs REAL)
+        const result = await fetchAllNetworkBalances(account.address, account.type);
         return { address: account.address, balance: result.totalUsdValue };
       } catch {
         return { address: account.address, balance: 0 };
@@ -429,14 +431,6 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Test Mode Banner */}
-        {isTestAccount && (
-          <View style={styles.testModeBanner}>
-            <Text style={styles.testModeBannerIcon}>🧪</Text>
-            <Text style={styles.testModeBannerText}>Test Mode — tokens have no real value</Text>
-          </View>
-        )}
-
         {/* Get Test Tokens Button */}
         {isTestAccount && (
           <TouchableOpacity
@@ -672,7 +666,7 @@ export default function HomeScreen() {
 
       {/* Account Selector Bottom Sheet */}
       {showAccountSelector && (
-        <View style={StyleSheet.absoluteFill}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Animated.View style={[styles.blurOverlay, { opacity: accountFadeAnim }]}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeAccountSelector}>
               <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
@@ -926,7 +920,7 @@ export default function HomeScreen() {
 
       {/* Faucet Bottom Sheet */}
       {showFaucetSheet && (
-        <View style={StyleSheet.absoluteFill}>
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Animated.View style={[styles.blurOverlay, { opacity: faucetFadeAnim }]}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeFaucetSheet}>
               <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
@@ -1027,27 +1021,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xxl,
-  },
-  // Test Mode Banner
-  testModeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F59E0B20',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.md,
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: '#F59E0B40',
-  },
-  testModeBannerIcon: {
-    fontSize: 16,
-  },
-  testModeBannerText: {
-    ...theme.typography.caption,
-    color: '#F59E0B',
-    flex: 1,
-    fontWeight: '500',
   },
   // Get Test Tokens Button
   getTestTokensButton: {
