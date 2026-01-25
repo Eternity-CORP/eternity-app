@@ -4,6 +4,7 @@
   "private": true,
   "description": "E-Y - Crypto wallet with BLIK codes",
   "scripts": {
+    "start": "./scripts/dev.sh",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
@@ -15,6 +16,10 @@
     "mobile:android": "pnpm --filter @e-y/mobile android",
     "mobile:only": "pnpm --filter @e-y/mobile start",
     "api": "pnpm --filter @e-y/api start:dev",
+    "test:api": "pnpm --filter @e-y/api test",
+    "test:api:e2e": "pnpm --filter @e-y/api test:e2e",
+    "test:preferences": "pnpm --filter @e-y/api test -- --testPathPattern=preferences",
+    "test:integration": "npx ts-node scripts/test-preferences-api.ts",
     "eas-build-pre-install": "cd apps/mobile && bash eas-build-pre-install.sh"
   },
   "devDependencies": {

@@ -11,7 +11,7 @@
 import { Wallet, HDNodeWallet } from 'ethers';
 
 // Configuration
-const API_BASE_URL = process.env.API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.API_URL || 'http://localhost:3000';
 
 // Colors for terminal output
 const colors = {
