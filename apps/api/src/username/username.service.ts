@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { verifyMessage } from 'ethers';
 import { Username } from './username.entity';
 import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto } from './dto';
+import { PreferencesService } from '../preferences/preferences.service';
 
 // Reserved usernames that cannot be claimed
 const RESERVED_USERNAMES = [
@@ -21,12 +22,18 @@ export class UsernameService {
   constructor(
     @InjectRepository(Username)
     private usernameRepository: Repository<Username>,
+    private readonly preferencesService: PreferencesService,
   ) {}
 
   /**
-   * Lookup username -> address
+   * Lookup username -> address with preferences
    */
-  async lookup(username: string): Promise<{ username: string; address: string } | null> {
+  async lookup(username: string): Promise<{
+    username: string;
+    address: string;
+    preferences: { defaultNetwork: string | null; tokenOverrides: Record<string, string> } | null;
+    createdAt: Date;
+  } | null> {
     const normalizedUsername = username.toLowerCase();
     const record = await this.usernameRepository.findOne({
       where: { username: normalizedUsername },
@@ -36,9 +43,19 @@ export class UsernameService {
       return null;
     }
 
+    // Fetch preferences for this address
+    const preferences = await this.preferencesService.findByAddress(record.address);
+
     return {
       username: record.username,
       address: record.address,
+      preferences: preferences
+        ? {
+            defaultNetwork: preferences.defaultNetwork,
+            tokenOverrides: preferences.tokenOverrides,
+          }
+        : null,
+      createdAt: record.createdAt,
     };
   }
 
