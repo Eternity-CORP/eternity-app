@@ -5,7 +5,7 @@
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
@@ -53,6 +53,16 @@ export default function ConfirmScreen() {
     c => c.address.toLowerCase() === send.recipient.toLowerCase()
   );
 
+  // Get recipient's preferred network for the selected token
+  const recipientPreferredNetwork = useMemo(() => {
+    if (!send.recipientPreferences) return null;
+
+    // Priority: token override > default network > null
+    const override = send.recipientPreferences.tokenOverrides[send.selectedToken?.toUpperCase() || ''];
+    if (override) return override;
+    return send.recipientPreferences.defaultNetwork;
+  }, [send.recipientPreferences, send.selectedToken]);
+
   // Load contacts on mount
   useEffect(() => {
     dispatch(loadContactsThunk());
@@ -83,7 +93,7 @@ export default function ConfirmScreen() {
           aggregatedBalances,
           send.selectedToken,
           send.amount,
-          null, // recipientPreferredNetwork - null for now (no recipient preference stored)
+          recipientPreferredNetwork,
           currentAccount.address,
           send.recipient
         );
@@ -97,7 +107,7 @@ export default function ConfirmScreen() {
       }
     }
     calculateRoute();
-  }, [currentAccount?.address, send.recipient, send.amount, send.selectedToken, aggregatedBalances]);
+  }, [currentAccount?.address, send.recipient, send.amount, send.selectedToken, aggregatedBalances, recipientPreferredNetwork]);
 
   // Navigate to success screen when transaction is sent
   useEffect(() => {
@@ -358,6 +368,16 @@ export default function ConfirmScreen() {
           </View>
         )}
 
+        {/* Preferences fetch warning */}
+        {send.recipientPreferencesStatus === 'failed' && (
+          <View style={styles.warningCard}>
+            <FontAwesome name="exclamation-triangle" size={16} color={theme.colors.warning} />
+            <Text style={[theme.typography.caption, { color: theme.colors.warning, flex: 1, marginLeft: 8 }]}>
+              Couldn't load recipient's network preferences. Sending on cheapest available network.
+            </Text>
+          </View>
+        )}
+
         {send.sendError && (
           <View style={styles.errorCard}>
             <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
@@ -501,6 +521,15 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     alignItems: 'center',
+  },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.warning + '15',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.warning + '30',
   },
   footer: {
     padding: theme.spacing.xl,
