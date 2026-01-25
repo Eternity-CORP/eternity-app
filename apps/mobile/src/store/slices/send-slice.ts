@@ -6,6 +6,10 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
 import type { HDNodeWallet } from 'ethers';
+import { isAddress } from 'ethers';
+import type { NetworkId } from '@/src/constants/networks';
+import { getAddressPreferencesWithRetry } from '@/src/services/preferences-service';
+import { lookupUsername } from '@/src/services/username-service';
 
 export interface SendState {
   // Flow state
@@ -31,6 +35,14 @@ export interface SendState {
 
   // Scheduled payment context
   scheduledPaymentId: string | null;
+
+  // Recipient's network preferences
+  recipientPreferences: {
+    defaultNetwork: NetworkId | null;
+    tokenOverrides: Record<string, NetworkId>;
+  } | null;
+  recipientPreferencesStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  recipientPreferencesError: string | null;
 }
 
 const initialState: SendState = {
@@ -46,6 +58,9 @@ const initialState: SendState = {
   splitBillId: null,
   splitParticipantAddress: null,
   scheduledPaymentId: null,
+  recipientPreferences: null,
+  recipientPreferencesStatus: 'idle',
+  recipientPreferencesError: null,
 };
 
 /**
@@ -66,6 +81,31 @@ export const sendTransactionThunk = createAsyncThunk(
   async ({ wallet, to, amount, token }: { wallet: HDNodeWallet; to: string; amount: string; token: string }) => {
     const txHash = await sendTransaction({ wallet, to, amount, token });
     return txHash;
+  }
+);
+
+/**
+ * Fetch recipient's network preferences
+ */
+export const fetchRecipientPreferencesThunk = createAsyncThunk(
+  'send/fetchRecipientPreferences',
+  async (recipient: string) => {
+    // Resolve address if username
+    let address = recipient;
+
+    if (recipient.startsWith('@')) {
+      const resolved = await lookupUsername(recipient);
+      if (!resolved) {
+        throw new Error('Username not found');
+      }
+      address = resolved;
+    } else if (!isAddress(recipient)) {
+      throw new Error('Invalid address');
+    }
+
+    // Fetch preferences with retry
+    const preferences = await getAddressPreferencesWithRetry(address);
+    return preferences;
   }
 );
 
@@ -112,6 +152,11 @@ const sendSlice = createSlice({
       }
       state.sendError = null;
     },
+    clearRecipientPreferences: (state) => {
+      state.recipientPreferences = null;
+      state.recipientPreferencesStatus = 'idle';
+      state.recipientPreferencesError = null;
+    },
   },
   extraReducers: (builder) => {
     // Gas estimation
@@ -142,6 +187,23 @@ const sendSlice = createSlice({
         state.sendStatus = 'failed';
         state.sendError = action.error.message || 'Failed to send transaction';
       });
+
+    // Fetch recipient preferences
+    builder
+      .addCase(fetchRecipientPreferencesThunk.pending, (state) => {
+        state.recipientPreferencesStatus = 'loading';
+        state.recipientPreferencesError = null;
+      })
+      .addCase(fetchRecipientPreferencesThunk.fulfilled, (state, action) => {
+        state.recipientPreferences = action.payload;
+        state.recipientPreferencesStatus = 'succeeded';
+        state.recipientPreferencesError = null;
+      })
+      .addCase(fetchRecipientPreferencesThunk.rejected, (state, action) => {
+        state.recipientPreferences = null;
+        state.recipientPreferencesStatus = 'failed';
+        state.recipientPreferencesError = action.error.message || 'Failed to fetch preferences';
+      });
   },
 });
 
@@ -154,6 +216,7 @@ export const {
   setSplitBillContext,
   setScheduledPaymentContext,
   validateRecipient,
+  clearRecipientPreferences,
 } = sendSlice.actions;
 
 export default sendSlice.reducer;
