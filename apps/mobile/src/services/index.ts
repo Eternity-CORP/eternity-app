@@ -245,3 +245,18 @@ export {
   type ChunkPayload,
   type DonePayload,
 } from './ai-service';
+
+// Bridge Service (Cross-network bridging)
+export {
+  getBridgeQuote,
+  checkBridgeNeeded,
+  checkBridgeCostLevel,
+  formatBridgeTime,
+  getBridgeNetworkName,
+  isBridgeNetworkSupported,
+  type BridgeQuote,
+  type BridgeRoute,
+  type BridgeStep,
+  type BridgeCheckResult,
+  type BridgeCostLevel,
+} from './bridge-service';
