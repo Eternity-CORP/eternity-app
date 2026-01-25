@@ -1,6 +1,167 @@
-# E-Y Integration Test Coverage
+# E-Y Test Coverage
 
-Документ описывает все тестовые сценарии, покрытые интеграционными тестами.
+Документ описывает все тестовые сценарии, покрытые интеграционными и unit тестами.
+
+---
+
+# Part 1: Unit Tests (Mock/Isolated)
+
+Тесты без реальных API вызовов — логика тестируется изолированно.
+
+---
+
+## 8. Preferences Service Unit Tests (12 тестов)
+
+### resolvePreferredNetwork — базовая логика
+- **null preferences → null** — если preferences не установлены, возвращаем null (sender's choice)
+- **Любой токен без preferences → null** — ETH, USDT, DAI возвращают null
+
+### resolvePreferredNetwork — только defaultNetwork
+- **defaultNetwork для любого токена** — USDC, ETH, USDT все возвращают defaultNetwork
+
+### resolvePreferredNetwork — только tokenOverrides
+- **Override для конкретного токена** — USDC → base, ETH → optimism
+- **Токен без override → null** — USDT возвращает null если нет override
+
+### resolvePreferredNetwork — приоритет (tokenOverride > defaultNetwork)
+- **Override приоритетнее defaultNetwork** — USDC override 'arbitrum' используется вместо defaultNetwork 'polygon'
+- **Fallback на defaultNetwork** — токен без override использует defaultNetwork
+
+### Case insensitivity
+- **Lowercase токен** — 'usdc' находит USDC override
+- **Mixed case токен** — 'Usdc', 'uSdC' находят USDC override
+
+### Edge cases
+- **Empty tokenOverrides** — используется defaultNetwork
+- **Все сети с overrides** — каждый токен возвращает свой override
+- **Специальные символы** — 'WETH.E' корректно обрабатывается
+
+---
+
+## 9. Routing Service Unit Tests (15 тестов)
+
+### getRouteTotalFees
+- **Direct transfer → 0** — прямая отправка не имеет комиссий
+- **Bridge с quote** — возвращает totalFeeUsd из bridgeQuote
+- **Bridge без quote → 0** — если нет quote, возвращает 0
+- **Consolidation с несколькими источниками** — суммирует fees всех мостов
+- **Consolidation с mix bridge/no-bridge** — только считает bridge fees
+
+### getRouteEstimatedTime
+- **Direct на разных сетях** — Ethereum: 15s, Polygon: 2s, Arbitrum: 1s, Optimism: 2s, Base: 2s
+- **Bridge** — возвращает estimatedTime из bridgeQuote
+- **Consolidation** — возвращает максимальное время среди всех мостов
+- **Consolidation без sources → 0**
+
+### formatRouteDescription
+- **Direct** — "Send directly on Base"
+- **Bridge** — "Bridge from Base to Arbitrum"
+- **Consolidation с sources** — "Consolidate from Base, OP, Poly to Arbitrum"
+- **Consolidation без sources** — "Consolidate to Arbitrum"
+
+### routeRequiresConfirmation
+- **Direct → false** — не требует подтверждения
+- **Bridge → true** — требует подтверждения (fees)
+- **Consolidation → true** — требует подтверждения
+
+---
+
+## 10. Routing Scenarios Unit Tests (15 тестов)
+
+### Invalid inputs
+- **Amount 0 → error** — "Invalid amount"
+- **Negative amount → error** — "-50" возвращает ошибку
+- **NaN amount → error** — "abc" возвращает ошибку
+
+### Insufficient balance
+- **Total balance недостаточен** — error содержит actual balance
+- **Токен не найден** — "Insufficient ETH balance"
+
+### No recipient preference (sender's choice)
+- **Выбор дешевой сети** — base выбирается вместо arbitrum/optimism
+- **showConsolidationOption когда несколько сетей** — показывать альтернативы
+- **Consolidation когда ни одна сеть не имеет достаточно** — объединение с нескольких сетей
+
+### With recipient preference
+- **Direct если достаточно на preferred** — прямая отправка
+- **Bridge если нет на preferred** — мост с cheapest network
+- **Alternative при дорогом bridge** — показать "отправить без моста"
+
+### Network gas ranking
+- **base < arbitrum** — base выбирается при равных условиях
+- **arbitrum < ethereum** — arbitrum дешевле Ethereum
+
+---
+
+## 11. Swap Service Unit Tests (12 тестов)
+
+### formatTokenAmount
+- **Wei → human readable (USDC)** — 1000000 → "1"
+- **Wei → human readable (ETH)** — 1e18 → "1"
+- **Дробные суммы** — 500000 USDC → "0.5"
+- **Ноль** — "0" → "0"
+- **Очень маленькие суммы** — < 0.000001 → "<0.000001"
+- **maxDecimals** — ограничение десятичных знаков
+- **Большие суммы** — форматирование с разделителями
+
+### parseTokenAmount
+- **Human readable → wei (USDC)** — "1" → "1000000"
+- **Human readable → wei (ETH)** — "1" → "1e18"
+- **Дробные** — "0.5" → правильный результат
+- **Invalid input → "0"** — "invalid" → "0"
+- **Empty string → "0"**
+
+### isCrossChainSwap
+- **Same chain → false** — (1, 1) → false
+- **Different chains → true** — (1, 137) → true
+- **Both directions** — (1, 137) и (137, 1) → true
+
+### getChainName
+- **Known chains** — 1 → "Ethereum", 137 → "Polygon"
+- **Unknown chain** — 999999 → "Chain 999999"
+
+### getNativeToken
+- **Ethereum** — symbol: ETH, decimals: 18
+- **Polygon** — symbol: MATIC
+- **L2s (Arbitrum, Base, Optimism)** — все ETH
+
+### NATIVE_TOKEN_ADDRESS
+- **Zero address** — 0x0000...0000
+
+---
+
+## 12. Bridge Service Unit Tests (15 тестов)
+
+### checkBridgeCostLevel
+- **"none" для нулевой суммы** — amountUsd = 0 → 'none'
+- **"none" для отрицательной суммы** — amountUsd < 0 → 'none'
+- **"none" для комиссии < 5%** — 4%, 0.5%, 1% → 'none'
+- **"warning" для 5-10%** — 5%, 7%, 10% → 'warning'
+- **"expensive" для > 10%** — 11%, 20% → 'expensive'
+- **Маленькие суммы** — $1 transfer корректно обрабатывается
+- **Большие суммы** — $10000 transfer корректно обрабатывается
+
+### formatBridgeTime
+- **Instant** — 0 sec → "~instant", negative → "~instant"
+- **Seconds** — 1, 30, 59 sec → "~N sec"
+- **Minutes** — 60, 120, 300 sec → "~N min"
+- **Hours** — 3600, 7200 sec → "~1 hr", "~N hrs"
+- **Rounding** — округление до ближайшей минуты/часа
+
+---
+
+## 13. Bridge Execution Unit Tests (5 тестов)
+
+### waitForBridgeCompletion
+- **DONE status** — bridge completes, returns receivingTxHash
+- **FAILED status** — bridge fails, returns error message
+- **Polling until status changes** — PENDING → DONE после нескольких попыток
+- **Timeout handling** — выбрасывает 'Bridge completion timeout' после указанного времени
+- **Network error recovery** — продолжает polling после сетевых ошибок
+
+---
+
+# Part 2: Integration Tests (API)
 
 ---
 
@@ -226,12 +387,54 @@
 
 ## Запуск тестов
 
+### Integration Tests (API)
+
 ```bash
-# Все тесты
+# Все интеграционные тесты
 pnpm test:all
 
 # Отдельный модуль
 pnpm test:module <module>
 
 # Где module: health | username | preferences | scheduled | split | blik | ai
+```
+
+### Unit Tests (Mobile)
+
+```bash
+# Все unit тесты
+cd apps/mobile && pnpm test
+
+# Watch mode
+cd apps/mobile && pnpm test:watch
+
+# С coverage
+cd apps/mobile && pnpm test:coverage
+```
+
+---
+
+## Статистика покрытия
+
+| Категория | Тестов | Описание |
+|-----------|--------|----------|
+| Integration (API) | 86 | Тесты реального API |
+| Unit (Preferences) | 16 | resolvePreferredNetwork |
+| Unit (Routing) | 27 | getRouteTotalFees, getRouteEstimatedTime, formatRouteDescription, calculateTransferRoute |
+| Unit (Swap) | 8 | formatTokenAmount, parseTokenAmount, isCrossChainSwap |
+| Unit (Bridge Service) | 15 | checkBridgeCostLevel, formatBridgeTime |
+| Unit (Bridge Execution) | 5 | waitForBridgeCompletion |
+| **Всего** | **157** | |
+
+### Mobile Unit Tests Summary
+
+```
+Test Suites: 5 passed, 5 total
+Tests:       71 passed, 71 total
+
+- bridge-service.test.ts (15 tests)
+- bridge-execution.test.ts (5 tests)
+- routing-service.test.ts (27 tests)
+- preferences-service.test.ts (16 tests)
+- swap-service.test.ts (8 tests)
 ```
