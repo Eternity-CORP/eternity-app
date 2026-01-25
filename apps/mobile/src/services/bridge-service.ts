@@ -4,6 +4,7 @@
  * Supports bridging between supported EVM networks
  */
 
+import { ethers } from 'ethers';
 import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 import { createLogger } from '@/src/utils/logger';
 
@@ -17,8 +18,11 @@ const REQUEST_TIMEOUT = 20000;
 // Default slippage for bridge quotes (0.5%)
 const DEFAULT_SLIPPAGE = 0.005;
 
+// LI.FI Diamond contract address (same across most chains)
+const LIFI_CONTRACT_ADDRESS = '0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE';
+
 // Network ID to LI.FI chain ID mapping
-const NETWORK_TO_CHAIN_ID: Record<NetworkId, number> = {
+export const NETWORK_TO_CHAIN_ID: Record<NetworkId, number> = {
   ethereum: 1,
   polygon: 137,
   arbitrum: 42161,
@@ -92,6 +96,72 @@ export interface BridgeCheckResult {
  * Bridge cost level indicator
  */
 export type BridgeCostLevel = 'none' | 'warning' | 'expensive';
+
+/**
+ * Bridge quote with transaction request for execution
+ */
+export interface BridgeQuoteWithTx extends BridgeQuote {
+  transactionRequest: {
+    to: string;
+    data: string;
+    value: string;
+    gasLimit: string;
+    chainId: number;
+  };
+}
+
+/**
+ * Parameters for getting bridge quote
+ */
+export interface BridgeQuoteParams {
+  fromNetwork: NetworkId;
+  toNetwork: NetworkId;
+  fromToken: string;
+  toToken: string;
+  amount: string;
+  fromAddress: string;
+  toAddress?: string;
+}
+
+/**
+ * Bridge execution result
+ */
+export interface BridgeExecutionResult {
+  success: boolean;
+  txHash: string;
+  txResponse: ethers.TransactionResponse;
+}
+
+/**
+ * Bridge completion result after waiting
+ */
+export interface BridgeCompletionResult {
+  status: 'DONE' | 'FAILED';
+  receivingTxHash?: string;
+  message?: string;
+}
+
+/**
+ * Bridge error codes
+ */
+export type BridgeErrorCode =
+  | 'INSUFFICIENT_LIQUIDITY'
+  | 'SLIPPAGE_EXCEEDED'
+  | 'BRIDGE_TIMEOUT'
+  | 'APPROVAL_REJECTED'
+  | 'BRIDGE_TX_REJECTED'
+  | 'BRIDGE_TX_FAILED'
+  | 'NETWORK_ERROR'
+  | 'UNKNOWN';
+
+/**
+ * Bridge error with metadata
+ */
+export interface BridgeError extends Error {
+  code: BridgeErrorCode;
+  canRetry: boolean;
+  canSendAlternative: boolean;
+}
 
 /**
  * Convert NetworkId to LI.FI chain ID
@@ -395,4 +465,339 @@ export function getBridgeNetworkName(networkId: NetworkId): string {
  */
 export function isBridgeNetworkSupported(networkId: NetworkId): boolean {
   return networkId in NETWORK_TO_CHAIN_ID;
+}
+
+// ============================================
+// Bridge Execution Functions
+// ============================================
+
+/**
+ * Parse error into BridgeError with code
+ */
+function parseBridgeError(error: unknown): BridgeError {
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  const lowerMessage = message.toLowerCase();
+
+  let code: BridgeErrorCode = 'UNKNOWN';
+  let canRetry = false;
+  let canSendAlternative = true;
+
+  if (lowerMessage.includes('user rejected') || lowerMessage.includes('user denied')) {
+    code = 'BRIDGE_TX_REJECTED';
+    canRetry = false;
+    canSendAlternative = false;
+  } else if (lowerMessage.includes('insufficient') || lowerMessage.includes('liquidity')) {
+    code = 'INSUFFICIENT_LIQUIDITY';
+    canRetry = false;
+  } else if (lowerMessage.includes('slippage')) {
+    code = 'SLIPPAGE_EXCEEDED';
+    canRetry = true;
+  } else if (lowerMessage.includes('timeout') || lowerMessage.includes('abort')) {
+    code = 'BRIDGE_TIMEOUT';
+    canRetry = true;
+  } else if (lowerMessage.includes('network') || lowerMessage.includes('fetch')) {
+    code = 'NETWORK_ERROR';
+    canRetry = true;
+  } else if (lowerMessage.includes('failed') || lowerMessage.includes('reverted')) {
+    code = 'BRIDGE_TX_FAILED';
+    canRetry = true;
+  }
+
+  const bridgeError = new Error(message) as BridgeError;
+  bridgeError.code = code;
+  bridgeError.canRetry = canRetry;
+  bridgeError.canSendAlternative = canSendAlternative;
+
+  return bridgeError;
+}
+
+/**
+ * Get bridge quote WITH transaction request for execution
+ */
+export async function getBridgeQuoteWithTx(
+  params: BridgeQuoteParams
+): Promise<BridgeQuoteWithTx | null> {
+  try {
+    const fromChainId = getChainId(params.fromNetwork);
+    const toChainId = getChainId(params.toNetwork);
+
+    const queryParams = new URLSearchParams({
+      fromChain: fromChainId.toString(),
+      toChain: toChainId.toString(),
+      fromToken: params.fromToken,
+      toToken: params.toToken,
+      fromAmount: params.amount,
+      fromAddress: params.fromAddress,
+      toAddress: params.toAddress || params.fromAddress,
+      slippage: DEFAULT_SLIPPAGE.toString(),
+    });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+    let response: Response;
+    try {
+      response = await fetch(`${LIFI_API_URL}/quote?${queryParams}`, {
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      logger.warn('Bridge quote request failed', { status: response.status, error: errorData });
+      return null;
+    }
+
+    const data = await response.json();
+
+    const estimate = data.estimate as Record<string, unknown>;
+    const action = data.action as Record<string, unknown>;
+    const includedSteps = data.includedSteps as Array<Record<string, unknown>> | undefined;
+    const transactionRequest = data.transactionRequest;
+
+    if (!transactionRequest) {
+      logger.warn('Bridge quote missing transactionRequest');
+      return null;
+    }
+
+    const fees = calculateFees(estimate);
+
+    const steps: BridgeStep[] = [];
+    if (includedSteps && Array.isArray(includedSteps)) {
+      for (const step of includedSteps) {
+        try {
+          steps.push(parseStep(step));
+        } catch (stepError) {
+          logger.warn('Failed to parse bridge step', { step, error: stepError });
+        }
+      }
+    }
+
+    const totalTime = steps.reduce((sum, step) => sum + step.estimatedTime, 0) ||
+      (estimate.executionDuration as number) || 0;
+
+    return {
+      id: data.id || `bridge-${Date.now()}`,
+      fromNetwork: params.fromNetwork,
+      toNetwork: params.toNetwork,
+      fromToken: ((action.fromToken as Record<string, unknown>)?.symbol as string) || params.fromToken,
+      toToken: ((action.toToken as Record<string, unknown>)?.symbol as string) || params.toToken,
+      fromAmount: params.amount,
+      toAmount: estimate.toAmount as string,
+      toAmountMin: estimate.toAmountMin as string,
+      estimatedGas: fees.estimatedGas,
+      estimatedGasUsd: fees.estimatedGasUsd,
+      bridgeFee: fees.bridgeFee,
+      bridgeFeeUsd: fees.bridgeFeeUsd,
+      totalFeeUsd: fees.totalFeeUsd,
+      estimatedTime: totalTime,
+      priceImpact: (estimate.priceImpact as string) || '0',
+      route: { steps, totalTime },
+      transactionRequest: {
+        to: transactionRequest.to,
+        data: transactionRequest.data,
+        value: transactionRequest.value || '0',
+        gasLimit: transactionRequest.gasLimit || '500000',
+        chainId: transactionRequest.chainId || fromChainId,
+      },
+    };
+  } catch (error) {
+    logger.warn('Failed to get bridge quote with tx', { error });
+    return null;
+  }
+}
+
+/**
+ * Execute bridge transaction
+ */
+export async function executeBridge(
+  quote: BridgeQuoteWithTx,
+  signer: ethers.Signer
+): Promise<BridgeExecutionResult> {
+  try {
+    logger.info('Executing bridge transaction', {
+      from: quote.fromNetwork,
+      to: quote.toNetwork,
+      amount: quote.fromAmount,
+    });
+
+    const txResponse = await signer.sendTransaction({
+      to: quote.transactionRequest.to,
+      data: quote.transactionRequest.data,
+      value: quote.transactionRequest.value,
+      gasLimit: quote.transactionRequest.gasLimit,
+    });
+
+    logger.info('Bridge transaction sent', { txHash: txResponse.hash });
+
+    return {
+      success: true,
+      txHash: txResponse.hash,
+      txResponse,
+    };
+  } catch (error: unknown) {
+    const bridgeError = parseBridgeError(error);
+    throw bridgeError;
+  }
+}
+
+/**
+ * Execute bridge with automatic retry on transient errors
+ */
+export async function executeBridgeWithRetry(
+  params: BridgeQuoteParams,
+  signer: ethers.Signer,
+  maxRetries: number = 2
+): Promise<BridgeExecutionResult> {
+  let lastError: BridgeError | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Get fresh quote on retry (prices may have changed)
+      const quote = await getBridgeQuoteWithTx(params);
+
+      if (!quote) {
+        const err = new Error('Failed to get bridge quote') as BridgeError;
+        err.code = 'INSUFFICIENT_LIQUIDITY';
+        err.canRetry = false;
+        err.canSendAlternative = true;
+        throw err;
+      }
+
+      const result = await executeBridge(quote, signer);
+      return result;
+    } catch (error) {
+      lastError = error as BridgeError;
+
+      logger.warn(`Bridge attempt ${attempt + 1} failed`, {
+        code: lastError.code,
+        message: lastError.message,
+        canRetry: lastError.canRetry,
+      });
+
+      // Don't retry if error is not retryable
+      if (!lastError.canRetry) {
+        throw lastError;
+      }
+
+      // Wait before retry (exponential backoff)
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Wait for bridge to complete by polling LI.FI status API
+ */
+export async function waitForBridgeCompletion(
+  txHash: string,
+  fromChainId: number,
+  toChainId: number,
+  timeoutMs: number = 15 * 60 * 1000 // 15 minutes
+): Promise<BridgeCompletionResult> {
+  const startTime = Date.now();
+  const pollInterval = 5000; // 5 seconds
+
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      const response = await fetch(
+        `${LIFI_API_URL}/status?txHash=${txHash}&fromChain=${fromChainId}&toChain=${toChainId}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const status = data.status as string;
+
+        if (status === 'DONE') {
+          return {
+            status: 'DONE',
+            receivingTxHash: data.receiving?.txHash,
+          };
+        }
+
+        if (status === 'FAILED') {
+          return {
+            status: 'FAILED',
+            message: data.substatusMessage || 'Bridge transaction failed',
+          };
+        }
+
+        // Still pending, continue polling
+        logger.debug('Bridge status', { status, substatus: data.substatus });
+      }
+    } catch (error) {
+      logger.warn('Failed to check bridge status', { error });
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  // Timeout
+  const err = new Error('Bridge completion timeout') as BridgeError;
+  err.code = 'BRIDGE_TIMEOUT';
+  err.canRetry = true;
+  err.canSendAlternative = true;
+  throw err;
+}
+
+/**
+ * Check if token approval is needed for LI.FI
+ */
+export async function checkBridgeAllowance(
+  tokenAddress: string,
+  ownerAddress: string,
+  provider: ethers.Provider
+): Promise<bigint> {
+  // Native token doesn't need approval
+  if (tokenAddress === '0x0000000000000000000000000000000000000000' ||
+      tokenAddress.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' ||
+      tokenAddress.toUpperCase() === 'ETH') {
+    return ethers.MaxUint256;
+  }
+
+  try {
+    const erc20Interface = new ethers.Interface([
+      'function allowance(address owner, address spender) view returns (uint256)',
+    ]);
+
+    const contract = new ethers.Contract(tokenAddress, erc20Interface, provider);
+    const allowance = await contract.allowance(ownerAddress, LIFI_CONTRACT_ADDRESS);
+
+    return allowance;
+  } catch (error) {
+    logger.warn('Failed to check allowance', { error, tokenAddress });
+    return BigInt(0);
+  }
+}
+
+/**
+ * Approve token for LI.FI bridge (unlimited approval)
+ */
+export async function approveBridgeToken(
+  tokenAddress: string,
+  signer: ethers.Signer
+): Promise<ethers.TransactionResponse> {
+  const erc20Interface = new ethers.Interface([
+    'function approve(address spender, uint256 amount) returns (bool)',
+  ]);
+
+  const contract = new ethers.Contract(tokenAddress, erc20Interface, signer);
+  const tx = await contract.approve(LIFI_CONTRACT_ADDRESS, ethers.MaxUint256);
+
+  logger.info('Approval transaction sent', { txHash: tx.hash, token: tokenAddress });
+
+  return tx;
+}
+
+/**
+ * Get LI.FI contract address
+ */
+export function getLiFiContractAddress(): string {
+  return LIFI_CONTRACT_ADDRESS;
 }
