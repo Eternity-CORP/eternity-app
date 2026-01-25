@@ -260,3 +260,14 @@ export {
   type BridgeCheckResult,
   type BridgeCostLevel,
 } from './bridge-service';
+
+// Routing Service (Smart transfer routing)
+export {
+  calculateTransferRoute,
+  getRouteTotalFees,
+  getRouteEstimatedTime,
+  formatRouteDescription,
+  routeRequiresConfirmation,
+  type TransferRoute,
+  type RoutingResult,
+} from './routing-service';
