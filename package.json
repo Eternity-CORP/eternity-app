@@ -19,7 +19,8 @@
     "test:api": "pnpm --filter @e-y/api test",
     "test:api:e2e": "pnpm --filter @e-y/api test:e2e",
     "test:preferences": "pnpm --filter @e-y/api test -- --testPathPattern=preferences",
-    "test:integration": "npx tsx scripts/test-preferences-api.ts",
+    "test:all": "npx tsx scripts/tests/index.ts",
+    "test:module": "npx tsx scripts/tests/index.ts",
     "eas-build-pre-install": "cd apps/mobile && bash eas-build-pre-install.sh"
   },
   "devDependencies": {
