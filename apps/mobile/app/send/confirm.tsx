@@ -8,14 +8,22 @@ import { router } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
+import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { estimateGasThunk, sendTransactionThunk } from '@/src/store/slices/send-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { BridgeCostBanner, ConsolidationBanner } from '@/src/components';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import {
+  calculateTransferRoute,
+  getRouteTotalFees,
+  type RoutingResult,
+} from '@/src/services/routing-service';
+import type { NetworkId } from '@/src/constants/networks';
 
 export default function ConfirmScreen() {
   const dispatch = useAppDispatch();
@@ -29,6 +37,11 @@ export default function ConfirmScreen() {
   // Contact-related state
   const [showSaveContact, setShowSaveContact] = useState(false);
   const [contactName, setContactName] = useState('');
+
+  // Routing state for bridge/consolidation
+  const [routingResult, setRoutingResult] = useState<RoutingResult | null>(null);
+  const [routingStatus, setRoutingStatus] = useState<'idle' | 'loading' | 'done'>('idle');
+  const aggregatedBalances = useAppSelector(selectAggregatedBalances);
 
   const selectedToken = balance.balances.find((t) => t.symbol === send.selectedToken);
 
@@ -57,6 +70,35 @@ export default function ConfirmScreen() {
     }
   }, [currentAccount?.address, send.recipient, send.amount, tokenAddress, dispatch]);
 
+  // Calculate transfer route for cross-network sends
+  useEffect(() => {
+    async function calculateRoute() {
+      if (!currentAccount?.address || !send.recipient || !send.amount || !send.selectedToken) {
+        return;
+      }
+
+      setRoutingStatus('loading');
+      try {
+        const result = await calculateTransferRoute(
+          aggregatedBalances,
+          send.selectedToken,
+          send.amount,
+          null, // recipientPreferredNetwork - null for now (no recipient preference stored)
+          currentAccount.address,
+          send.recipient
+        );
+        setRoutingResult(result);
+      } catch (error) {
+        console.error('Failed to calculate route:', error);
+        // Don't block the send if routing fails
+        setRoutingResult(null);
+      } finally {
+        setRoutingStatus('done');
+      }
+    }
+    calculateRoute();
+  }, [currentAccount?.address, send.recipient, send.amount, send.selectedToken, aggregatedBalances]);
+
   // Navigate to success screen when transaction is sent
   useEffect(() => {
     if (send.step === 'success' && send.txHash) {
@@ -64,7 +106,7 @@ export default function ConfirmScreen() {
     }
   }, [send.step, send.txHash]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = useCallback(async () => {
     if (!wallet.mnemonic || !currentAccount) return;
 
     const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
@@ -80,7 +122,7 @@ export default function ConfirmScreen() {
       amount: send.amount,
       token: tokenAddress,
     }));
-  };
+  }, [wallet.mnemonic, currentAccount, existingContact, dispatch, send.recipient, send.amount, tokenAddress]);
 
   const handleSaveContact = useCallback(async () => {
     if (!contactName.trim()) {
@@ -101,10 +143,37 @@ export default function ConfirmScreen() {
     }
   }, [contactName, send.recipient, dispatch]);
 
+  // Handler for sending without bridge (alternative network)
+  const handleSendAlternative = useCallback(() => {
+    const alternativeNetwork = routingResult?.route?.alternative?.network;
+    if (!alternativeNetwork) return;
+
+    Alert.alert(
+      'Send Without Bridging',
+      `You can send to the recipient on ${alternativeNetwork} without conversion fees. The recipient will receive the tokens on that network.`,
+      [{ text: 'OK' }]
+    );
+  }, [routingResult]);
+
+  // Handler for sending max from a single network (consolidation alternative)
+  const handleSendMax = useCallback((maxAmount: string, network: NetworkId) => {
+    Alert.alert(
+      'Send Maximum',
+      `Sending ${maxAmount} ${send.selectedToken} from ${network} (no consolidation fee)`,
+      [{ text: 'OK' }]
+    );
+  }, [send.selectedToken]);
+
   const totalAmount = parseFloat(send.amount) || 0;
-  const totalAmountUsd = selectedToken ? (totalAmount * (selectedToken.usdValue || 0) / parseFloat(selectedToken.balance)) : 0;
+  const tokenBalance = parseFloat(selectedToken?.balance || '0');
+  const totalAmountUsd = selectedToken && tokenBalance > 0
+    ? (totalAmount * (selectedToken.usdValue || 0) / tokenBalance)
+    : 0;
   const gasCostUsd = send.gasEstimate ? send.gasEstimate.totalGasCostUsd : 0;
-  const totalCostUsd = totalAmountUsd + gasCostUsd;
+
+  // Include bridge/consolidation fees in total
+  const bridgeFee = routingResult?.route ? getRouteTotalFees(routingResult.route) : 0;
+  const totalCostUsd = totalAmountUsd + gasCostUsd + bridgeFee;
 
   const canConfirm = send.gasEstimateStatus === 'succeeded' && send.sendStatus !== 'loading';
 
@@ -237,6 +306,18 @@ export default function ConfirmScreen() {
             </>
           )}
 
+          {/* Bridge fee row if applicable */}
+          {bridgeFee > 0 && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                Bridge Fee
+              </Text>
+              <Text style={[styles.detailValue, theme.typography.body]}>
+                ${bridgeFee.toFixed(2)}
+              </Text>
+            </View>
+          )}
+
           <View style={[styles.detailRow, styles.totalRow]}>
             <Text style={[styles.detailLabel, theme.typography.heading, { color: theme.colors.textPrimary }]}>Total</Text>
             <Text style={[styles.detailValue, theme.typography.heading]}>
@@ -244,6 +325,38 @@ export default function ConfirmScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Bridge Cost Banner - shown when bridging is needed */}
+        {routingResult?.route?.type === 'bridge' && routingResult.route.bridgeQuote && (
+          <BridgeCostBanner
+            recipientNetwork={routingResult.route.toNetwork}
+            senderNetwork={routingResult.route.fromNetwork}
+            bridgeQuote={routingResult.route.bridgeQuote}
+            costLevel={routingResult.route.bridgeCostLevel || 'none'}
+            alternativeNetwork={routingResult.route.alternative?.network}
+            onSendWithoutBridge={routingResult.showAlternative ? handleSendAlternative : undefined}
+          />
+        )}
+
+        {/* Consolidation Banner - shown when collecting from multiple networks */}
+        {routingResult?.route?.type === 'consolidation' && routingResult.route.sources && (
+          <ConsolidationBanner
+            sources={routingResult.route.sources}
+            token={send.selectedToken}
+            estimatedFee={getRouteTotalFees(routingResult.route)}
+            onCollectFromBoth={handleConfirm}
+            onSendMax={handleSendMax}
+          />
+        )}
+
+        {/* Routing status indicator */}
+        {routingStatus === 'loading' && (
+          <View style={styles.routingCard}>
+            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              Calculating optimal route...
+            </Text>
+          </View>
+        )}
 
         {send.sendError && (
           <View style={styles.errorCard}>
@@ -382,6 +495,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     textAlign: 'center',
+  },
+  routingCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
   },
   footer: {
     padding: theme.spacing.xl,
