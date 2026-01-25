@@ -94,11 +94,11 @@ export const fetchRecipientPreferencesThunk = createAsyncThunk(
     let address = recipient;
 
     if (recipient.startsWith('@')) {
-      const resolved = await lookupUsername(recipient);
-      if (!resolved) {
+      const result = await lookupUsername(recipient);
+      if (!result) {
         throw new Error('Username not found');
       }
-      address = resolved;
+      address = result.address;
     } else if (!isAddress(recipient)) {
       throw new Error('Invalid address');
     }

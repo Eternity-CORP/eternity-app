@@ -6,12 +6,26 @@
 import type { HDNodeWallet } from 'ethers';
 import { apiClient, ApiError } from './api-client';
 import { createLogger } from '@/src/utils/logger';
+import type { NetworkId } from '@/src/constants/networks';
+import type { NetworkPreferences } from './preferences-service';
 
 const log = createLogger('UsernameService');
 
 interface UsernameData {
   username: string;
   address: string;
+  preferences?: {
+    defaultNetwork: string | null;
+    tokenOverrides: Record<string, string>;
+  };
+}
+
+/**
+ * Result of a username lookup
+ */
+export interface UsernameLookupResult {
+  address: string;
+  preferences?: NetworkPreferences;
 }
 
 interface ApiResponse<T> {
@@ -24,16 +38,34 @@ interface ApiResponse<T> {
 }
 
 /**
- * Lookup username -> address
+ * Lookup username -> address with optional preferences
  */
-export async function lookupUsername(username: string): Promise<string | null> {
+export async function lookupUsername(username: string): Promise<UsernameLookupResult | null> {
   const normalizedUsername = username.startsWith('@') ? username.slice(1) : username;
 
   try {
     const data = await apiClient.get<ApiResponse<UsernameData>>(
       `/api/username/${encodeURIComponent(normalizedUsername)}`
     );
-    return data.data?.address || null;
+
+    if (!data.data?.address) {
+      return null;
+    }
+
+    // Build result with address and optional preferences
+    const result: UsernameLookupResult = {
+      address: data.data.address,
+    };
+
+    // Include preferences if present in response
+    if (data.data.preferences) {
+      result.preferences = {
+        defaultNetwork: data.data.preferences.defaultNetwork as NetworkId | null,
+        tokenOverrides: data.data.preferences.tokenOverrides as Record<string, NetworkId>,
+      };
+    }
+
+    return result;
   } catch (error) {
     if (ApiError.isApiError(error) && error.statusCode === 404) {
       return null;

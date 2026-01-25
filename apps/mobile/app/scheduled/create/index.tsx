@@ -80,9 +80,9 @@ export default function ScheduledRecipientScreen() {
         setIsLookingUp(true);
         setError(null);
         try {
-          const address = await lookupUsername(username);
-          if (address) {
-            setResolvedAddress(address);
+          const result = await lookupUsername(username);
+          if (result) {
+            setResolvedAddress(result.address);
             setResolvedUsername(username.startsWith('@') ? username : `@${username}`);
             setResolvedName(null);
             setError(null);

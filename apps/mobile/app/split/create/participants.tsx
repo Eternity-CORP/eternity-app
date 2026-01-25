@@ -155,9 +155,9 @@ export default function SplitParticipantsScreen() {
         );
 
         try {
-          const address = await lookupUsername(username);
-          if (address) {
-            if (isSelf(address)) {
+          const result = await lookupUsername(username);
+          if (result) {
+            if (isSelf(result.address)) {
               setLocalParticipants((prev) =>
                 prev.map((p, i) =>
                   i === index
@@ -169,7 +169,7 @@ export default function SplitParticipantsScreen() {
               setLocalParticipants((prev) =>
                 prev.map((p, i) =>
                   i === index
-                    ? { ...p, address, username: trimmed, isLookingUp: false }
+                    ? { ...p, address: result.address, username: trimmed, isLookingUp: false }
                     : p
                 )
               );
