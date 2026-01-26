@@ -853,7 +853,7 @@ export default function HomeScreen() {
                             style={[
                               styles.accountListItem,
                               { backgroundColor: dynamicTheme.colors.background },
-                              isActive && styles.accountListItemDragging,
+                              isActive && [styles.accountListItemDragging, { backgroundColor: dynamicTheme.colors.surfaceElevated }],
                             ]}
                             onPress={() => isEditMode
                               ? (setEditingAccountIndex(account.accountIndex), setEditLabel(account.label || ''))
