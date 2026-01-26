@@ -17,6 +17,7 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { BridgeCostBanner, ConsolidationBanner } from '@/src/components';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import {
@@ -27,6 +28,7 @@ import {
 import type { NetworkId } from '@/src/constants/networks';
 
 export default function ConfirmScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
@@ -215,65 +217,65 @@ export default function ConfirmScreen() {
   const canConfirm = send.gasEstimateStatus === 'succeeded' && send.sendStatus !== 'loading';
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Confirm" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.summaryRow}>
-            <View style={styles.avatar}>
-              <FontAwesome name="user" size={24} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.avatar, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}>
+              <FontAwesome name="user" size={24} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.summaryInfo}>
-              <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.summaryLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 From
               </Text>
-              <Text style={[styles.summaryValue, theme.typography.body]}>
+              <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {currentAccount ? truncateAddress(currentAccount.address) : ''}
               </Text>
             </View>
           </View>
 
           <View style={styles.summaryRow}>
-            <View style={[styles.avatar, { backgroundColor: theme.colors.success }]}>
-              <FontAwesome name="user" size={24} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.avatar, { backgroundColor: dynamicTheme.colors.success }]}>
+              <FontAwesome name="user" size={24} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.summaryInfo}>
-              <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.summaryLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 To
               </Text>
               {existingContact ? (
                 <>
-                  <Text style={[styles.summaryValue, theme.typography.body]}>
+                  <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                     {existingContact.name}
                   </Text>
-                  <Text style={[styles.summarySubValue, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                  <Text style={[styles.summarySubValue, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                     {truncateAddress(send.recipient)}
                   </Text>
                 </>
               ) : (
-                <Text style={[styles.summaryValue, theme.typography.body]}>
+                <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {truncateAddress(send.recipient)}
                 </Text>
               )}
             </View>
             {!existingContact && !showSaveContact && (
               <TouchableOpacity
-                style={styles.saveContactButton}
+                style={[styles.saveContactButton, { borderColor: dynamicTheme.colors.buttonPrimary }]}
                 onPress={() => setShowSaveContact(true)}
               >
-                <FontAwesome name="user-plus" size={16} color={theme.colors.buttonPrimary} />
+                <FontAwesome name="user-plus" size={16} color={dynamicTheme.colors.buttonPrimary} />
               </TouchableOpacity>
             )}
           </View>
 
           {/* Save Contact Input */}
           {showSaveContact && (
-            <View style={styles.saveContactContainer}>
+            <View style={[styles.saveContactContainer, { borderTopColor: dynamicTheme.colors.glassBorder }]}>
               <TextInput
-                style={[styles.saveContactInput, theme.typography.body]}
+                style={[styles.saveContactInput, theme.typography.body, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary }]}
                 placeholder="Contact name"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={dynamicTheme.colors.textTertiary}
                 value={contactName}
                 onChangeText={setContactName}
                 autoFocus
@@ -286,15 +288,15 @@ export default function ConfirmScreen() {
                     setContactName('');
                   }}
                 >
-                  <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.saveContactSave}
+                  style={[styles.saveContactSave, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
                   onPress={handleSaveContact}
                 >
-                  <Text style={[theme.typography.caption, { color: theme.colors.buttonPrimaryText }]}>
+                  <Text style={[theme.typography.caption, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                     Save
                   </Text>
                 </TouchableOpacity>
@@ -303,40 +305,40 @@ export default function ConfirmScreen() {
           )}
         </View>
 
-        <View style={styles.detailsCard}>
+        <View style={[styles.detailsCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Amount
             </Text>
-            <Text style={[styles.detailValue, theme.typography.body]}>
+            <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {send.amount} {send.selectedToken}
             </Text>
           </View>
 
           {send.gasEstimateStatus === 'loading' && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Gas Fee
               </Text>
-              <Text style={[styles.detailValue, theme.typography.body]}>Calculating...</Text>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>Calculating...</Text>
             </View>
           )}
 
           {send.gasEstimate && (
             <>
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Gas Fee
                 </Text>
-                <Text style={[styles.detailValue, theme.typography.body]}>
+                <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {parseFloat(send.gasEstimate.totalGasCost).toFixed(6)} ETH
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Gas Fee (USD)
                 </Text>
-                <Text style={[styles.detailValue, theme.typography.body]}>
+                <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   ${send.gasEstimate.totalGasCostUsd.toFixed(2)}
                 </Text>
               </View>
@@ -346,18 +348,18 @@ export default function ConfirmScreen() {
           {/* Bridge fee row if applicable */}
           {bridgeFee > 0 && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Bridge Fee
               </Text>
-              <Text style={[styles.detailValue, theme.typography.body]}>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 ${bridgeFee.toFixed(2)}
               </Text>
             </View>
           )}
 
-          <View style={[styles.detailRow, styles.totalRow]}>
-            <Text style={[styles.detailLabel, theme.typography.heading, { color: theme.colors.textPrimary }]}>Total</Text>
-            <Text style={[styles.detailValue, theme.typography.heading]}>
+          <View style={[styles.detailRow, styles.totalRow, { borderTopColor: dynamicTheme.colors.glassBorder }]}>
+            <Text style={[styles.detailLabel, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>Total</Text>
+            <Text style={[styles.detailValue, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
               ${totalCostUsd.toFixed(2)} USD
             </Text>
           </View>
@@ -388,8 +390,8 @@ export default function ConfirmScreen() {
 
         {/* Routing status indicator */}
         {routingStatus === 'loading' && (
-          <View style={styles.routingCard}>
-            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.routingCard, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Calculating optimal route...
             </Text>
           </View>
@@ -397,17 +399,17 @@ export default function ConfirmScreen() {
 
         {/* Preferences fetch warning */}
         {send.recipientPreferencesStatus === 'failed' && (
-          <View style={styles.warningCard}>
-            <FontAwesome name="exclamation-triangle" size={16} color={theme.colors.warning} />
-            <Text style={[theme.typography.caption, { color: theme.colors.warning, flex: 1, marginLeft: 8 }]}>
+          <View style={[styles.warningCard, { backgroundColor: dynamicTheme.colors.warning + '15', borderColor: dynamicTheme.colors.warning + '30' }]}>
+            <FontAwesome name="exclamation-triangle" size={16} color={dynamicTheme.colors.warning} />
+            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.warning, flex: 1, marginLeft: 8 }]}>
               Couldn't load recipient's network preferences. Sending on cheapest available network.
             </Text>
           </View>
         )}
 
         {send.sendError && (
-          <View style={styles.errorCard}>
-            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.errorCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               {send.sendError}
             </Text>
           </View>
@@ -416,13 +418,13 @@ export default function ConfirmScreen() {
         {isTestAccount && <TestModeWarning />}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.glassBorder }]}>
         <TouchableOpacity
-          style={[styles.confirmButton, !canConfirm && styles.confirmButtonDisabled]}
+          style={[styles.confirmButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canConfirm && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleConfirm}
           disabled={!canConfirm || send.sendStatus === 'loading'}
         >
-          <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+          <Text style={[styles.confirmButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {send.sendStatus === 'loading' ? 'Sending...' : 'Confirm Send'}
           </Text>
         </TouchableOpacity>

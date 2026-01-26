@@ -10,11 +10,13 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setTotalAmount, setStep } from '@/src/store/slices/split-create-slice';
 import { sanitizeAmountInput } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function SplitAmountScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const splitCreate = useAppSelector((state) => state.splitCreate);
   const balance = useAppSelector((state) => state.balance);
   const [amount, setAmountLocal] = useState(splitCreate.totalAmount || '');
@@ -54,7 +56,7 @@ export default function SplitAmountScreen() {
   const canContinue = amount && parseFloat(amount) > 0;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Split Bill" />
 
       <KeyboardAvoidingView
@@ -63,22 +65,22 @@ export default function SplitAmountScreen() {
         keyboardVerticalOffset={0}
       >
         <View style={styles.content}>
-          <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Step 2 of 6
           </Text>
-          <Text style={[styles.subtitle, theme.typography.heading]}>
+          <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             What's the total amount?
           </Text>
 
           <View style={styles.amountDisplay}>
-            <Text style={[styles.amountText, theme.typography.displayLarge]}>
+            <Text style={[styles.amountText, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}>
               {amount || '0'}
             </Text>
-            <Text style={[styles.tokenText, theme.typography.heading, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.tokenText, theme.typography.heading, { color: dynamicTheme.colors.textSecondary }]}>
               {splitCreate.selectedToken}
             </Text>
             {amount && (
-              <Text style={[styles.usdText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.usdText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
                 ${usdValue.toFixed(2)} USD
               </Text>
             )}
@@ -86,22 +88,22 @@ export default function SplitAmountScreen() {
 
           <View style={styles.quickAmounts}>
             <TouchableOpacity
-              style={styles.quickAmountChip}
+              style={[styles.quickAmountChip, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleQuickAmount('10')}
             >
-              <Text style={[styles.quickAmountText, theme.typography.body]}>10</Text>
+              <Text style={[styles.quickAmountText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>10</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.quickAmountChip}
+              style={[styles.quickAmountChip, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleQuickAmount('50')}
             >
-              <Text style={[styles.quickAmountText, theme.typography.body]}>50</Text>
+              <Text style={[styles.quickAmountText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>50</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.quickAmountChip}
+              style={[styles.quickAmountChip, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleQuickAmount('100')}
             >
-              <Text style={[styles.quickAmountText, theme.typography.body]}>100</Text>
+              <Text style={[styles.quickAmountText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>100</Text>
             </TouchableOpacity>
           </View>
 
@@ -109,7 +111,7 @@ export default function SplitAmountScreen() {
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map((key) => (
               <TouchableOpacity
                 key={key}
-                style={styles.keypadButton}
+                style={[styles.keypadButton, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => {
                   if (key === 'backspace') {
                     handleBackspace();
@@ -119,22 +121,22 @@ export default function SplitAmountScreen() {
                 }}
               >
                 {key === 'backspace' ? (
-                  <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
+                  <FontAwesome name="arrow-left" size={20} color={dynamicTheme.colors.textPrimary} />
                 ) : (
-                  <Text style={[styles.keypadText, theme.typography.title]}>{key}</Text>
+                  <Text style={[styles.keypadText, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>{key}</Text>
                 )}
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: dynamicTheme.colors.background, borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
           <TouchableOpacity
-            style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+            style={[styles.continueButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canContinue && { backgroundColor: dynamicTheme.colors.textTertiary }]}
             onPress={handleContinue}
             disabled={!canContinue}
           >
-            <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
+            <Text style={[styles.continueButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Continue</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

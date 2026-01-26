@@ -273,15 +273,11 @@ export default function PressKitPage() {
           <section>
             <h2 className="text-2xl font-bold text-black mb-6">Press Contact</h2>
             <div className="p-6 rounded-2xl bg-surface-light border border-black/5">
-              <p className="text-muted mb-4">
-                For press inquiries, interviews, or additional assets:
+              <p className="text-muted">
+                For press inquiries, interviews, or additional assets, please use our
+                waitlist form on the homepage and mention that you are from the press.
+                We will get back to you as soon as possible.
               </p>
-              <a
-                href="mailto:press@eternity.app"
-                className="text-accent-blue hover:underline text-lg"
-              >
-                press@eternity.app
-              </a>
             </div>
           </section>
         </div>

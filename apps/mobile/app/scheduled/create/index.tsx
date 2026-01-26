@@ -14,6 +14,7 @@ import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import type { Contact } from '@/src/services/contacts-service';
@@ -31,6 +32,7 @@ function debounce<T extends (...args: string[]) => void>(
 
 export default function ScheduledRecipientScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const scheduledCreate = useAppSelector((state) => state.scheduledCreate);
   const wallet = useAppSelector((state) => state.wallet);
   const contacts = useAppSelector((state) => state.contacts.contacts);
@@ -180,23 +182,23 @@ export default function ScheduledRecipientScreen() {
   const canContinue = resolvedAddress && !isLookingUp && !isSelfSend;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Schedule Payment" />
 
       <View style={styles.container}>
         <View style={styles.topSection}>
-          <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Step 1 of 5
           </Text>
-          <Text style={[styles.subtitle, theme.typography.heading]}>
+          <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Who are you sending to?
           </Text>
 
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, theme.typography.body]}
+              style={[styles.input, theme.typography.body, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary }]}
               placeholder="Enter address or @username"
-              placeholderTextColor={theme.colors.textTertiary}
+              placeholderTextColor={dynamicTheme.colors.textTertiary}
               value={input}
               onChangeText={handleInputChange}
               autoCapitalize="none"
@@ -206,8 +208,8 @@ export default function ScheduledRecipientScreen() {
             <View style={styles.statusContainer}>
               {isLookingUp && (
                 <View style={styles.statusRow}>
-                  <ActivityIndicator size="small" color={theme.colors.buttonPrimary} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimary} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                     Searching...
                   </Text>
                 </View>
@@ -215,8 +217,8 @@ export default function ScheduledRecipientScreen() {
 
               {!isLookingUp && resolvedAddress && (resolvedUsername || resolvedName) && (
                 <View style={styles.statusRow}>
-                  <FontAwesome name="check-circle" size={16} color={theme.colors.success} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.success }]}>
+                  <FontAwesome name="check-circle" size={16} color={dynamicTheme.colors.success} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.success }]}>
                     {resolvedName || resolvedUsername} {'\u2192'} {truncateAddress(resolvedAddress)}
                   </Text>
                 </View>
@@ -224,8 +226,8 @@ export default function ScheduledRecipientScreen() {
 
               {!isLookingUp && resolvedAddress && !resolvedUsername && !resolvedName && !isUsernameInput && (
                 <View style={styles.statusRow}>
-                  <FontAwesome name="check-circle" size={16} color={theme.colors.success} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.success }]}>
+                  <FontAwesome name="check-circle" size={16} color={dynamicTheme.colors.success} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.success }]}>
                     Valid address
                   </Text>
                 </View>
@@ -233,8 +235,8 @@ export default function ScheduledRecipientScreen() {
 
               {error && (
                 <View style={styles.statusRow}>
-                  <FontAwesome name="times-circle" size={16} color={theme.colors.error} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.error }]}>
+                  <FontAwesome name="times-circle" size={16} color={dynamicTheme.colors.error} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                     {error}
                   </Text>
                 </View>
@@ -242,8 +244,8 @@ export default function ScheduledRecipientScreen() {
 
               {isSelfSend && (
                 <View style={styles.statusRow}>
-                  <FontAwesome name="times-circle" size={16} color={theme.colors.error} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.error }]}>
+                  <FontAwesome name="times-circle" size={16} color={dynamicTheme.colors.error} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                     Cannot send to yourself
                   </Text>
                 </View>
@@ -253,28 +255,28 @@ export default function ScheduledRecipientScreen() {
 
           {filteredContacts.length > 0 && (
             <View style={styles.contactsSection}>
-              <Text style={[styles.contactsTitle, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.contactsTitle, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 {input.trim() ? 'Matching Contacts' : 'Recent'}
               </Text>
               <ScrollView style={styles.contactsList} showsVerticalScrollIndicator={false}>
                 {filteredContacts.map((contact) => (
                   <TouchableOpacity
                     key={contact.id}
-                    style={styles.contactItem}
+                    style={[styles.contactItem, { backgroundColor: dynamicTheme.colors.surface }]}
                     onPress={() => handleSelectContact(contact)}
                   >
-                    <View style={styles.contactAvatar}>
-                      <FontAwesome name="user" size={16} color={theme.colors.textTertiary} />
+                    <View style={[styles.contactAvatar, { backgroundColor: dynamicTheme.colors.surfaceHover }]}>
+                      <FontAwesome name="user" size={16} color={dynamicTheme.colors.textTertiary} />
                     </View>
                     <View style={styles.contactInfo}>
-                      <Text style={[styles.contactName, theme.typography.body]} numberOfLines={1}>
+                      <Text style={[styles.contactName, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
                         {contact.name}
                       </Text>
-                      <Text style={[styles.contactAddress, theme.typography.caption, { color: theme.colors.textTertiary }]} numberOfLines={1}>
+                      <Text style={[styles.contactAddress, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]} numberOfLines={1}>
                         {contact.username ? `@${contact.username}` : truncateAddress(contact.address)}
                       </Text>
                     </View>
-                    <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
+                    <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -283,11 +285,11 @@ export default function ScheduledRecipientScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+          style={[styles.continueButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canContinue && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleContinue}
           disabled={!canContinue}
         >
-          <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
+          <Text style={[styles.continueButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Continue</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

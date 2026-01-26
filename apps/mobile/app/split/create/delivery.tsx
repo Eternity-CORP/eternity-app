@@ -14,6 +14,7 @@ import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -30,6 +31,7 @@ function debounce<T extends (...args: string[]) => void>(
 
 export default function SplitDeliveryScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const splitCreate = useAppSelector((state) => state.splitCreate);
   const wallet = useAppSelector((state) => state.wallet);
   const contacts = useAppSelector((state) => state.contacts.contacts);
@@ -144,14 +146,14 @@ export default function SplitDeliveryScreen() {
   const canContinue = !isLookingUp && (!useCustomDelivery || resolvedAddress);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Split Bill" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Step 5 of 6
         </Text>
-        <Text style={[styles.subtitle, theme.typography.heading]}>
+        <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Where should payments go?
         </Text>
 
@@ -160,21 +162,23 @@ export default function SplitDeliveryScreen() {
           <TouchableOpacity
             style={[
               styles.optionCard,
-              !useCustomDelivery && styles.optionCardSelected
+              { backgroundColor: dynamicTheme.colors.surface },
+              !useCustomDelivery && { borderWidth: 2, borderColor: dynamicTheme.colors.buttonPrimary }
             ]}
             onPress={() => setUseCustomDelivery(false)}
           >
             <View style={[
               styles.radioOuter,
-              !useCustomDelivery && styles.radioOuterSelected
+              { borderColor: dynamicTheme.colors.textTertiary },
+              !useCustomDelivery && { borderColor: dynamicTheme.colors.buttonPrimary }
             ]}>
-              {!useCustomDelivery && <View style={styles.radioInner} />}
+              {!useCustomDelivery && <View style={[styles.radioInner, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} />}
             </View>
             <View style={styles.optionContent}>
-              <Text style={[styles.optionTitle, theme.typography.body]}>
+              <Text style={[styles.optionTitle, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 My Wallet
               </Text>
-              <Text style={[styles.optionAddress, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.optionAddress, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 {currentAccount ? truncateAddress(currentAccount.address) : ''}
               </Text>
             </View>
@@ -183,21 +187,23 @@ export default function SplitDeliveryScreen() {
           <TouchableOpacity
             style={[
               styles.optionCard,
-              useCustomDelivery && styles.optionCardSelected
+              { backgroundColor: dynamicTheme.colors.surface },
+              useCustomDelivery && { borderWidth: 2, borderColor: dynamicTheme.colors.buttonPrimary }
             ]}
             onPress={() => setUseCustomDelivery(true)}
           >
             <View style={[
               styles.radioOuter,
-              useCustomDelivery && styles.radioOuterSelected
+              { borderColor: dynamicTheme.colors.textTertiary },
+              useCustomDelivery && { borderColor: dynamicTheme.colors.buttonPrimary }
             ]}>
-              {useCustomDelivery && <View style={styles.radioInner} />}
+              {useCustomDelivery && <View style={[styles.radioInner, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} />}
             </View>
             <View style={styles.optionContent}>
-              <Text style={[styles.optionTitle, theme.typography.body]}>
+              <Text style={[styles.optionTitle, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 Different Address
               </Text>
-              <Text style={[styles.optionDescription, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.optionDescription, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Send collected funds to another wallet
               </Text>
             </View>
@@ -207,13 +213,13 @@ export default function SplitDeliveryScreen() {
         {/* Custom Address Input */}
         {useCustomDelivery && (
           <View style={styles.inputSection}>
-            <Text style={[styles.label, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.label, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Delivery Address
             </Text>
             <TextInput
-              style={[styles.input, theme.typography.body]}
+              style={[styles.input, theme.typography.body, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary }]}
               placeholder="Enter address or @username"
-              placeholderTextColor={theme.colors.textTertiary}
+              placeholderTextColor={dynamicTheme.colors.textTertiary}
               value={input}
               onChangeText={handleInputChange}
               autoCapitalize="none"
@@ -223,8 +229,8 @@ export default function SplitDeliveryScreen() {
             <View style={styles.statusContainer}>
               {isLookingUp && (
                 <View style={styles.statusRow}>
-                  <ActivityIndicator size="small" color={theme.colors.buttonPrimary} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimary} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                     Searching...
                   </Text>
                 </View>
@@ -232,8 +238,8 @@ export default function SplitDeliveryScreen() {
 
               {!isLookingUp && resolvedAddress && (
                 <View style={styles.statusRow}>
-                  <FontAwesome name="check-circle" size={16} color={theme.colors.success} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.success }]}>
+                  <FontAwesome name="check-circle" size={16} color={dynamicTheme.colors.success} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.success }]}>
                     {resolvedUsername ? `${resolvedUsername} \u2192 ` : ''}{truncateAddress(resolvedAddress)}
                   </Text>
                 </View>
@@ -241,8 +247,8 @@ export default function SplitDeliveryScreen() {
 
               {error && (
                 <View style={styles.statusRow}>
-                  <FontAwesome name="times-circle" size={16} color={theme.colors.error} />
-                  <Text style={[styles.statusText, theme.typography.caption, { color: theme.colors.error }]}>
+                  <FontAwesome name="times-circle" size={16} color={dynamicTheme.colors.error} />
+                  <Text style={[styles.statusText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                     {error}
                   </Text>
                 </View>
@@ -253,13 +259,13 @@ export default function SplitDeliveryScreen() {
 
         {/* Description */}
         <View style={styles.descriptionSection}>
-          <Text style={[styles.label, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.label, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Description (Optional)
           </Text>
           <TextInput
-            style={[styles.input, styles.descriptionInput, theme.typography.body]}
+            style={[styles.input, styles.descriptionInput, theme.typography.body, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary }]}
             placeholder="e.g., Dinner at Restaurant"
-            placeholderTextColor={theme.colors.textTertiary}
+            placeholderTextColor={dynamicTheme.colors.textTertiary}
             value={description}
             onChangeText={setLocalDescription}
             multiline
@@ -268,13 +274,13 @@ export default function SplitDeliveryScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
         <TouchableOpacity
-          style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+          style={[styles.continueButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canContinue && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleContinue}
           disabled={!canContinue}
         >
-          <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
+          <Text style={[styles.continueButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Continue</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

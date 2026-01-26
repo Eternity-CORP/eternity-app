@@ -12,11 +12,13 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { receiverStartCreating, receiverCodeCreated, receiverError, receiverReset } from '@/src/store/slices/blik-slice';
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { sanitizeAmountInput } from '@/src/utils/format';
 
 export default function BlikRequestScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
@@ -107,7 +109,7 @@ export default function BlikRequestScreen() {
   const isLoading = blik.receiver.status === 'creating' || isConnecting;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Request Payment" />
 
       <KeyboardAvoidingView
@@ -118,10 +120,10 @@ export default function BlikRequestScreen() {
         <View style={styles.content}>
           {/* Amount Display */}
           <View style={styles.amountDisplay}>
-            <Text style={[styles.amountText, theme.typography.displayLarge]}>
+            <Text style={[styles.amountText, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}>
               {amount || '0'}
             </Text>
-            <Text style={[styles.tokenText, theme.typography.heading, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.tokenText, theme.typography.heading, { color: dynamicTheme.colors.textSecondary }]}>
               {selectedToken}
             </Text>
           </View>
@@ -134,7 +136,8 @@ export default function BlikRequestScreen() {
                   key={token}
                   style={[
                     styles.tokenChip,
-                    selectedToken === token && styles.tokenChipSelected,
+                    { backgroundColor: dynamicTheme.colors.surface },
+                    selectedToken === token && { borderColor: dynamicTheme.colors.buttonPrimary, backgroundColor: dynamicTheme.colors.buttonPrimary + '10' },
                   ]}
                   onPress={() => setSelectedToken(token)}
                 >
@@ -142,6 +145,7 @@ export default function BlikRequestScreen() {
                     style={[
                       styles.tokenChipText,
                       theme.typography.body,
+                      { color: dynamicTheme.colors.textPrimary },
                       selectedToken === token && styles.tokenChipTextSelected,
                     ]}
                   >
@@ -150,7 +154,7 @@ export default function BlikRequestScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={[theme.typography.caption, { color: theme.colors.textTertiary }]}>
+              <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                 No tokens available
               </Text>
             )}
@@ -161,7 +165,7 @@ export default function BlikRequestScreen() {
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map((key) => (
               <TouchableOpacity
                 key={key}
-                style={styles.keypadButton}
+                style={[styles.keypadButton, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => {
                   if (key === 'backspace') {
                     handleBackspace();
@@ -171,9 +175,9 @@ export default function BlikRequestScreen() {
                 }}
               >
                 {key === 'backspace' ? (
-                  <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
+                  <FontAwesome name="arrow-left" size={20} color={dynamicTheme.colors.textPrimary} />
                 ) : (
-                  <Text style={[styles.keypadText, theme.typography.title]}>{key}</Text>
+                  <Text style={[styles.keypadText, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>{key}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -181,8 +185,8 @@ export default function BlikRequestScreen() {
 
           {/* Error Display */}
           {blik.receiver.error && (
-            <View style={styles.errorCard}>
-              <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+            <View style={[styles.errorCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+              <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                 {blik.receiver.error}
               </Text>
             </View>
@@ -190,16 +194,17 @@ export default function BlikRequestScreen() {
         </View>
 
         {/* Generate Button */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
           <TouchableOpacity
             style={[
               styles.generateButton,
-              (!isValid || isLoading) && styles.generateButtonDisabled,
+              { backgroundColor: dynamicTheme.colors.buttonPrimary },
+              (!isValid || isLoading) && { backgroundColor: dynamicTheme.colors.textTertiary },
             ]}
             onPress={handleGenerateCode}
             disabled={!isValid || isLoading}
           >
-            <Text style={[styles.generateButtonText, theme.typography.heading]}>
+            <Text style={[styles.generateButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
               {isLoading ? 'Generating...' : 'Generate Code'}
             </Text>
           </TouchableOpacity>

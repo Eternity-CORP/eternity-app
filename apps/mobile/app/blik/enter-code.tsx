@@ -20,6 +20,7 @@ import {
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { BlikCodeInput } from '@/src/components/BlikCodeInput';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { truncateAddress } from '@/src/utils/format';
@@ -28,6 +29,7 @@ const CODE_LENGTH = 6;
 
 export default function BlikEnterCodeScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
   const currentAccount = getCurrentAccount(wallet);
@@ -106,12 +108,12 @@ export default function BlikEnterCodeScreen() {
   const isNotFound = blik.sender.status === 'not_found';
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Pay with BLIK" />
 
       <View style={styles.content}>
         {/* Instruction */}
-        <Text style={[styles.instruction, theme.typography.body, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.instruction, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
           Enter 6-digit code or tap to paste
         </Text>
 
@@ -128,8 +130,8 @@ export default function BlikEnterCodeScreen() {
         {/* Status Display */}
         {isLookingUp && (
           <View style={styles.statusContainer}>
-            <ActivityIndicator size="small" color={theme.colors.textSecondary} />
-            <Text style={[styles.statusText, theme.typography.body]}>
+            <ActivityIndicator size="small" color={dynamicTheme.colors.textSecondary} />
+            <Text style={[styles.statusText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
               Looking up code...
             </Text>
           </View>
@@ -137,8 +139,8 @@ export default function BlikEnterCodeScreen() {
 
         {isNotFound && (
           <View style={styles.statusContainer}>
-            <FontAwesome name="times-circle" size={20} color={theme.colors.error} />
-            <Text style={[styles.statusText, theme.typography.body, { color: theme.colors.error }]}>
+            <FontAwesome name="times-circle" size={20} color={dynamicTheme.colors.error} />
+            <Text style={[styles.statusText, theme.typography.body, { color: dynamicTheme.colors.error }]}>
               {blik.sender.error || 'Code not found'}
             </Text>
           </View>
@@ -147,27 +149,27 @@ export default function BlikEnterCodeScreen() {
         {isFound && blik.sender.codeInfo && (
           <View style={styles.foundContainer}>
             <View style={styles.statusContainer}>
-              <FontAwesome name="check-circle" size={20} color={theme.colors.success} />
-              <Text style={[styles.statusText, theme.typography.body, { color: theme.colors.success }]}>
+              <FontAwesome name="check-circle" size={20} color={dynamicTheme.colors.success} />
+              <Text style={[styles.statusText, theme.typography.body, { color: dynamicTheme.colors.success }]}>
                 Code found
               </Text>
             </View>
 
             {/* Payment Details Preview */}
-            <View style={styles.previewCard}>
+            <View style={[styles.previewCard, { backgroundColor: dynamicTheme.colors.surface }]}>
               <View style={styles.previewRow}>
-                <Text style={[styles.previewLabel, theme.typography.caption]}>
+                <Text style={[styles.previewLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Send
                 </Text>
-                <Text style={[styles.previewValue, theme.typography.heading]}>
+                <Text style={[styles.previewValue, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {blik.sender.codeInfo.amount} {blik.sender.codeInfo.tokenSymbol}
                 </Text>
               </View>
               <View style={styles.previewRow}>
-                <Text style={[styles.previewLabel, theme.typography.caption]}>
+                <Text style={[styles.previewLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   To
                 </Text>
-                <Text style={[styles.previewValue, theme.typography.body]}>
+                <Text style={[styles.previewValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {blik.sender.codeInfo.receiverUsername || truncateAddress(blik.sender.codeInfo.receiverAddress)}
                 </Text>
               </View>
@@ -177,8 +179,8 @@ export default function BlikEnterCodeScreen() {
 
         {/* Error Display */}
         {blik.sender.status === 'error' && blik.sender.error && !isNotFound && (
-          <View style={styles.errorCard}>
-            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.errorCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               {blik.sender.error}
             </Text>
           </View>
@@ -186,16 +188,17 @@ export default function BlikEnterCodeScreen() {
       </View>
 
       {/* Continue Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.glassBorder }]}>
         <TouchableOpacity
           style={[
             styles.continueButton,
-            !isFound && styles.continueButtonDisabled,
+            { backgroundColor: dynamicTheme.colors.buttonPrimary },
+            !isFound && { backgroundColor: dynamicTheme.colors.textTertiary },
           ]}
           onPress={handleContinue}
           disabled={!isFound}
         >
-          <Text style={[styles.continueButtonText, theme.typography.heading]}>
+          <Text style={[styles.continueButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             Continue
           </Text>
         </TouchableOpacity>

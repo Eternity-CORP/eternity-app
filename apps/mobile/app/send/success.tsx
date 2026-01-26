@@ -14,10 +14,12 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { markPaidThunk } from '@/src/store/slices/split-slice';
 import { markPaymentExecutedThunk } from '@/src/store/slices/scheduled-slice';
 import { getProvider } from '@/src/services/balance-service';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function SuccessScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const send = useAppSelector((state) => state.send);
@@ -88,21 +90,21 @@ export default function SuccessScreen() {
       case 'confirmed':
         return {
           icon: 'check-circle',
-          color: theme.colors.success,
+          color: dynamicTheme.colors.success,
           text: 'Transaction Successful',
           subtext: 'Your transaction has been confirmed',
         };
       case 'failed':
         return {
           icon: 'times-circle',
-          color: theme.colors.error,
+          color: dynamicTheme.colors.error,
           text: 'Transaction Failed',
           subtext: 'Your transaction could not be completed',
         };
       default:
         return {
           icon: 'clock-o',
-          color: '#FFA500',
+          color: dynamicTheme.colors.warning,
           text: 'Transaction Pending',
           subtext: 'Waiting for confirmation...',
         };
@@ -112,7 +114,7 @@ export default function SuccessScreen() {
   const statusConfig = getStatusConfig();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <View style={styles.container}>
         <View style={styles.statusIcon}>
           <View style={[styles.statusCircle, { backgroundColor: statusConfig.color + '20' }]}>
@@ -120,33 +122,33 @@ export default function SuccessScreen() {
           </View>
         </View>
 
-        <Text style={[styles.statusText, theme.typography.heading]}>
+        <Text style={[styles.statusText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           {statusConfig.text}
         </Text>
 
-        <Text style={[styles.statusSubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.statusSubtext, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
           {statusConfig.subtext}
         </Text>
 
         {send.txHash && (
-          <View style={styles.txHashContainer}>
-            <Text style={[styles.txHashLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.txHashContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <Text style={[styles.txHashLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Transaction Hash
             </Text>
-            <Text style={[styles.txHash, theme.typography.caption, { color: theme.colors.textPrimary }]}>
+            <Text style={[styles.txHash, theme.typography.caption, { color: dynamicTheme.colors.textPrimary }]}>
               {send.txHash.slice(0, 10)}...{send.txHash.slice(-8)}
             </Text>
           </View>
         )}
 
         {txStatus === 'pending' && checkingStatus && (
-          <Text style={[styles.checkingText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+          <Text style={[styles.checkingText, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
             Checking status...
           </Text>
         )}
 
-        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-          <Text style={[styles.doneButtonText, theme.typography.heading]}>Done</Text>
+        <TouchableOpacity style={[styles.doneButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleDone}>
+          <Text style={[styles.doneButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Done</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

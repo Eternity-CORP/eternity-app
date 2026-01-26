@@ -20,12 +20,14 @@ import { getSplitBillThunk, cancelSplitBillThunk } from '@/src/store/slices/spli
 import { setSelectedToken, setRecipient, setAmount, setStep, setSplitBillContext } from '@/src/store/slices/send-slice';
 import { truncateAddress, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function SplitDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const split = useAppSelector((state) => state.split);
   const currentAccount = getCurrentAccount(wallet);
@@ -84,10 +86,10 @@ export default function SplitDetailsScreen() {
   // Loading state
   if (split.status === 'loading' && !bill) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Split Bill" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.buttonPrimary} />
+          <ActivityIndicator size="large" color={dynamicTheme.colors.buttonPrimary} />
         </View>
       </SafeAreaView>
     );
@@ -96,11 +98,11 @@ export default function SplitDetailsScreen() {
   // Not found state
   if (!bill) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Split Bill" />
         <View style={styles.errorContainer}>
-          <FontAwesome name="exclamation-triangle" size={48} color={theme.colors.error} />
-          <Text style={[styles.errorText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
+          <FontAwesome name="exclamation-triangle" size={48} color={dynamicTheme.colors.error} />
+          <Text style={[styles.errorText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Split bill not found
           </Text>
         </View>
@@ -118,9 +120,9 @@ export default function SplitDetailsScreen() {
   const isCancelled = bill.status === 'cancelled';
 
   const getStatusColor = () => {
-    if (isCompleted) return theme.colors.success;
-    if (isCancelled) return theme.colors.error;
-    return theme.colors.buttonPrimary;
+    if (isCompleted) return dynamicTheme.colors.success;
+    if (isCancelled) return dynamicTheme.colors.error;
+    return dynamicTheme.colors.buttonPrimary;
   };
 
   const getStatusText = () => {
@@ -130,7 +132,7 @@ export default function SplitDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Split Bill" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -147,7 +149,7 @@ export default function SplitDetailsScreen() {
         {/* Amount */}
         <View style={styles.amountSection}>
           <Text
-            style={[styles.amountText, theme.typography.displayLarge]}
+            style={[styles.amountText, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.5}
@@ -155,36 +157,36 @@ export default function SplitDetailsScreen() {
             {formatAmount(bill.totalAmount)} {bill.tokenSymbol}
           </Text>
           {bill.description && (
-            <Text style={[styles.description, theme.typography.body, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.description, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
               "{bill.description}"
             </Text>
           )}
         </View>
 
         {/* Creator Info */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Created by
             </Text>
-            <Text style={[styles.detailText, theme.typography.body]}>
+            <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {bill.creatorUsername ? `@${bill.creatorUsername}` : truncateAddress(bill.creatorAddress)}
               {isCreator && ' (You)'}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Payments go to
             </Text>
-            <Text style={[styles.detailText, theme.typography.body]}>
+            <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {truncateAddress(bill.creatorAddress)}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Created
             </Text>
-            <Text style={[styles.detailText, theme.typography.body]}>
+            <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {new Date(bill.createdAt).toLocaleDateString()}
             </Text>
           </View>
@@ -192,10 +194,10 @@ export default function SplitDetailsScreen() {
 
         {/* Participants */}
         <View style={styles.participantsSection}>
-          <Text style={[styles.sectionTitle, theme.typography.heading]}>
+          <Text style={[styles.sectionTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Participants
           </Text>
-          <View style={styles.participantsList}>
+          <View style={[styles.participantsList, { backgroundColor: dynamicTheme.colors.surface }]}>
             {bill.participants.map((participant, index) => {
               const isMe = participant.address.toLowerCase() === currentAccount?.address.toLowerCase();
               const isPaid = participant.status === 'paid';
@@ -208,24 +210,24 @@ export default function SplitDetailsScreen() {
                   : truncateAddress(participant.address);
 
               return (
-                <View key={index} style={styles.participantItem}>
-                  <View style={[styles.participantIcon, isPaid && styles.participantIconPaid]}>
+                <View key={index} style={[styles.participantItem, { borderBottomColor: dynamicTheme.colors.glassBorder }]}>
+                  <View style={[styles.participantIcon, { backgroundColor: dynamicTheme.colors.background }, isPaid && { backgroundColor: dynamicTheme.colors.success }]}>
                     <FontAwesome
                       name={isPaid ? 'check' : 'user'}
                       size={14}
-                      color={isPaid ? theme.colors.buttonPrimaryText : theme.colors.textTertiary}
+                      color={isPaid ? dynamicTheme.colors.buttonPrimaryText : dynamicTheme.colors.textTertiary}
                     />
                   </View>
                   <View style={styles.participantInfo}>
-                    <Text style={[styles.participantName, theme.typography.body]}>
+                    <Text style={[styles.participantName, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                       {displayName} {isMe && '(You)'}
                     </Text>
-                    <Text style={[styles.participantStatus, theme.typography.caption, { color: isPaid ? theme.colors.success : theme.colors.textSecondary }]}>
+                    <Text style={[styles.participantStatus, theme.typography.caption, { color: isPaid ? dynamicTheme.colors.success : dynamicTheme.colors.textSecondary }]}>
                       {isPaid ? 'Paid' : 'Pending'}
                     </Text>
                   </View>
                   <Text
-                    style={[styles.participantAmount, theme.typography.body]}
+                    style={[styles.participantAmount, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.7}
@@ -244,12 +246,12 @@ export default function SplitDetailsScreen() {
             {/* Pay my share button (if I'm a participant and haven't paid) */}
             {myParticipation && myParticipation.status === 'pending' && (
               <TouchableOpacity
-                style={[styles.actionButton, styles.primaryButton]}
+                style={[styles.actionButton, styles.primaryButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
                 onPress={() => handlePayShare(myParticipation)}
               >
-                <FontAwesome name="send" size={16} color={theme.colors.buttonPrimaryText} />
+                <FontAwesome name="send" size={16} color={dynamicTheme.colors.buttonPrimaryText} />
                 <Text
-                  style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}
+                  style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.7}
@@ -262,16 +264,16 @@ export default function SplitDetailsScreen() {
             {/* Cancel button (only for creator) */}
             {isCreator && (
               <TouchableOpacity
-                style={[styles.actionButton, styles.dangerButton]}
+                style={[styles.actionButton, styles.dangerButton, { backgroundColor: dynamicTheme.colors.error + '10', borderColor: dynamicTheme.colors.error }]}
                 onPress={handleCancel}
                 disabled={actionLoading}
               >
                 {actionLoading ? (
-                  <ActivityIndicator size="small" color={theme.colors.error} />
+                  <ActivityIndicator size="small" color={dynamicTheme.colors.error} />
                 ) : (
                   <>
-                    <FontAwesome name="times" size={16} color={theme.colors.error} />
-                    <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.error }]}>
+                    <FontAwesome name="times" size={16} color={dynamicTheme.colors.error} />
+                    <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.error }]}>
                       Cancel Split Bill
                     </Text>
                   </>

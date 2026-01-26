@@ -15,12 +15,14 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { getUsernameByAddress } from '@/src/services/username-service';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 type Tab = 'address' | 'qr';
 
 export default function ReceiveScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const currentAccount = getCurrentAccount(wallet);
   const [activeTab, setActiveTab] = useState<Tab>('address');
@@ -64,25 +66,25 @@ export default function ReceiveScreen() {
   const address = currentAccount?.address || '';
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Receive" />
 
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
+      <View style={[styles.tabsContainer, { borderBottomColor: dynamicTheme.colors.glassBorder }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'address' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'address' && [styles.tabActive, { borderBottomColor: dynamicTheme.colors.buttonPrimary }]]}
           onPress={() => setActiveTab('address')}
         >
           <FontAwesome
             name="address-card"
             size={16}
-            color={activeTab === 'address' ? theme.colors.buttonPrimary : theme.colors.textTertiary}
+            color={activeTab === 'address' ? dynamicTheme.colors.buttonPrimary : dynamicTheme.colors.textTertiary}
           />
           <Text
             style={[
               styles.tabText,
               theme.typography.caption,
-              { color: activeTab === 'address' ? theme.colors.buttonPrimary : theme.colors.textTertiary },
+              { color: activeTab === 'address' ? dynamicTheme.colors.buttonPrimary : dynamicTheme.colors.textTertiary },
             ]}
           >
             Address
@@ -90,19 +92,19 @@ export default function ReceiveScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'qr' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'qr' && [styles.tabActive, { borderBottomColor: dynamicTheme.colors.buttonPrimary }]]}
           onPress={() => setActiveTab('qr')}
         >
           <FontAwesome
             name="qrcode"
             size={16}
-            color={activeTab === 'qr' ? theme.colors.buttonPrimary : theme.colors.textTertiary}
+            color={activeTab === 'qr' ? dynamicTheme.colors.buttonPrimary : dynamicTheme.colors.textTertiary}
           />
           <Text
             style={[
               styles.tabText,
               theme.typography.caption,
-              { color: activeTab === 'qr' ? theme.colors.buttonPrimary : theme.colors.textTertiary },
+              { color: activeTab === 'qr' ? dynamicTheme.colors.buttonPrimary : dynamicTheme.colors.textTertiary },
             ]}
           >
             QR Code
@@ -116,29 +118,29 @@ export default function ReceiveScreen() {
         {activeTab === 'address' && (
           <View style={styles.content}>
             {username && (
-              <View style={styles.usernameCard}>
-                <Text style={[styles.usernameLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <View style={[styles.usernameCard, { backgroundColor: dynamicTheme.colors.surface }]}>
+                <Text style={[styles.usernameLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Your Username
                 </Text>
                 <TouchableOpacity style={styles.usernameRow} onPress={handleCopyUsername}>
-                  <Text style={[styles.usernameValue, theme.typography.title, { color: theme.colors.success }]}>
+                  <Text style={[styles.usernameValue, theme.typography.title, { color: dynamicTheme.colors.success }]}>
                     @{username}
                   </Text>
-                  <FontAwesome name="copy" size={16} color={theme.colors.textTertiary} />
+                  <FontAwesome name="copy" size={16} color={dynamicTheme.colors.textTertiary} />
                 </TouchableOpacity>
               </View>
             )}
 
-            <View style={styles.addressCard}>
-              <Text style={[styles.addressLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <View style={[styles.addressCard, { backgroundColor: dynamicTheme.colors.surface }]}>
+              <Text style={[styles.addressLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Your Wallet Address
               </Text>
-              <Text style={[styles.addressValue, theme.typography.body]} selectable>
+              <Text style={[styles.addressValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} selectable>
                 {address}
               </Text>
-              <TouchableOpacity style={styles.copyButton} onPress={handleCopyAddress}>
-                <FontAwesome name="copy" size={16} color={theme.colors.buttonPrimaryText} />
-                <Text style={[styles.copyButtonText, theme.typography.body, { color: theme.colors.buttonPrimaryText }]}>
+              <TouchableOpacity style={[styles.copyButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleCopyAddress}>
+                <FontAwesome name="copy" size={16} color={dynamicTheme.colors.buttonPrimaryText} />
+                <Text style={[styles.copyButtonText, theme.typography.body, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                   Copy Address
                 </Text>
               </TouchableOpacity>
@@ -146,11 +148,11 @@ export default function ReceiveScreen() {
 
             {!username && (
               <TouchableOpacity
-                style={styles.claimUsernameButton}
+                style={[styles.claimUsernameButton, { borderColor: dynamicTheme.colors.buttonPrimary }]}
                 onPress={() => router.push('/profile/username')}
               >
-                <FontAwesome name="at" size={16} color={theme.colors.buttonPrimary} />
-                <Text style={[styles.claimUsernameText, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
+                <FontAwesome name="at" size={16} color={dynamicTheme.colors.buttonPrimary} />
+                <Text style={[styles.claimUsernameText, theme.typography.body, { color: dynamicTheme.colors.buttonPrimary }]}>
                   Claim your @username
                 </Text>
               </TouchableOpacity>
@@ -161,7 +163,7 @@ export default function ReceiveScreen() {
         {/* QR Code Tab */}
         {activeTab === 'qr' && (
           <View style={styles.content}>
-            <View style={styles.qrCard}>
+            <View style={[styles.qrCard, { backgroundColor: dynamicTheme.colors.surface }]}>
               <View style={styles.qrContainer}>
                 <QRCode
                   value={address}
@@ -170,20 +172,20 @@ export default function ReceiveScreen() {
                   color="black"
                 />
               </View>
-              <Text style={[styles.qrHint, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.qrHint, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Scan this QR code to send tokens to this address
               </Text>
             </View>
 
             <View style={styles.addressPreview}>
-              <Text style={[styles.addressPreviewText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+              <Text style={[styles.addressPreviewText, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                 {truncateAddress(address, 12, 12)}
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.shareButton} onPress={handleCopyAddress}>
-              <FontAwesome name="share" size={16} color={theme.colors.textPrimary} />
-              <Text style={[styles.shareButtonText, theme.typography.body]}>
+            <TouchableOpacity style={[styles.shareButton, { backgroundColor: dynamicTheme.colors.surface }]} onPress={handleCopyAddress}>
+              <FontAwesome name="share" size={16} color={dynamicTheme.colors.textPrimary} />
+              <Text style={[styles.shareButtonText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 Share Address
               </Text>
             </TouchableOpacity>

@@ -1,12 +1,13 @@
 /**
  * Shared ScreenHeader Component
  * Displays a header with back button, title, and optional right element
- * Dark theme matching website style
+ * Supports dynamic theming
  */
 
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 export interface ScreenHeaderProps {
@@ -22,6 +23,8 @@ export function ScreenHeader({
   showBackButton = true,
   rightElement,
 }: ScreenHeaderProps) {
+  const { theme: dynamicTheme } = useTheme();
+
   const handleBack = () => {
     if (onBack) {
       onBack();
@@ -31,17 +34,17 @@ export function ScreenHeader({
   };
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor: dynamicTheme.colors.background }]}>
       {showBackButton ? (
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <View style={styles.backButtonCircle}>
-            <FontAwesome name="arrow-left" size={16} color={theme.colors.textPrimary} />
+          <View style={[styles.backButtonCircle, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+            <FontAwesome name="arrow-left" size={16} color={dynamicTheme.colors.textPrimary} />
           </View>
         </TouchableOpacity>
       ) : (
         <View style={styles.backButton} />
       )}
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, { color: dynamicTheme.colors.textPrimary }]}>{title}</Text>
       {rightElement ? (
         <View style={styles.backButton}>{rightElement}</View>
       ) : (

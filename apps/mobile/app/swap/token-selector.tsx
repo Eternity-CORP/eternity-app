@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { SwapToken } from '@/src/services/swap-service';
 
@@ -38,6 +39,7 @@ export default function TokenSelector({
   selectedToken,
   title = 'Select Token',
 }: TokenSelectorProps) {
+  const { theme: dynamicTheme } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTokens = useMemo(() => {
@@ -63,15 +65,19 @@ export default function TokenSelector({
 
     return (
       <TouchableOpacity
-        style={[styles.tokenItem, isSelected && styles.tokenItemSelected]}
+        style={[
+          styles.tokenItem,
+          { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border },
+          isSelected && { borderColor: dynamicTheme.colors.accent, backgroundColor: dynamicTheme.colors.accent + '10' },
+        ]}
         onPress={() => handleSelect(item)}
       >
         <View style={styles.tokenIcon}>
           {item.logoURI ? (
             <Image source={{ uri: item.logoURI }} style={styles.tokenImage} />
           ) : (
-            <View style={styles.tokenPlaceholder}>
-              <Text style={styles.tokenPlaceholderText}>
+            <View style={[styles.tokenPlaceholder, { backgroundColor: dynamicTheme.colors.border }]}>
+              <Text style={[styles.tokenPlaceholderText, { color: dynamicTheme.colors.textSecondary }]}>
                 {item.symbol.charAt(0)}
               </Text>
             </View>
@@ -79,20 +85,20 @@ export default function TokenSelector({
         </View>
 
         <View style={styles.tokenInfo}>
-          <Text style={styles.tokenSymbol}>{item.symbol}</Text>
-          <Text style={styles.tokenName} numberOfLines={1}>
+          <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textPrimary }]}>{item.symbol}</Text>
+          <Text style={[styles.tokenName, { color: dynamicTheme.colors.textSecondary }]} numberOfLines={1}>
             {item.name}
           </Text>
         </View>
 
         {item.priceUSD && (
-          <Text style={styles.tokenPrice}>
+          <Text style={[styles.tokenPrice, { color: dynamicTheme.colors.textSecondary }]}>
             ${parseFloat(item.priceUSD).toFixed(2)}
           </Text>
         )}
 
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={20} color={theme.colors.accent} />
+          <Ionicons name="checkmark-circle" size={20} color={dynamicTheme.colors.accent} />
         )}
       </TouchableOpacity>
     );
@@ -105,20 +111,20 @@ export default function TokenSelector({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+      <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: dynamicTheme.colors.border }]}>
+          <Text style={[styles.title, { color: dynamicTheme.colors.textPrimary }]}>{title}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={theme.colors.textPrimary} />
+            <Ionicons name="close" size={24} color={dynamicTheme.colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={theme.colors.textSecondary} />
+        <View style={[styles.searchContainer, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+          <Ionicons name="search" size={20} color={dynamicTheme.colors.textSecondary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: dynamicTheme.colors.textPrimary }]}
             placeholder="Search by name or address"
-            placeholderTextColor={theme.colors.textSecondary}
+            placeholderTextColor={dynamicTheme.colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -126,15 +132,15 @@ export default function TokenSelector({
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={theme.colors.textSecondary} />
+              <Ionicons name="close-circle" size={20} color={dynamicTheme.colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.accent} />
-            <Text style={styles.loadingText}>Loading tokens...</Text>
+            <ActivityIndicator size="large" color={dynamicTheme.colors.accent} />
+            <Text style={[styles.loadingText, { color: dynamicTheme.colors.textSecondary }]}>Loading tokens...</Text>
           </View>
         ) : (
           <FlatList
@@ -145,7 +151,7 @@ export default function TokenSelector({
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No tokens found</Text>
+                <Text style={[styles.emptyText, { color: dynamicTheme.colors.textSecondary }]}>No tokens found</Text>
               </View>
             }
           />

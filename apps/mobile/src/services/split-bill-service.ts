@@ -199,3 +199,73 @@ export async function syncSplitBills(address: string): Promise<void> {
     log.warn('Failed to sync split bills', error);
   }
 }
+
+// ============================================================================
+// PRIVACY SETTINGS API
+// ============================================================================
+
+export type SplitPrivacySetting = 'anyone' | 'contacts' | 'none';
+
+/**
+ * Save user's split bill privacy setting to server
+ */
+export async function saveSplitPrivacySetting(
+  address: string,
+  setting: SplitPrivacySetting
+): Promise<void> {
+  try {
+    const client = apiClient.withWallet(address);
+    await client.post('/api/splits/privacy', { setting });
+    log.info('Split privacy setting saved', { setting });
+  } catch (error) {
+    log.warn('Failed to save split privacy setting', error);
+    // Don't throw - local setting is still saved
+  }
+}
+
+export interface PrivacyCheckResult {
+  address: string;
+  canReceive: boolean;
+  reason?: 'blocked_all' | 'contacts_only';
+}
+
+/**
+ * Check if participants can receive split bills from sender
+ * Returns list of participants who will NOT receive the request
+ */
+export async function checkSplitPrivacy(
+  senderAddress: string,
+  participantAddresses: string[]
+): Promise<PrivacyCheckResult[]> {
+  try {
+    const client = apiClient.withWallet(senderAddress);
+    const result = await client.post<PrivacyCheckResult[]>(
+      '/api/splits/privacy/check',
+      { participantAddresses }
+    );
+    return result;
+  } catch (error) {
+    log.warn('Failed to check split privacy', error);
+    // If check fails, assume all can receive (don't block creation)
+    return participantAddresses.map((address) => ({
+      address,
+      canReceive: true,
+    }));
+  }
+}
+
+/**
+ * Get names of participants who will not receive the split request
+ */
+export function getBlockedParticipantNames(
+  results: PrivacyCheckResult[],
+  participants: Array<{ address: string; name?: string; username?: string }>
+): string[] {
+  const blocked = results.filter((r) => !r.canReceive);
+  return blocked.map((b) => {
+    const participant = participants.find(
+      (p) => p.address.toLowerCase() === b.address.toLowerCase()
+    );
+    return participant?.name || participant?.username || b.address.slice(0, 10) + '...';
+  });
+}

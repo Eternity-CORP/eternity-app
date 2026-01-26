@@ -24,6 +24,14 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+    setIsMobileMenuOpen(false)
+  }
+
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
@@ -58,7 +66,7 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={() => scrollToSection('cta')}>
             Get Early Access
           </Button>
         </div>
@@ -112,7 +120,7 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <Button variant="primary" size="sm" className="w-full">
+              <Button variant="primary" size="sm" className="w-full" onClick={() => scrollToSection('cta')}>
                 Get Early Access
               </Button>
             </div>

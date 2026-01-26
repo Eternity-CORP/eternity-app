@@ -260,38 +260,6 @@ export function CTA() {
               )}
             </AnimatePresence>
 
-            {/* Or divider */}
-            {status !== 'success' && (
-              <FadeIn delay={0.4}>
-                <div className="flex items-center gap-4 my-8">
-                  <div className="flex-1 h-px bg-black/10" />
-                  <span className="text-muted text-sm">or</span>
-                  <div className="flex-1 h-px bg-black/10" />
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="w-full"
-                  onClick={() => window.open('#demo', '_blank')}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    Watch Demo
-                    <svg
-                      className="w-5 h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
-                </Button>
-              </FadeIn>
-            )}
           </div>
         </FadeIn>
 

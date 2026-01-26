@@ -18,6 +18,7 @@ import { fetchPriceChartData, fetchPriceChartByContract, type PriceChartData, ty
 import { truncateAddress } from '@/src/utils/format';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -47,6 +48,7 @@ function PriceChart({
   height: number;
   isPositive: boolean;
 }) {
+  const { theme: dynamicTheme } = useTheme();
   const path = useMemo(() => {
     if (data.length < 2) return '';
 
@@ -75,15 +77,15 @@ function PriceChart({
 
   if (data.length < 2) {
     return (
-      <View style={[styles.chartPlaceholder, { width, height }]}>
-        <Text style={[styles.chartPlaceholderText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+      <View style={[styles.chartPlaceholder, { width, height, backgroundColor: dynamicTheme.colors.background }]}>
+        <Text style={[styles.chartPlaceholderText, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
           No chart data available
         </Text>
       </View>
     );
   }
 
-  const color = isPositive ? theme.colors.success : theme.colors.error;
+  const color = isPositive ? dynamicTheme.colors.success : dynamicTheme.colors.error;
 
   return (
     <Svg width={width} height={height}>
@@ -93,6 +95,7 @@ function PriceChart({
 }
 
 export default function TokenDetailsScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
@@ -178,14 +181,14 @@ export default function TokenDetailsScreen() {
   // Loading/Error state
   if (!token) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Token" />
         <View style={styles.errorContainer}>
-          <FontAwesome name="exclamation-triangle" size={48} color={theme.colors.error} />
-          <Text style={[styles.errorText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
+          <FontAwesome name="exclamation-triangle" size={48} color={dynamicTheme.colors.error} />
+          <Text style={[styles.errorText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Token not found
           </Text>
-          <Text style={[styles.errorSubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.errorSubtext, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             This token is not in your wallet
           </Text>
         </View>
@@ -194,27 +197,27 @@ export default function TokenDetailsScreen() {
   }
 
   const isPositive = chartData ? chartData.priceChangePercentage24h >= 0 : true;
-  const priceChangeColor = isPositive ? theme.colors.success : theme.colors.error;
+  const priceChangeColor = isPositive ? dynamicTheme.colors.success : dynamicTheme.colors.error;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title={token.symbol} />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Token Header */}
         <View style={styles.tokenHeader}>
           <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={64} />
-          <Text style={[styles.tokenName, theme.typography.heading, { fontSize: 24 }]}>
+          <Text style={[styles.tokenName, theme.typography.heading, { fontSize: 24, color: dynamicTheme.colors.textPrimary }]}>
             {token.name || token.symbol}
           </Text>
         </View>
 
         {/* Balance Section */}
         <View style={styles.balanceSection}>
-          <Text style={[styles.balanceAmount, theme.typography.displayLarge]}>
+          <Text style={[styles.balanceAmount, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}>
             {token.balance} {token.symbol}
           </Text>
-          <Text style={[styles.balanceUsd, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.balanceUsd, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             ≈ {token.usdValue ? formatUsdValue(token.usdValue) : '$0.00'}
           </Text>
 
@@ -234,7 +237,7 @@ export default function TokenDetailsScreen() {
         </View>
 
         {/* Price Chart */}
-        <View style={styles.chartSection}>
+        <View style={[styles.chartSection, { backgroundColor: dynamicTheme.colors.surface }]}>
           {/* Time Range Selector */}
           <View style={styles.timeRangeRow}>
             {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
@@ -242,7 +245,8 @@ export default function TokenDetailsScreen() {
                 key={range}
                 style={[
                   styles.timeRangeButton,
-                  timeRange === range && styles.timeRangeButtonActive,
+                  { backgroundColor: dynamicTheme.colors.background },
+                  timeRange === range && { backgroundColor: dynamicTheme.colors.buttonPrimary },
                 ]}
                 onPress={() => setTimeRange(range)}
               >
@@ -250,7 +254,7 @@ export default function TokenDetailsScreen() {
                   style={[
                     styles.timeRangeText,
                     theme.typography.caption,
-                    { color: timeRange === range ? theme.colors.buttonPrimaryText : theme.colors.textSecondary },
+                    { color: timeRange === range ? dynamicTheme.colors.buttonPrimaryText : dynamicTheme.colors.textSecondary },
                   ]}
                 >
                   {range}
@@ -262,8 +266,8 @@ export default function TokenDetailsScreen() {
           {/* Chart */}
           <View style={styles.chartContainer}>
             {chartLoading ? (
-              <View style={[styles.chartPlaceholder, { height: CHART_HEIGHT }]}>
-                <ActivityIndicator size="small" color={theme.colors.buttonPrimary} />
+              <View style={[styles.chartPlaceholder, { height: CHART_HEIGHT, backgroundColor: dynamicTheme.colors.background }]}>
+                <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimary} />
               </View>
             ) : chartData && chartData.prices.length > 0 ? (
               <PriceChart
@@ -273,8 +277,8 @@ export default function TokenDetailsScreen() {
                 isPositive={isPositive}
               />
             ) : (
-              <View style={[styles.chartPlaceholder, { height: CHART_HEIGHT }]}>
-                <Text style={[styles.chartPlaceholderText, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+              <View style={[styles.chartPlaceholder, { height: CHART_HEIGHT, backgroundColor: dynamicTheme.colors.background }]}>
+                <Text style={[styles.chartPlaceholderText, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                   No price data available
                 </Text>
               </View>
@@ -283,28 +287,28 @@ export default function TokenDetailsScreen() {
 
           {/* Price Stats */}
           {chartData && chartData.currentPrice > 0 && (
-            <View style={styles.priceStats}>
+            <View style={[styles.priceStats, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
               <View style={styles.priceStat}>
-                <Text style={[styles.priceStatLabel, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                <Text style={[styles.priceStatLabel, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                   Current
                 </Text>
-                <Text style={[styles.priceStatValue, theme.typography.body]}>
+                <Text style={[styles.priceStatValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   ${chartData.currentPrice.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.priceStat}>
-                <Text style={[styles.priceStatLabel, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                <Text style={[styles.priceStatLabel, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                   24h High
                 </Text>
-                <Text style={[styles.priceStatValue, theme.typography.body]}>
+                <Text style={[styles.priceStatValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   ${chartData.high24h.toFixed(2)}
                 </Text>
               </View>
               <View style={styles.priceStat}>
-                <Text style={[styles.priceStatLabel, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                <Text style={[styles.priceStatLabel, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                   24h Low
                 </Text>
-                <Text style={[styles.priceStatValue, theme.typography.body]}>
+                <Text style={[styles.priceStatValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   ${chartData.low24h.toFixed(2)}
                 </Text>
               </View>
@@ -314,15 +318,15 @@ export default function TokenDetailsScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionButton, styles.actionButtonPrimary]} onPress={handleSend}>
-            <FontAwesome name="arrow-up" size={16} color={theme.colors.buttonPrimaryText} />
-            <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+          <TouchableOpacity style={[styles.actionButton, styles.actionButtonPrimary, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleSend}>
+            <FontAwesome name="arrow-up" size={16} color={dynamicTheme.colors.buttonPrimaryText} />
+            <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
               Send
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary]} onPress={handleReceive}>
-            <FontAwesome name="arrow-down" size={16} color={theme.colors.textPrimary} />
-            <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
+          <TouchableOpacity style={[styles.actionButton, styles.actionButtonSecondary, { backgroundColor: dynamicTheme.colors.buttonSecondary, borderColor: dynamicTheme.colors.buttonSecondaryBorder }]} onPress={handleReceive}>
+            <FontAwesome name="arrow-down" size={16} color={dynamicTheme.colors.textPrimary} />
+            <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
               Receive
             </Text>
           </TouchableOpacity>
@@ -330,41 +334,41 @@ export default function TokenDetailsScreen() {
 
         {/* Transaction History */}
         <View style={styles.transactionsSection}>
-          <Text style={[styles.sectionTitle, theme.typography.heading]}>
+          <Text style={[styles.sectionTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Transactions
           </Text>
 
           {tokenTransactions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <FontAwesome name="exchange" size={32} color={theme.colors.textTertiary} />
-              <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+            <View style={[styles.emptyState, { backgroundColor: dynamicTheme.colors.surface }]}>
+              <FontAwesome name="exchange" size={32} color={dynamicTheme.colors.textTertiary} />
+              <Text style={[styles.emptyText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
                 No {token.symbol} transactions
               </Text>
             </View>
           ) : (
-            <View style={styles.transactionsList}>
+            <View style={[styles.transactionsList, { backgroundColor: dynamicTheme.colors.surface }]}>
               {tokenTransactions.map((tx) => (
                 <TouchableOpacity
                   key={tx.hash}
-                  style={styles.transactionItem}
+                  style={[styles.transactionItem, { borderBottomColor: dynamicTheme.colors.buttonSecondaryBorder }]}
                   onPress={() => handleTransactionPress(tx.hash)}
                 >
-                  <View style={styles.transactionIcon}>
+                  <View style={[styles.transactionIcon, { backgroundColor: dynamicTheme.colors.background }]}>
                     <FontAwesome
                       name={tx.direction === 'sent' ? 'arrow-up' : 'arrow-down'}
                       size={14}
-                      color={tx.direction === 'sent' ? theme.colors.error : theme.colors.success}
+                      color={tx.direction === 'sent' ? dynamicTheme.colors.error : dynamicTheme.colors.success}
                     />
                   </View>
                   <View style={styles.transactionInfo}>
-                    <Text style={[styles.transactionDirection, theme.typography.body]}>
+                    <Text style={[styles.transactionDirection, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                       {tx.direction === 'sent' ? 'Sent' : 'Received'}
                     </Text>
-                    <Text style={[styles.transactionDate, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                    <Text style={[styles.transactionDate, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                       {new Date(tx.timestamp).toLocaleDateString()}
                     </Text>
                   </View>
-                  <Text style={[styles.transactionAmount, theme.typography.body, { color: tx.direction === 'sent' ? theme.colors.textPrimary : theme.colors.success }]}>
+                  <Text style={[styles.transactionAmount, theme.typography.body, { color: tx.direction === 'sent' ? dynamicTheme.colors.textPrimary : dynamicTheme.colors.success }]}>
                     {tx.direction === 'sent' ? '-' : '+'}{tx.amount}
                   </Text>
                 </TouchableOpacity>
@@ -383,32 +387,32 @@ export default function TokenDetailsScreen() {
               <FontAwesome
                 name={showDetails ? 'chevron-up' : 'chevron-down'}
                 size={14}
-                color={theme.colors.textSecondary}
+                color={dynamicTheme.colors.textSecondary}
               />
-              <Text style={[styles.expandText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.expandText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Token Details
               </Text>
             </TouchableOpacity>
 
             {showDetails && (
-              <View style={styles.detailsCard}>
+              <View style={[styles.detailsCard, { backgroundColor: dynamicTheme.colors.surface }]}>
                 {/* Contract Address */}
                 <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                     Contract
                   </Text>
                   <View style={styles.detailValue}>
-                    <Text style={[styles.addressText, theme.typography.body]} numberOfLines={1}>
+                    <Text style={[styles.addressText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
                       {truncateAddress(token.token, 10)}
                     </Text>
                     <TouchableOpacity
-                      style={styles.copyButton}
+                      style={[styles.copyButton, { backgroundColor: dynamicTheme.colors.background }]}
                       onPress={() => handleCopy(token.token, 'contract')}
                     >
                       <FontAwesome
                         name={copiedField === 'contract' ? 'check' : 'copy'}
                         size={14}
-                        color={copiedField === 'contract' ? theme.colors.success : theme.colors.textTertiary}
+                        color={copiedField === 'contract' ? dynamicTheme.colors.success : dynamicTheme.colors.textTertiary}
                       />
                     </TouchableOpacity>
                   </View>
@@ -416,28 +420,28 @@ export default function TokenDetailsScreen() {
 
                 {/* Network */}
                 <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                     Network
                   </Text>
-                  <Text style={[styles.detailText, theme.typography.body]}>
+                  <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                     Ethereum {NETWORK === 'mainnet' ? 'Mainnet' : 'Sepolia'}
                   </Text>
                 </View>
 
                 {/* Decimals */}
                 <View style={styles.detailRow}>
-                  <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                  <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                     Decimals
                   </Text>
-                  <Text style={[styles.detailText, theme.typography.body]}>
+                  <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                     {token.decimals}
                   </Text>
                 </View>
 
                 {/* View on Explorer */}
-                <TouchableOpacity style={styles.explorerButton} onPress={handleOpenExplorer}>
-                  <FontAwesome name="external-link" size={14} color={theme.colors.buttonPrimary} />
-                  <Text style={[styles.explorerButtonText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
+                <TouchableOpacity style={[styles.explorerButton, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]} onPress={handleOpenExplorer}>
+                  <FontAwesome name="external-link" size={14} color={dynamicTheme.colors.buttonPrimary} />
+                  <Text style={[styles.explorerButtonText, theme.typography.caption, { color: dynamicTheme.colors.buttonPrimary }]}>
                     View on Etherscan
                   </Text>
                 </TouchableOpacity>

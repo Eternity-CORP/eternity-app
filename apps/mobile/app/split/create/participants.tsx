@@ -16,6 +16,7 @@ import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-s
 import { calculateEqualSplit } from '@/src/services/split-bill-service';
 import { truncateAddress, sanitizeAmountInput, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -33,6 +34,7 @@ interface LocalParticipant {
 
 export default function SplitParticipantsScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const splitCreate = useAppSelector((state) => state.splitCreate);
   const wallet = useAppSelector((state) => state.wallet);
   const contacts = useAppSelector((state) => state.contacts.contacts);
@@ -296,22 +298,22 @@ export default function SplitParticipantsScreen() {
   const canContinue = validParticipants.length > 0 && !isLookingUp && !isOverBudget;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Split Bill" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Step 4 of 6
         </Text>
-        <Text style={[styles.subtitle, theme.typography.heading]}>
+        <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Who's splitting the bill?
         </Text>
 
-        <View style={styles.amountSummary}>
-          <Text style={[styles.amountLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.amountSummary, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <Text style={[styles.amountLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Total: {formatAmount(splitCreate.totalAmount)} {splitCreate.selectedToken}
           </Text>
-          <Text style={[styles.modeLabel, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
+          <Text style={[styles.modeLabel, theme.typography.caption, { color: dynamicTheme.colors.buttonPrimary }]}>
             {splitCreate.splitMode === 'equal' ? 'Equal Split' :
              splitCreate.splitMode === 'percentage' ? 'By Percentage' : 'Custom Amounts'}
           </Text>
@@ -319,9 +321,9 @@ export default function SplitParticipantsScreen() {
 
         {/* Over budget warning */}
         {isOverBudget && (
-          <View style={styles.warningBanner}>
-            <FontAwesome name="exclamation-triangle" size={16} color={theme.colors.warning} />
-            <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.warning }]}>
+          <View style={[styles.warningBanner, { backgroundColor: dynamicTheme.colors.warning + '15', borderColor: dynamicTheme.colors.warning + '30' }]}>
+            <FontAwesome name="exclamation-triangle" size={16} color={dynamicTheme.colors.warning} />
+            <Text style={[styles.warningText, theme.typography.caption, { color: dynamicTheme.colors.warning }]}>
               Total exceeds bill by {formatAmount(Math.abs(remainingAmount))} {splitCreate.selectedToken}
             </Text>
           </View>
@@ -329,8 +331,8 @@ export default function SplitParticipantsScreen() {
 
         {/* Show remaining in custom mode */}
         {splitCreate.splitMode === 'custom' && !isOverBudget && remainingAmount > 0 && (
-          <View style={styles.infoBanner}>
-            <Text style={[theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.infoBanner, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Remaining to distribute: {formatAmount(remainingAmount)} {splitCreate.selectedToken}
             </Text>
           </View>
@@ -338,47 +340,47 @@ export default function SplitParticipantsScreen() {
 
         <View style={styles.participantsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.label, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.label, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Participants ({validParticipants.length})
             </Text>
             <TouchableOpacity onPress={addParticipant}>
-              <FontAwesome name="plus-circle" size={24} color={theme.colors.buttonPrimary} />
+              <FontAwesome name="plus-circle" size={24} color={dynamicTheme.colors.buttonPrimary} />
             </TouchableOpacity>
           </View>
 
           {participants.map((participant, index) => (
-            <View key={participant.id} style={styles.participantCard}>
+            <View key={participant.id} style={[styles.participantCard, { backgroundColor: dynamicTheme.colors.surface }]}>
               <View style={styles.participantInputRow}>
-                <View style={styles.participantInputContainer}>
+                <View style={[styles.participantInputContainer, { backgroundColor: dynamicTheme.colors.background }]}>
                   <TextInput
-                    style={[styles.participantInput, theme.typography.body]}
+                    style={[styles.participantInput, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}
                     placeholder="Address, @username, or name"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={dynamicTheme.colors.textTertiary}
                     value={participant.input}
                     onChangeText={(text) => resolveParticipant(index, text)}
                     autoCapitalize="none"
                     autoCorrect={false}
                   />
                   {participant.address && (
-                    <FontAwesome name="check-circle" size={16} color={theme.colors.success} style={styles.checkIcon} />
+                    <FontAwesome name="check-circle" size={16} color={dynamicTheme.colors.success} style={styles.checkIcon} />
                   )}
                   {participant.isLookingUp && (
-                    <ActivityIndicator size="small" color={theme.colors.buttonPrimary} style={styles.checkIcon} />
+                    <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimary} style={styles.checkIcon} />
                   )}
                   {participant.error && (
-                    <FontAwesome name="times-circle" size={16} color={theme.colors.error} style={styles.checkIcon} />
+                    <FontAwesome name="times-circle" size={16} color={dynamicTheme.colors.error} style={styles.checkIcon} />
                   )}
                 </View>
 
                 {participants.length > 1 && (
                   <TouchableOpacity onPress={() => removeParticipant(index)} style={styles.removeButton}>
-                    <FontAwesome name="times-circle" size={20} color={theme.colors.error} />
+                    <FontAwesome name="times-circle" size={20} color={dynamicTheme.colors.error} />
                   </TouchableOpacity>
                 )}
               </View>
 
               {participant.error && (
-                <Text style={[styles.participantError, theme.typography.caption, { color: theme.colors.error }]}>
+                <Text style={[styles.participantError, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                   {participant.error}
                 </Text>
               )}
@@ -386,7 +388,7 @@ export default function SplitParticipantsScreen() {
               {participant.address && (
                 <View style={styles.amountRow}>
                   {splitCreate.splitMode === 'equal' && (
-                    <Text style={[styles.equalAmount, theme.typography.body, { color: theme.colors.textSecondary }]}>
+                    <Text style={[styles.equalAmount, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
                       {formatAmount(participant.amount)} {splitCreate.selectedToken}
                     </Text>
                   )}
@@ -394,14 +396,14 @@ export default function SplitParticipantsScreen() {
                   {splitCreate.splitMode === 'custom' && (
                     <View style={styles.customAmountRow}>
                       <TextInput
-                        style={[styles.amountInputSmall, theme.typography.body]}
+                        style={[styles.amountInputSmall, theme.typography.body, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary }]}
                         placeholder="0.00"
-                        placeholderTextColor={theme.colors.textTertiary}
+                        placeholderTextColor={dynamicTheme.colors.textTertiary}
                         value={participant.amount}
                         onChangeText={(text) => updateAmount(index, text)}
                         keyboardType="decimal-pad"
                       />
-                      <Text style={[styles.tokenLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                      <Text style={[styles.tokenLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                         {splitCreate.selectedToken}
                       </Text>
                     </View>
@@ -410,15 +412,15 @@ export default function SplitParticipantsScreen() {
                   {splitCreate.splitMode === 'percentage' && (
                     <View style={styles.percentageRow}>
                       <TextInput
-                        style={[styles.percentageInput, theme.typography.body]}
+                        style={[styles.percentageInput, theme.typography.body, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary }]}
                         placeholder="0"
-                        placeholderTextColor={theme.colors.textTertiary}
+                        placeholderTextColor={dynamicTheme.colors.textTertiary}
                         value={participant.percentage}
                         onChangeText={(text) => updatePercentage(index, text)}
                         keyboardType="decimal-pad"
                       />
-                      <Text style={[styles.percentLabel, theme.typography.body]}>%</Text>
-                      <Text style={[styles.percentAmount, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                      <Text style={[styles.percentLabel, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>%</Text>
+                      <Text style={[styles.percentAmount, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                         = {formatAmount(participant.amount)} {splitCreate.selectedToken}
                       </Text>
                     </View>
@@ -430,13 +432,13 @@ export default function SplitParticipantsScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
         <TouchableOpacity
-          style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+          style={[styles.continueButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canContinue && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleContinue}
           disabled={!canContinue}
         >
-          <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
+          <Text style={[styles.continueButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Continue</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

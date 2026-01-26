@@ -131,13 +131,8 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-2xl font-bold text-black mb-4">Contact Us</h2>
               <p className="text-muted leading-relaxed">
-                For privacy-related inquiries, contact us at:{' '}
-                <a
-                  href="mailto:privacy@eternity.app"
-                  className="text-accent-blue hover:underline"
-                >
-                  privacy@eternity.app
-                </a>
+                For privacy-related inquiries, please use our waitlist form on the homepage
+                and mention your concern. We will get back to you as soon as possible.
               </p>
             </section>
           </div>

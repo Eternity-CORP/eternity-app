@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
 
 import { theme } from '@/src/constants/theme';
+import { useTheme } from '@/src/contexts';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
@@ -53,6 +54,7 @@ import TokenSelector from './token-selector';
 export default function SwapScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
 
   const wallet = useAppSelector((state) => state.wallet);
   const swap = useAppSelector((state) => state.swap);
@@ -243,21 +245,21 @@ export default function SwapScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: true,
           headerTitle: 'Swap',
-          headerStyle: { backgroundColor: theme.colors.background },
-          headerTintColor: theme.colors.textPrimary,
+          headerStyle: { backgroundColor: dynamicTheme.colors.background },
+          headerTintColor: dynamicTheme.colors.textPrimary,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color={theme.colors.textPrimary} />
+              <Ionicons name="arrow-back" size={24} color={dynamicTheme.colors.textPrimary} />
             </TouchableOpacity>
           ),
           headerRight: () => (
             <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
-              <Ionicons name="settings-outline" size={24} color={theme.colors.textPrimary} />
+              <Ionicons name="settings-outline" size={24} color={dynamicTheme.colors.textPrimary} />
             </TouchableOpacity>
           ),
         }}
@@ -266,14 +268,15 @@ export default function SwapScreen() {
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Settings Panel */}
         {showSettings && (
-          <View style={styles.settingsPanel}>
-            <Text style={styles.settingsTitle}>Slippage Tolerance</Text>
+          <View style={[styles.settingsPanel, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+            <Text style={[styles.settingsTitle, { color: dynamicTheme.colors.textSecondary }]}>Slippage Tolerance</Text>
             <View style={styles.slippageOptions}>
               {[0.5, 1, 2].map((value) => (
                 <TouchableOpacity
                   key={value}
                   style={[
                     styles.slippageButton,
+                    { backgroundColor: dynamicTheme.colors.background, borderColor: dynamicTheme.colors.border },
                     swap.slippage === value && styles.slippageButtonActive,
                   ]}
                   onPress={() => {
@@ -284,6 +287,7 @@ export default function SwapScreen() {
                   <Text
                     style={[
                       styles.slippageButtonText,
+                      { color: dynamicTheme.colors.textSecondary },
                       swap.slippage === value && styles.slippageButtonTextActive,
                     ]}
                   >
@@ -292,72 +296,72 @@ export default function SwapScreen() {
                 </TouchableOpacity>
               ))}
               <TextInput
-                style={styles.slippageInput}
+                style={[styles.slippageInput, { backgroundColor: dynamicTheme.colors.background, borderColor: dynamicTheme.colors.border, color: dynamicTheme.colors.textPrimary }]}
                 value={slippageInput}
                 onChangeText={setSlippageInput}
                 keyboardType="decimal-pad"
                 placeholder="Custom"
-                placeholderTextColor={theme.colors.textSecondary}
+                placeholderTextColor={dynamicTheme.colors.textSecondary}
               />
             </View>
           </View>
         )}
 
         {/* From Token */}
-        <View style={styles.tokenCard}>
-          <Text style={styles.tokenLabel}>From</Text>
+        <View style={[styles.tokenCard, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+          <Text style={[styles.tokenLabel, { color: dynamicTheme.colors.textSecondary }]}>From</Text>
           <View style={styles.tokenRow}>
             <TouchableOpacity
-              style={styles.tokenSelector}
+              style={[styles.tokenSelector, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={() => setShowFromTokenSelector(true)}
             >
               {swap.fromToken?.logoURI ? (
                 <Image source={{ uri: swap.fromToken.logoURI }} style={styles.tokenIcon} />
               ) : (
-                <View style={styles.tokenIconPlaceholder}>
-                  <Text style={styles.tokenIconText}>{swap.fromToken?.symbol?.charAt(0) || '?'}</Text>
+                <View style={[styles.tokenIconPlaceholder, { backgroundColor: dynamicTheme.colors.border }]}>
+                  <Text style={[styles.tokenIconText, { color: dynamicTheme.colors.textSecondary }]}>{swap.fromToken?.symbol?.charAt(0) || '?'}</Text>
                 </View>
               )}
-              <Text style={styles.tokenSymbol}>{swap.fromToken?.symbol || 'Select'}</Text>
-              <Ionicons name="chevron-down" size={16} color={theme.colors.textSecondary} />
+              <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textPrimary }]}>{swap.fromToken?.symbol || 'Select'}</Text>
+              <Ionicons name="chevron-down" size={16} color={dynamicTheme.colors.textSecondary} />
             </TouchableOpacity>
 
             <TextInput
-              style={styles.amountInput}
+              style={[styles.amountInput, { color: dynamicTheme.colors.textPrimary }]}
               value={swap.fromAmount}
               onChangeText={(text) => dispatch(setFromAmount(text))}
               placeholder="0.0"
-              placeholderTextColor={theme.colors.textSecondary}
+              placeholderTextColor={dynamicTheme.colors.textSecondary}
               keyboardType="decimal-pad"
             />
           </View>
         </View>
 
         {/* Swap Button */}
-        <TouchableOpacity style={styles.swapButton} onPress={handleSwapTokens}>
-          <Ionicons name="swap-vertical" size={24} color={theme.colors.accent} />
+        <TouchableOpacity style={[styles.swapButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]} onPress={handleSwapTokens}>
+          <Ionicons name="swap-vertical" size={24} color={dynamicTheme.colors.accent} />
         </TouchableOpacity>
 
         {/* To Token */}
-        <View style={styles.tokenCard}>
-          <Text style={styles.tokenLabel}>To</Text>
+        <View style={[styles.tokenCard, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+          <Text style={[styles.tokenLabel, { color: dynamicTheme.colors.textSecondary }]}>To</Text>
           <View style={styles.tokenRow}>
             <TouchableOpacity
-              style={styles.tokenSelector}
+              style={[styles.tokenSelector, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={() => setShowToTokenSelector(true)}
             >
               {swap.toToken?.logoURI ? (
                 <Image source={{ uri: swap.toToken.logoURI }} style={styles.tokenIcon} />
               ) : (
-                <View style={styles.tokenIconPlaceholder}>
-                  <Text style={styles.tokenIconText}>{swap.toToken?.symbol?.charAt(0) || '?'}</Text>
+                <View style={[styles.tokenIconPlaceholder, { backgroundColor: dynamicTheme.colors.border }]}>
+                  <Text style={[styles.tokenIconText, { color: dynamicTheme.colors.textSecondary }]}>{swap.toToken?.symbol?.charAt(0) || '?'}</Text>
                 </View>
               )}
-              <Text style={styles.tokenSymbol}>{swap.toToken?.symbol || 'Select'}</Text>
-              <Ionicons name="chevron-down" size={16} color={theme.colors.textSecondary} />
+              <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textPrimary }]}>{swap.toToken?.symbol || 'Select'}</Text>
+              <Ionicons name="chevron-down" size={16} color={dynamicTheme.colors.textSecondary} />
             </TouchableOpacity>
 
-            <Text style={styles.amountOutput}>
+            <Text style={[styles.amountOutput, { color: dynamicTheme.colors.textPrimary }]}>
               {swap.quote
                 ? formatTokenAmount(swap.quote.toAmount, swap.toToken?.decimals || 18)
                 : '0.0'}
@@ -367,19 +371,20 @@ export default function SwapScreen() {
 
         {/* Quote Details */}
         {swap.quote && (
-          <View style={styles.quoteDetails}>
+          <View style={[styles.quoteDetails, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
             <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>Rate</Text>
-              <Text style={styles.quoteValue}>
+              <Text style={[styles.quoteLabel, { color: dynamicTheme.colors.textSecondary }]}>Rate</Text>
+              <Text style={[styles.quoteValue, { color: dynamicTheme.colors.textPrimary }]}>
                 1 {swap.fromToken?.symbol} = {parseFloat(swap.quote.exchangeRate).toFixed(6)}{' '}
                 {swap.toToken?.symbol}
               </Text>
             </View>
             <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>Price Impact</Text>
+              <Text style={[styles.quoteLabel, { color: dynamicTheme.colors.textSecondary }]}>Price Impact</Text>
               <Text
                 style={[
                   styles.quoteValue,
+                  { color: dynamicTheme.colors.textPrimary },
                   parseFloat(swap.quote.priceImpact) > 3 && styles.quoteValueWarning,
                 ]}
               >
@@ -387,12 +392,12 @@ export default function SwapScreen() {
               </Text>
             </View>
             <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>Network Fee</Text>
-              <Text style={styles.quoteValue}>~${parseFloat(swap.quote.gasCostUSD).toFixed(2)}</Text>
+              <Text style={[styles.quoteLabel, { color: dynamicTheme.colors.textSecondary }]}>Network Fee</Text>
+              <Text style={[styles.quoteValue, { color: dynamicTheme.colors.textPrimary }]}>~${parseFloat(swap.quote.gasCostUSD).toFixed(2)}</Text>
             </View>
             <View style={styles.quoteRow}>
-              <Text style={styles.quoteLabel}>Min. Received</Text>
-              <Text style={styles.quoteValue}>
+              <Text style={[styles.quoteLabel, { color: dynamicTheme.colors.textSecondary }]}>Min. Received</Text>
+              <Text style={[styles.quoteValue, { color: dynamicTheme.colors.textPrimary }]}>
                 {formatTokenAmount(swap.quote.toAmountMin, swap.toToken?.decimals || 18)}{' '}
                 {swap.toToken?.symbol}
               </Text>
@@ -402,9 +407,9 @@ export default function SwapScreen() {
 
         {/* Error Message */}
         {swap.quoteError && (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle" size={20} color={theme.colors.error} />
-            <Text style={styles.errorText}>{swap.quoteError}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: dynamicTheme.colors.error + '15' }]}>
+            <Ionicons name="alert-circle" size={20} color={dynamicTheme.colors.error} />
+            <Text style={[styles.errorText, { color: dynamicTheme.colors.error }]}>{swap.quoteError}</Text>
           </View>
         )}
 
@@ -413,18 +418,18 @@ export default function SwapScreen() {
       </ScrollView>
 
       {/* Action Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.border }]}>
         <TouchableOpacity
-          style={[styles.actionButton, isButtonDisabled() && styles.actionButtonDisabled]}
+          style={[styles.actionButton, { backgroundColor: dynamicTheme.colors.accent }, isButtonDisabled() && { backgroundColor: dynamicTheme.colors.border }]}
           onPress={swap.needsApproval ? handleApprove : handleSwap}
           disabled={isButtonDisabled()}
         >
           {(swap.status === 'quoting' ||
             swap.status === 'approving' ||
             swap.status === 'swapping') && (
-            <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+            <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimaryText} style={{ marginRight: 8 }} />
           )}
-          <Text style={styles.actionButtonText}>{getButtonText()}</Text>
+          <Text style={[styles.actionButtonText, { color: dynamicTheme.colors.buttonPrimaryText }]}>{getButtonText()}</Text>
         </TouchableOpacity>
       </View>
 

@@ -30,6 +30,7 @@ import { getScheduledPayment, type ScheduledPayment, updateScheduledPayment } fr
 import { truncateAddress } from '@/src/utils/format';
 import { validateAddress } from '@/src/services/send-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
@@ -41,6 +42,7 @@ import type { AnyNetworkId } from '@/src/services/network-service';
 export default function ScheduledPaymentDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const currentAccount = getCurrentAccount(wallet);
@@ -256,10 +258,10 @@ export default function ScheduledPaymentDetailsScreen() {
   // Loading state
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Scheduled Payment" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.buttonPrimary} />
+          <ActivityIndicator size="large" color={dynamicTheme.colors.buttonPrimary} />
         </View>
       </SafeAreaView>
     );
@@ -268,11 +270,11 @@ export default function ScheduledPaymentDetailsScreen() {
   // Not found state
   if (!payment) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Scheduled Payment" />
         <View style={styles.errorContainer}>
-          <FontAwesome name="exclamation-triangle" size={48} color={theme.colors.error} />
-          <Text style={[styles.errorText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
+          <FontAwesome name="exclamation-triangle" size={48} color={dynamicTheme.colors.error} />
+          <Text style={[styles.errorText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Payment not found
           </Text>
         </View>
@@ -292,10 +294,10 @@ export default function ScheduledPaymentDetailsScreen() {
   const isExecuted = payment.status === 'executed';
 
   const getStatusColor = () => {
-    if (isExecuted) return theme.colors.success;
-    if (isCancelled) return theme.colors.error;
+    if (isExecuted) return dynamicTheme.colors.success;
+    if (isCancelled) return dynamicTheme.colors.error;
     if (isPast) return '#FFA500';
-    return theme.colors.buttonPrimary;
+    return dynamicTheme.colors.buttonPrimary;
   };
 
   const getStatusText = () => {
@@ -306,7 +308,7 @@ export default function ScheduledPaymentDetailsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Scheduled Payment" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -322,13 +324,13 @@ export default function ScheduledPaymentDetailsScreen() {
 
         {/* Amount Section */}
         <View style={styles.amountSection}>
-          <Text style={[styles.amountText, theme.typography.displayLarge]}>
+          <Text style={[styles.amountText, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}>
             {payment.amount} {payment.tokenSymbol}
           </Text>
           {payment.recurringInterval && (
-            <View style={styles.recurringBadge}>
-              <FontAwesome name="refresh" size={12} color={theme.colors.buttonPrimary} />
-              <Text style={[styles.recurringText, theme.typography.caption, { color: theme.colors.buttonPrimary }]}>
+            <View style={[styles.recurringBadge, { backgroundColor: dynamicTheme.colors.buttonPrimary + '20' }]}>
+              <FontAwesome name="refresh" size={12} color={dynamicTheme.colors.buttonPrimary} />
+              <Text style={[styles.recurringText, theme.typography.caption, { color: dynamicTheme.colors.buttonPrimary }]}>
                 {payment.recurringInterval.charAt(0).toUpperCase() + payment.recurringInterval.slice(1)}
               </Text>
             </View>
@@ -336,13 +338,13 @@ export default function ScheduledPaymentDetailsScreen() {
         </View>
 
         {/* Details Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               To
             </Text>
             <View style={styles.detailValue}>
-              <Text style={[styles.detailText, theme.typography.body]}>
+              <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {recipientDisplay}
               </Text>
             </View>
@@ -350,30 +352,30 @@ export default function ScheduledPaymentDetailsScreen() {
 
           {payment.recipientUsername && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Address
               </Text>
-              <Text style={[styles.detailText, theme.typography.body]}>
+              <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {truncateAddress(payment.recipient)}
               </Text>
             </View>
           )}
 
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Scheduled
             </Text>
-            <Text style={[styles.detailText, theme.typography.body]}>
+            <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
 
           {payment.description && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Note
               </Text>
-              <Text style={[styles.detailText, theme.typography.body]}>
+              <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {payment.description}
               </Text>
             </View>
@@ -381,20 +383,20 @@ export default function ScheduledPaymentDetailsScreen() {
 
           {payment.executedTxHash && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 TX Hash
               </Text>
-              <Text style={[styles.detailText, theme.typography.body]}>
+              <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {truncateAddress(payment.executedTxHash)}
               </Text>
             </View>
           )}
 
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Created
             </Text>
-            <Text style={[styles.detailText, theme.typography.body]}>
+            <Text style={[styles.detailText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {new Date(payment.createdAt).toLocaleDateString()}
             </Text>
           </View>
@@ -406,11 +408,11 @@ export default function ScheduledPaymentDetailsScreen() {
             {/* Pay Now Button */}
             {isPast && (
               <TouchableOpacity
-                style={[styles.actionButton, styles.primaryButton]}
+                style={[styles.actionButton, styles.primaryButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
                 onPress={handlePayNow}
               >
-                <FontAwesome name="send" size={16} color={theme.colors.buttonPrimaryText} />
-                <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+                <FontAwesome name="send" size={16} color={dynamicTheme.colors.buttonPrimaryText} />
+                <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                   Pay Now
                 </Text>
               </TouchableOpacity>
@@ -419,11 +421,11 @@ export default function ScheduledPaymentDetailsScreen() {
             {/* Edit Button */}
             {!isPast && (
               <TouchableOpacity
-                style={[styles.actionButton, styles.secondaryButton]}
+                style={[styles.actionButton, styles.secondaryButton, { backgroundColor: dynamicTheme.colors.buttonPrimary + '10', borderColor: dynamicTheme.colors.buttonPrimary }]}
                 onPress={handleOpenEdit}
               >
-                <FontAwesome name="pencil" size={16} color={theme.colors.buttonPrimary} />
-                <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.buttonPrimary }]}>
+                <FontAwesome name="pencil" size={16} color={dynamicTheme.colors.buttonPrimary} />
+                <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimary }]}>
                   Edit Payment
                 </Text>
               </TouchableOpacity>
@@ -431,16 +433,16 @@ export default function ScheduledPaymentDetailsScreen() {
 
             {/* Cancel Button */}
             <TouchableOpacity
-              style={[styles.actionButton, styles.dangerButton]}
+              style={[styles.actionButton, styles.dangerButton, { backgroundColor: dynamicTheme.colors.error + '10', borderColor: dynamicTheme.colors.error }]}
               onPress={handleCancel}
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.error} />
+                <ActivityIndicator size="small" color={dynamicTheme.colors.error} />
               ) : (
                 <>
-                  <FontAwesome name="times" size={16} color={theme.colors.error} />
-                  <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.error }]}>
+                  <FontAwesome name="times" size={16} color={dynamicTheme.colors.error} />
+                  <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.error }]}>
                     Cancel Payment
                   </Text>
                 </>
@@ -453,16 +455,16 @@ export default function ScheduledPaymentDetailsScreen() {
         {(isCancelled || isExecuted) && (
           <View style={styles.actionsSection}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.dangerButton]}
+              style={[styles.actionButton, styles.dangerButton, { backgroundColor: dynamicTheme.colors.error + '10', borderColor: dynamicTheme.colors.error }]}
               onPress={handleDelete}
               disabled={actionLoading}
             >
               {actionLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.error} />
+                <ActivityIndicator size="small" color={dynamicTheme.colors.error} />
               ) : (
                 <>
-                  <FontAwesome name="trash" size={16} color={theme.colors.error} />
-                  <Text style={[styles.actionButtonText, theme.typography.heading, { color: theme.colors.error }]}>
+                  <FontAwesome name="trash" size={16} color={dynamicTheme.colors.error} />
+                  <Text style={[styles.actionButtonText, theme.typography.heading, { color: dynamicTheme.colors.error }]}>
                     Delete
                   </Text>
                 </>
@@ -479,19 +481,19 @@ export default function ScheduledPaymentDetailsScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setIsEditModalVisible(false)}
       >
-        <SafeAreaView style={styles.modalSafeArea}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modalSafeArea, { backgroundColor: dynamicTheme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: dynamicTheme.colors.glassBorder }]}>
             <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
-              <Text style={[styles.modalCancel, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
+              <Text style={[styles.modalCancel, theme.typography.body, { color: dynamicTheme.colors.buttonPrimary }]}>
                 Cancel
               </Text>
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, theme.typography.heading]}>Edit Payment</Text>
+            <Text style={[styles.modalTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>Edit Payment</Text>
             <TouchableOpacity onPress={handleSaveEdit} disabled={isSaving}>
               {isSaving ? (
-                <ActivityIndicator size="small" color={theme.colors.buttonPrimary} />
+                <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimary} />
               ) : (
-                <Text style={[styles.modalSave, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
+                <Text style={[styles.modalSave, theme.typography.body, { color: dynamicTheme.colors.buttonPrimary }]}>
                   Save
                 </Text>
               )}
@@ -502,27 +504,27 @@ export default function ScheduledPaymentDetailsScreen() {
             {/* Warning about re-signing */}
             <View style={styles.warningCard}>
               <FontAwesome name="exclamation-triangle" size={16} color="#FFA500" />
-              <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.warningText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Changing the amount or recipient requires re-signing the transaction. Current gas prices will be used.
               </Text>
             </View>
 
             {/* Recipient Input */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.inputLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Recipient Address
               </Text>
               <TextInput
-                style={[styles.input, styles.addressInput, theme.typography.body]}
+                style={[styles.input, styles.addressInput, theme.typography.body, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary }]}
                 value={editedRecipient}
                 onChangeText={setEditedRecipient}
                 placeholder="0x..."
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={dynamicTheme.colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
               {editedRecipient && !validateAddress(editedRecipient) && (
-                <Text style={[styles.errorLabel, theme.typography.caption]}>
+                <Text style={[styles.errorLabel, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                   Invalid address format
                 </Text>
               )}
@@ -530,16 +532,16 @@ export default function ScheduledPaymentDetailsScreen() {
 
             {/* Amount Input */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.inputLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Amount ({payment?.tokenSymbol})
               </Text>
               <TextInput
-                style={[styles.input, theme.typography.body]}
+                style={[styles.input, theme.typography.body, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary }]}
                 value={editedAmount}
                 onChangeText={setEditedAmount}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={dynamicTheme.colors.textTertiary}
               />
             </View>
           </ScrollView>

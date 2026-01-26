@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
@@ -17,31 +17,48 @@ const sections = [
 export function TimelineIndicator() {
   const [activeSection, setActiveSection] = useState('hero')
   const [isVisible, setIsVisible] = useState(false)
+  const rafId = useRef<number | null>(null)
+  const lastScrollY = useRef(0)
+
+  const updateSection = useCallback(() => {
+    const scrollPosition = window.scrollY + window.innerHeight / 3
+
+    for (let i = sections.length - 1; i >= 0; i--) {
+      const element = document.getElementById(sections[i].id)
+      if (element) {
+        const { offsetTop } = element
+        if (scrollPosition >= offsetTop) {
+          setActiveSection(sections[i].id)
+          break
+        }
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
       // Show after scrolling past hero
       setIsVisible(window.scrollY > 300)
 
-      // Find active section
-      const scrollPosition = window.scrollY + window.innerHeight / 3
-
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const element = document.getElementById(sections[i].id)
-        if (element) {
-          const { offsetTop } = element
-          if (scrollPosition >= offsetTop) {
-            setActiveSection(sections[i].id)
-            break
-          }
-        }
+      // Throttle section updates - only if scrolled more than 50px
+      if (Math.abs(window.scrollY - lastScrollY.current) > 50) {
+        lastScrollY.current = window.scrollY
+        
+        // Use RAF for smooth updates
+        if (rafId.current) cancelAnimationFrame(rafId.current)
+        rafId.current = requestAnimationFrame(updateSection)
       }
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     handleScroll()
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    updateSection()
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (rafId.current) cancelAnimationFrame(rafId.current)
+    }
+  }, [updateSection])
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)

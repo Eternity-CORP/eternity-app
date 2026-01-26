@@ -19,6 +19,7 @@ import {
   isValidUsernameFormat,
 } from '@/src/services/username-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -35,6 +36,7 @@ function debounce<T extends (...args: string[]) => void>(
 }
 
 export default function UsernameScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const currentAccount = getCurrentAccount(wallet);
 
@@ -222,36 +224,36 @@ export default function UsernameScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Username" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.buttonPrimary} />
+          <ActivityIndicator size="large" color={dynamicTheme.colors.buttonPrimary} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Username" />
 
       <View style={styles.container}>
         <View style={styles.content}>
           {/* Info */}
-          <View style={styles.infoBox}>
-            <FontAwesome name="info-circle" size={20} color={theme.colors.buttonPrimary} />
-            <Text style={[styles.infoText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <View style={[styles.infoBox, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <FontAwesome name="info-circle" size={20} color={dynamicTheme.colors.buttonPrimary} />
+            <Text style={[styles.infoText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Your @username allows others to send tokens to you easily without knowing your wallet address.
             </Text>
           </View>
 
           {/* Current username display */}
           {currentUsername && (
-            <View style={styles.currentUsernameBox}>
-              <Text style={[styles.currentLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <View style={[styles.currentUsernameBox, { backgroundColor: dynamicTheme.colors.surface }]}>
+              <Text style={[styles.currentLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Current Username
               </Text>
-              <Text style={[styles.currentValue, theme.typography.title, { color: theme.colors.success }]}>
+              <Text style={[styles.currentValue, theme.typography.title, { color: dynamicTheme.colors.success }]}>
                 @{currentUsername}
               </Text>
             </View>
@@ -259,15 +261,15 @@ export default function UsernameScreen() {
 
           {/* Input */}
           <View style={styles.inputContainer}>
-            <Text style={[styles.inputLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.inputLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               {currentUsername ? 'New Username' : 'Choose Username'}
             </Text>
-            <View style={styles.inputWrapper}>
-              <Text style={[styles.inputPrefix, theme.typography.body, { color: theme.colors.textTertiary }]}>@</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: dynamicTheme.colors.surface }]}>
+              <Text style={[styles.inputPrefix, theme.typography.body, { color: dynamicTheme.colors.textTertiary }]}>@</Text>
               <TextInput
-                style={[styles.input, theme.typography.body]}
+                style={[styles.input, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}
                 placeholder="username"
-                placeholderTextColor={theme.colors.textTertiary}
+                placeholderTextColor={dynamicTheme.colors.textTertiary}
                 value={input}
                 onChangeText={handleInputChange}
                 autoCapitalize="none"
@@ -276,29 +278,29 @@ export default function UsernameScreen() {
                 editable={!isSubmitting}
               />
               {isChecking && (
-                <ActivityIndicator size="small" color={theme.colors.buttonPrimary} style={styles.inputIcon} />
+                <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimary} style={styles.inputIcon} />
               )}
               {!isChecking && isAvailable === true && isNewUsername && (
-                <FontAwesome name="check-circle" size={20} color={theme.colors.success} style={styles.inputIcon} />
+                <FontAwesome name="check-circle" size={20} color={dynamicTheme.colors.success} style={styles.inputIcon} />
               )}
               {!isChecking && isAvailable === false && (
-                <FontAwesome name="times-circle" size={20} color={theme.colors.error} style={styles.inputIcon} />
+                <FontAwesome name="times-circle" size={20} color={dynamicTheme.colors.error} style={styles.inputIcon} />
               )}
             </View>
 
             {/* Format hint */}
-            <Text style={[styles.hint, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+            <Text style={[styles.hint, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
               3-20 characters, letters, numbers, and underscores only
             </Text>
 
             {/* Errors */}
             {formatError && (
-              <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+              <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                 {formatError}
               </Text>
             )}
             {error && (
-              <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+              <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                 {error}
               </Text>
             )}
@@ -309,26 +311,26 @@ export default function UsernameScreen() {
         <View style={styles.actions}>
           {currentUsername && (
             <TouchableOpacity
-              style={[styles.deleteButton, isSubmitting && styles.buttonDisabled]}
+              style={[styles.deleteButton, { borderColor: dynamicTheme.colors.error }, isSubmitting && styles.buttonDisabled]}
               onPress={handleDelete}
               disabled={isSubmitting}
             >
-              <FontAwesome name="trash" size={16} color={theme.colors.error} />
-              <Text style={[styles.deleteButtonText, theme.typography.body, { color: theme.colors.error }]}>
+              <FontAwesome name="trash" size={16} color={dynamicTheme.colors.error} />
+              <Text style={[styles.deleteButtonText, theme.typography.body, { color: dynamicTheme.colors.error }]}>
                 Delete Username
               </Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+            style={[styles.submitButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canSubmit && { backgroundColor: dynamicTheme.colors.textTertiary }]}
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
             {isSubmitting ? (
-              <ActivityIndicator size="small" color={theme.colors.buttonPrimaryText} />
+              <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimaryText} />
             ) : (
-              <Text style={[styles.submitButtonText, theme.typography.heading]}>
+              <Text style={[styles.submitButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                 {currentUsername ? 'Update Username' : 'Claim Username'}
               </Text>
             )}

@@ -20,10 +20,12 @@ import {
 import { resetSend } from '@/src/store/slices/send-slice';
 import { BridgeProgressSteps } from '@/src/components';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function BridgingScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const status = useAppSelector(selectBridgeStatus);
   const steps = useAppSelector(selectBridgeSteps);
@@ -58,7 +60,7 @@ export default function BridgingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader
         title={status === 'failed' ? 'Bridge Failed' : 'Sending'}
         showBackButton={false}
@@ -69,12 +71,13 @@ export default function BridgingScreen() {
         <View style={styles.progressContainer}>
           <View style={[
             styles.progressCircle,
-            status === 'failed' && styles.progressCircleFailed,
+            { borderColor: dynamicTheme.colors.buttonPrimary, backgroundColor: dynamicTheme.colors.surface },
+            status === 'failed' && { borderColor: dynamicTheme.colors.error },
           ]}>
             {status === 'failed' ? (
-              <FontAwesome name="times" size={32} color={theme.colors.error} />
+              <FontAwesome name="times" size={32} color={dynamicTheme.colors.error} />
             ) : (
-              <Text style={[styles.progressText, theme.typography.displayLarge]}>
+              <Text style={[styles.progressText, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}>
                 {progress}%
               </Text>
             )}
@@ -82,13 +85,13 @@ export default function BridgingScreen() {
         </View>
 
         {/* Amount being sent */}
-        <Text style={[styles.amountText, theme.typography.heading]}>
+        <Text style={[styles.amountText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Sending {send.amount} {send.selectedToken}
         </Text>
 
         {/* Steps */}
         {steps.length > 0 && (
-          <View style={styles.stepsContainer}>
+          <View style={[styles.stepsContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
             <BridgeProgressSteps steps={steps} currentStepIndex={currentStepIndex} />
           </View>
         )}
@@ -96,11 +99,11 @@ export default function BridgingScreen() {
         {/* Error state */}
         {status === 'failed' && error.message && (
           <View style={styles.errorContainer}>
-            <FontAwesome name="exclamation-triangle" size={24} color={theme.colors.error} />
-            <Text style={[styles.errorText, theme.typography.body]}>
+            <FontAwesome name="exclamation-triangle" size={24} color={dynamicTheme.colors.error} />
+            <Text style={[styles.errorText, theme.typography.body, { color: dynamicTheme.colors.error }]}>
               {error.message}
             </Text>
-            <Text style={[styles.safeText, theme.typography.caption]}>
+            <Text style={[styles.safeText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Your funds are safe. Nothing was deducted.
             </Text>
           </View>
@@ -108,9 +111,9 @@ export default function BridgingScreen() {
 
         {/* Info message */}
         {status === 'processing' && (
-          <View style={styles.infoContainer}>
-            <FontAwesome name="info-circle" size={16} color={theme.colors.textSecondary} />
-            <Text style={[styles.infoText, theme.typography.caption]}>
+          <View style={[styles.infoContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <FontAwesome name="info-circle" size={16} color={dynamicTheme.colors.textSecondary} />
+            <Text style={[styles.infoText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               You can minimize the app. We'll notify you when done.
             </Text>
           </View>
@@ -122,21 +125,21 @@ export default function BridgingScreen() {
         {status === 'failed' && (
           <>
             {error.canRetry && (
-              <TouchableOpacity style={styles.primaryButton} onPress={handleRetry}>
-                <Text style={[styles.primaryButtonText, theme.typography.heading]}>
+              <TouchableOpacity style={[styles.primaryButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleRetry}>
+                <Text style={[styles.primaryButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                   Try Again
                 </Text>
               </TouchableOpacity>
             )}
             {error.canSendAlternative && (
-              <TouchableOpacity style={styles.secondaryButton} onPress={handleSendAlternative}>
-                <Text style={[styles.secondaryButtonText, theme.typography.body]}>
+              <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.glassBorder }]} onPress={handleSendAlternative}>
+                <Text style={[styles.secondaryButtonText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   Send Without Bridge
                 </Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <Text style={[styles.cancelButtonText, theme.typography.body]}>
+              <Text style={[styles.cancelButtonText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
                 Cancel
               </Text>
             </TouchableOpacity>

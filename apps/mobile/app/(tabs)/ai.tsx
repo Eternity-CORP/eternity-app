@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useAiChat } from '@/src/hooks/useAiChat';
 import {
@@ -31,6 +32,7 @@ import {
   type PendingBlikPay,
   type PendingSwap,
 } from '@/src/components/ai';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { sendTransaction } from '@/src/services/send-service';
@@ -58,6 +60,7 @@ export default function AiScreen() {
     clearPendingSwap,
   } = useAiChat();
 
+  const { theme: dynamicTheme, isDark } = useTheme();
   const flatListRef = useRef<FlatList>(null);
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
@@ -202,7 +205,7 @@ export default function AiScreen() {
   const isDisabled = !isConnected || isStreaming;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -210,30 +213,27 @@ export default function AiScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <LinearGradient
-            colors={theme.colors.gradientBlue as unknown as [string, string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.headerGradient}
-          >
-            <View style={styles.headerContent}>
-              <View style={styles.headerIcon}>
-                <FontAwesome name="magic" size={20} color="#FFFFFF" />
+          <View style={[styles.headerGlassContainer, { borderColor: dynamicTheme.colors.glassBorder }]}>
+            <BlurView intensity={80} tint={isDark ? 'light' : 'dark'} style={styles.headerBlur}>
+              <View style={styles.headerContent}>
+                <View style={[styles.headerIcon, { backgroundColor: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}>
+                  <FontAwesome name="magic" size={20} color={dynamicTheme.colors.textPrimary} />
+                </View>
+                <View style={styles.headerText}>
+                  <Text style={[styles.headerTitle, { color: dynamicTheme.colors.textPrimary }]}>AI Assistant</Text>
+                  <Text style={[styles.headerSubtitle, { color: dynamicTheme.colors.textSecondary }]}>
+                    {isConnected ? 'Ready to help' : 'Connecting...'}
+                  </Text>
+                </View>
+                <View style={styles.statusIndicator}>
+                  <View style={[
+                    styles.statusDot,
+                    isConnected ? styles.statusDotConnected : styles.statusDotDisconnected
+                  ]} />
+                </View>
               </View>
-              <View style={styles.headerText}>
-                <Text style={styles.headerTitle}>AI Assistant</Text>
-                <Text style={styles.headerSubtitle}>
-                  {isConnected ? 'Ready to help' : 'Connecting...'}
-                </Text>
-              </View>
-              <View style={styles.statusIndicator}>
-                <View style={[
-                  styles.statusDot,
-                  isConnected ? styles.statusDotConnected : styles.statusDotDisconnected
-                ]} />
-              </View>
-            </View>
-          </LinearGradient>
+            </BlurView>
+          </View>
         </View>
 
         {/* Suggestions */}
@@ -268,17 +268,17 @@ export default function AiScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <View style={styles.emptyIcon}>
-                <FontAwesome name="comments-o" size={48} color={theme.colors.textTertiary} />
+                <FontAwesome name="comments-o" size={48} color={dynamicTheme.colors.textTertiary} />
               </View>
-              <Text style={styles.emptyTitle}>Chat with AI</Text>
-              <Text style={styles.emptySubtitle}>
+              <Text style={[styles.emptyTitle, { color: dynamicTheme.colors.textPrimary }]}>Chat with AI</Text>
+              <Text style={[styles.emptySubtitle, { color: dynamicTheme.colors.textSecondary }]}>
                 Ask about your balance, send crypto, or get help with transactions
               </Text>
               <View style={styles.examplesContainer}>
-                <Text style={styles.examplesTitle}>Try asking:</Text>
-                <Text style={styles.exampleText}>"What's my balance?"</Text>
-                <Text style={styles.exampleText}>"Send 0.1 ETH to @username"</Text>
-                <Text style={styles.exampleText}>"Show my recent transactions"</Text>
+                <Text style={[styles.examplesTitle, { color: dynamicTheme.colors.textTertiary }]}>Try asking:</Text>
+                <Text style={[styles.exampleText, { color: dynamicTheme.colors.accent }]}>"What's my balance?"</Text>
+                <Text style={[styles.exampleText, { color: dynamicTheme.colors.accent }]}>"Send 0.1 ETH to @username"</Text>
+                <Text style={[styles.exampleText, { color: dynamicTheme.colors.accent }]}>"Show my recent transactions"</Text>
               </View>
             </View>
           }
@@ -323,9 +323,9 @@ export default function AiScreen() {
 
         {/* Error Banner */}
         {error && (
-          <View style={styles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={16} color={theme.colors.error} />
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorBanner, { backgroundColor: dynamicTheme.colors.error + '15', borderColor: dynamicTheme.colors.error + '30' }]}>
+            <FontAwesome name="exclamation-circle" size={16} color={dynamicTheme.colors.error} />
+            <Text style={[styles.errorText, { color: dynamicTheme.colors.error }]}>{error}</Text>
           </View>
         )}
 
@@ -358,8 +358,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
   },
-  headerGradient: {
+  headerGlassContainer: {
     borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.glassBorder,
+  },
+  headerBlur: {
     padding: theme.spacing.lg,
   },
   headerContent: {

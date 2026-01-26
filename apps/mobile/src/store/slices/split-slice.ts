@@ -1,6 +1,6 @@
 /**
  * Split Bill Redux Slice
- * Manages split bill state
+ * Manages split bill state with privacy filtering
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
@@ -15,6 +15,9 @@ import {
   type SplitBill,
   type CreateSplitBillRequest,
 } from '@/src/services/split-bill-service';
+import { loadContacts } from '@/src/services/contacts-service';
+import type { RootState } from '@/src/store';
+import type { SplitRequestsFrom } from './settings-slice';
 
 interface SplitState {
   createdSplits: SplitBill[];
@@ -33,15 +36,59 @@ const initialState: SplitState = {
 };
 
 /**
+ * Filter pending splits based on privacy settings
+ */
+async function filterPendingSplitsByPrivacy(
+  splits: SplitBill[],
+  address: string,
+  privacySetting: SplitRequestsFrom
+): Promise<SplitBill[]> {
+  // 'anyone' - no filtering
+  if (privacySetting === 'anyone') {
+    return splits;
+  }
+
+  // 'none' - block all
+  if (privacySetting === 'none') {
+    return [];
+  }
+
+  // 'contacts' - only from contacts
+  const contacts = await loadContacts(address);
+  const contactAddresses = new Set(
+    contacts.map((c) => c.address.toLowerCase())
+  );
+
+  return splits.filter((split) =>
+    contactAddresses.has(split.creatorAddress.toLowerCase())
+  );
+}
+
+/**
  * Load split bills for user (both created and pending)
  */
-export const loadSplitBillsThunk = createAsyncThunk(
+export const loadSplitBillsThunk = createAsyncThunk<
+  { created: SplitBill[]; pending: SplitBill[] },
+  string,
+  { state: RootState }
+>(
   'split/loadAll',
-  async (address: string) => {
-    const [created, pending] = await Promise.all([
+  async (address, { getState }) => {
+    const state = getState();
+    const privacySetting = state.settings.splitRequestsFrom;
+
+    const [created, allPending] = await Promise.all([
       getCreatedSplitBills(address),
       getPendingSplitBills(address),
     ]);
+
+    // Filter pending based on privacy settings
+    const pending = await filterPendingSplitsByPrivacy(
+      allPending,
+      address,
+      privacySetting
+    );
+
     return { created, pending };
   }
 );
@@ -60,11 +107,20 @@ export const loadCreatedSplitsThunk = createAsyncThunk(
 /**
  * Load pending splits where user needs to pay
  */
-export const loadPendingSplitsThunk = createAsyncThunk(
+export const loadPendingSplitsThunk = createAsyncThunk<
+  SplitBill[],
+  string,
+  { state: RootState }
+>(
   'split/loadPending',
-  async (address: string) => {
-    const splits = await getPendingSplitBills(address);
-    return splits;
+  async (address, { getState }) => {
+    const state = getState();
+    const privacySetting = state.settings.splitRequestsFrom;
+
+    const allSplits = await getPendingSplitBills(address);
+
+    // Filter based on privacy settings
+    return filterPendingSplitsByPrivacy(allSplits, address, privacySetting);
   }
 );
 
@@ -123,14 +179,29 @@ export const markPaidThunk = createAsyncThunk(
 /**
  * Sync local cache with backend
  */
-export const syncSplitBillsThunk = createAsyncThunk(
+export const syncSplitBillsThunk = createAsyncThunk<
+  { created: SplitBill[]; pending: SplitBill[] },
+  string,
+  { state: RootState }
+>(
   'split/sync',
-  async (address: string) => {
+  async (address, { getState }) => {
+    const state = getState();
+    const privacySetting = state.settings.splitRequestsFrom;
+
     await syncSplitBills(address);
-    const [created, pending] = await Promise.all([
+    const [created, allPending] = await Promise.all([
       getCreatedSplitBills(address),
       getPendingSplitBills(address),
     ]);
+
+    // Filter pending based on privacy settings
+    const pending = await filterPendingSplitsByPrivacy(
+      allPending,
+      address,
+      privacySetting
+    );
+
     return { created, pending };
   }
 );

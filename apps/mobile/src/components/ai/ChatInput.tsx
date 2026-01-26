@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 interface ChatInputProps {
@@ -26,6 +27,7 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Ask anything...',
 }: ChatInputProps) {
+  const { theme: dynamicTheme } = useTheme();
   const [text, setText] = useState('');
 
   const handleSend = useCallback(() => {
@@ -41,14 +43,14 @@ export function ChatInput({
   const canSend = text.trim().length > 0 && !disabled;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.inputContainer}>
+    <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background, borderTopColor: dynamicTheme.colors.border }]}>
+      <View style={[styles.inputContainer, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: dynamicTheme.colors.textPrimary }]}
           value={text}
           onChangeText={setText}
           placeholder={placeholder}
-          placeholderTextColor={theme.colors.textTertiary}
+          placeholderTextColor={dynamicTheme.colors.textTertiary}
           multiline
           maxLength={1000}
           editable={!disabled}
@@ -57,7 +59,7 @@ export function ChatInput({
           onSubmitEditing={handleSend}
         />
         <TouchableOpacity
-          style={[styles.sendButton, canSend && styles.sendButtonActive]}
+          style={[styles.sendButton, { backgroundColor: dynamicTheme.colors.surfaceHover }, canSend && { backgroundColor: dynamicTheme.colors.accent }]}
           onPress={handleSend}
           disabled={!canSend}
           activeOpacity={0.7}
@@ -65,7 +67,7 @@ export function ChatInput({
           <FontAwesome
             name="arrow-up"
             size={18}
-            color={canSend ? theme.colors.buttonPrimaryText : theme.colors.textTertiary}
+            color={canSend ? dynamicTheme.colors.buttonPrimaryText : dynamicTheme.colors.textTertiary}
           />
         </TouchableOpacity>
       </View>

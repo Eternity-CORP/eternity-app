@@ -48,3 +48,6 @@ export {
 
 // Bridge Progress
 export { BridgeProgressSteps } from './BridgeProgressSteps';
+
+// UI Components
+export { GridBackground, DotBackground } from './ui';

@@ -66,19 +66,21 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => window.open('#demo', '_blank')}
+              onClick={() => scrollToSection('features')}
             >
               <span className="flex items-center gap-2">
-                Watch Demo
+                See Features
                 <svg
                   className="w-5 h-5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                    clipRule="evenodd"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
                   />
                 </svg>
               </span>

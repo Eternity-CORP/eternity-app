@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 interface TypingIndicatorProps {
@@ -12,6 +13,7 @@ interface TypingIndicatorProps {
 }
 
 export function TypingIndicator({ streamingContent }: TypingIndicatorProps) {
+  const { theme: dynamicTheme } = useTheme();
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -69,18 +71,18 @@ export function TypingIndicator({ streamingContent }: TypingIndicatorProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.bubble}>
+      <View style={[styles.bubble, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
         {streamingContent ? (
-          <Text style={styles.streamingText}>{streamingContent}</Text>
+          <Text style={[styles.streamingText, { color: dynamicTheme.colors.textPrimary }]}>{streamingContent}</Text>
         ) : (
           <View style={styles.dotsContainer}>
-            <Animated.View style={[styles.dot, createDotStyle(dot1)]} />
-            <Animated.View style={[styles.dot, createDotStyle(dot2)]} />
-            <Animated.View style={[styles.dot, createDotStyle(dot3)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: dynamicTheme.colors.accent }, createDotStyle(dot1)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: dynamicTheme.colors.accent }, createDotStyle(dot2)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: dynamicTheme.colors.accent }, createDotStyle(dot3)]} />
           </View>
         )}
       </View>
-      <Text style={styles.label}>
+      <Text style={[styles.label, { color: dynamicTheme.colors.textTertiary }]}>
         {streamingContent ? 'AI is responding...' : 'AI is thinking...'}
       </Text>
     </View>

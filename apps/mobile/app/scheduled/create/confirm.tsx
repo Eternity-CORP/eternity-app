@@ -13,6 +13,7 @@ import { createScheduledPaymentThunk } from '@/src/store/slices/scheduled-slice'
 import { resetScheduledCreate } from '@/src/store/slices/scheduled-create-slice';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
@@ -23,6 +24,7 @@ import type { AnyNetworkId } from '@/src/services/network-service';
 
 export default function ScheduledConfirmScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const scheduled = useAppSelector((state) => state.scheduled);
@@ -154,54 +156,54 @@ export default function ScheduledConfirmScreen() {
     : 0;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Confirm" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Step 5 of 5
         </Text>
-        <Text style={[styles.subtitle, theme.typography.heading]}>
+        <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Review your scheduled payment
         </Text>
 
         {/* Summary Card */}
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.summaryRow}>
-            <View style={styles.avatar}>
-              <FontAwesome name="user" size={24} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.avatar, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}>
+              <FontAwesome name="user" size={24} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.summaryInfo}>
-              <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.summaryLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 From
               </Text>
-              <Text style={[styles.summaryValue, theme.typography.body]}>
+              <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {currentAccount ? truncateAddress(currentAccount.address) : ''}
               </Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: dynamicTheme.colors.buttonSecondaryBorder }]} />
 
           <View style={styles.summaryRow}>
-            <View style={[styles.avatar, { backgroundColor: theme.colors.success }]}>
-              <FontAwesome name="user" size={24} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.avatar, { backgroundColor: dynamicTheme.colors.success }]}>
+              <FontAwesome name="user" size={24} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.summaryInfo}>
-              <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.summaryLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 To
               </Text>
               {scheduledCreate.recipientName || scheduledCreate.recipientUsername ? (
                 <>
-                  <Text style={[styles.summaryValue, theme.typography.body]}>
+                  <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                     {scheduledCreate.recipientName || scheduledCreate.recipientUsername}
                   </Text>
-                  <Text style={[styles.summarySubValue, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                  <Text style={[styles.summarySubValue, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                     {truncateAddress(scheduledCreate.recipient)}
                   </Text>
                 </>
               ) : (
-                <Text style={[styles.summaryValue, theme.typography.body]}>
+                <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {truncateAddress(scheduledCreate.recipient)}
                 </Text>
               )}
@@ -210,17 +212,17 @@ export default function ScheduledConfirmScreen() {
         </View>
 
         {/* Details Card */}
-        <View style={styles.detailsCard}>
+        <View style={[styles.detailsCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Amount
             </Text>
             <View style={styles.detailValueColumn}>
-              <Text style={[styles.detailValue, theme.typography.body]}>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {scheduledCreate.amount} {scheduledCreate.selectedToken}
               </Text>
               {usdValue > 0 && (
-                <Text style={[styles.detailSubValue, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                <Text style={[styles.detailSubValue, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                   ${usdValue.toFixed(2)} USD
                 </Text>
               )}
@@ -228,14 +230,14 @@ export default function ScheduledConfirmScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Scheduled For
             </Text>
             <View style={styles.detailValueColumn}>
-              <Text style={[styles.detailValue, theme.typography.body]}>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {scheduledDate.toLocaleDateString()}
               </Text>
-              <Text style={[styles.detailSubValue, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+              <Text style={[styles.detailSubValue, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                 {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </View>
@@ -243,10 +245,10 @@ export default function ScheduledConfirmScreen() {
 
           {scheduledCreate.isRecurring && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Recurring
               </Text>
-              <Text style={[styles.detailValue, theme.typography.body]}>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {scheduledCreate.recurringInterval.charAt(0).toUpperCase() +
                   scheduledCreate.recurringInterval.slice(1)}
               </Text>
@@ -255,10 +257,10 @@ export default function ScheduledConfirmScreen() {
 
           {scheduledCreate.description && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Description
               </Text>
-              <Text style={[styles.detailValue, theme.typography.body, styles.descriptionText]}>
+              <Text style={[styles.detailValue, theme.typography.body, styles.descriptionText, { color: dynamicTheme.colors.textPrimary }]}>
                 {scheduledCreate.description}
               </Text>
             </View>
@@ -268,7 +270,7 @@ export default function ScheduledConfirmScreen() {
         {/* Gas Price Warning */}
         <View style={styles.warningCard}>
           <FontAwesome name="exclamation-triangle" size={16} color="#FFA500" />
-          <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.warningText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Gas prices may change before execution. If network fees increase significantly
             (more than 50%), the transaction may fail. You can edit or cancel anytime before
             the scheduled time.
@@ -276,9 +278,9 @@ export default function ScheduledConfirmScreen() {
         </View>
 
         {/* Info Note */}
-        <View style={styles.infoCard}>
-          <FontAwesome name="info-circle" size={16} color={theme.colors.buttonPrimary} />
-          <Text style={[styles.infoText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.infoCard, { backgroundColor: dynamicTheme.colors.buttonPrimary + '10' }]}>
+          <FontAwesome name="info-circle" size={16} color={dynamicTheme.colors.buttonPrimary} />
+          <Text style={[styles.infoText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Your payment will be automatically executed at the scheduled time. The transaction
             is pre-signed for automatic processing.
           </Text>
@@ -289,21 +291,21 @@ export default function ScheduledConfirmScreen() {
       </ScrollView>
 
       {/* Confirm Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
         <TouchableOpacity
-          style={[styles.confirmButton, isCreating && styles.confirmButtonDisabled]}
+          style={[styles.confirmButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, isCreating && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleConfirm}
           disabled={isCreating}
         >
           {isCreating ? (
             <View style={styles.buttonLoadingContent}>
-              <ActivityIndicator size="small" color={theme.colors.buttonPrimaryText} />
-              <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+              <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimaryText} />
+              <Text style={[styles.confirmButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                 {isSigningTx ? 'Signing Transaction...' : 'Creating...'}
               </Text>
             </View>
           ) : (
-            <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+            <Text style={[styles.confirmButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
               Sign & Schedule Payment
             </Text>
           )}

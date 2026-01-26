@@ -23,6 +23,7 @@ import { blikSocket } from '@/src/services/blik-service';
 import { sendTransaction, estimateGas, type GasEstimate } from '@/src/services/send-service';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { truncateAddress } from '@/src/utils/format';
@@ -34,6 +35,7 @@ const NETWORKS = [
 ];
 
 export default function BlikConfirmScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
@@ -230,35 +232,35 @@ export default function BlikConfirmScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Confirm Payment" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Summary Card */}
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.summaryRow}>
-            <View style={styles.avatar}>
-              <FontAwesome name="user" size={24} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.avatar, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}>
+              <FontAwesome name="user" size={24} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.summaryInfo}>
-              <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.summaryLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 From
               </Text>
-              <Text style={[styles.summaryValue, theme.typography.body]}>
+              <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {currentAccount ? truncateAddress(currentAccount.address) : ''}
               </Text>
             </View>
           </View>
 
           <View style={styles.summaryRow}>
-            <View style={[styles.avatar, { backgroundColor: theme.colors.success }]}>
-              <FontAwesome name="user" size={24} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.avatar, { backgroundColor: dynamicTheme.colors.success }]}>
+              <FontAwesome name="user" size={24} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.summaryInfo}>
-              <Text style={[styles.summaryLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.summaryLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 To
               </Text>
-              <Text style={[styles.summaryValue, theme.typography.body]}>
+              <Text style={[styles.summaryValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {codeInfo.receiverUsername || truncateAddress(codeInfo.receiverAddress)}
               </Text>
             </View>
@@ -266,12 +268,12 @@ export default function BlikConfirmScreen() {
         </View>
 
         {/* Details Card */}
-        <View style={styles.detailsCard}>
+        <View style={[styles.detailsCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Amount
             </Text>
-            <Text style={[styles.detailValue, theme.typography.body]}>
+            <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {codeInfo.amount} {codeInfo.tokenSymbol}
             </Text>
           </View>
@@ -281,25 +283,25 @@ export default function BlikConfirmScreen() {
             style={styles.detailRow}
             onPress={() => setShowNetworkPicker(!showNetworkPicker)}
           >
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Network
             </Text>
             <View style={styles.networkSelector}>
-              <Text style={[styles.detailValue, theme.typography.body]}>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {selectedNetworkInfo.name}
               </Text>
-              <FontAwesome name="chevron-down" size={12} color={theme.colors.textSecondary} />
+              <FontAwesome name="chevron-down" size={12} color={dynamicTheme.colors.textSecondary} />
             </View>
           </TouchableOpacity>
 
           {showNetworkPicker && (
-            <View style={styles.networkPicker}>
+            <View style={[styles.networkPicker, { backgroundColor: dynamicTheme.colors.background }]}>
               {NETWORKS.map((network) => (
                 <TouchableOpacity
                   key={network.id}
                   style={[
                     styles.networkOption,
-                    selectedNetwork === network.id && styles.networkOptionSelected,
+                    selectedNetwork === network.id && { backgroundColor: dynamicTheme.colors.surface },
                   ]}
                   onPress={() => {
                     dispatch(senderSetNetwork(network.id));
@@ -310,13 +312,14 @@ export default function BlikConfirmScreen() {
                     style={[
                       styles.networkOptionText,
                       theme.typography.body,
+                      { color: dynamicTheme.colors.textPrimary },
                       selectedNetwork === network.id && styles.networkOptionTextSelected,
                     ]}
                   >
                     {network.name}
                   </Text>
                   {selectedNetwork === network.id && (
-                    <FontAwesome name="check" size={14} color={theme.colors.buttonPrimary} />
+                    <FontAwesome name="check" size={14} color={dynamicTheme.colors.buttonPrimary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -325,28 +328,28 @@ export default function BlikConfirmScreen() {
 
           {gasEstimateStatus === 'loading' && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Gas Fee
               </Text>
-              <Text style={[styles.detailValue, theme.typography.body]}>Calculating...</Text>
+              <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>Calculating...</Text>
             </View>
           )}
 
           {gasEstimate && (
             <>
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Gas Fee
                 </Text>
-                <Text style={[styles.detailValue, theme.typography.body]}>
+                <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {parseFloat(gasEstimate.totalGasCost).toFixed(6)} ETH
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Gas Fee (USD)
                 </Text>
-                <Text style={[styles.detailValue, theme.typography.body]}>
+                <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   ${gasEstimate.totalGasCostUsd.toFixed(2)}
                 </Text>
               </View>
@@ -356,18 +359,18 @@ export default function BlikConfirmScreen() {
 
         {/* Balance Warnings */}
         {!hasToken && (
-          <View style={styles.warningCard}>
-            <FontAwesome name="exclamation-triangle" size={16} color={theme.colors.error} />
-            <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.warningCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <FontAwesome name="exclamation-triangle" size={16} color={dynamicTheme.colors.error} />
+            <Text style={[styles.warningText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               Insufficient {codeInfo.tokenSymbol} balance
             </Text>
           </View>
         )}
 
         {!hasGas && gasEstimate && (
-          <View style={styles.warningCard}>
-            <FontAwesome name="exclamation-triangle" size={16} color={theme.colors.error} />
-            <Text style={[styles.warningText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.warningCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <FontAwesome name="exclamation-triangle" size={16} color={dynamicTheme.colors.error} />
+            <Text style={[styles.warningText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               Insufficient ETH for gas
             </Text>
           </View>
@@ -375,8 +378,8 @@ export default function BlikConfirmScreen() {
 
         {/* Error Display */}
         {blik.sender.error && (
-          <View style={styles.errorCard}>
-            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.errorCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               {blik.sender.error}
             </Text>
           </View>
@@ -387,16 +390,17 @@ export default function BlikConfirmScreen() {
       </ScrollView>
 
       {/* Confirm Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
         <TouchableOpacity
           style={[
             styles.confirmButton,
-            (!canConfirm || !hasToken || !hasGas) && styles.confirmButtonDisabled,
+            { backgroundColor: dynamicTheme.colors.buttonPrimary },
+            (!canConfirm || !hasToken || !hasGas) && { backgroundColor: dynamicTheme.colors.textTertiary },
           ]}
           onPress={handleConfirmPayment}
           disabled={!canConfirm || !hasToken || !hasGas || isConfirming}
         >
-          <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+          <Text style={[styles.confirmButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {isConfirming ? 'Sending...' : 'Confirm & Send'}
           </Text>
         </TouchableOpacity>
@@ -413,36 +417,36 @@ export default function BlikConfirmScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <Text style={[styles.modalTitle, theme.typography.heading]}>
+          <View style={[styles.modalContent, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <Text style={[styles.modalTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
               Save Contact
             </Text>
-            <Text style={[styles.modalSubtitle, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.modalSubtitle, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Enter a name for this contact
             </Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary }]}
               placeholder="Contact name"
-              placeholderTextColor={theme.colors.textTertiary}
+              placeholderTextColor={dynamicTheme.colors.textTertiary}
               value={contactName}
               onChangeText={setContactName}
               autoFocus
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={styles.modalButtonCancel}
+                style={[styles.modalButtonCancel, { borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
                 onPress={handleCancelSaveContact}
               >
-                <Text style={[styles.modalButtonCancelText, theme.typography.body]}>
+                <Text style={[styles.modalButtonCancelText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalButtonSave, !contactName.trim() && styles.modalButtonSaveDisabled]}
+                style={[styles.modalButtonSave, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !contactName.trim() && { backgroundColor: dynamicTheme.colors.textTertiary }]}
                 onPress={handleSaveContact}
                 disabled={!contactName.trim()}
               >
-                <Text style={[styles.modalButtonSaveText, theme.typography.body]}>
+                <Text style={[styles.modalButtonSaveText, theme.typography.body, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                   Save
                 </Text>
               </TouchableOpacity>

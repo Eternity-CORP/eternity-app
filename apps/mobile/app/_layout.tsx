@@ -15,7 +15,7 @@ import { Provider } from 'react-redux';
 import { NotificationProvider } from '@/src/components/NotificationProvider';
 import { MigrationModal } from '@/src/components/MigrationModal';
 import { AiFab } from '@/src/components/ai';
-import { theme } from '@/src/constants/theme';
+import { AppThemeProvider, useTheme } from '@/src/contexts';
 import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
@@ -39,24 +39,26 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
 
-// Custom dark theme matching website
-const EYDarkTheme = {
-  dark: true,
-  colors: {
-    primary: theme.colors.accent,
-    background: theme.colors.background,
-    card: theme.colors.surface,
-    text: theme.colors.textPrimary,
-    border: theme.colors.border,
-    notification: theme.colors.accent,
-  },
-  fonts: {
-    regular: { fontFamily: 'System', fontWeight: '400' as const },
-    medium: { fontFamily: 'System', fontWeight: '500' as const },
-    bold: { fontFamily: 'System', fontWeight: '700' as const },
-    heavy: { fontFamily: 'System', fontWeight: '800' as const },
-  },
-};
+// Create navigation theme from app theme
+function createNavigationTheme(appTheme: ReturnType<typeof useTheme>['theme']) {
+  return {
+    dark: appTheme.isDark,
+    colors: {
+      primary: appTheme.colors.accent,
+      background: appTheme.colors.background,
+      card: appTheme.colors.surface,
+      text: appTheme.colors.textPrimary,
+      border: appTheme.colors.border,
+      notification: appTheme.colors.accent,
+    },
+    fonts: {
+      regular: { fontFamily: 'System', fontWeight: '400' as const },
+      medium: { fontFamily: 'System', fontWeight: '500' as const },
+      bold: { fontFamily: 'System', fontWeight: '700' as const },
+      heavy: { fontFamily: 'System', fontWeight: '800' as const },
+    },
+  };
+}
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -85,7 +87,9 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
-        <RootLayoutNav />
+        <AppThemeProvider>
+          <RootLayoutNav />
+        </AppThemeProvider>
       </Provider>
     </GestureHandlerRootView>
   );
@@ -96,8 +100,12 @@ function RootLayoutNav() {
   const segments = useSegments();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
+  const { theme, isDark } = useTheme();
   const [isCheckingWallet, setIsCheckingWallet] = useState(true);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
+
+  // Create navigation theme from current app theme
+  const navigationTheme = createNavigationTheme(theme);
 
   useEffect(() => {
     async function checkWallet() {
@@ -166,8 +174,8 @@ function RootLayoutNav() {
 
   return (
     <NotificationProvider>
-      <ThemeProvider value={EYDarkTheme}>
-        <StatusBar style="light" />
+      <ThemeProvider value={navigationTheme}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <MigrationModal
           visible={showMigrationModal}
           onDismiss={handleMigrationDismiss}
@@ -183,6 +191,7 @@ function RootLayoutNav() {
           <Stack.Screen name="receive" options={{ headerShown: false }} />
           <Stack.Screen name="blik" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="transaction" options={{ headerShown: false }} />
           <Stack.Screen name="token" options={{ headerShown: false }} />
           <Stack.Screen name="scheduled" options={{ headerShown: false }} />

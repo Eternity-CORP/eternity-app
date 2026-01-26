@@ -4,29 +4,39 @@ import { Tabs } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
   focused: boolean;
+  activeColor: string;
 }) {
   return (
-    <View style={[styles.iconContainer, props.focused && styles.iconContainerActive]}>
-      <FontAwesome size={22} {...props} />
+    <View style={[styles.iconContainer, props.focused && { backgroundColor: props.activeColor + '10' }]}>
+      <FontAwesome size={22} name={props.name} color={props.color} />
     </View>
   );
 }
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { theme: dynamicTheme } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.colors.accent,
-        tabBarInactiveTintColor: theme.colors.textSecondary,
-        tabBarStyle: [styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }],
+        tabBarActiveTintColor: dynamicTheme.colors.textPrimary,
+        tabBarInactiveTintColor: dynamicTheme.colors.textTertiary,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            paddingBottom: Math.max(insets.bottom, 8),
+            backgroundColor: dynamicTheme.colors.background,
+            borderTopColor: dynamicTheme.colors.glassBorder,
+          },
+        ],
         tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
       }}>
@@ -35,7 +45,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           headerShown: false,
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="home" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name="home" color={color} focused={focused} activeColor={dynamicTheme.colors.textPrimary} />,
         }}
       />
       <Tabs.Screen
@@ -43,14 +53,14 @@ export default function TabLayout() {
         options={{
           title: 'AI',
           headerShown: false,
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="magic" color={color} focused={focused} />,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name="magic" color={color} focused={focused} activeColor={dynamicTheme.colors.textPrimary} />,
         }}
       />
       <Tabs.Screen
         name="shard"
         options={{
-          title: 'Shard',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="id-card" color={color} focused={focused} />,
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name="user" color={color} focused={focused} activeColor={dynamicTheme.colors.textPrimary} />,
         }}
       />
       <Tabs.Screen
@@ -73,8 +83,8 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: theme.colors.surface,
-    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.background,
+    borderTopColor: theme.colors.glassBorder,
     borderTopWidth: 1,
     paddingTop: 8,
   },
@@ -91,6 +101,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   iconContainerActive: {
-    backgroundColor: theme.colors.accent + '20',
+    backgroundColor: theme.colors.textPrimary + '10',
   },
 });

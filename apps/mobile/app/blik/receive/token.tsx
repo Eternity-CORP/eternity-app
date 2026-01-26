@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { useAppSelector } from '@/src/store/hooks';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { TokenIcon } from '@/src/components/TokenIcon';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -20,6 +21,7 @@ const FALLBACK_TOKENS: Array<{ symbol: string; name: string; iconUrl?: string }>
 ];
 
 export default function BlikReceiveTokenScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const balance = useAppSelector((state) => state.balance);
 
   // Use tokens from balance if available, otherwise fallback
@@ -39,11 +41,11 @@ export default function BlikReceiveTokenScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Receive BLIK" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={[styles.subtitle, theme.typography.body, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.subtitle, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
           Which token do you want to receive?
         </Text>
 
@@ -51,20 +53,20 @@ export default function BlikReceiveTokenScreen() {
           {tokens.map((token) => (
             <TouchableOpacity
               key={token.symbol}
-              style={styles.tokenItem}
+              style={[styles.tokenItem, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleSelectToken(token.symbol)}
               activeOpacity={0.7}
             >
               <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={48} />
               <View style={styles.tokenInfo}>
-                <Text style={[styles.tokenName, theme.typography.heading]}>
+                <Text style={[styles.tokenName, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {token.name}
                 </Text>
-                <Text style={[styles.tokenSymbol, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.tokenSymbol, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   {token.symbol}
                 </Text>
               </View>
-              <FontAwesome name="chevron-right" size={16} color={theme.colors.textTertiary} />
+              <FontAwesome name="chevron-right" size={16} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
           ))}
         </View>

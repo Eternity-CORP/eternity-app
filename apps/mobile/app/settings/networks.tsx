@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { createLogger } from '@/src/utils/logger';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { NetworkBadge, NetworkDot } from '@/src/components/NetworkBadge';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import {
@@ -80,6 +81,7 @@ const NETWORK_OPTIONS: NetworkOption[] = [
 
 export default function NetworkSettingsScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
 
   // Redux state
   const defaultNetwork = useAppSelector(selectDefaultNetwork);
@@ -174,7 +176,7 @@ export default function NetworkSettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Network Preferences" />
 
       <ScrollView
@@ -183,13 +185,13 @@ export default function NetworkSettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Info Banner */}
-        <View style={styles.infoBanner}>
+        <View style={[styles.infoBanner, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.accent + '30' }]}>
           <Ionicons
             name="information-circle-outline"
             size={20}
-            color={theme.colors.accent}
+            color={dynamicTheme.colors.accent}
           />
-          <Text style={styles.infoBannerText}>
+          <Text style={[styles.infoBannerText, { color: dynamicTheme.colors.textSecondary }]}>
             Choose your preferred network for receiving tokens. Senders will see
             your preference and can send on that network without conversion fees.
           </Text>
@@ -197,8 +199,8 @@ export default function NetworkSettingsScreen() {
 
         {/* Default Receiving Network Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Default Receiving Network</Text>
-          <Text style={styles.sectionDesc}>
+          <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textPrimary }]}>Default Receiving Network</Text>
+          <Text style={[styles.sectionDesc, { color: dynamicTheme.colors.textSecondary }]}>
             This network will be used for all tokens unless you set specific
             exceptions below.
           </Text>
@@ -209,7 +211,8 @@ export default function NetworkSettingsScreen() {
                 key={option.id ?? 'any'}
                 style={[
                   styles.radioOption,
-                  defaultNetwork === option.id && styles.radioOptionSelected,
+                  { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border },
+                  defaultNetwork === option.id && { borderColor: dynamicTheme.colors.accent, backgroundColor: dynamicTheme.colors.accent + '10' },
                 ]}
                 onPress={() => handleDefaultNetworkChange(option.id)}
                 activeOpacity={0.7}
@@ -218,25 +221,25 @@ export default function NetworkSettingsScreen() {
                   <View
                     style={[
                       styles.radioCircle,
-                      defaultNetwork === option.id &&
-                        styles.radioCircleSelected,
+                      { borderColor: dynamicTheme.colors.textTertiary },
+                      defaultNetwork === option.id && { borderColor: dynamicTheme.colors.accent },
                     ]}
                   >
                     {defaultNetwork === option.id && (
-                      <View style={styles.radioCircleInner} />
+                      <View style={[styles.radioCircleInner, { backgroundColor: dynamicTheme.colors.accent }]} />
                     )}
                   </View>
                   <View style={styles.radioTextContainer}>
                     <View style={styles.radioNameRow}>
-                      <Text style={styles.radioName}>{option.name}</Text>
+                      <Text style={[styles.radioName, { color: dynamicTheme.colors.textPrimary }]}>{option.name}</Text>
                       {option.recommended && (
-                        <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedText}>Recommended</Text>
+                        <View style={[styles.recommendedBadge, { backgroundColor: dynamicTheme.colors.success + '20' }]}>
+                          <Text style={[styles.recommendedText, { color: dynamicTheme.colors.success }]}>Recommended</Text>
                         </View>
                       )}
                     </View>
                     {option.description && (
-                      <Text style={styles.radioDesc}>{option.description}</Text>
+                      <Text style={[styles.radioDesc, { color: dynamicTheme.colors.textSecondary }]}>{option.description}</Text>
                     )}
                   </View>
                 </View>
@@ -252,13 +255,13 @@ export default function NetworkSettingsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={styles.sectionTitle}>Token Exceptions</Text>
-              <Text style={styles.sectionDesc}>
+              <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textPrimary }]}>Token Exceptions</Text>
+              <Text style={[styles.sectionDesc, { color: dynamicTheme.colors.textSecondary }]}>
                 Override the default network for specific tokens.
               </Text>
             </View>
             <TouchableOpacity
-              style={styles.addButton}
+              style={[styles.addButton, { backgroundColor: dynamicTheme.colors.accent + '15' }]}
               onPress={() => setShowTokenModal(true)}
               disabled={availableTokens.length === 0}
             >
@@ -267,14 +270,15 @@ export default function NetworkSettingsScreen() {
                 size={20}
                 color={
                   availableTokens.length === 0
-                    ? theme.colors.textTertiary
-                    : theme.colors.accent
+                    ? dynamicTheme.colors.textTertiary
+                    : dynamicTheme.colors.accent
                 }
               />
               <Text
                 style={[
                   styles.addButtonText,
-                  availableTokens.length === 0 && styles.addButtonTextDisabled,
+                  { color: dynamicTheme.colors.accent },
+                  availableTokens.length === 0 && { color: dynamicTheme.colors.textTertiary },
                 ]}
               >
                 Add
@@ -283,8 +287,8 @@ export default function NetworkSettingsScreen() {
           </View>
 
           {overridesList.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>
+            <View style={[styles.emptyState, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+              <Text style={[styles.emptyStateText, { color: dynamicTheme.colors.textSecondary }]}>
                 No exceptions set. All tokens will use your default network
                 preference.
               </Text>
@@ -292,13 +296,13 @@ export default function NetworkSettingsScreen() {
           ) : (
             <View style={styles.overridesList}>
               {overridesList.map(({ symbol, networkId, networkName }) => (
-                <View key={symbol} style={styles.overrideItem}>
+                <View key={symbol} style={[styles.overrideItem, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
                   <View style={styles.overrideInfo}>
-                    <Text style={styles.overrideToken}>{symbol}</Text>
+                    <Text style={[styles.overrideToken, { color: dynamicTheme.colors.textPrimary }]}>{symbol}</Text>
                     <Ionicons
                       name="arrow-forward"
                       size={14}
-                      color={theme.colors.textTertiary}
+                      color={dynamicTheme.colors.textTertiary}
                       style={styles.overrideArrow}
                     />
                     <NetworkBadge networkId={networkId} size="small" />
@@ -311,7 +315,7 @@ export default function NetworkSettingsScreen() {
                     <Ionicons
                       name="close-circle"
                       size={22}
-                      color={theme.colors.textTertiary}
+                      color={dynamicTheme.colors.textTertiary}
                     />
                   </TouchableOpacity>
                 </View>
@@ -328,9 +332,9 @@ export default function NetworkSettingsScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowTokenModal(false)}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Token</Text>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: dynamicTheme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: dynamicTheme.colors.border }]}>
+            <Text style={[styles.modalTitle, { color: dynamicTheme.colors.textPrimary }]}>Select Token</Text>
             <TouchableOpacity
               onPress={() => setShowTokenModal(false)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -338,7 +342,7 @@ export default function NetworkSettingsScreen() {
               <Ionicons
                 name="close"
                 size={24}
-                color={theme.colors.textPrimary}
+                color={dynamicTheme.colors.textPrimary}
               />
             </TouchableOpacity>
           </View>
@@ -348,14 +352,14 @@ export default function NetworkSettingsScreen() {
             contentContainerStyle={styles.modalList}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.modalItem}
+                style={[styles.modalItem, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => handleTokenSelect(item)}
               >
-                <Text style={styles.modalItemText}>{item}</Text>
+                <Text style={[styles.modalItemText, { color: dynamicTheme.colors.textPrimary }]}>{item}</Text>
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={theme.colors.textTertiary}
+                  color={dynamicTheme.colors.textTertiary}
                 />
               </TouchableOpacity>
             )}
@@ -373,9 +377,9 @@ export default function NetworkSettingsScreen() {
           setSelectedToken(null);
         }}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: dynamicTheme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: dynamicTheme.colors.border }]}>
+            <Text style={[styles.modalTitle, { color: dynamicTheme.colors.textPrimary }]}>
               Select Network for {selectedToken}
             </Text>
             <TouchableOpacity
@@ -388,7 +392,7 @@ export default function NetworkSettingsScreen() {
               <Ionicons
                 name="close"
                 size={24}
-                color={theme.colors.textPrimary}
+                color={dynamicTheme.colors.textPrimary}
               />
             </TouchableOpacity>
           </View>
@@ -398,17 +402,17 @@ export default function NetworkSettingsScreen() {
             contentContainerStyle={styles.modalList}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.modalItem}
+                style={[styles.modalItem, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => handleNetworkSelectForToken(item.id)}
               >
                 <View style={styles.modalNetworkInfo}>
                   <NetworkDot networkId={item.id} size={10} />
-                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={[styles.modalItemText, { color: dynamicTheme.colors.textPrimary }]}>{item.name}</Text>
                 </View>
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={theme.colors.textTertiary}
+                  color={dynamicTheme.colors.textTertiary}
                 />
               </TouchableOpacity>
             )}

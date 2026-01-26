@@ -18,10 +18,12 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { loadCreatedSplitsThunk, loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
 import { truncateAddress, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function SplitListScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const split = useAppSelector((state) => state.split);
@@ -59,12 +61,12 @@ export default function SplitListScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader
         title="Split Bills"
         rightElement={
           <TouchableOpacity onPress={() => router.push('/split/create')}>
-            <FontAwesome name="plus" size={20} color={theme.colors.buttonPrimary} />
+            <FontAwesome name="plus" size={20} color={dynamicTheme.colors.buttonPrimary} />
           </TouchableOpacity>
         }
       />
@@ -76,14 +78,14 @@ export default function SplitListScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={onRefresh}
-            tintColor={theme.colors.buttonPrimary}
+            tintColor={dynamicTheme.colors.buttonPrimary}
           />
         }
       >
         {/* Pending Splits Section */}
         {split.pendingSplits.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, theme.typography.heading]}>
+            <Text style={[styles.sectionTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
               Pending Payments
             </Text>
             {split.pendingSplits.map((bill) => {
@@ -96,18 +98,18 @@ export default function SplitListScreen() {
                   style={[styles.splitItem, styles.pendingItem]}
                   onPress={() => router.push(`/split/${bill.id}`)}
                 >
-                  <View style={styles.splitIcon}>
+                  <View style={[styles.splitIcon, { backgroundColor: dynamicTheme.colors.background }]}>
                     <FontAwesome name="exclamation-circle" size={20} color="#FFA500" />
                   </View>
                   <View style={styles.splitInfo}>
-                    <Text style={[styles.splitAmount, theme.typography.body]}>
+                    <Text style={[styles.splitAmount, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                       {formatAmount(myShare?.amount || bill.totalAmount)} {bill.tokenSymbol}
                     </Text>
-                    <Text style={[styles.splitDescription, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                    <Text style={[styles.splitDescription, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                       {bill.description || `From ${bill.creatorUsername ? `@${bill.creatorUsername}` : truncateAddress(bill.creatorAddress)}`}
                     </Text>
                   </View>
-                  <FontAwesome name="chevron-right" size={14} color={theme.colors.textTertiary} />
+                  <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
                 </TouchableOpacity>
               );
             })}
@@ -117,7 +119,7 @@ export default function SplitListScreen() {
         {/* Created Splits Section */}
         {split.createdSplits.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, theme.typography.heading]}>
+            <Text style={[styles.sectionTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
               Your Split Bills
             </Text>
             {split.createdSplits.map((bill) => {
@@ -127,7 +129,7 @@ export default function SplitListScreen() {
               return (
                 <TouchableOpacity
                   key={`created-${bill.id}`}
-                  style={styles.splitItem}
+                  style={[styles.splitItem, { backgroundColor: dynamicTheme.colors.surface }]}
                   onPress={() => router.push(`/split/${bill.id}`)}
                 >
                   <View style={[styles.splitIcon, { backgroundColor: statusBadge.color + '20' }]}>
@@ -138,10 +140,10 @@ export default function SplitListScreen() {
                     />
                   </View>
                   <View style={styles.splitInfo}>
-                    <Text style={[styles.splitAmount, theme.typography.body]}>
+                    <Text style={[styles.splitAmount, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                       {formatAmount(bill.totalAmount)} {bill.tokenSymbol}
                     </Text>
-                    <Text style={[styles.splitDescription, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                    <Text style={[styles.splitDescription, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                       {bill.description || `${paidCount}/${totalCount} paid`}
                     </Text>
                   </View>
@@ -159,19 +161,19 @@ export default function SplitListScreen() {
         {/* Empty State */}
         {allSplits.length === 0 && !isLoading && (
           <View style={styles.emptyState}>
-            <FontAwesome name="users" size={48} color={theme.colors.textTertiary} />
-            <Text style={[styles.emptyTitle, theme.typography.heading, { color: theme.colors.textSecondary }]}>
+            <FontAwesome name="users" size={48} color={dynamicTheme.colors.textTertiary} />
+            <Text style={[styles.emptyTitle, theme.typography.heading, { color: dynamicTheme.colors.textSecondary }]}>
               No Split Bills
             </Text>
-            <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.textTertiary }]}>
+            <Text style={[styles.emptyText, theme.typography.body, { color: dynamicTheme.colors.textTertiary }]}>
               Create a split bill to share expenses with friends
             </Text>
             <TouchableOpacity
-              style={styles.createButton}
+              style={[styles.createButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
               onPress={() => router.push('/split/create')}
             >
-              <FontAwesome name="plus" size={16} color={theme.colors.buttonPrimaryText} />
-              <Text style={[styles.createButtonText, theme.typography.heading, { color: theme.colors.buttonPrimaryText }]}>
+              <FontAwesome name="plus" size={16} color={dynamicTheme.colors.buttonPrimaryText} />
+              <Text style={[styles.createButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                 Create Split Bill
               </Text>
             </TouchableOpacity>

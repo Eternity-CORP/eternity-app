@@ -10,13 +10,16 @@ import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/walle
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { createSplitBillThunk } from '@/src/store/slices/split-slice';
 import { resetSplitCreate } from '@/src/store/slices/split-create-slice';
+import { checkSplitPrivacy, getBlockedParticipantNames } from '@/src/services/split-bill-service';
 import { truncateAddress, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function SplitConfirmScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const split = useAppSelector((state) => state.split);
@@ -35,6 +38,27 @@ export default function SplitConfirmScreen() {
     }
 
     try {
+      // Check if participants can receive split bill requests
+      const participantAddresses = splitCreate.participants.map((p) => p.address);
+      const privacyResults = await checkSplitPrivacy(
+        currentAccount.address,
+        participantAddresses
+      );
+
+      const blockedNames = getBlockedParticipantNames(
+        privacyResults,
+        splitCreate.participants
+      );
+
+      if (blockedNames.length > 0) {
+        const message =
+          blockedNames.length === 1
+            ? `${blockedNames[0]} has disabled split bill requests and won't receive this request.`
+            : `The following participants have disabled split bill requests and won't receive this request:\n\n${blockedNames.join('\n')}`;
+        Alert.alert('Cannot send to some participants', message);
+        return;
+      }
+
       await dispatch(
         createSplitBillThunk({
           creatorAddress: currentAccount.address,
@@ -88,63 +112,63 @@ export default function SplitConfirmScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Confirm" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Step 6 of 6
         </Text>
-        <Text style={[styles.subtitle, theme.typography.heading]}>
+        <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Review your split bill
         </Text>
 
         {/* Summary Card */}
-        <View style={styles.summaryCard}>
+        <View style={[styles.summaryCard, { backgroundColor: dynamicTheme.colors.surface }]}>
           <View style={styles.summaryHeader}>
-            <View style={styles.tokenIcon}>
-              <Text style={[styles.tokenIconText, theme.typography.heading]}>
+            <View style={[styles.tokenIcon, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}>
+              <Text style={[styles.tokenIconText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                 {splitCreate.selectedToken.charAt(0)}
               </Text>
             </View>
             <View style={styles.summaryAmount}>
-              <Text style={[styles.amountValue, theme.typography.title]}>
+              <Text style={[styles.amountValue, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
                 {formatAmount(splitCreate.totalAmount)} {splitCreate.selectedToken}
               </Text>
               {usdValue > 0 && (
-                <Text style={[styles.amountUsd, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.amountUsd, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   ${usdValue.toFixed(2)} USD
                 </Text>
               )}
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: dynamicTheme.colors.buttonSecondaryBorder }]} />
 
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Split Mode
             </Text>
-            <Text style={[styles.detailValue, theme.typography.body]}>
+            <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {getSplitModeText()}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Participants
             </Text>
-            <Text style={[styles.detailValue, theme.typography.body]}>
+            <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {splitCreate.participants.length}
             </Text>
           </View>
 
           {splitCreate.description && (
             <View style={styles.detailRow}>
-              <Text style={[styles.detailLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Description
               </Text>
-              <Text style={[styles.detailValue, theme.typography.body, styles.descriptionText]}>
+              <Text style={[styles.detailValue, theme.typography.body, styles.descriptionText, { color: dynamicTheme.colors.textPrimary }]}>
                 {splitCreate.description}
               </Text>
             </View>
@@ -152,27 +176,27 @@ export default function SplitConfirmScreen() {
         </View>
 
         {/* Participants Card */}
-        <View style={styles.participantsCard}>
-          <Text style={[styles.sectionTitle, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.participantsCard, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <Text style={[styles.sectionTitle, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             PARTICIPANTS
           </Text>
 
           {splitCreate.participants.map((participant, index) => (
             <View key={participant.id} style={styles.participantRow}>
-              <View style={styles.participantAvatar}>
-                <FontAwesome name="user" size={16} color={theme.colors.textTertiary} />
+              <View style={[styles.participantAvatar, { backgroundColor: dynamicTheme.colors.surfaceHover }]}>
+                <FontAwesome name="user" size={16} color={dynamicTheme.colors.textTertiary} />
               </View>
               <View style={styles.participantInfo}>
-                <Text style={[styles.participantName, theme.typography.body]} numberOfLines={1}>
+                <Text style={[styles.participantName, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
                   {participant.name || participant.username || truncateAddress(participant.address)}
                 </Text>
                 {(participant.name || participant.username) && (
-                  <Text style={[styles.participantAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                  <Text style={[styles.participantAddress, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                     {truncateAddress(participant.address)}
                   </Text>
                 )}
               </View>
-              <Text style={[styles.participantAmount, theme.typography.body]}>
+              <Text style={[styles.participantAmount, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {formatAmount(participant.amount)} {splitCreate.selectedToken}
               </Text>
             </View>
@@ -180,37 +204,37 @@ export default function SplitConfirmScreen() {
         </View>
 
         {/* Delivery Card */}
-        <View style={styles.deliveryCard}>
-          <Text style={[styles.sectionTitle, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.deliveryCard, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <Text style={[styles.sectionTitle, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             PAYMENTS DELIVERED TO
           </Text>
 
           <View style={styles.deliveryRow}>
-            <View style={[styles.deliveryAvatar, { backgroundColor: theme.colors.success }]}>
-              <FontAwesome name="check" size={16} color={theme.colors.buttonPrimaryText} />
+            <View style={[styles.deliveryAvatar, { backgroundColor: dynamicTheme.colors.success }]}>
+              <FontAwesome name="check" size={16} color={dynamicTheme.colors.buttonPrimaryText} />
             </View>
             <View style={styles.deliveryInfo}>
               {splitCreate.useCustomDelivery ? (
                 <>
                   {splitCreate.deliveryUsername && (
-                    <Text style={[styles.deliveryName, theme.typography.body]}>
+                    <Text style={[styles.deliveryName, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                       {splitCreate.deliveryUsername}
                     </Text>
                   )}
                   <Text style={[
                     splitCreate.deliveryUsername ? styles.deliveryAddress : styles.deliveryName,
                     splitCreate.deliveryUsername ? theme.typography.caption : theme.typography.body,
-                    splitCreate.deliveryUsername && { color: theme.colors.textTertiary }
+                    { color: splitCreate.deliveryUsername ? dynamicTheme.colors.textTertiary : dynamicTheme.colors.textPrimary }
                   ]}>
                     {truncateAddress(splitCreate.deliveryAddress)}
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={[styles.deliveryName, theme.typography.body]}>
+                  <Text style={[styles.deliveryName, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                     My Wallet
                   </Text>
-                  <Text style={[styles.deliveryAddress, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+                  <Text style={[styles.deliveryAddress, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                     {currentAccount ? truncateAddress(currentAccount.address) : ''}
                   </Text>
                 </>
@@ -220,9 +244,9 @@ export default function SplitConfirmScreen() {
         </View>
 
         {/* Info Note */}
-        <View style={styles.infoCard}>
-          <FontAwesome name="info-circle" size={16} color={theme.colors.buttonPrimary} />
-          <Text style={[styles.infoText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.infoCard, { backgroundColor: dynamicTheme.colors.buttonPrimary + '10' }]}>
+          <FontAwesome name="info-circle" size={16} color={dynamicTheme.colors.buttonPrimary} />
+          <Text style={[styles.infoText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Participants will receive a notification to pay their share. Payments will be
             collected at the delivery address.
           </Text>
@@ -233,13 +257,13 @@ export default function SplitConfirmScreen() {
       </ScrollView>
 
       {/* Confirm Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
         <TouchableOpacity
-          style={[styles.confirmButton, isCreating && styles.confirmButtonDisabled]}
+          style={[styles.confirmButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, isCreating && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleConfirm}
           disabled={isCreating}
         >
-          <Text style={[styles.confirmButtonText, theme.typography.heading]}>
+          <Text style={[styles.confirmButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {isCreating ? 'Creating...' : 'Create Split Bill'}
           </Text>
         </TouchableOpacity>

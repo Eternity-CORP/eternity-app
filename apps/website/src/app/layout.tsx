@@ -5,6 +5,8 @@ import './globals.css'
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap', // Prevent FOIT (Flash of Invisible Text)
+  preload: true,
 })
 
 export const metadata: Metadata = {
@@ -12,10 +14,17 @@ export const metadata: Metadata = {
   description: 'Send crypto like you send a text. The first wallet with BLIK-style codes, network abstraction, and zero fear.',
   keywords: ['crypto wallet', 'BLIK', 'cryptocurrency', 'ethereum', 'web3', 'defi'],
   authors: [{ name: 'Eternity Team' }],
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/images/loho_purple.png', type: 'image/png' },
+    ],
+    apple: '/images/loho_purple.png',
+  },
   openGraph: {
     title: 'Eternity | The Wallet for Everyone',
     description: 'Send crypto like you send a text. The first wallet with BLIK-style codes.',
-    url: 'https://eternity.app',
+    url: 'https://eternity-wallet.vercel.app',
     siteName: 'Eternity',
     images: [
       {

@@ -6,6 +6,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import type { ChatMessage } from '@/src/services/ai-service';
 
@@ -14,6 +15,7 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ message }: ChatBubbleProps) {
+  const { theme: dynamicTheme, isDark } = useTheme();
   const isUser = message.role === 'user';
 
   const formattedTime = useMemo(() => {
@@ -28,33 +30,33 @@ export function ChatBubble({ message }: ChatBubbleProps) {
     return (
       <View style={styles.userContainer}>
         <LinearGradient
-          colors={theme.colors.gradientBlue as unknown as [string, string]}
+          colors={isDark ? ['#FFFFFF', '#E0E0E0'] : ['#333333', '#000000']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.userBubble}
         >
-          <Text style={styles.userText}>{message.content}</Text>
+          <Text style={[styles.userText, { color: isDark ? '#000000' : '#FFFFFF' }]}>{message.content}</Text>
         </LinearGradient>
-        <Text style={styles.timestamp}>{formattedTime}</Text>
+        <Text style={[styles.timestamp, { color: dynamicTheme.colors.textTertiary }]}>{formattedTime}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.assistantContainer}>
-      <View style={styles.assistantBubble}>
-        <Text style={styles.assistantText}>{message.content}</Text>
+      <View style={[styles.assistantBubble, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+        <Text style={[styles.assistantText, { color: dynamicTheme.colors.textPrimary }]}>{message.content}</Text>
         {message.toolCalls && message.toolCalls.length > 0 && (
-          <View style={styles.toolCallsContainer}>
+          <View style={[styles.toolCallsContainer, { borderTopColor: dynamicTheme.colors.border }]}>
             {message.toolCalls.map((tool, index) => (
-              <View key={index} style={styles.toolCallBadge}>
-                <Text style={styles.toolCallText}>{tool.name}</Text>
+              <View key={index} style={[styles.toolCallBadge, { backgroundColor: dynamicTheme.colors.accent + '20' }]}>
+                <Text style={[styles.toolCallText, { color: dynamicTheme.colors.accent }]}>{tool.name}</Text>
               </View>
             ))}
           </View>
         )}
       </View>
-      <Text style={styles.timestamp}>{formattedTime}</Text>
+      <Text style={[styles.timestamp, { color: dynamicTheme.colors.textTertiary }]}>{formattedTime}</Text>
     </View>
   );
 }

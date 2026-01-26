@@ -10,6 +10,7 @@ import { setSplitMode, setStep } from '@/src/store/slices/split-create-slice';
 import type { SplitMode } from '@/src/store/slices/split-create-slice';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { formatAmount } from '@/src/utils/format';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -43,6 +44,7 @@ const MODES: ModeOption[] = [
 
 export default function SplitModeScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const splitCreate = useAppSelector((state) => state.splitCreate);
 
   const handleModeSelect = (mode: SplitMode) => {
@@ -52,22 +54,22 @@ export default function SplitModeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Split Bill" />
 
       <View style={styles.container}>
-        <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Step 3 of 6
         </Text>
-        <Text style={[styles.subtitle, theme.typography.heading]}>
+        <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           How do you want to split?
         </Text>
 
-        <View style={styles.amountSummary}>
-          <Text style={[styles.amountLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.amountSummary, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <Text style={[styles.amountLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Total Amount
           </Text>
-          <Text style={[styles.amountValue, theme.typography.title]}>
+          <Text style={[styles.amountValue, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
             {formatAmount(splitCreate.totalAmount)} {splitCreate.selectedToken}
           </Text>
         </View>
@@ -76,25 +78,25 @@ export default function SplitModeScreen() {
           {MODES.map((mode) => (
             <TouchableOpacity
               key={mode.id}
-              style={styles.modeItem}
+              style={[styles.modeItem, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleModeSelect(mode.id)}
             >
-              <View style={styles.modeIcon}>
+              <View style={[styles.modeIcon, { backgroundColor: dynamicTheme.colors.surfaceHover }]}>
                 <FontAwesome
                   name={mode.icon as any}
                   size={24}
-                  color={theme.colors.textPrimary}
+                  color={dynamicTheme.colors.textPrimary}
                 />
               </View>
               <View style={styles.modeContent}>
-                <Text style={[styles.modeTitle, theme.typography.heading]}>
+                <Text style={[styles.modeTitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {mode.title}
                 </Text>
-                <Text style={[styles.modeDescription, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.modeDescription, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   {mode.description}
                 </Text>
               </View>
-              <FontAwesome name="chevron-right" size={16} color={theme.colors.textTertiary} />
+              <FontAwesome name="chevron-right" size={16} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
           ))}
         </View>

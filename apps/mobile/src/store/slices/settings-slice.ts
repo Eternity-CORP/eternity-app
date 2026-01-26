@@ -5,6 +5,7 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveSplitPrivacySetting } from '@/src/services/split-bill-service';
 
 const SETTINGS_STORAGE_KEY = '@ey_settings';
 
@@ -16,7 +17,7 @@ interface SettingsState {
 }
 
 const initialState: SettingsState = {
-  splitRequestsFrom: 'anyone',
+  splitRequestsFrom: 'contacts',
   loaded: false,
 };
 
@@ -32,14 +33,25 @@ export const loadSettingsThunk = createAsyncThunk(
   }
 );
 
-// Save settings to storage
+interface SaveSettingsParams {
+  settings: Partial<SettingsState>;
+  walletAddress?: string;
+}
+
+// Save settings to storage and sync to server
 export const saveSettingsThunk = createAsyncThunk(
   'settings/save',
-  async (settings: Partial<SettingsState>) => {
+  async ({ settings, walletAddress }: SaveSettingsParams) => {
     const stored = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
     const current = stored ? JSON.parse(stored) : {};
     const updated = { ...current, ...settings };
     await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+
+    // Sync split privacy setting to server
+    if (settings.splitRequestsFrom && walletAddress) {
+      await saveSplitPrivacySetting(walletAddress, settings.splitRequestsFrom);
+    }
+
     return updated;
   }
 );

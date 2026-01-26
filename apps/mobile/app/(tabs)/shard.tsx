@@ -1,51 +1,162 @@
 /**
- * Shard Screen
- * SHARD Identity placeholder - coming soon
+ * Profile Screen (Shard Tab)
+ * User profile with SHARD identity and settings access
  */
 
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { useAppSelector } from '@/src/store/hooks';
+import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { truncateAddress } from '@/src/utils/format';
+import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
-export default function ShardScreen() {
+export default function ProfileScreen() {
+  const { theme: dynamicTheme, isDark } = useTheme();
+  const wallet = useAppSelector((state) => state.wallet);
+  const currentAccount = getCurrentAccount(wallet);
+
+  const handleSettingsPress = () => {
+    router.push('/profile/settings');
+  };
+
+  const handleUsernamePress = () => {
+    router.push('/profile/username');
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        <LinearGradient
-          colors={['#8B5CF6', '#7C3AED']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.iconContainer}
-        >
-          <FontAwesome name="shield" size={48} color="#FFFFFF" />
-        </LinearGradient>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Header with Settings */}
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: dynamicTheme.colors.textPrimary }]}>Profile</Text>
+          <TouchableOpacity
+            style={[styles.settingsButton, { backgroundColor: dynamicTheme.colors.surface }]}
+            onPress={handleSettingsPress}
+            activeOpacity={0.7}
+          >
+            <FontAwesome name="cog" size={22} color={dynamicTheme.colors.textPrimary} />
+          </TouchableOpacity>
+        </View>
 
-        <Text style={styles.title}>SHARD Identity</Text>
-        <Text style={styles.subtitle}>
-          Your decentralized identity and reputation system
-        </Text>
+        {/* Account Card */}
+        <View style={[styles.accountCard, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <LinearGradient
+            colors={isDark ? ['#FFFFFF', '#CCCCCC'] : ['#333333', '#000000']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarGradient}
+          >
+            <FontAwesome name="user" size={32} color={isDark ? '#000000' : '#FFFFFF'} />
+          </LinearGradient>
 
-        <View style={styles.featuresContainer}>
-          <View style={styles.featureItem}>
-            <FontAwesome name="user" size={20} color={theme.colors.accent} />
-            <Text style={styles.featureText}>Global username</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <FontAwesome name="star" size={20} color={theme.colors.accent} />
-            <Text style={styles.featureText}>Reputation points</Text>
-          </View>
-          <View style={styles.featureItem}>
-            <FontAwesome name="trophy" size={20} color={theme.colors.accent} />
-            <Text style={styles.featureText}>Achievements & badges</Text>
+          <View style={styles.accountInfo}>
+            <View style={styles.accountNameRow}>
+              <Text style={[styles.accountName, { color: dynamicTheme.colors.textPrimary }]}>
+                {currentAccount?.label || `Account ${(currentAccount?.accountIndex ?? 0) + 1}`}
+              </Text>
+              {currentAccount && (
+                <AccountTypeBadge type={currentAccount.type} size="small" />
+              )}
+            </View>
+            <Text style={[styles.accountAddress, { color: dynamicTheme.colors.textTertiary }]}>
+              {currentAccount ? truncateAddress(currentAccount.address) : ''}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.comingSoonBadge}>
-          <Text style={styles.comingSoonText}>Coming Soon</Text>
+        {/* SHARD Identity Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textSecondary }]}>SHARD Identity</Text>
+
+          <View style={[styles.shardCard, { borderColor: dynamicTheme.colors.border }]}>
+            <LinearGradient
+              colors={isDark ? ['#1A1A1A', '#0A0A0A'] : ['#FFFFFF', '#F0F0F0']}
+              style={styles.shardCardGradient}
+            >
+              <View style={styles.shardRow}>
+                <View style={[styles.shardIconContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+                  <FontAwesome name="at" size={18} color={dynamicTheme.colors.accent} />
+                </View>
+                <View style={styles.shardInfo}>
+                  <Text style={[styles.shardLabel, { color: dynamicTheme.colors.textSecondary }]}>Username</Text>
+                  <TouchableOpacity onPress={handleUsernamePress}>
+                    <Text style={[styles.shardValueLink, { color: dynamicTheme.colors.accent }]}>Set username →</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: dynamicTheme.colors.border }]} />
+
+              <View style={styles.shardRow}>
+                <View style={[styles.shardIconContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+                  <FontAwesome name="star" size={18} color="#F59E0B" />
+                </View>
+                <View style={styles.shardInfo}>
+                  <Text style={[styles.shardLabel, { color: dynamicTheme.colors.textSecondary }]}>Reputation Points</Text>
+                  <Text style={[styles.shardValue, { color: dynamicTheme.colors.textPrimary }]}>0 points</Text>
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: dynamicTheme.colors.border }]} />
+
+              <View style={styles.shardRow}>
+                <View style={[styles.shardIconContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+                  <FontAwesome name="trophy" size={18} color="#10B981" />
+                </View>
+                <View style={styles.shardInfo}>
+                  <Text style={[styles.shardLabel, { color: dynamicTheme.colors.textSecondary }]}>Achievements</Text>
+                  <Text style={[styles.shardValue, { color: dynamicTheme.colors.textPrimary }]}>0 badges</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </View>
+
+          <View style={styles.comingSoonBadge}>
+            <FontAwesome name="clock-o" size={12} color={dynamicTheme.colors.textTertiary} />
+            <Text style={[styles.comingSoonText, { color: dynamicTheme.colors.textTertiary }]}>Full SHARD features coming soon</Text>
+          </View>
         </View>
-      </View>
+
+        {/* Quick Settings */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textSecondary }]}>Quick Settings</Text>
+
+          <TouchableOpacity
+            style={[styles.menuItem, { backgroundColor: dynamicTheme.colors.surface }]}
+            onPress={() => router.push('/settings/networks')}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: dynamicTheme.colors.background }]}>
+              <FontAwesome name="globe" size={18} color={dynamicTheme.colors.accent} />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuLabel, { color: dynamicTheme.colors.textPrimary }]}>Network Preferences</Text>
+              <Text style={[styles.menuDesc, { color: dynamicTheme.colors.textSecondary }]}>Configure receiving networks</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.menuItem, { backgroundColor: dynamicTheme.colors.surface }]}
+            onPress={handleSettingsPress}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: dynamicTheme.colors.background }]}>
+              <FontAwesome name="cog" size={18} color={dynamicTheme.colors.textSecondary} />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuLabel, { color: dynamicTheme.colors.textPrimary }]}>All Settings</Text>
+              <Text style={[styles.menuDesc, { color: dynamicTheme.colors.textSecondary }]}>Privacy, security, and more</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -57,59 +168,152 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.xl,
   },
-  iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  content: {
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: theme.spacing.xl,
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  title: {
+  headerTitle: {
     ...theme.typography.title,
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
   },
-  subtitle: {
+  settingsButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing.xl,
+  },
+  avatarGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: 4,
+  },
+  accountName: {
+    ...theme.typography.heading,
+    color: theme.colors.textPrimary,
+  },
+  accountAddress: {
+    ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+  },
+  section: {
+    marginBottom: theme.spacing.xl,
+  },
+  sectionTitle: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xxl,
+    fontWeight: '600',
+    marginBottom: theme.spacing.md,
   },
-  featuresContainer: {
-    gap: theme.spacing.lg,
-    marginBottom: theme.spacing.xxl,
+  shardCard: {
+    borderRadius: theme.borderRadius.lg,
+    overflow: 'hidden',
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  featureItem: {
+  shardCardGradient: {
+    padding: theme.spacing.lg,
+  },
+  shardRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
   },
-  featureText: {
+  shardIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shardInfo: {
+    flex: 1,
+  },
+  shardLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginBottom: 2,
+  },
+  shardValue: {
     ...theme.typography.body,
     color: theme.colors.textPrimary,
   },
+  shardValueLink: {
+    ...theme.typography.body,
+    color: theme.colors.accent,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.border,
+    marginVertical: theme.spacing.md,
+  },
   comingSoonBadge: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
   },
   comingSoonText: {
     ...theme.typography.caption,
+    color: theme.colors.textTertiary,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
+  },
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  menuContent: {
+    flex: 1,
+  },
+  menuLabel: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+    marginBottom: 2,
+  },
+  menuDesc: {
+    ...theme.typography.caption,
     color: theme.colors.textSecondary,
-    fontWeight: '500',
   },
 });

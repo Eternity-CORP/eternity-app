@@ -10,9 +10,11 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setSelectedToken, setStep, resetSend } from '@/src/store/slices/send-slice';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 export default function TokenSelectionScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const balance = useAppSelector((state) => state.balance);
 
@@ -28,10 +30,10 @@ export default function TokenSelectionScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Send" />
 
-      <Text style={[styles.subtitle, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+      <Text style={[styles.subtitle, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
         Select token to send
       </Text>
 
@@ -39,23 +41,23 @@ export default function TokenSelectionScreen() {
         {balance.balances.map((token) => (
           <TouchableOpacity
             key={token.token}
-            style={styles.tokenItem}
+            style={[styles.tokenItem, { backgroundColor: dynamicTheme.colors.surface }]}
             onPress={() => handleTokenSelect(token.symbol)}
           >
             <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={40} />
             <View style={styles.tokenInfo}>
-              <Text style={[styles.tokenName, theme.typography.heading]}>
+              <Text style={[styles.tokenName, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                 {token.name || token.symbol}
               </Text>
-              <Text style={[styles.tokenSymbol, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.tokenSymbol, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 {token.symbol}
               </Text>
             </View>
             <View style={styles.tokenBalance}>
-              <Text style={[styles.balance, theme.typography.heading]}>
+              <Text style={[styles.balance, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                 {parseFloat(token.balance).toFixed(6)}
               </Text>
-              <Text style={[styles.balanceUsd, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.balanceUsd, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 {token.usdValue ? `$${token.usdValue.toFixed(2)}` : '$0.00'}
               </Text>
             </View>

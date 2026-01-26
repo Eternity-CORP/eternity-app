@@ -4,12 +4,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { useAppDispatch } from '@/src/store/hooks';
 import { generateWalletThunk, type AccountType } from '@/src/store/slices/wallet-slice';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 type WordCount = 12 | 24;
 
 export default function CreateWalletScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const { accountType: accountTypeParam } = useLocalSearchParams<{ accountType?: string }>();
   const accountType: AccountType = (accountTypeParam === 'real' || accountTypeParam === 'test') ? accountTypeParam : 'test';
   const dispatch = useAppDispatch();
@@ -35,13 +37,13 @@ export default function CreateWalletScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
+      <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, theme.typography.title]}>
+        <Text style={[styles.title, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
           Create {isTestWallet ? 'Test' : 'New'} Wallet
         </Text>
-        <Text style={[styles.description, theme.typography.body, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.description, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
           {isTestWallet
             ? 'Create a test wallet to explore features with free testnet tokens. No real funds involved.'
             : "We'll generate a secure recovery phrase for you. Make sure to write it down and keep it safe."}
@@ -57,14 +59,15 @@ export default function CreateWalletScreen() {
 
         {/* Word Count Selection */}
         <View style={styles.wordCountSection}>
-          <Text style={[styles.wordCountLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.wordCountLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Recovery Phrase Length
           </Text>
           <View style={styles.wordCountOptions}>
             <TouchableOpacity
               style={[
                 styles.wordCountOption,
-                wordCount === 12 && styles.wordCountOptionSelected,
+                { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.buttonSecondaryBorder },
+                wordCount === 12 && { backgroundColor: dynamicTheme.colors.buttonPrimary, borderColor: dynamicTheme.colors.buttonPrimary },
               ]}
               onPress={() => setWordCount(12)}
               disabled={isCreating}
@@ -73,7 +76,8 @@ export default function CreateWalletScreen() {
                 style={[
                   styles.wordCountOptionText,
                   theme.typography.heading,
-                  wordCount === 12 && { color: theme.colors.buttonPrimaryText },
+                  { color: dynamicTheme.colors.textPrimary },
+                  wordCount === 12 && { color: dynamicTheme.colors.buttonPrimaryText },
                 ]}
               >
                 12 Words
@@ -83,8 +87,8 @@ export default function CreateWalletScreen() {
                   styles.wordCountOptionSubtext,
                   theme.typography.caption,
                   wordCount === 12
-                    ? { color: theme.colors.buttonPrimaryText }
-                    : { color: theme.colors.textSecondary },
+                    ? { color: dynamicTheme.colors.buttonPrimaryText }
+                    : { color: dynamicTheme.colors.textSecondary },
                 ]}
               >
                 Standard security
@@ -94,7 +98,8 @@ export default function CreateWalletScreen() {
             <TouchableOpacity
               style={[
                 styles.wordCountOption,
-                wordCount === 24 && styles.wordCountOptionSelected,
+                { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.buttonSecondaryBorder },
+                wordCount === 24 && { backgroundColor: dynamicTheme.colors.buttonPrimary, borderColor: dynamicTheme.colors.buttonPrimary },
               ]}
               onPress={() => setWordCount(24)}
               disabled={isCreating}
@@ -103,7 +108,8 @@ export default function CreateWalletScreen() {
                 style={[
                   styles.wordCountOptionText,
                   theme.typography.heading,
-                  wordCount === 24 && { color: theme.colors.buttonPrimaryText },
+                  { color: dynamicTheme.colors.textPrimary },
+                  wordCount === 24 && { color: dynamicTheme.colors.buttonPrimaryText },
                 ]}
               >
                 24 Words
@@ -113,8 +119,8 @@ export default function CreateWalletScreen() {
                   styles.wordCountOptionSubtext,
                   theme.typography.caption,
                   wordCount === 24
-                    ? { color: theme.colors.buttonPrimaryText }
-                    : { color: theme.colors.textSecondary },
+                    ? { color: dynamicTheme.colors.buttonPrimaryText }
+                    : { color: dynamicTheme.colors.textSecondary },
                 ]}
               >
                 Enhanced security
@@ -123,9 +129,9 @@ export default function CreateWalletScreen() {
           </View>
         </View>
 
-        <View style={styles.warningContainer}>
-          <FontAwesome name="lightbulb-o" size={20} color={theme.colors.textSecondary} style={styles.warningIcon} />
-          <Text style={[styles.warning, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <View style={[styles.warningContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <FontAwesome name="lightbulb-o" size={20} color={dynamicTheme.colors.textSecondary} style={styles.warningIcon} />
+          <Text style={[styles.warning, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             If you lose your recovery phrase, you will lose access to your wallet forever.
           </Text>
         </View>
@@ -133,21 +139,21 @@ export default function CreateWalletScreen() {
 
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.button, styles.buttonPrimary, isCreating && styles.buttonDisabled]}
+          style={[styles.button, styles.buttonPrimary, { backgroundColor: dynamicTheme.colors.buttonPrimary }, isCreating && styles.buttonDisabled]}
           onPress={handleCreateWallet}
           disabled={isCreating}
         >
-          <Text style={[styles.buttonText, { color: theme.colors.buttonPrimaryText }]}>
+          <Text style={[styles.buttonText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {isCreating ? 'Creating...' : `Generate ${wordCount}-Word Recovery Phrase`}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.buttonSecondary]}
+          style={[styles.button, styles.buttonSecondary, { backgroundColor: dynamicTheme.colors.buttonSecondary, borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
           onPress={() => router.back()}
           disabled={isCreating}
         >
-          <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+          <Text style={[styles.buttonText, { color: dynamicTheme.colors.textPrimary }]}>
             Back
           </Text>
         </TouchableOpacity>

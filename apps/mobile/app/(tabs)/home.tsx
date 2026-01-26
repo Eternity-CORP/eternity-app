@@ -27,7 +27,9 @@ import { formatUsdValue } from '@/src/services/balance-service';
 import { fetchAllNetworkBalances } from '@/src/services/network-service';
 import { getUsernameByAddress } from '@/src/services/username-service';
 import { TokenIcon } from '@/src/components/TokenIcon';
-import { theme } from '@/src/constants/theme';
+import { BalanceGridBackground } from '@/src/components/ui';
+import { useTheme } from '@/src/contexts';
+import { theme } from '@/src/constants/theme'; // Static theme for StyleSheet
 import { FAUCETS, type FaucetInfo } from '@/src/constants/faucets';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -53,6 +55,7 @@ function generateAvatarColors(address: string): [string, string] {
 }
 
 export default function HomeScreen() {
+  const { theme: dynamicTheme, isDark } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
@@ -388,34 +391,34 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={[styles.headerButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
           onPress={() => router.push('/send/scan')}
         >
-          <FontAwesome name="qrcode" size={20} color={theme.colors.textPrimary} />
+          <FontAwesome name="qrcode" size={20} color={dynamicTheme.colors.textPrimary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.accountButton}
+          style={[styles.accountButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
           onPress={openAccountSelector}
         >
-          <Text style={styles.accountButtonText} numberOfLines={1}>
+          <Text style={[styles.accountButtonText, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
             {currentAccount?.label || `Account ${(currentAccount?.accountIndex ?? 0) + 1}`}
           </Text>
           {currentAccount?.type && (
             <AccountTypeBadge type={currentAccount.type} size="small" />
           )}
-          <FontAwesome name="chevron-down" size={10} color={theme.colors.textSecondary} />
+          <FontAwesome name="chevron-down" size={10} color={dynamicTheme.colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.headerButton}
+          style={[styles.headerButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
           onPress={() => router.push('/(tabs)/transactions')}
         >
-          <FontAwesome name="history" size={20} color={theme.colors.textPrimary} />
+          <FontAwesome name="history" size={20} color={dynamicTheme.colors.textPrimary} />
         </TouchableOpacity>
       </View>
 
@@ -506,58 +509,58 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Balance */}
-        <View style={styles.balanceSection}>
-          <Text style={styles.balance}>
+        {/* Balance with Grid Background */}
+        <BalanceGridBackground height={160}>
+          <Text style={[styles.balance, { color: dynamicTheme.colors.textPrimary }]}>
             {balance.status === 'loading' && !balance.lastUpdated ? '...' : totalBalance}
           </Text>
-        </View>
+        </BalanceGridBackground>
 
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
           <TouchableOpacity
-            style={styles.actionButtonPrimary}
+            style={[styles.actionButtonPrimary, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
             onPress={() => router.push('/send/token')}
           >
-            <Text style={styles.actionButtonPrimaryText}>Send</Text>
+            <Text style={[styles.actionButtonPrimaryText, { color: dynamicTheme.colors.buttonPrimaryText }]}>Send</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionButtonSecondary}
+            style={[styles.actionButtonSecondary, { borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
             onPress={() => router.push('/receive')}
           >
-            <Text style={styles.actionButtonSecondaryText}>Receive</Text>
+            <Text style={[styles.actionButtonSecondaryText, { color: dynamicTheme.colors.buttonSecondaryText }]}>Receive</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionButtonMore}
+            style={[styles.actionButtonMore, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
             onPress={openActionsMenu}
           >
-            <FontAwesome name="ellipsis-h" size={18} color={theme.colors.textPrimary} />
+            <FontAwesome name="ellipsis-h" size={18} color={dynamicTheme.colors.textPrimary} />
           </TouchableOpacity>
         </View>
 
         {/* Tokens List */}
         <View style={styles.tokensSection}>
-          <Text style={styles.sectionTitle}>Tokens</Text>
+          <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textSecondary }]}>Tokens</Text>
 
           {balance.balances.map((token) => (
             <TouchableOpacity
               key={token.token}
-              style={styles.tokenItem}
+              style={[styles.tokenItem, { backgroundColor: dynamicTheme.colors.surface, borderColor: isDark ? 'transparent' : dynamicTheme.colors.border }]}
               onPress={() => router.push(`/token/${token.symbol}`)}
               activeOpacity={0.7}
             >
               <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={44} />
               <View style={styles.tokenInfo}>
-                <Text style={styles.tokenName}>{token.name || token.symbol}</Text>
-                <Text style={styles.tokenSymbol}>{token.symbol}</Text>
+                <Text style={[styles.tokenName, { color: dynamicTheme.colors.textPrimary }]}>{token.name || token.symbol}</Text>
+                <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textSecondary }]}>{token.symbol}</Text>
               </View>
               <View style={styles.tokenBalance}>
-                <Text style={styles.tokenBalanceValue}>
+                <Text style={[styles.tokenBalanceValue, { color: dynamicTheme.colors.textPrimary }]}>
                   {parseFloat(token.balance).toFixed(4)}
                 </Text>
-                <Text style={styles.tokenBalanceUsd}>
+                <Text style={[styles.tokenBalanceUsd, { color: dynamicTheme.colors.textSecondary }]}>
                   ${token.usdValue?.toFixed(2) || '0.00'}
                 </Text>
               </View>
@@ -566,8 +569,8 @@ export default function HomeScreen() {
 
           {balance.balances.length === 0 && balance.status !== 'loading' && (
             <View style={styles.emptyState}>
-              <FontAwesome name="inbox" size={32} color={theme.colors.textTertiary} />
-              <Text style={styles.emptyStateText}>No tokens yet</Text>
+              <FontAwesome name="inbox" size={32} color={dynamicTheme.colors.textTertiary} />
+              <Text style={[styles.emptyStateText, { color: dynamicTheme.colors.textTertiary }]}>No tokens yet</Text>
             </View>
           )}
         </View>
@@ -581,7 +584,7 @@ export default function HomeScreen() {
             onPress={closeActionsMenu}
             activeOpacity={1}
           >
-            <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
           </TouchableOpacity>
 
           <Animated.View
@@ -595,70 +598,70 @@ export default function HomeScreen() {
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); router.push('/send/token'); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="arrow-up" size={20} color="#000" style={{ transform: [{ rotate: '45deg' }] }} />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="arrow-up" size={20} color={dynamicTheme.colors.textPrimary} style={{ transform: [{ rotate: '45deg' }] }} />
               </View>
-              <Text style={styles.actionMenuText}>Send</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Send</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); router.push('/receive'); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="arrow-down" size={20} color="#000" style={{ transform: [{ rotate: '-45deg' }] }} />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="arrow-down" size={20} color={dynamicTheme.colors.textPrimary} style={{ transform: [{ rotate: '-45deg' }] }} />
               </View>
-              <Text style={styles.actionMenuText}>Receive</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Receive</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); router.push('/blik'); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="bolt" size={20} color="#000" />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="bolt" size={20} color={dynamicTheme.colors.textPrimary} />
               </View>
-              <Text style={styles.actionMenuText}>BLIK</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>BLIK</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); router.push('/scheduled/create'); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="calendar" size={20} color="#000" />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="calendar" size={20} color={dynamicTheme.colors.textPrimary} />
               </View>
-              <Text style={styles.actionMenuText}>Scheduled</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Scheduled</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); router.push('/split/create'); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="users" size={20} color="#000" />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="users" size={20} color={dynamicTheme.colors.textPrimary} />
               </View>
-              <Text style={styles.actionMenuText}>Split Bill</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Split Bill</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); router.push('/swap' as any); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="exchange" size={20} color="#000" />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="exchange" size={20} color={dynamicTheme.colors.textPrimary} />
               </View>
-              <Text style={styles.actionMenuText}>Swap</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Swap</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionMenuItem}
               onPress={() => { closeActionsMenu(); handleCopyAddress(); }}
             >
-              <View style={styles.actionMenuIcon}>
-                <FontAwesome name="copy" size={20} color="#000" />
+              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+                <FontAwesome name="copy" size={20} color={dynamicTheme.colors.textPrimary} />
               </View>
-              <Text style={styles.actionMenuText}>Copy Address</Text>
+              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Copy Address</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -669,7 +672,7 @@ export default function HomeScreen() {
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Animated.View style={[styles.blurOverlay, { opacity: accountFadeAnim }]}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeAccountSelector}>
-              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />
             </TouchableOpacity>
           </Animated.View>
 
@@ -923,7 +926,7 @@ export default function HomeScreen() {
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Animated.View style={[styles.blurOverlay, { opacity: faucetFadeAnim }]}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeFaucetSheet}>
-              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint="dark" />
+              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />
             </TouchableOpacity>
           </Animated.View>
 
@@ -1201,19 +1204,15 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...theme.shadows.medium,
   },
   actionMenuText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.textPrimary,
   },
   // Legacy sheet styles for account selector
   sheetHandle: {

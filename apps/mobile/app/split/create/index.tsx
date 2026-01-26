@@ -10,10 +10,12 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setSelectedToken, setStep, resetSplitCreate } from '@/src/store/slices/split-create-slice';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 export default function SplitTokenScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const balance = useAppSelector((state) => state.balance);
   const splitCreate = useAppSelector((state) => state.splitCreate);
 
@@ -29,14 +31,14 @@ export default function SplitTokenScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Split Bill" />
 
       <View style={styles.container}>
-        <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Step 1 of 6
         </Text>
-        <Text style={[styles.subtitle, theme.typography.heading]}>
+        <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Select token to split
         </Text>
 
@@ -44,23 +46,23 @@ export default function SplitTokenScreen() {
           {balance.balances.map((token) => (
             <TouchableOpacity
               key={token.token}
-              style={styles.tokenItem}
+              style={[styles.tokenItem, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleTokenSelect(token.symbol)}
             >
               <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={40} />
               <View style={styles.tokenInfo}>
-                <Text style={[styles.tokenName, theme.typography.heading]}>
+                <Text style={[styles.tokenName, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {token.name || token.symbol}
                 </Text>
-                <Text style={[styles.tokenSymbol, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.tokenSymbol, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   {token.symbol}
                 </Text>
               </View>
               <View style={styles.tokenBalance}>
-                <Text style={[styles.balance, theme.typography.heading]}>
+                <Text style={[styles.balance, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {parseFloat(token.balance).toFixed(6)}
                 </Text>
-                <Text style={[styles.balanceUsd, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.balanceUsd, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   {token.usdValue ? `$${token.usdValue.toFixed(2)}` : '$0.00'}
                 </Text>
               </View>

@@ -13,6 +13,7 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { fetchTransactionDetailsThunk, clearSelectedTransaction } from '@/src/store/slices/transaction-slice';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -27,6 +28,7 @@ const getExplorerUrl = (txHash: string): string => {
 export default function TransactionDetailsScreen() {
   const { hash } = useLocalSearchParams<{ hash: string }>();
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const transactionState = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
@@ -81,11 +83,11 @@ export default function TransactionDetailsScreen() {
   // Loading state
   if (transactionState.status === 'loading' && !tx) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Transaction" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.buttonPrimary} />
-          <Text style={[styles.loadingText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          <ActivityIndicator size="large" color={dynamicTheme.colors.buttonPrimary} />
+          <Text style={[styles.loadingText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             Loading transaction details...
           </Text>
         </View>
@@ -96,14 +98,14 @@ export default function TransactionDetailsScreen() {
   // Error state
   if (transactionState.error || !tx) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Transaction" />
         <View style={styles.errorContainer}>
-          <FontAwesome name="exclamation-triangle" size={48} color={theme.colors.error} />
-          <Text style={[styles.errorText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
+          <FontAwesome name="exclamation-triangle" size={48} color={dynamicTheme.colors.error} />
+          <Text style={[styles.errorText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Transaction not found
           </Text>
-          <Text style={[styles.errorSubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.errorSubtext, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             {transactionState.error || 'Unable to load transaction details'}
           </Text>
         </View>
@@ -112,30 +114,30 @@ export default function TransactionDetailsScreen() {
   }
 
   const statusColor = tx.status === 'confirmed'
-    ? theme.colors.success
+    ? dynamicTheme.colors.success
     : tx.status === 'pending'
       ? '#FFA500'
-      : theme.colors.error;
+      : dynamicTheme.colors.error;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Transaction" />
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Main Amount Section */}
         <View style={styles.amountSection}>
-          <View style={[styles.directionIcon, { backgroundColor: tx.direction === 'sent' ? theme.colors.error + '20' : theme.colors.success + '20' }]}>
+          <View style={[styles.directionIcon, { backgroundColor: tx.direction === 'sent' ? dynamicTheme.colors.error + '20' : dynamicTheme.colors.success + '20' }]}>
             <FontAwesome
               name={tx.direction === 'sent' ? 'arrow-up' : 'arrow-down'}
               size={32}
-              color={tx.direction === 'sent' ? theme.colors.error : theme.colors.success}
+              color={tx.direction === 'sent' ? dynamicTheme.colors.error : dynamicTheme.colors.success}
             />
           </View>
-          <Text style={[styles.directionText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.directionText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             {tx.direction === 'sent' ? 'SENT' : 'RECEIVED'}
           </Text>
           <Text
-            style={styles.amountText}
+            style={[styles.amountText, { color: dynamicTheme.colors.textPrimary }]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.5}
@@ -153,24 +155,24 @@ export default function TransactionDetailsScreen() {
         </View>
 
         {/* Basic Info Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: dynamicTheme.colors.surface }]}>
           {/* From */}
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               From
             </Text>
             <View style={styles.infoValue}>
-              <Text style={[styles.addressText, theme.typography.body]} numberOfLines={1}>
+              <Text style={[styles.addressText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
                 {truncateAddress(tx.from)}
               </Text>
               <TouchableOpacity
-                style={styles.copyButton}
+                style={[styles.copyButton, { backgroundColor: dynamicTheme.colors.background }]}
                 onPress={() => handleCopy(tx.from, 'from')}
               >
                 <FontAwesome
                   name={copiedField === 'from' ? 'check' : 'copy'}
                   size={14}
-                  color={copiedField === 'from' ? theme.colors.success : theme.colors.textTertiary}
+                  color={copiedField === 'from' ? dynamicTheme.colors.success : dynamicTheme.colors.textTertiary}
                 />
               </TouchableOpacity>
             </View>
@@ -178,21 +180,21 @@ export default function TransactionDetailsScreen() {
 
           {/* To */}
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               To
             </Text>
             <View style={styles.infoValue}>
-              <Text style={[styles.addressText, theme.typography.body]} numberOfLines={1}>
+              <Text style={[styles.addressText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
                 {truncateAddress(tx.to)}
               </Text>
               <TouchableOpacity
-                style={styles.copyButton}
+                style={[styles.copyButton, { backgroundColor: dynamicTheme.colors.background }]}
                 onPress={() => handleCopy(tx.to, 'to')}
               >
                 <FontAwesome
                   name={copiedField === 'to' ? 'check' : 'copy'}
                   size={14}
-                  color={copiedField === 'to' ? theme.colors.success : theme.colors.textTertiary}
+                  color={copiedField === 'to' ? dynamicTheme.colors.success : dynamicTheme.colors.textTertiary}
                 />
               </TouchableOpacity>
             </View>
@@ -200,10 +202,10 @@ export default function TransactionDetailsScreen() {
 
           {/* Date */}
           <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Date
             </Text>
-            <Text style={[styles.infoText, theme.typography.body]}>
+            <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
               {new Date(tx.timestamp).toLocaleDateString()} at {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
@@ -211,10 +213,10 @@ export default function TransactionDetailsScreen() {
           {/* Gas Fee */}
           {gasCost && (
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Gas Fee
               </Text>
-              <Text style={[styles.infoText, theme.typography.body]}>
+              <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {gasCost.eth} ETH (≈${gasCost.usd})
               </Text>
             </View>
@@ -229,32 +231,32 @@ export default function TransactionDetailsScreen() {
           <FontAwesome
             name={showDetails ? 'chevron-up' : 'chevron-down'}
             size={14}
-            color={theme.colors.textSecondary}
+            color={dynamicTheme.colors.textSecondary}
           />
-          <Text style={[styles.expandText, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.expandText, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Technical Details
           </Text>
         </TouchableOpacity>
 
         {showDetails && (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: dynamicTheme.colors.surface }]}>
             {/* TX Hash */}
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 TX Hash
               </Text>
               <View style={styles.infoValue}>
-                <Text style={[styles.addressText, theme.typography.body]} numberOfLines={1}>
+                <Text style={[styles.addressText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
                   {truncateAddress(tx.hash, 10)}
                 </Text>
                 <TouchableOpacity
-                  style={styles.copyButton}
+                  style={[styles.copyButton, { backgroundColor: dynamicTheme.colors.background }]}
                   onPress={() => handleCopy(tx.hash, 'hash')}
                 >
                   <FontAwesome
                     name={copiedField === 'hash' ? 'check' : 'copy'}
                     size={14}
-                    color={copiedField === 'hash' ? theme.colors.success : theme.colors.textTertiary}
+                    color={copiedField === 'hash' ? dynamicTheme.colors.success : dynamicTheme.colors.textTertiary}
                   />
                 </TouchableOpacity>
               </View>
@@ -263,10 +265,10 @@ export default function TransactionDetailsScreen() {
             {/* Block Number */}
             {tx.blockNumber && (
               <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Block
                 </Text>
-                <Text style={[styles.infoText, theme.typography.body]}>
+                <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {tx.blockNumber.toLocaleString()}
                 </Text>
               </View>
@@ -274,10 +276,10 @@ export default function TransactionDetailsScreen() {
 
             {/* Nonce */}
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Nonce
               </Text>
-              <Text style={[styles.infoText, theme.typography.body]}>
+              <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {tx.nonce}
               </Text>
             </View>
@@ -285,10 +287,10 @@ export default function TransactionDetailsScreen() {
             {/* Gas Used */}
             {tx.gasUsed && (
               <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Gas Used
                 </Text>
-                <Text style={[styles.infoText, theme.typography.body]}>
+                <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {parseInt(tx.gasUsed).toLocaleString()}
                 </Text>
               </View>
@@ -297,10 +299,10 @@ export default function TransactionDetailsScreen() {
             {/* Gas Price */}
             {tx.gasPrice && (
               <View style={styles.infoRow}>
-                <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+                <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   Gas Price
                 </Text>
-                <Text style={[styles.infoText, theme.typography.body]}>
+                <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {(parseInt(tx.gasPrice) / 1e9).toFixed(2)} Gwei
                 </Text>
               </View>
@@ -308,10 +310,10 @@ export default function TransactionDetailsScreen() {
 
             {/* Confirmations */}
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.infoLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Confirmations
               </Text>
-              <Text style={[styles.infoText, theme.typography.body]}>
+              <Text style={[styles.infoText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                 {tx.confirmations.toLocaleString()}
               </Text>
             </View>
@@ -319,9 +321,9 @@ export default function TransactionDetailsScreen() {
         )}
 
         {/* View on Explorer Button */}
-        <TouchableOpacity style={styles.explorerButton} onPress={handleOpenExplorer}>
-          <FontAwesome name="external-link" size={16} color={theme.colors.buttonPrimary} />
-          <Text style={[styles.explorerButtonText, theme.typography.body, { color: theme.colors.buttonPrimary }]}>
+        <TouchableOpacity style={[styles.explorerButton, { borderColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleOpenExplorer}>
+          <FontAwesome name="external-link" size={16} color={dynamicTheme.colors.buttonPrimary} />
+          <Text style={[styles.explorerButtonText, theme.typography.body, { color: dynamicTheme.colors.buttonPrimary }]}>
             View on Etherscan
           </Text>
         </TouchableOpacity>

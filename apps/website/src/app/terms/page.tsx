@@ -146,13 +146,8 @@ export default function TermsPage() {
             <section>
               <h2 className="text-2xl font-bold text-black mb-4">7. Contact</h2>
               <p className="text-muted leading-relaxed">
-                For questions about these Terms, contact us at:{' '}
-                <a
-                  href="mailto:legal@eternity.app"
-                  className="text-accent-blue hover:underline"
-                >
-                  legal@eternity.app
-                </a>
+                For questions about these Terms, please use our waitlist form on the homepage
+                and mention your concern. We will get back to you as soon as possible.
               </p>
             </section>
           </div>

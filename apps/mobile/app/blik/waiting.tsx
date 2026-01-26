@@ -20,11 +20,13 @@ import {
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { TransactionPendingAnimation } from '@/src/components/TransactionPendingAnimation';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function BlikWaitingScreen() {
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
   const currentAccount = getCurrentAccount(wallet);
@@ -136,17 +138,17 @@ export default function BlikWaitingScreen() {
 
   if (!activeCode) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <ScreenHeader title="Request Payment" />
         <View style={styles.centerContainer}>
-          <Text style={[theme.typography.body, { color: theme.colors.textSecondary }]}>
+          <Text style={[theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             No active code. Please create one first.
           </Text>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[styles.backButton, { backgroundColor: dynamicTheme.colors.surface }]}
             onPress={() => router.back()}
           >
-            <Text style={[styles.backButtonText, theme.typography.body]}>Go Back</Text>
+            <Text style={[styles.backButtonText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -154,7 +156,7 @@ export default function BlikWaitingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
       <ScreenHeader title="Request Payment" />
 
       <View style={styles.content}>
@@ -162,17 +164,17 @@ export default function BlikWaitingScreen() {
         <TransactionPendingAnimation message="Waiting for payment..." />
 
         {/* Share instruction */}
-        <Text style={[styles.instruction, theme.typography.heading]}>
+        <Text style={[styles.instruction, theme.typography.heading, { color: dynamicTheme.colors.textSecondary }]}>
           Share this code
         </Text>
 
         {/* Code Display */}
-        <View style={styles.codeContainer}>
-          <Text style={styles.codeText}>{formatCode(activeCode.code)}</Text>
+        <View style={[styles.codeContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+          <Text style={[styles.codeText, { color: dynamicTheme.colors.textPrimary }]}>{formatCode(activeCode.code)}</Text>
         </View>
 
         {/* Amount Display */}
-        <Text style={[styles.amountText, theme.typography.title]}>
+        <Text style={[styles.amountText, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
           {activeCode.amount} {activeCode.tokenSymbol}
         </Text>
 
@@ -181,13 +183,14 @@ export default function BlikWaitingScreen() {
           <FontAwesome
             name="clock-o"
             size={18}
-            color={countdown < 30 ? theme.colors.error : theme.colors.textSecondary}
+            color={countdown < 30 ? dynamicTheme.colors.error : dynamicTheme.colors.textSecondary}
           />
           <Text
             style={[
               styles.countdownText,
               theme.typography.body,
-              countdown < 30 && { color: theme.colors.error },
+              { color: dynamicTheme.colors.textSecondary },
+              countdown < 30 && { color: dynamicTheme.colors.error },
             ]}
           >
             Expires in {formatCountdown(countdown)}
@@ -195,22 +198,22 @@ export default function BlikWaitingScreen() {
         </View>
 
         {/* Copy Button */}
-        <TouchableOpacity style={styles.copyButton} onPress={handleCopyCode}>
+        <TouchableOpacity style={[styles.copyButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleCopyCode}>
           <FontAwesome
             name={copied ? 'check' : 'copy'}
             size={18}
-            color={theme.colors.buttonPrimaryText}
+            color={dynamicTheme.colors.buttonPrimaryText}
           />
-          <Text style={[styles.copyButtonText, theme.typography.heading]}>
+          <Text style={[styles.copyButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {copied ? 'Copied!' : 'Copy Code'}
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Fixed Footer with Done Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.doneButton} onPress={handleCancel}>
-          <Text style={[styles.doneButtonText, theme.typography.heading]}>
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.glassBorder }]}>
+        <TouchableOpacity style={[styles.doneButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.glassBorder }]} onPress={handleCancel}>
+          <Text style={[styles.doneButtonText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             Done
           </Text>
         </TouchableOpacity>

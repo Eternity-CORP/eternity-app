@@ -16,10 +16,12 @@ import {
   unsubscribeFromAllTransactions,
 } from '@/src/store/slices/transaction-slice';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function TransactionsScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const transactionState = useAppSelector((state) => state.transaction);
@@ -61,7 +63,7 @@ export default function TransactionsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Transaction History" />
 
       <ScrollView
@@ -71,32 +73,32 @@ export default function TransactionsScreen() {
           <RefreshControl
             refreshing={transactionState.status === 'loading'}
             onRefresh={onRefresh}
-            tintColor={theme.colors.buttonPrimary}
+            tintColor={dynamicTheme.colors.buttonPrimary}
           />
         }
       >
         {transactionState.status === 'loading' && transactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.emptyText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
               Loading transactions...
             </Text>
             {currentAccount?.address ? (
-              <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+              <Text style={[styles.emptySubtext, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
                 Scanning blocks for {currentAccount.address.slice(0, 8)}...
               </Text>
             ) : null}
           </View>
         ) : transactions.length === 0 ? (
           <View style={styles.emptyState}>
-            <FontAwesome name="exchange" size={48} color={theme.colors.textTertiary} />
-            <Text style={[styles.emptyText, theme.typography.heading, { color: theme.colors.textPrimary }]}>
+            <FontAwesome name="exchange" size={48} color={dynamicTheme.colors.textTertiary} />
+            <Text style={[styles.emptyText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
               No transactions found
             </Text>
-            <Text style={[styles.emptySubtext, theme.typography.body, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.emptySubtext, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
               We scanned the last 100 blocks. If you sent tokens earlier, they may not appear here.
             </Text>
             {transactionState.error && (
-              <Text style={[styles.emptySubtext, theme.typography.caption, { color: theme.colors.error, marginTop: theme.spacing.sm }]}>
+              <Text style={[styles.emptySubtext, theme.typography.caption, { color: dynamicTheme.colors.error, marginTop: theme.spacing.sm }]}>
                 Error: {transactionState.error}
               </Text>
             )}
@@ -105,14 +107,14 @@ export default function TransactionsScreen() {
           <View style={styles.transactionsList}>
             {transactions.map((tx) => {
               const isReceived = tx.direction === 'received';
-              const txColor = isReceived ? theme.colors.success : theme.colors.error;
-              const statusColor = tx.status === 'confirmed' ? theme.colors.success :
-                                  tx.status === 'pending' ? '#FFA500' : theme.colors.error;
+              const txColor = isReceived ? dynamicTheme.colors.success : dynamicTheme.colors.error;
+              const statusColor = tx.status === 'confirmed' ? dynamicTheme.colors.success :
+                                  tx.status === 'pending' ? '#FFA500' : dynamicTheme.colors.error;
 
               return (
               <TouchableOpacity
                 key={tx.hash}
-                style={styles.transactionItem}
+                style={[styles.transactionItem, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => handleTransactionPress(tx.hash)}
                 activeOpacity={0.7}
               >
@@ -125,10 +127,10 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.transactionInfo}>
-                  <Text style={[styles.transactionType, { color: theme.colors.textPrimary }]}>
+                  <Text style={[styles.transactionType, { color: dynamicTheme.colors.textPrimary }]}>
                     {isReceived ? 'Received' : 'Sent'}
                   </Text>
-                  <Text style={[styles.transactionDate, { color: theme.colors.textTertiary }]}>
+                  <Text style={[styles.transactionDate, { color: dynamicTheme.colors.textTertiary }]}>
                     {new Date(tx.timestamp).toLocaleDateString('ru-RU')} • {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
@@ -139,13 +141,13 @@ export default function TransactionsScreen() {
                   </Text>
                   <View style={styles.statusRow}>
                     <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-                    <Text style={[styles.statusText, { color: theme.colors.textTertiary }]}>
+                    <Text style={[styles.statusText, { color: dynamicTheme.colors.textTertiary }]}>
                       {tx.status === 'confirmed' ? 'Confirmed' : tx.status === 'pending' ? 'Pending' : 'Failed'}
                     </Text>
                   </View>
                 </View>
 
-                <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
+                <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
               </TouchableOpacity>
             );
             })}
@@ -153,8 +155,8 @@ export default function TransactionsScreen() {
         )}
 
         {transactionState.error && (
-          <View style={styles.errorContainer}>
-            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.errorContainer, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               {transactionState.error}
             </Text>
           </View>

@@ -11,6 +11,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAppDispatch } from '@/src/store/hooks';
 import { setRecipient, setAmount, setStep } from '@/src/store/slices/send-slice';
 import { validateAddress } from '@/src/services/send-service';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
@@ -98,6 +99,7 @@ function parseQRData(data: string): { address: string; amount?: string; chainId?
 }
 
 export default function ScanScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -139,9 +141,9 @@ export default function ScanScreen() {
 
   if (!permission) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <View style={styles.centerContainer}>
-          <Text style={[styles.permissionText, theme.typography.body]}>
+          <Text style={[styles.permissionText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             Requesting camera permission...
           </Text>
         </View>
@@ -151,19 +153,19 @@ export default function ScanScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
         <View style={styles.centerContainer}>
-          <FontAwesome name="camera" size={48} color={theme.colors.textTertiary} />
-          <Text style={[styles.permissionText, theme.typography.body, { marginTop: theme.spacing.lg }]}>
+          <FontAwesome name="camera" size={48} color={dynamicTheme.colors.textTertiary} />
+          <Text style={[styles.permissionText, theme.typography.body, { color: dynamicTheme.colors.textSecondary, marginTop: theme.spacing.lg }]}>
             Camera access is required to scan QR codes
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={[styles.permissionButtonText, theme.typography.heading]}>
+          <TouchableOpacity style={[styles.permissionButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={requestPermission}>
+            <Text style={[styles.permissionButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
               Grant Permission
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={[styles.backButtonText, theme.typography.body]}>
+            <Text style={[styles.backButtonText, theme.typography.body, { color: dynamicTheme.colors.textTertiary }]}>
               Go Back
             </Text>
           </TouchableOpacity>

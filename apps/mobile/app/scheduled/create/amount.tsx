@@ -10,10 +10,12 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setAmount, setStep } from '@/src/store/slices/scheduled-create-slice';
 import { sanitizeAmountInput } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 export default function ScheduledAmountScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const scheduledCreate = useAppSelector((state) => state.scheduledCreate);
   const balance = useAppSelector((state) => state.balance);
@@ -57,7 +59,7 @@ export default function ScheduledAmountScreen() {
   const canContinue = amount && parseFloat(amount) > 0;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Schedule Payment" />
 
       <KeyboardAvoidingView
@@ -66,22 +68,22 @@ export default function ScheduledAmountScreen() {
         keyboardVerticalOffset={0}
       >
         <View style={styles.content}>
-          <Text style={[styles.stepIndicator, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.stepIndicator, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
             Step 3 of 5
           </Text>
-          <Text style={[styles.subtitle, theme.typography.heading]}>
+          <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
             How much?
           </Text>
 
           <View style={styles.amountDisplay}>
-            <Text style={[styles.amountText, theme.typography.displayLarge]}>
+            <Text style={[styles.amountText, theme.typography.displayLarge, { color: dynamicTheme.colors.textPrimary }]}>
               {amount || '0'}
             </Text>
-            <Text style={[styles.tokenText, theme.typography.heading, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.tokenText, theme.typography.heading, { color: dynamicTheme.colors.textSecondary }]}>
               {scheduledCreate.selectedToken}
             </Text>
             {amount && (
-              <Text style={[styles.usdText, theme.typography.body, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.usdText, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
                 ${usdValue.toFixed(2)} USD
               </Text>
             )}
@@ -89,22 +91,22 @@ export default function ScheduledAmountScreen() {
 
           <View style={styles.quickAmounts}>
             <TouchableOpacity
-              style={styles.quickAmountChip}
+              style={[styles.quickAmountChip, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleQuickAmount('0.01')}
             >
-              <Text style={[styles.quickAmountText, theme.typography.body]}>0.01</Text>
+              <Text style={[styles.quickAmountText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>0.01</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.quickAmountChip}
+              style={[styles.quickAmountChip, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleQuickAmount('0.1')}
             >
-              <Text style={[styles.quickAmountText, theme.typography.body]}>0.1</Text>
+              <Text style={[styles.quickAmountText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>0.1</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.quickAmountChip}
+              style={[styles.quickAmountChip, { backgroundColor: dynamicTheme.colors.surface }]}
               onPress={() => handleQuickAmount('Max')}
             >
-              <Text style={[styles.quickAmountText, theme.typography.body]}>Max</Text>
+              <Text style={[styles.quickAmountText, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>Max</Text>
             </TouchableOpacity>
           </View>
 
@@ -112,7 +114,7 @@ export default function ScheduledAmountScreen() {
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map((key) => (
               <TouchableOpacity
                 key={key}
-                style={styles.keypadButton}
+                style={[styles.keypadButton, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => {
                   if (key === 'backspace') {
                     handleBackspace();
@@ -122,22 +124,22 @@ export default function ScheduledAmountScreen() {
                 }}
               >
                 {key === 'backspace' ? (
-                  <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
+                  <FontAwesome name="arrow-left" size={20} color={dynamicTheme.colors.textPrimary} />
                 ) : (
-                  <Text style={[styles.keypadText, theme.typography.title]}>{key}</Text>
+                  <Text style={[styles.keypadText, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>{key}</Text>
                 )}
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: dynamicTheme.colors.background, borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
           <TouchableOpacity
-            style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+            style={[styles.continueButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canContinue && { backgroundColor: dynamicTheme.colors.textTertiary }]}
             onPress={handleContinue}
             disabled={!canContinue}
           >
-            <Text style={[styles.continueButtonText, theme.typography.heading]}>Continue</Text>
+            <Text style={[styles.continueButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Continue</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

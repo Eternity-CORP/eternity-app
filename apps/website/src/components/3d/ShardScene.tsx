@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { Suspense, useRef } from 'react'
+import { Suspense, useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float, Environment } from '@react-three/drei'
 import { ShardSimple } from './Shard'
@@ -94,29 +94,53 @@ function ShardsGroup() {
 }
 
 export function ShardScene({ className = '' }: { className?: string }) {
+  const [isVisible, setIsVisible] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Lazy load 3D scene - only render when in viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    )
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div className={`w-full h-full ${className}`}>
-      <Canvas
-        camera={{ position: [0, 0, 10], fov: 40 }}
-        gl={{ antialias: true, alpha: true }}
-        dpr={[1, 2]}
-        style={{ background: 'transparent' }}
-      >
-        <Suspense fallback={null}>
-          {/* Environment for reflections */}
-          <Environment preset="city" />
+    <div ref={containerRef} className={`w-full h-full ${className}`}>
+      {isVisible && (
+        <Canvas
+          camera={{ position: [0, 0, 10], fov: 40 }}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          dpr={[1, 1.5]}
+          style={{ background: 'transparent' }}
+        >
+          <Suspense fallback={null}>
+            {/* Environment for reflections */}
+            <Environment preset="city" />
 
-          {/* Lighting for glass/chrome effect */}
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <directionalLight position={[-10, -10, -5]} intensity={0.5} />
-          <directionalLight position={[0, -10, 0]} intensity={0.3} />
-          <pointLight position={[0, 5, 0]} intensity={0.5} />
+            {/* Lighting for glass/chrome effect */}
+            <ambientLight intensity={0.4} />
+            <directionalLight position={[10, 10, 5]} intensity={1} />
+            <directionalLight position={[-10, -10, -5]} intensity={0.5} />
+            <directionalLight position={[0, -10, 0]} intensity={0.3} />
+            <pointLight position={[0, 5, 0]} intensity={0.5} />
 
-          <ShardsGroup />
-          <Particles count={80} />
-        </Suspense>
-      </Canvas>
+            <ShardsGroup />
+            <Particles count={80} />
+          </Suspense>
+        </Canvas>
+      )}
     </div>
   )
 }

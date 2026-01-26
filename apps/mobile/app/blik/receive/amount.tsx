@@ -12,6 +12,7 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { receiverStartCreating, receiverCodeCreated, receiverError } from '@/src/store/slices/blik-slice';
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { sanitizeAmountInput } from '@/src/utils/format';
@@ -19,6 +20,7 @@ import { sanitizeAmountInput } from '@/src/utils/format';
 export default function BlikReceiveAmountScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const dispatch = useAppDispatch();
+  const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
   const currentAccount = getCurrentAccount(wallet);
@@ -83,24 +85,24 @@ export default function BlikReceiveAmountScreen() {
   const canGenerate = amount && parseFloat(amount) > 0 && !isLoading;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Receive BLIK" />
 
       <View style={styles.content}>
         {/* Amount Display */}
         <View style={styles.amountDisplay}>
-          <Text style={styles.amountText}>
+          <Text style={[styles.amountText, { color: dynamicTheme.colors.textPrimary }]}>
             {amount || '0'}
           </Text>
-          <Text style={[styles.tokenText, theme.typography.heading, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.tokenText, theme.typography.heading, { color: dynamicTheme.colors.textSecondary }]}>
             {token}
           </Text>
         </View>
 
         {/* Error Display */}
         {blik.receiver.error && (
-          <View style={styles.errorContainer}>
-            <Text style={[styles.errorText, theme.typography.caption, { color: theme.colors.error }]}>
+          <View style={[styles.errorContainer, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               {blik.receiver.error}
             </Text>
           </View>
@@ -111,7 +113,7 @@ export default function BlikReceiveAmountScreen() {
           {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'].map((key, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.keypadButton, key === '' && styles.keypadButtonEmpty]}
+              style={[styles.keypadButton, { backgroundColor: dynamicTheme.colors.surface }, key === '' && styles.keypadButtonEmpty]}
               onPress={() => {
                 if (key === 'backspace') {
                   handleBackspace();
@@ -122,9 +124,9 @@ export default function BlikReceiveAmountScreen() {
               disabled={isLoading}
             >
               {key === 'backspace' ? (
-                <FontAwesome name="arrow-left" size={20} color={theme.colors.textPrimary} />
+                <FontAwesome name="arrow-left" size={20} color={dynamicTheme.colors.textPrimary} />
               ) : (
-                <Text style={[styles.keypadText, theme.typography.title]}>{key}</Text>
+                <Text style={[styles.keypadText, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>{key}</Text>
               )}
             </TouchableOpacity>
           ))}
@@ -132,16 +134,16 @@ export default function BlikReceiveAmountScreen() {
       </View>
 
       {/* Generate Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: dynamicTheme.colors.background, borderTopColor: dynamicTheme.colors.glassBorder }]}>
         <TouchableOpacity
-          style={[styles.generateButton, !canGenerate && styles.generateButtonDisabled]}
+          style={[styles.generateButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, !canGenerate && { backgroundColor: dynamicTheme.colors.textTertiary }]}
           onPress={handleGenerateCode}
           disabled={!canGenerate}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color={theme.colors.buttonPrimaryText} />
+            <ActivityIndicator size="small" color={dynamicTheme.colors.buttonPrimaryText} />
           ) : (
-            <Text style={[styles.generateButtonText, theme.typography.heading]}>
+            <Text style={[styles.generateButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>
               Generate Code
             </Text>
           )}

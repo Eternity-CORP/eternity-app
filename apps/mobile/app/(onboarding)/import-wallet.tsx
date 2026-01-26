@@ -4,10 +4,12 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { useAppDispatch } from '@/src/store/hooks';
 import { importWalletThunk } from '@/src/store/slices/wallet-slice';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { isValidMnemonicLength, getMnemonicWordCount } from '@e-y/crypto';
 
 export default function ImportWalletScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const [mnemonic, setMnemonic] = useState('');
   const [isImporting, setIsImporting] = useState(false);
@@ -42,31 +44,32 @@ export default function ImportWalletScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
+      <ScrollView style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={[styles.title, theme.typography.title]}>
+        <Text style={[styles.title, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
           Import Wallet
         </Text>
-        <Text style={[styles.description, theme.typography.body, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.description, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
           Enter your 12 or 24-word recovery phrase to restore your wallet.
         </Text>
       </View>
 
       <View style={styles.inputSection}>
-        <Text style={[styles.label, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.label, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
           Recovery Phrase
         </Text>
         <TextInput
           style={[
             styles.input,
             theme.typography.body,
-            !isValidLength && showWordCount && styles.inputError,
+            { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.buttonSecondaryBorder },
+            !isValidLength && showWordCount && { borderColor: dynamicTheme.colors.error },
           ]}
           value={mnemonic}
           onChangeText={setMnemonic}
           placeholder="Enter your recovery phrase..."
-          placeholderTextColor={theme.colors.textTertiary}
+          placeholderTextColor={dynamicTheme.colors.textTertiary}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -79,14 +82,14 @@ export default function ImportWalletScreen() {
             style={[
               styles.wordCount,
               theme.typography.caption,
-              isValidLength ? { color: theme.colors.success } : { color: theme.colors.error },
+              isValidLength ? { color: dynamicTheme.colors.success } : { color: dynamicTheme.colors.error },
             ]}
           >
             {wordCount} {wordCount === 1 ? 'word' : 'words'}
             {!isValidLength && ' (must be 12 or 24)'}
           </Text>
         )}
-        <Text style={[styles.hint, theme.typography.caption, { color: theme.colors.textTertiary }]}>
+        <Text style={[styles.hint, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
           Separate each word with a space. Your recovery phrase is case-insensitive.
         </Text>
       </View>
@@ -96,22 +99,23 @@ export default function ImportWalletScreen() {
           style={[
             styles.button,
             styles.buttonPrimary,
+            { backgroundColor: dynamicTheme.colors.buttonPrimary },
             (!isValidLength || isImporting) && styles.buttonDisabled,
           ]}
           onPress={handleImport}
           disabled={!isValidLength || isImporting}
         >
-          <Text style={[styles.buttonText, { color: theme.colors.buttonPrimaryText }]}>
+          <Text style={[styles.buttonText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {isImporting ? 'Importing...' : 'Import Wallet'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.buttonSecondary]}
+          style={[styles.button, styles.buttonSecondary, { backgroundColor: dynamicTheme.colors.buttonSecondary, borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
           onPress={() => router.back()}
           disabled={isImporting}
         >
-          <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+          <Text style={[styles.buttonText, { color: dynamicTheme.colors.textPrimary }]}>
             Back
           </Text>
         </TouchableOpacity>

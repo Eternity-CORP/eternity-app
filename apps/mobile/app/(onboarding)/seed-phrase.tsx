@@ -4,9 +4,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { saveWalletThunk, type AccountType } from '@/src/store/slices/wallet-slice';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 export default function SeedPhraseScreen() {
+  const { theme: dynamicTheme } = useTheme();
   const { wordCount, accountType: accountTypeParam } = useLocalSearchParams<{ wordCount?: string; accountType?: string }>();
   const accountType: AccountType = (accountTypeParam === 'real' || accountTypeParam === 'test') ? accountTypeParam : 'test';
   // Get mnemonic from Redux state (not from URL params for security)
@@ -66,40 +68,40 @@ export default function SeedPhraseScreen() {
 
   if (step === 'show') {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <View style={styles.container}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
+        <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <Text style={[styles.title, theme.typography.title]}>
+          <Text style={[styles.title, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
             Write Down Your Recovery Phrase
           </Text>
-          <Text style={[styles.instruction, theme.typography.body, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.instruction, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             Write these {totalWords} words down in order and keep them safe. You'll need them to recover your wallet.
           </Text>
 
           <View style={styles.wordsContainer}>
             {words.map((word, index) => (
-              <View key={index} style={styles.wordItem}>
-                <Text style={[styles.wordNumber, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <View key={index} style={[styles.wordItem, { backgroundColor: dynamicTheme.colors.surface }]}>
+                <Text style={[styles.wordNumber, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                   {index + 1}.
                 </Text>
-                <Text style={[styles.word, theme.typography.heading]}>
+                <Text style={[styles.word, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {word}
                 </Text>
               </View>
             ))}
           </View>
 
-          <Text style={[styles.warning, theme.typography.caption, { color: theme.colors.error }]}>
+          <Text style={[styles.warning, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
             ⚠️ Never share your recovery phrase with anyone. Store it in a safe place.
           </Text>
         </ScrollView>
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
           <TouchableOpacity
-            style={[styles.button, styles.buttonPrimary]}
+            style={[styles.button, styles.buttonPrimary, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
             onPress={() => setStep('verify')}
           >
-            <Text style={[styles.buttonText, { color: theme.colors.buttonPrimaryText }]}>
+            <Text style={[styles.buttonText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
               I've Written It Down
             </Text>
           </TouchableOpacity>
@@ -111,24 +113,24 @@ export default function SeedPhraseScreen() {
 
   // Verification step
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
+      <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <Text style={[styles.title, theme.typography.title]}>
+        <Text style={[styles.title, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
           Verify Your Recovery Phrase
         </Text>
-        <Text style={[styles.instruction, theme.typography.body, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.instruction, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
           Enter the words at positions {verificationWords.map((i) => i + 1).join(', ')} to confirm you've saved them correctly.
         </Text>
 
         <View style={styles.verificationContainer}>
           {verificationWords.map((index) => (
             <View key={index} style={styles.verificationItem}>
-              <Text style={[styles.verificationLabel, theme.typography.caption, { color: theme.colors.textSecondary }]}>
+              <Text style={[styles.verificationLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                 Word {index + 1}:
               </Text>
-              <View style={styles.inputContainer}>
-                <Text style={[styles.input, theme.typography.body]}>
+              <View style={[styles.inputContainer, { backgroundColor: dynamicTheme.colors.surface }]}>
+                <Text style={[styles.input, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
                   {userInputs[index] || ''}
                 </Text>
               </View>
@@ -138,7 +140,8 @@ export default function SeedPhraseScreen() {
                     key={wordIndex}
                     style={[
                       styles.wordOption,
-                      userInputs[index] === word && styles.wordOptionSelected,
+                      { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.buttonSecondaryBorder },
+                      userInputs[index] === word && { backgroundColor: dynamicTheme.colors.buttonPrimary, borderColor: dynamicTheme.colors.buttonPrimary },
                     ]}
                     onPress={() => {
                       setUserInputs((prev) => ({ ...prev, [index]: word }));
@@ -148,7 +151,8 @@ export default function SeedPhraseScreen() {
                       style={[
                         styles.wordOptionText,
                         theme.typography.caption,
-                        userInputs[index] === word && { color: theme.colors.buttonPrimaryText },
+                        { color: dynamicTheme.colors.textPrimary },
+                        userInputs[index] === word && { color: dynamicTheme.colors.buttonPrimaryText },
                       ]}
                     >
                       {word}
@@ -161,26 +165,27 @@ export default function SeedPhraseScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, { borderTopColor: dynamicTheme.colors.buttonSecondaryBorder }]}>
         <TouchableOpacity
           style={[
             styles.button,
             styles.buttonPrimary,
+            { backgroundColor: dynamicTheme.colors.buttonPrimary },
             (Object.keys(userInputs).length !== verificationWords.length || isSaving) && styles.buttonDisabled,
           ]}
           onPress={handleVerify}
           disabled={Object.keys(userInputs).length !== verificationWords.length || isSaving}
         >
-          <Text style={[styles.buttonText, { color: theme.colors.buttonPrimaryText }]}>
+          <Text style={[styles.buttonText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
             {isSaving ? 'Saving...' : 'Verify & Continue'}
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.buttonSecondary]}
+          style={[styles.button, styles.buttonSecondary, { backgroundColor: dynamicTheme.colors.buttonSecondary, borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
           onPress={() => setStep('show')}
         >
-          <Text style={[styles.buttonText, { color: theme.colors.textPrimary }]}>
+          <Text style={[styles.buttonText, { color: dynamicTheme.colors.textPrimary }]}>
             Back
           </Text>
         </TouchableOpacity>

@@ -17,6 +17,7 @@ import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useAppSelector } from '@/src/store/hooks';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 interface AiFabProps {
@@ -28,6 +29,7 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const suggestions = useAppSelector((state) => state.ai.suggestions);
+  const { isDark } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -102,12 +104,12 @@ export function AiFab({ bottomOffset = 80 }: AiFabProps) {
         activeOpacity={1}
       >
         <LinearGradient
-          colors={[theme.colors.accent, theme.colors.accentCyan]}
+          colors={isDark ? ['#FFFFFF', '#E0E0E0'] : ['#333333', '#000000']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.fab}
+          style={[styles.fab, isDark && styles.fabDark]}
         >
-          <FontAwesome name="magic" size={24} color="#FFFFFF" />
+          <FontAwesome name="magic" size={24} color={isDark ? '#000000' : '#FFFFFF'} />
         </LinearGradient>
 
         {badgeCount > 0 && (
@@ -136,7 +138,12 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadows.glow,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    ...theme.shadows.medium,
+  },
+  fabDark: {
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   badge: {
     position: 'absolute',

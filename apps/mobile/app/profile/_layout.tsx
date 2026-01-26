@@ -3,14 +3,16 @@
  */
 
 import { Stack } from 'expo-router';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 export default function ProfileLayout() {
+  const { theme: dynamicTheme } = useTheme();
   return (
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: theme.colors.background },
+        contentStyle: { backgroundColor: dynamicTheme.colors.background },
       }}
     />
   );
