@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-// DraggableFlatList removed - using ScrollView for better rendering reliability
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel, importWalletThunk, reorderAccounts, selectIsTestAccount, selectCurrentAccountType, type Account, type AccountType } from '@/src/store/slices/wallet-slice';
 import { fetchMultiNetworkBalancesThunk } from '@/src/store/slices/balance-slice';
@@ -803,87 +803,110 @@ export default function HomeScreen() {
               </View>
             ) : (
               <>
-                <ScrollView style={styles.accountsScrollView} contentContainerStyle={styles.accountsScrollContent}>
-                  {wallet.accounts.map((account) => {
-                    const [color1, color2] = generateAvatarColors(account.address);
-                    const accountIndex = wallet.accounts.findIndex(a => a.address === account.address);
-                    const isSelected = accountIndex === wallet.currentAccountIndex;
-                    const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
+                <View style={styles.accountsListContainer}>
+                  <DraggableFlatList
+                    data={wallet.accounts}
+                    keyExtractor={(item) => item.id}
+                    onDragEnd={({ data }) => {
+                      dispatch(reorderAccounts(data));
+                      saveAccounts(data);
+                    }}
+                    contentContainerStyle={styles.accountsScrollContent}
+                    renderItem={({ item: account, drag, isActive }: RenderItemParams<Account>) => {
+                      const [color1, color2] = generateAvatarColors(account.address);
+                      const accountIndex = wallet.accounts.findIndex(a => a.address === account.address);
+                      const isSelected = accountIndex === wallet.currentAccountIndex;
+                      const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
 
-                    if (editingAccountIndex === account.accountIndex) {
+                      if (editingAccountIndex === account.accountIndex) {
+                        return (
+                          <View style={[styles.editAccountContainer, { backgroundColor: dynamicTheme.colors.background }]}>
+                            <TextInput
+                              style={[styles.editAccountInput, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
+                              value={editLabel}
+                              onChangeText={setEditLabel}
+                              placeholder="Account name"
+                              placeholderTextColor={dynamicTheme.colors.textTertiary}
+                              autoFocus
+                            />
+                            <View style={styles.editAccountActions}>
+                              <TouchableOpacity
+                                style={styles.editAccountCancel}
+                                onPress={() => { setEditingAccountIndex(null); setEditLabel(''); }}
+                              >
+                                <Text style={[styles.editAccountCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={[styles.editAccountSave, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
+                                onPress={() => handleSaveLabel(account.accountIndex)}
+                              >
+                                <Text style={[styles.editAccountSaveText, { color: dynamicTheme.colors.buttonPrimaryText }]}>Save</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      }
+
                       return (
-                        <View key={account.id} style={[styles.editAccountContainer, { backgroundColor: dynamicTheme.colors.background }]}>
-                          <TextInput
-                            style={[styles.editAccountInput, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
-                            value={editLabel}
-                            onChangeText={setEditLabel}
-                            placeholder="Account name"
-                            placeholderTextColor={dynamicTheme.colors.textTertiary}
-                            autoFocus
-                          />
-                          <View style={styles.editAccountActions}>
-                            <TouchableOpacity
-                              style={styles.editAccountCancel}
-                              onPress={() => { setEditingAccountIndex(null); setEditLabel(''); }}
-                            >
-                              <Text style={[styles.editAccountCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.editAccountSave, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
-                              onPress={() => handleSaveLabel(account.accountIndex)}
-                            >
-                              <Text style={[styles.editAccountSaveText, { color: dynamicTheme.colors.buttonPrimaryText }]}>Save</Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
+                        <ScaleDecorator>
+                          <TouchableOpacity
+                            style={[
+                              styles.accountListItem,
+                              { backgroundColor: dynamicTheme.colors.background },
+                              isActive && styles.accountListItemDragging,
+                            ]}
+                            onPress={() => isEditMode
+                              ? (setEditingAccountIndex(account.accountIndex), setEditLabel(account.label || ''))
+                              : handleSwitchAccount(account.address)
+                            }
+                            activeOpacity={0.7}
+                            disabled={isActive}
+                          >
+                            {/* Drag handle - only in edit mode */}
+                            {isEditMode && (
+                              <TouchableOpacity
+                                onLongPress={drag}
+                                delayLongPress={100}
+                                style={styles.dragHandle}
+                              >
+                                <FontAwesome name="bars" size={16} color={dynamicTheme.colors.textTertiary} />
+                              </TouchableOpacity>
+                            )}
+
+                            {/* Gradient avatar based on address */}
+                            <LinearGradient
+                              colors={[color1, color2]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.accountAvatar}
+                            />
+
+                            <View style={styles.accountListInfo}>
+                              <View style={styles.accountNameRow}>
+                                <Text style={[styles.accountListName, { color: dynamicTheme.colors.textPrimary }]}>
+                                  {account.label || `Account ${account.accountIndex + 1}`}
+                                </Text>
+                                <AccountTypeBadge type={account.type} size="small" />
+                              </View>
+                              {accountUsernames[account.address] && (
+                                <Text style={[theme.typography.caption, { color: dynamicTheme.colors.success, marginTop: 2 }]}>
+                                  @{accountUsernames[account.address]}
+                                </Text>
+                              )}
+                              <Text style={[styles.accountListBalance, { color: dynamicTheme.colors.textTertiary }]}>{accountBalance}</Text>
+                            </View>
+
+                            {isEditMode ? (
+                              <FontAwesome name="pencil" size={16} color={dynamicTheme.colors.textTertiary} />
+                            ) : isSelected ? (
+                              <FontAwesome name="check" size={18} color={dynamicTheme.colors.accent} />
+                            ) : null}
+                          </TouchableOpacity>
+                        </ScaleDecorator>
                       );
-                    }
-
-                    return (
-                      <TouchableOpacity
-                        key={account.id}
-                        style={[
-                          styles.accountListItem,
-                          { backgroundColor: dynamicTheme.colors.background },
-                        ]}
-                        onPress={() => isEditMode
-                          ? (setEditingAccountIndex(account.accountIndex), setEditLabel(account.label || ''))
-                          : handleSwitchAccount(account.address)
-                        }
-                        activeOpacity={0.7}
-                      >
-                        {/* Gradient avatar based on address */}
-                        <LinearGradient
-                          colors={[color1, color2]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.accountAvatar}
-                        />
-
-                        <View style={styles.accountListInfo}>
-                          <View style={styles.accountNameRow}>
-                            <Text style={[styles.accountListName, { color: dynamicTheme.colors.textPrimary }]}>
-                              {account.label || `Account ${account.accountIndex + 1}`}
-                            </Text>
-                            <AccountTypeBadge type={account.type} size="small" />
-                          </View>
-                          {accountUsernames[account.address] && (
-                            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.success, marginTop: 2 }]}>
-                              @{accountUsernames[account.address]}
-                            </Text>
-                          )}
-                          <Text style={[styles.accountListBalance, { color: dynamicTheme.colors.textTertiary }]}>{accountBalance}</Text>
-                        </View>
-
-                        {isEditMode ? (
-                          <FontAwesome name="pencil" size={16} color={dynamicTheme.colors.textTertiary} />
-                        ) : isSelected ? (
-                          <FontAwesome name="check" size={18} color={dynamicTheme.colors.accent} />
-                        ) : null}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
+                    }}
+                  />
+                </View>
 
                 {/* Add Wallet Button - always visible at bottom */}
                 <TouchableOpacity
@@ -1262,8 +1285,7 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.md,
     flex: 1,
   },
-  accountsScrollView: {
-    flex: 1,
+  accountsListContainer: {
     maxHeight: SCREEN_HEIGHT * 0.4,
   },
   accountsScrollContent: {
