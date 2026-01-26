@@ -29,6 +29,25 @@ const log = createLogger('NetworkService');
 // Request timeout
 const REQUEST_TIMEOUT = 15000;
 
+// CoinGecko IDs for native tokens (used for testnet price estimation)
+const COINGECKO_IDS: Record<string, string> = {
+  ETH: 'ethereum',
+  MATIC: 'matic-network',
+  POL: 'matic-network', // Polygon renamed to POL
+  USDC: 'usd-coin',
+  USDT: 'tether',
+  DAI: 'dai',
+  WETH: 'weth',
+  WBTC: 'wrapped-bitcoin',
+  LINK: 'chainlink',
+  UNI: 'uniswap',
+  AAVE: 'aave',
+};
+
+// Cache for token prices
+let priceCache: { prices: Record<string, number>; timestamp: number } | null = null;
+const PRICE_CACHE_DURATION = 60 * 1000; // 1 minute
+
 // Provider cache per network (mainnet and testnet)
 const mainnetProviders: Partial<Record<NetworkId, JsonRpcProvider>> = {};
 const testnetProviders: Partial<Record<TestnetNetworkId, JsonRpcProvider>> = {};
@@ -130,6 +149,80 @@ interface AlchemyTokenMetadata {
   symbol: string;
   decimals: number;
   logo: string | null;
+}
+
+/**
+ * Fetch token prices from CoinGecko (for test token estimation)
+ */
+async function fetchTokenPrices(symbols: string[]): Promise<Record<string, number>> {
+  // Check cache
+  if (priceCache && Date.now() - priceCache.timestamp < PRICE_CACHE_DURATION) {
+    return priceCache.prices;
+  }
+
+  // Get unique CoinGecko IDs for the symbols
+  const uniqueIds = new Set<string>();
+  for (const symbol of symbols) {
+    const upperSymbol = symbol.toUpperCase();
+    if (COINGECKO_IDS[upperSymbol]) {
+      uniqueIds.add(COINGECKO_IDS[upperSymbol]);
+    }
+  }
+
+  if (uniqueIds.size === 0) {
+    return {};
+  }
+
+  try {
+    const idsParam = Array.from(uniqueIds).join(',');
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${idsParam}&vs_currencies=usd`,
+      {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      }
+    );
+
+    if (!response.ok) {
+      log.warn('CoinGecko API error', { status: response.status });
+      return priceCache?.prices || {};
+    }
+
+    const data = await response.json();
+
+    // Build symbol -> price mapping
+    const prices: Record<string, number> = {};
+    for (const [symbol, coingeckoId] of Object.entries(COINGECKO_IDS)) {
+      if (data[coingeckoId]?.usd) {
+        prices[symbol] = data[coingeckoId].usd;
+      }
+    }
+
+    // Update cache
+    priceCache = { prices, timestamp: Date.now() };
+    return prices;
+  } catch (error) {
+    log.warn('Failed to fetch token prices', error);
+    return priceCache?.prices || {};
+  }
+}
+
+/**
+ * Apply mainnet prices to test token balances
+ */
+function applyPricesToBalances(
+  balances: NetworkTokenBalance[],
+  prices: Record<string, number>
+): NetworkTokenBalance[] {
+  return balances.map((balance) => {
+    const upperSymbol = balance.symbol.toUpperCase();
+    const price = prices[upperSymbol] || 0;
+    const balanceNum = parseFloat(balance.balance);
+    return {
+      ...balance,
+      usdValue: balanceNum * price,
+    };
+  });
 }
 
 /**
@@ -452,6 +545,26 @@ export async function fetchAllNetworkBalances(
       networkBalances[networkId] = [];
       log.warn(`Failed to fetch balances for ${networkId}`, result.reason);
     }
+  }
+
+  // Fetch mainnet prices and apply them to token balances (for both test and real accounts)
+  // This gives us USD values for common tokens like ETH, MATIC, USDC, etc.
+  const allSymbols = new Set<string>();
+  for (const balances of Object.values(networkBalances)) {
+    for (const balance of balances) {
+      allSymbols.add(balance.symbol.toUpperCase());
+    }
+  }
+
+  // Fetch prices from CoinGecko
+  const prices = await fetchTokenPrices(Array.from(allSymbols));
+
+  // Apply prices to all network balances
+  for (const networkId of Object.keys(networkBalances) as AnyNetworkId[]) {
+    networkBalances[networkId] = applyPricesToBalances(
+      networkBalances[networkId],
+      prices
+    );
   }
 
   // Aggregate balances
