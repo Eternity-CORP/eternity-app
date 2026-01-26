@@ -679,45 +679,45 @@ export default function HomeScreen() {
           <Animated.View
             style={[
               styles.accountSheet,
-              { transform: [{ translateY: accountSlideAnim }] },
+              { backgroundColor: dynamicTheme.colors.surface, transform: [{ translateY: accountSlideAnim }] },
             ]}
           >
-            <View style={styles.sheetHandle} />
+            <View style={[styles.sheetHandle, { backgroundColor: dynamicTheme.colors.borderLight }]} />
 
             {/* Header */}
-            <View style={styles.accountSheetHeader}>
+            <View style={[styles.accountSheetHeader, { borderBottomColor: dynamicTheme.colors.border }]}>
               <TouchableOpacity
-                style={styles.editModeButton}
+                style={[styles.editModeButton, { backgroundColor: dynamicTheme.colors.background }]}
                 onPress={() => setIsEditMode(!isEditMode)}
               >
-                <Text style={[styles.editModeText, isEditMode && styles.editModeTextActive]}>
+                <Text style={[styles.editModeText, { color: dynamicTheme.colors.textPrimary }, isEditMode && { color: dynamicTheme.colors.accent }]}>
                   {isEditMode ? 'Done' : 'Edit'}
                 </Text>
               </TouchableOpacity>
 
-              <Text style={styles.accountSheetTitle}>Wallets list</Text>
+              <Text style={[styles.accountSheetTitle, { color: dynamicTheme.colors.textPrimary }]}>Wallets list</Text>
 
               <TouchableOpacity
-                style={styles.closeSheetButton}
+                style={[styles.closeSheetButton, { backgroundColor: dynamicTheme.colors.background }]}
                 onPress={closeAccountSelector}
               >
-                <FontAwesome name="times" size={18} color={theme.colors.textSecondary} />
+                <FontAwesome name="times" size={18} color={dynamicTheme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             {/* Accounts List or Add Wallet Menu or Import Sheet */}
             {showImportSheet ? (
               <View style={styles.importSheet}>
-                <Text style={styles.importTitle}>Import Wallet</Text>
-                <Text style={styles.importSubtitle}>
+                <Text style={[styles.importTitle, { color: dynamicTheme.colors.textPrimary }]}>Import Wallet</Text>
+                <Text style={[styles.importSubtitle, { color: dynamicTheme.colors.textSecondary }]}>
                   Enter your 12 or 24 word recovery phrase
                 </Text>
                 <TextInput
-                  style={styles.seedInput}
+                  style={[styles.seedInput, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
                   value={seedPhraseInput}
                   onChangeText={setSeedPhraseInput}
                   placeholder="Enter seed phrase..."
-                  placeholderTextColor={theme.colors.textTertiary}
+                  placeholderTextColor={dynamicTheme.colors.textTertiary}
                   multiline
                   numberOfLines={4}
                   autoCapitalize="none"
@@ -725,17 +725,17 @@ export default function HomeScreen() {
                 />
                 <View style={styles.importActions}>
                   <TouchableOpacity
-                    style={styles.importCancelButton}
+                    style={[styles.importCancelButton, { backgroundColor: dynamicTheme.colors.background }]}
                     onPress={() => { setShowImportSheet(false); setSeedPhraseInput(''); }}
                   >
-                    <Text style={styles.importCancelText}>Cancel</Text>
+                    <Text style={[styles.importCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.importConfirmButton, isAddingAccount && { opacity: 0.5 }]}
+                    style={[styles.importConfirmButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, isAddingAccount && { opacity: 0.5 }]}
                     onPress={handleImportWallet}
                     disabled={isAddingAccount}
                   >
-                    <Text style={styles.importConfirmText}>
+                    <Text style={[styles.importConfirmText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
                       {isAddingAccount ? 'Importing...' : 'Import'}
                     </Text>
                   </TouchableOpacity>
@@ -743,18 +743,18 @@ export default function HomeScreen() {
               </View>
             ) : showAddWalletMenu ? (
               <View style={styles.addWalletMenu}>
-                <Text style={styles.addWalletTitle}>Add Wallet</Text>
+                <Text style={[styles.addWalletTitle, { color: dynamicTheme.colors.textPrimary }]}>Add Wallet</Text>
 
                 <TextInput
-                  style={styles.newAccountInput}
+                  style={[styles.newAccountInput, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
                   value={newAccountName}
                   onChangeText={setNewAccountName}
                   placeholder="Wallet name (optional)"
-                  placeholderTextColor={theme.colors.textTertiary}
+                  placeholderTextColor={dynamicTheme.colors.textTertiary}
                 />
 
                 <TouchableOpacity
-                  style={[styles.addWalletOption, { borderColor: '#10B981', borderWidth: 1 }]}
+                  style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#10B981', borderWidth: 1 }]}
                   onPress={() => handleAddAccount('real')}
                   disabled={isAddingAccount}
                 >
@@ -762,13 +762,13 @@ export default function HomeScreen() {
                     <FontAwesome name="diamond" size={18} color="#10B981" />
                   </View>
                   <View style={styles.addWalletOptionInfo}>
-                    <Text style={styles.addWalletOptionTitle}>New Wallet</Text>
-                    <Text style={styles.addWalletOptionDesc}>Create a real mainnet wallet</Text>
+                    <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Wallet</Text>
+                    <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Create a real mainnet wallet</Text>
                   </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.addWalletOption, { borderColor: '#F59E0B', borderWidth: 1 }]}
+                  style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#F59E0B', borderWidth: 1 }]}
                   onPress={() => handleAddAccount('test')}
                   disabled={isAddingAccount}
                 >
@@ -776,21 +776,21 @@ export default function HomeScreen() {
                     <FontAwesome name="flask" size={18} color="#F59E0B" />
                   </View>
                   <View style={styles.addWalletOptionInfo}>
-                    <Text style={styles.addWalletOptionTitle}>New Test Wallet</Text>
-                    <Text style={styles.addWalletOptionDesc}>For testing with free tokens</Text>
+                    <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Test Wallet</Text>
+                    <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>For testing with free tokens</Text>
                   </View>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.addWalletOption}
+                  style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
                   onPress={() => { setShowAddWalletMenu(false); setShowImportSheet(true); }}
                 >
                   <View style={[styles.addWalletIcon, { backgroundColor: '#8B5CF6' + '20' }]}>
                     <FontAwesome name="download" size={18} color="#8B5CF6" />
                   </View>
                   <View style={styles.addWalletOptionInfo}>
-                    <Text style={styles.addWalletOptionTitle}>Existing Wallet</Text>
-                    <Text style={styles.addWalletOptionDesc}>Import using recovery phrase</Text>
+                    <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>Existing Wallet</Text>
+                    <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Import using recovery phrase</Text>
                   </View>
                 </TouchableOpacity>
 
@@ -798,11 +798,11 @@ export default function HomeScreen() {
                   style={styles.addWalletCancelButton}
                   onPress={() => { setShowAddWalletMenu(false); setNewAccountName(''); }}
                 >
-                  <Text style={styles.addWalletCancelText}>Cancel</Text>
+                  <Text style={[styles.addWalletCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <>
+              <View style={styles.accountsContainer}>
                 <DraggableFlatList
                   data={wallet.accounts}
                   keyExtractor={(item) => item.id}
@@ -821,13 +821,13 @@ export default function HomeScreen() {
 
                     if (editingAccountIndex === account.accountIndex) {
                       return (
-                        <View style={styles.editAccountContainer}>
+                        <View style={[styles.editAccountContainer, { backgroundColor: dynamicTheme.colors.background }]}>
                           <TextInput
-                            style={styles.editAccountInput}
+                            style={[styles.editAccountInput, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
                             value={editLabel}
                             onChangeText={setEditLabel}
                             placeholder="Account name"
-                            placeholderTextColor={theme.colors.textTertiary}
+                            placeholderTextColor={dynamicTheme.colors.textTertiary}
                             autoFocus
                           />
                           <View style={styles.editAccountActions}>
@@ -835,13 +835,13 @@ export default function HomeScreen() {
                               style={styles.editAccountCancel}
                               onPress={() => { setEditingAccountIndex(null); setEditLabel(''); }}
                             >
-                              <Text style={styles.editAccountCancelText}>Cancel</Text>
+                              <Text style={[styles.editAccountCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                              style={styles.editAccountSave}
+                              style={[styles.editAccountSave, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
                               onPress={() => handleSaveLabel(account.accountIndex)}
                             >
-                              <Text style={styles.editAccountSaveText}>Save</Text>
+                              <Text style={[styles.editAccountSaveText, { color: dynamicTheme.colors.buttonPrimaryText }]}>Save</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -853,7 +853,8 @@ export default function HomeScreen() {
                         <TouchableOpacity
                           style={[
                             styles.accountListItem,
-                            isActive && styles.accountListItemDragging,
+                            { backgroundColor: dynamicTheme.colors.background },
+                            isActive && [styles.accountListItemDragging, { backgroundColor: dynamicTheme.colors.surface }],
                           ]}
                           onPress={() => isEditMode
                             ? (setEditingAccountIndex(account.accountIndex), setEditLabel(account.label || ''))
@@ -870,7 +871,7 @@ export default function HomeScreen() {
                               style={styles.dragHandle}
                               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                             >
-                              <FontAwesome name="bars" size={16} color={theme.colors.textTertiary} />
+                              <FontAwesome name="bars" size={16} color={dynamicTheme.colors.textTertiary} />
                             </TouchableOpacity>
                           )}
 
@@ -884,23 +885,23 @@ export default function HomeScreen() {
 
                           <View style={styles.accountListInfo}>
                             <View style={styles.accountNameRow}>
-                              <Text style={styles.accountListName}>
+                              <Text style={[styles.accountListName, { color: dynamicTheme.colors.textPrimary }]}>
                                 {account.label || `Account ${account.accountIndex + 1}`}
                               </Text>
                               <AccountTypeBadge type={account.type} size="small" />
                             </View>
                             {accountUsernames[account.address] && (
-                              <Text style={[theme.typography.caption, { color: theme.colors.success, marginTop: 2 }]}>
+                              <Text style={[theme.typography.caption, { color: dynamicTheme.colors.success, marginTop: 2 }]}>
                                 @{accountUsernames[account.address]}
                               </Text>
                             )}
-                            <Text style={styles.accountListBalance}>{accountBalance}</Text>
+                            <Text style={[styles.accountListBalance, { color: dynamicTheme.colors.textTertiary }]}>{accountBalance}</Text>
                           </View>
 
                           {isEditMode ? (
-                            <FontAwesome name="pencil" size={16} color={theme.colors.textTertiary} />
+                            <FontAwesome name="pencil" size={16} color={dynamicTheme.colors.textTertiary} />
                           ) : isSelected ? (
-                            <FontAwesome name="check" size={18} color={theme.colors.accent} />
+                            <FontAwesome name="check" size={18} color={dynamicTheme.colors.accent} />
                           ) : null}
                         </TouchableOpacity>
                       </ScaleDecorator>
@@ -908,14 +909,14 @@ export default function HomeScreen() {
                   }}
                 />
 
-                {/* Add Wallet Button */}
+                {/* Add Wallet Button - always visible at bottom */}
                 <TouchableOpacity
-                  style={styles.addWalletButton}
+                  style={[styles.addWalletButton, { backgroundColor: dynamicTheme.colors.background, borderColor: dynamicTheme.colors.borderLight }]}
                   onPress={() => setShowAddWalletMenu(true)}
                 >
-                  <Text style={styles.addWalletButtonText}>Add Wallet</Text>
+                  <Text style={[styles.addWalletButtonText, { color: dynamicTheme.colors.textPrimary }]}>Add Wallet</Text>
                 </TouchableOpacity>
-              </>
+              </View>
             )}
           </Animated.View>
         </View>
@@ -933,23 +934,23 @@ export default function HomeScreen() {
           <Animated.View
             style={[
               styles.faucetSheet,
-              { transform: [{ translateY: faucetSlideAnim }] },
+              { backgroundColor: dynamicTheme.colors.surface, transform: [{ translateY: faucetSlideAnim }] },
             ]}
           >
-            <View style={styles.sheetHandle} />
+            <View style={[styles.sheetHandle, { backgroundColor: dynamicTheme.colors.borderLight }]} />
 
             {/* Header */}
-            <View style={styles.faucetSheetHeader}>
-              <Text style={styles.faucetSheetTitle}>Get Test Tokens</Text>
+            <View style={[styles.faucetSheetHeader, { borderBottomColor: dynamicTheme.colors.border }]}>
+              <Text style={[styles.faucetSheetTitle, { color: dynamicTheme.colors.textPrimary }]}>Get Test Tokens</Text>
               <TouchableOpacity
-                style={styles.closeSheetButton}
+                style={[styles.closeSheetButton, { backgroundColor: dynamicTheme.colors.background }]}
                 onPress={closeFaucetSheet}
               >
-                <FontAwesome name="times" size={18} color={theme.colors.textSecondary} />
+                <FontAwesome name="times" size={18} color={dynamicTheme.colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.faucetSheetSubtitle}>
+            <Text style={[styles.faucetSheetSubtitle, { color: dynamicTheme.colors.textSecondary }]}>
               Visit these faucets to get free test tokens for development
             </Text>
 
@@ -1276,9 +1277,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  accountsContainer: {
+    flex: 1,
+    maxHeight: SCREEN_HEIGHT * 0.5,
+  },
   accountsList: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
+    flex: 1,
   },
   accountListItem: {
     flexDirection: 'row',
@@ -1366,10 +1372,11 @@ const styles = StyleSheet.create({
     color: theme.colors.buttonPrimaryText,
     fontWeight: '600',
   },
-  // Add Wallet Button
+  // Add Wallet Button - fixed at bottom
   addWalletButton: {
     marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
     paddingVertical: theme.spacing.lg,
     backgroundColor: theme.colors.background,
     borderRadius: theme.borderRadius.full,

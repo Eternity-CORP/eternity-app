@@ -247,13 +247,11 @@ interface ThemeProviderProps {
 export function AppThemeProvider({ children }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('light');
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load saved theme preference on mount
   useEffect(() => {
     loadThemePreference().then((savedMode) => {
       setThemeModeState(savedMode);
-      setIsLoaded(true);
     });
   }, []);
 
@@ -295,11 +293,6 @@ export function AppThemeProvider({ children }: ThemeProviderProps) {
     }),
     [theme, themeMode, setThemeMode, isDark]
   );
-
-  // Don't render until theme is loaded to prevent flash
-  if (!isLoaded) {
-    return null;
-  }
 
   return (
     <ThemeContext.Provider value={value}>
