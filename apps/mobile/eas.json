@@ -21,7 +21,6 @@
         "simulator": false
       },
       "env": {
-        "NODE_ENV": "production",
         "SENTRY_PROJECT": "mobile",
         "SENTRY_ORG": "e-y"
       },
