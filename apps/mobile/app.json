@@ -44,13 +44,6 @@
           "sounds": []
         }
       ],
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "e-y",
-          "project": "mobile"
-        }
-      ],
       "@react-native-community/datetimepicker",
       "expo-font"
     ],

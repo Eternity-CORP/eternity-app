@@ -20,10 +20,6 @@
       "ios": {
         "simulator": false
       },
-      "env": {
-        "SENTRY_PROJECT": "mobile",
-        "SENTRY_ORG": "e-y"
-      },
       "node": "22.14.0"
     },
     "production": {
