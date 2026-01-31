@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 interface LoadingScreenProps {
   duration?: number // in milliseconds
@@ -14,6 +15,21 @@ export function LoadingScreen({
 }: LoadingScreenProps) {
   const [progress, setProgress] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
+  const [isDark, setIsDark] = useState(true) // Default to dark
+
+  // Check theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme === 'light') {
+      setIsDark(false)
+    } else if (savedTheme === 'dark') {
+      setIsDark(true)
+    } else {
+      // Check system preference, default to dark
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      setIsDark(prefersDark || true) // Default dark if no preference
+    }
+  }, [])
 
   useEffect(() => {
     const startTime = Date.now()
@@ -43,22 +59,22 @@ export function LoadingScreen({
       {!isComplete && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-end justify-end"
-          style={{ backgroundColor: '#0a0a0a' }}
+          style={{ backgroundColor: isDark ? '#0a0a0a' : '#ffffff' }}
           initial={{ opacity: 1 }}
           exit={{
             opacity: 0,
             transition: { duration: 0.5, ease: 'easeInOut' }
           }}
         >
-          {/* Progress counter */}
           {/* Logo */}
           <div className="absolute top-8 left-8">
-            <svg width="40" height="40" viewBox="0 0 100 100" fill="none">
-              <polygon points="50,5 85,55 50,55" fill="#666" />
-              <polygon points="50,5 50,55 15,55" fill="#555" />
-              <polygon points="50,55 85,55 50,95" fill="#888" />
-              <polygon points="50,55 50,95 15,55" fill="#777" />
-            </svg>
+            <Image
+              src={isDark ? '/images/logo_white.svg' : '/images/logo.svg'}
+              alt="Eternity"
+              width={48}
+              height={48}
+              priority
+            />
           </div>
 
           {/* Progress counter */}
@@ -70,7 +86,7 @@ export function LoadingScreen({
           >
             <span
               className="font-mono text-6xl md:text-9xl font-light tracking-tighter"
-              style={{ color: '#ffffff' }}
+              style={{ color: isDark ? '#ffffff' : '#000000' }}
             >
               {progress}
               <span className="text-4xl md:text-6xl opacity-50">%</span>
