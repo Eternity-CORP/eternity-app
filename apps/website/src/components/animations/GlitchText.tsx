@@ -2,6 +2,7 @@
 
 import { motion, useInView, useAnimationControls } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
+import { useLoading } from '@/context/LoadingContext'
 
 interface GlitchTextProps {
   children: string
@@ -24,6 +25,7 @@ export function GlitchText({
 }: GlitchTextProps) {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const { isLoaded } = useLoading()
   const [hoverCount, setHoverCount] = useState(0)
   const [hasAnimatedOnce, setHasAnimatedOnce] = useState(false)
 
@@ -77,13 +79,13 @@ export function GlitchText({
     })
   }
 
-  // Trigger on first view
+  // Trigger on first view (after loading complete)
   useEffect(() => {
-    if (isInView && !hasAnimatedOnce) {
+    if (isLoaded && isInView && !hasAnimatedOnce) {
       setHasAnimatedOnce(true)
       runGlitchAnimation(true)
     }
-  }, [isInView])
+  }, [isLoaded, isInView])
 
   // Trigger on hover
   const handleMouseEnter = () => {
@@ -99,8 +101,8 @@ export function GlitchText({
       className="relative inline-block cursor-pointer"
       onMouseEnter={handleMouseEnter}
       initial={{ opacity: 0 }}
-      animate={{ opacity: isInView ? 1 : 0 }}
-      transition={{ duration: 0.3, delay }}
+      animate={{ opacity: isLoaded && isInView ? 1 : 0 }}
+      transition={{ duration: 0.3, delay: isLoaded ? delay : 0 }}
     >
       {/* Base text layer */}
       <Component className={`relative ${className}`} style={style}>

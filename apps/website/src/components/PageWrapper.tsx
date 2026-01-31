@@ -1,15 +1,15 @@
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { LoadingScreen } from '@/components/ui/LoadingScreen'
+import { LoadingProvider, useLoading } from '@/context/LoadingContext'
 
 interface PageWrapperProps {
   children: React.ReactNode
 }
 
-export function PageWrapper({ children }: PageWrapperProps) {
-  const [isLoaded, setIsLoaded] = useState(false)
+function PageContent({ children }: PageWrapperProps) {
+  const { isLoaded, setIsLoaded } = useLoading()
 
   return (
     <>
@@ -26,5 +26,13 @@ export function PageWrapper({ children }: PageWrapperProps) {
         {children}
       </motion.div>
     </>
+  )
+}
+
+export function PageWrapper({ children }: PageWrapperProps) {
+  return (
+    <LoadingProvider>
+      <PageContent>{children}</PageContent>
+    </LoadingProvider>
   )
 }
