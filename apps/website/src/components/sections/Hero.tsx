@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
+import { useTheme } from '@/context/ThemeContext'
 
 // Dynamic import for 3D scene to avoid SSR issues
 const ShardScene = dynamic(
@@ -12,42 +14,66 @@ const ShardScene = dynamic(
 )
 
 export function Hero() {
+  const { isDark } = useTheme()
+  
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
     element?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
+    <section 
+      className="relative min-h-screen flex items-center justify-center overflow-hidden theme-transition"
+      style={{ background: 'var(--background)' }}
+    >
       {/* Background Grid */}
       <div className="absolute inset-0 bg-grid opacity-50" />
 
       {/* 3D Shards Scene */}
       <div className="absolute inset-0 z-0">
-        <ShardScene />
+        <ShardScene isDark={isDark} />
       </div>
 
-      {/* Gradient Overlay - from white edges to transparent center */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white z-10 pointer-events-none" />
+      {/* Gradient Overlay - theme aware */}
+      <div 
+        className="absolute inset-0 z-10 pointer-events-none"
+        style={{ 
+          background: `linear-gradient(to bottom, var(--background), transparent, var(--background))`
+        }}
+      />
 
       {/* Content */}
       <div className="relative z-20 container mx-auto px-6 text-center pt-20">
-        <FadeIn delay={0.2}>
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          >
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
-              <span className="text-black">The Wallet</span>
-              <br />
-              <span className="text-gradient">for Everyone</span>
-            </h1>
-          </motion.div>
-        </FadeIn>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              className="block"
+              style={{ color: 'var(--foreground)' }}
+            >
+              The Wallet
+            </GlitchText>
+            <br />
+            <GlitchText
+              delay={0.5}
+              glitchIntensity="medium"
+              className="text-gradient"
+            >
+              for Everyone
+            </GlitchText>
+          </h1>
+        </motion.div>
 
         <FadeIn delay={0.4}>
-          <p className="text-xl md:text-2xl text-muted max-w-2xl mx-auto mb-12">
+          <p 
+            className="text-xl md:text-2xl max-w-2xl mx-auto mb-12"
+            style={{ color: 'var(--foreground-muted)' }}
+          >
             Send crypto like you send a text.
             <br className="hidden md:block" />
             No addresses. No fear. Just 6 digits.
@@ -98,7 +124,10 @@ export function Hero() {
         >
           <button
             onClick={() => scrollToSection('problem')}
-            className="flex flex-col items-center text-muted-light hover:text-black transition-colors"
+            className="flex flex-col items-center transition-colors"
+            style={{ color: 'var(--foreground-light)' }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--foreground-light)'}
           >
             <svg
               className="w-6 h-6"
