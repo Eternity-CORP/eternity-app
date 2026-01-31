@@ -49,19 +49,11 @@ export function Hero() {
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
             <GlitchText
               delay={0.3}
+              glitchDuration={1.5}
               glitchIntensity="medium"
-              className="block"
               style={{ color: 'var(--foreground)' }}
             >
-              The Wallet
-            </GlitchText>
-            <br />
-            <GlitchText
-              delay={0.5}
-              glitchIntensity="medium"
-              className="text-gradient"
-            >
-              for Everyone
+              The Wallet for Everyone
             </GlitchText>
           </h1>
         </motion.div>
