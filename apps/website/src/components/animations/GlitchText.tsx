@@ -1,7 +1,7 @@
 'use client'
 
-import { motion, useInView } from 'framer-motion'
-import { useRef, useState } from 'react'
+import { motion, useInView, useAnimationControls } from 'framer-motion'
+import { useRef, useState, useEffect } from 'react'
 
 interface GlitchTextProps {
   children: string
@@ -24,7 +24,12 @@ export function GlitchText({
 }: GlitchTextProps) {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
-  const [isHovered, setIsHovered] = useState(false)
+  const [hoverCount, setHoverCount] = useState(0)
+  const [hasAnimatedOnce, setHasAnimatedOnce] = useState(false)
+
+  const redControls = useAnimationControls()
+  const cyanControls = useAnimationControls()
+  const scanlineControls = useAnimationControls()
 
   // Intensity settings for RGB offset
   const intensityMap = {
@@ -34,14 +39,65 @@ export function GlitchText({
   }
   const intensity = intensityMap[glitchIntensity]
 
-  const shouldGlitch = isInView || isHovered
+  const runGlitchAnimation = async (withDelay: boolean) => {
+    const animationDelay = withDelay ? delay : 0
+
+    // Red channel animation
+    redControls.start({
+      opacity: [0, 0.8, 0.8, 0.4, 0],
+      x: [-intensity.x * 3, -intensity.x, -intensity.x * 1.5, -intensity.x * 0.5, 0],
+      transition: {
+        duration: glitchDuration,
+        delay: animationDelay,
+        ease: [0.25, 0.1, 0.25, 1],
+        times: [0, 0.2, 0.5, 0.8, 1],
+      },
+    })
+
+    // Cyan channel animation
+    cyanControls.start({
+      opacity: [0, 0.8, 0.8, 0.4, 0],
+      x: [intensity.x * 3, intensity.x, intensity.x * 1.5, intensity.x * 0.5, 0],
+      transition: {
+        duration: glitchDuration,
+        delay: animationDelay + 0.05,
+        ease: [0.25, 0.1, 0.25, 1],
+        times: [0, 0.2, 0.5, 0.8, 1],
+      },
+    })
+
+    // Scanline animation
+    scanlineControls.start({
+      opacity: [0, 0.3, 0, 0.2, 0],
+      transition: {
+        duration: glitchDuration * 0.8,
+        delay: animationDelay,
+        times: [0, 0.3, 0.5, 0.7, 1],
+      },
+    })
+  }
+
+  // Trigger on first view
+  useEffect(() => {
+    if (isInView && !hasAnimatedOnce) {
+      setHasAnimatedOnce(true)
+      runGlitchAnimation(true)
+    }
+  }, [isInView])
+
+  // Trigger on hover
+  const handleMouseEnter = () => {
+    if (hasAnimatedOnce) {
+      setHoverCount((c) => c + 1)
+      runGlitchAnimation(false)
+    }
+  }
 
   return (
     <motion.div
       ref={ref}
-      className="relative inline-block"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="relative inline-block cursor-pointer"
+      onMouseEnter={handleMouseEnter}
       initial={{ opacity: 0 }}
       animate={{ opacity: isInView ? 1 : 0 }}
       transition={{ duration: 0.3, delay }}
@@ -55,21 +111,13 @@ export function GlitchText({
       <motion.span
         className={`absolute inset-0 ${className}`}
         style={{
+          ...style,
           color: 'transparent',
           textShadow: `${-intensity.x}px 0 rgba(255, 0, 0, 0.7)`,
           mixBlendMode: 'screen',
         }}
         initial={{ opacity: 0, x: -intensity.x * 3 }}
-        animate={shouldGlitch ? {
-          opacity: [0, 0.8, 0.8, 0.4, 0],
-          x: [-intensity.x * 3, -intensity.x, -intensity.x * 1.5, -intensity.x * 0.5, 0],
-        } : { opacity: 0 }}
-        transition={{
-          duration: glitchDuration,
-          delay: isHovered ? 0 : delay,
-          ease: [0.25, 0.1, 0.25, 1],
-          times: [0, 0.2, 0.5, 0.8, 1],
-        }}
+        animate={redControls}
         aria-hidden
       >
         {children}
@@ -79,21 +127,13 @@ export function GlitchText({
       <motion.span
         className={`absolute inset-0 ${className}`}
         style={{
+          ...style,
           color: 'transparent',
           textShadow: `${intensity.x}px 0 rgba(0, 255, 255, 0.7)`,
           mixBlendMode: 'screen',
         }}
         initial={{ opacity: 0, x: intensity.x * 3 }}
-        animate={shouldGlitch ? {
-          opacity: [0, 0.8, 0.8, 0.4, 0],
-          x: [intensity.x * 3, intensity.x, intensity.x * 1.5, intensity.x * 0.5, 0],
-        } : { opacity: 0 }}
-        transition={{
-          duration: glitchDuration,
-          delay: isHovered ? 0 : delay + 0.05,
-          ease: [0.25, 0.1, 0.25, 1],
-          times: [0, 0.2, 0.5, 0.8, 1],
-        }}
+        animate={cyanControls}
         aria-hidden
       >
         {children}
@@ -103,14 +143,7 @@ export function GlitchText({
       <motion.div
         className="absolute inset-0 pointer-events-none overflow-hidden"
         initial={{ opacity: 0 }}
-        animate={shouldGlitch ? {
-          opacity: [0, 0.3, 0, 0.2, 0],
-        } : { opacity: 0 }}
-        transition={{
-          duration: glitchDuration * 0.8,
-          delay: isHovered ? 0 : delay,
-          times: [0, 0.3, 0.5, 0.7, 1],
-        }}
+        animate={scanlineControls}
         aria-hidden
       >
         <div
