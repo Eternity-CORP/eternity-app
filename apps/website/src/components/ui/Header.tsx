@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from './Button'
+import { ThemeToggle } from './ThemeToggle'
 import { cn } from '@/lib/utils'
+import { useTheme } from '@/context/ThemeContext'
 
 const navItems = [
   { label: 'Features', href: '#features' },
@@ -15,6 +17,7 @@ const navItems = [
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { isDark } = useTheme()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,58 +49,68 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image
-            src="/images/logo.svg"
+            src={isDark ? '/images/logo_white.svg' : '/images/logo.svg'}
             alt="Eternity"
             width={36}
             height={36}
             className="w-9 h-9"
           />
-          <span className="text-xl font-bold text-black">Eternity</span>
+          <span className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Eternity</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-muted hover:text-black transition-colors duration-200 text-sm font-medium"
+              className="transition-colors duration-200 text-sm font-medium"
+              style={{ color: 'var(--foreground-muted)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--foreground-muted)'}
             >
               {item.label}
             </Link>
           ))}
+          <ThemeToggle />
           <Button variant="primary" size="sm" onClick={() => scrollToSection('cta')}>
             Get Early Access
           </Button>
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          <div className="w-6 h-5 flex flex-col justify-between">
-            <span
-              className={cn(
-                'w-full h-0.5 bg-black transition-all duration-300',
-                isMobileMenuOpen && 'rotate-45 translate-y-2'
-              )}
-            />
-            <span
-              className={cn(
-                'w-full h-0.5 bg-black transition-all duration-300',
-                isMobileMenuOpen && 'opacity-0'
-              )}
-            />
-            <span
-              className={cn(
-                'w-full h-0.5 bg-black transition-all duration-300',
-                isMobileMenuOpen && '-rotate-45 -translate-y-2'
-              )}
-            />
-          </div>
-        </button>
+        <div className="flex items-center gap-3 md:hidden">
+          <ThemeToggle />
+          <button
+            className="p-2"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            <div className="w-6 h-5 flex flex-col justify-between">
+              <span
+                className={cn(
+                  'w-full h-0.5 transition-all duration-300',
+                  isMobileMenuOpen && 'rotate-45 translate-y-2'
+                )}
+                style={{ background: 'var(--foreground)' }}
+              />
+              <span
+                className={cn(
+                  'w-full h-0.5 transition-all duration-300',
+                  isMobileMenuOpen && 'opacity-0'
+                )}
+                style={{ background: 'var(--foreground)' }}
+              />
+              <span
+                className={cn(
+                  'w-full h-0.5 transition-all duration-300',
+                  isMobileMenuOpen && '-rotate-45 -translate-y-2'
+                )}
+                style={{ background: 'var(--foreground)' }}
+              />
+            </div>
+          </button>
+        </div>
       </nav>
 
       {/* Mobile Menu */}
@@ -107,14 +120,16 @@ export function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden glass border-t border-black/5"
+            className="md:hidden glass"
+            style={{ borderTop: '1px solid var(--border-light)' }}
           >
             <div className="container mx-auto px-6 py-4 flex flex-col gap-4">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-muted hover:text-black transition-colors py-2"
+                  className="transition-colors py-2"
+                  style={{ color: 'var(--foreground-muted)' }}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}

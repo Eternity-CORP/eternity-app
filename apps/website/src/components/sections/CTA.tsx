@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 import { Button } from '@/components/ui/Button'
 
 export function CTA() {
@@ -47,26 +48,33 @@ export function CTA() {
   return (
     <section
       id="cta"
-      className="relative min-h-screen flex items-center py-32 overflow-hidden bg-surface-light"
+      className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background-secondary)' }}
     >
       {/* Background dots */}
       <div className="absolute inset-0 bg-dots opacity-50" />
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>
-          <p className="text-sm font-medium tracking-widest text-muted uppercase mb-4 text-center">
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
             Join Us
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6 text-black">
-            Ready to Try the Future?
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Ready to Try the Future?
+            </GlitchText>
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-muted text-center text-lg md:text-xl mb-12">
+          <p className="text-center text-lg md:text-xl mb-12" style={{ color: 'var(--foreground-muted)' }}>
             Join the waitlist for early access
           </p>
         </FadeIn>
@@ -79,17 +87,20 @@ export function CTA() {
                   key="success"
                   initial={{ opacity: 0, scale: 0.9, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  className="text-center p-8 rounded-2xl bg-white border border-black/10"
+                  className="text-center p-8 rounded-2xl"
+                  style={{ background: 'var(--card-bg)', border: '1px solid var(--border)' }}
                 >
                   {/* Animated checkmark */}
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: 'spring', duration: 0.6, delay: 0.1 }}
-                    className="w-20 h-20 mx-auto mb-6 rounded-full bg-black flex items-center justify-center"
+                    className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
+                    style={{ background: 'var(--foreground)' }}
                   >
                     <motion.svg
-                      className="w-10 h-10 text-white"
+                      className="w-10 h-10"
+                      style={{ color: 'var(--background)' }}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -115,10 +126,10 @@ export function CTA() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <h3 className="text-2xl font-bold text-black mb-3">
+                    <h3 className="text-2xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>
                       Welcome to the Future!
                     </h3>
-                    <p className="text-muted mb-4">
+                    <p className="mb-4" style={{ color: 'var(--foreground-muted)' }}>
                       You've secured your spot on the waitlist.
                     </p>
                   </motion.div>
@@ -128,19 +139,21 @@ export function CTA() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.7 }}
-                    className="p-4 rounded-xl bg-surface-light border border-black/5"
+                    className="p-4 rounded-xl"
+                    style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}
                   >
                     <div className="flex items-center gap-3 justify-center mb-2">
                       <motion.div
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
-                        className="w-2 h-2 rounded-full bg-accent-blue"
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: 'var(--accent-blue)' }}
                       />
-                      <span className="text-sm font-medium text-black">Coming Soon</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>Coming Soon</span>
                     </div>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
                       We'll notify you when early access is available. <br />
-                      <span className="text-black font-medium">Be the first to experience Eternity.</span>
+                      <span className="font-medium" style={{ color: 'var(--foreground)' }}>Be the first to experience Eternity.</span>
                     </p>
                   </motion.div>
 
@@ -149,7 +162,8 @@ export function CTA() {
                     {[...Array(12)].map((_, i) => (
                       <motion.div
                         key={i}
-                        className="absolute w-2 h-2 rounded-full bg-black/20"
+                        className="absolute w-2 h-2 rounded-full"
+                        style={{ background: 'var(--foreground)', opacity: 0.2 }}
                         initial={{
                           x: '50%',
                           y: '50%',
@@ -176,7 +190,8 @@ export function CTA() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onSubmit={handleSubmit}
-                  className="p-8 rounded-2xl bg-white border border-black/5"
+                  className="p-8 rounded-2xl"
+                  style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
                 >
                   <div className="mb-4">
                     <input
@@ -187,11 +202,12 @@ export function CTA() {
                         if (status === 'error') setStatus('idle')
                       }}
                       placeholder="Enter your email"
-                      className={`w-full px-4 py-3 rounded-xl bg-surface-light border ${
-                        status === 'error'
-                          ? 'border-red-500 focus:border-red-500'
-                          : 'border-black/10 focus:border-black'
-                      } text-black placeholder:text-muted outline-none transition-colors`}
+                      className="w-full px-4 py-3 rounded-xl outline-none transition-colors"
+                      style={{
+                        background: 'var(--input-bg)',
+                        border: status === 'error' ? '1px solid #EF4444' : '1px solid var(--border)',
+                        color: 'var(--foreground)',
+                      }}
                     />
                     {status === 'error' && (
                       <motion.p
@@ -212,15 +228,16 @@ export function CTA() {
                       className="sr-only"
                     />
                     <div
-                      className={`w-5 h-5 rounded border ${
-                        isBetaTester
-                          ? 'bg-black border-black'
-                          : 'border-black/20'
-                      } flex items-center justify-center transition-colors`}
+                      className="w-5 h-5 rounded flex items-center justify-center transition-colors"
+                      style={{
+                        background: isBetaTester ? 'var(--foreground)' : 'transparent',
+                        border: isBetaTester ? 'none' : '1px solid var(--border)'
+                      }}
                     >
                       {isBetaTester && (
                         <svg
-                          className="w-3 h-3 text-white"
+                          className="w-3 h-3"
+                          style={{ color: 'var(--background)' }}
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -234,7 +251,7 @@ export function CTA() {
                         </svg>
                       )}
                     </div>
-                    <span className="text-sm text-muted">
+                    <span className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
                       I want to be a beta tester
                     </span>
                   </label>
@@ -265,7 +282,7 @@ export function CTA() {
 
         {/* Tagline */}
         <FadeIn delay={0.6}>
-          <p className="text-center text-muted mt-12">
+          <p className="text-center mt-12" style={{ color: 'var(--foreground-muted)' }}>
             "The wallet that finally makes sense"
           </p>
         </FadeIn>

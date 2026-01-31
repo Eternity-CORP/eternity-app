@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 
 const milestones = [
   {
@@ -54,13 +55,13 @@ function TimelineMarker({ status }: { status: string }) {
   return (
     <div className="relative w-8 h-8 flex items-center justify-center">
       <div
-        className={`w-3 h-3 rounded-full ${
-          isActive ? 'bg-black' : 'bg-black/20'
-        }`}
+        className="w-3 h-3 rounded-full"
+        style={{ background: isActive ? 'var(--foreground)' : 'var(--border)' }}
       />
       {status === 'next' && (
         <motion.div
-          className="absolute inset-0 rounded-full border border-black"
+          className="absolute inset-0 rounded-full"
+          style={{ border: '1px solid var(--foreground)' }}
           animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
@@ -86,21 +87,22 @@ function MilestoneCard({
       transition={{ duration: 0.5, delay: index * 0.1 }}
       className={`relative ${isLeft ? 'md:pr-16 md:text-right' : 'md:pl-16'}`}
     >
-      <div className="p-6 rounded-2xl bg-white border border-black/5 hover:border-black/10 transition-colors">
+      <div
+        className="p-6 rounded-2xl transition-colors"
+        style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
+      >
         {/* Quarter badge */}
         <div
-          className={`inline-block px-3 py-1 rounded-full text-xs font-mono mb-3 ${
-            milestone.status === 'completed'
-              ? 'bg-black text-white'
-              : milestone.status === 'next'
-              ? 'bg-black/10 text-black'
-              : 'bg-surface-light text-muted'
-          }`}
+          className="inline-block px-3 py-1 rounded-full text-xs font-mono mb-3"
+          style={{
+            background: milestone.status === 'completed' ? 'var(--foreground)' : milestone.status === 'next' ? 'var(--border)' : 'var(--surface-light)',
+            color: milestone.status === 'completed' ? 'var(--background)' : milestone.status === 'next' ? 'var(--foreground)' : 'var(--foreground-muted)',
+          }}
         >
           {milestone.quarter}
         </div>
 
-        <h3 className="text-xl font-semibold text-black mb-4">{milestone.title}</h3>
+        <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--foreground)' }}>{milestone.title}</h3>
 
         <ul className={`space-y-2 ${isLeft ? 'md:text-right' : ''}`}>
           {milestone.items.map((item, i) => (
@@ -108,14 +110,16 @@ function MilestoneCard({
               key={i}
               className={`flex items-center gap-2 text-sm ${
                 isLeft ? 'md:flex-row-reverse' : ''
-              } ${item.done ? 'text-black' : 'text-muted'}`}
+              }`}
+              style={{ color: item.done ? 'var(--foreground)' : 'var(--foreground-muted)' }}
             >
               {item.done ? (
                 <svg
-                  className="w-4 h-4 text-black flex-shrink-0"
+                  className="w-4 h-4 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  style={{ color: 'var(--foreground)' }}
                 >
                   <path
                     strokeLinecap="round"
@@ -125,7 +129,7 @@ function MilestoneCard({
                   />
                 </svg>
               ) : (
-                <div className="w-4 h-4 rounded-full border border-black/20 flex-shrink-0" />
+                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ border: '1px solid var(--border)' }} />
               )}
               {item.text}
             </li>
@@ -149,25 +153,32 @@ export function Roadmap() {
     <section
       id="roadmap"
       ref={containerRef}
-      className="relative min-h-screen py-32 overflow-hidden bg-white"
+      className="relative min-h-screen py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background)' }}
     >
       <div className="absolute inset-0 bg-grid opacity-30" />
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>
-          <p className="text-sm font-medium tracking-widest text-muted uppercase mb-4 text-center">
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
             Roadmap
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6 text-black">
-            Our Journey
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Our Journey
+            </GlitchText>
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-muted text-center text-lg md:text-xl mb-16">
+          <p className="text-center text-lg md:text-xl mb-16" style={{ color: 'var(--foreground-muted)' }}>
             Building the future, step by step
           </p>
         </FadeIn>
@@ -175,10 +186,10 @@ export function Roadmap() {
         {/* Timeline */}
         <div className="relative max-w-4xl mx-auto">
           {/* Vertical line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-black/10 -translate-x-1/2 hidden md:block">
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 hidden md:block" style={{ background: 'var(--border)' }}>
             <motion.div
-              className="w-full bg-black"
-              style={{ height: lineHeight }}
+              className="w-full"
+              style={{ height: lineHeight, background: 'var(--foreground)' }}
             />
           </div>
 
@@ -197,7 +208,7 @@ export function Roadmap() {
                 {/* Mobile marker */}
                 <div className="md:hidden flex items-center gap-4 mb-4">
                   <TimelineMarker status={milestone.status} />
-                  <span className="text-sm text-muted font-mono">{milestone.quarter}</span>
+                  <span className="text-sm font-mono" style={{ color: 'var(--foreground-muted)' }}>{milestone.quarter}</span>
                 </div>
 
                 {/* Card - alternating sides */}
@@ -227,7 +238,7 @@ export function Roadmap() {
           {/* End marker */}
           <FadeIn delay={0.5}>
             <div className="text-center mt-16">
-              <span className="text-muted text-sm">
+              <span className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
                 This is just the beginning
               </span>
             </div>

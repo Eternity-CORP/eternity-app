@@ -6,8 +6,9 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float, Environment } from '@react-three/drei'
 import { ShardSimple } from './Shard'
 import * as THREE from 'three'
+import { useTheme } from '@/context/ThemeContext'
 
-function Particles({ count = 100 }) {
+function Particles({ count = 100, isDark = false }) {
   const ref = useRef<THREE.Points>(null)
 
   const positions = new Float32Array(count * 3)
@@ -34,9 +35,9 @@ function Particles({ count = 100 }) {
       </bufferGeometry>
       <pointsMaterial
         size={0.015}
-        color="#000000"
+        color={isDark ? '#FFFFFF' : '#000000'}
         transparent
-        opacity={0.3}
+        opacity={isDark ? 0.5 : 0.3}
         sizeAttenuation
       />
     </points>
@@ -58,9 +59,19 @@ function MouseParallax({ children }: { children: React.ReactNode }) {
   return <group ref={groupRef}>{children}</group>
 }
 
-function ShardsGroup() {
-  // Ethereum-style crystals around the edges (no center crystal)
-  const shards = [
+function ShardsGroup({ isDark = false }) {
+  // Light theme: black and blue/cyan crystals
+  // Dark theme: white, cyan, and purple crystals
+  const shards = isDark ? [
+    { position: [-3.5, 1.5, -2] as [number, number, number], scale: 0.7, color: '#00E5FF', speed: 0.9 },
+    { position: [3.5, -0.5, -1.5] as [number, number, number], scale: 0.9, color: '#FFFFFF', speed: 0.75 },
+    { position: [-2.5, -1.5, 1] as [number, number, number], scale: 0.55, color: '#8B5CF6', speed: 1.1 },
+    { position: [2.5, 2, 0.5] as [number, number, number], scale: 0.8, color: '#FFFFFF', speed: 0.7 },
+    { position: [-1.5, 2.5, -1.5] as [number, number, number], scale: 0.45, color: '#3388FF', speed: 0.85 },
+    { position: [1.5, -2, 1.5] as [number, number, number], scale: 0.6, color: '#FFFFFF', speed: 1 },
+    { position: [4, 0.5, -0.5] as [number, number, number], scale: 0.5, color: '#00E5FF', speed: 0.95 },
+    { position: [-4, -0.5, 0] as [number, number, number], scale: 0.65, color: '#8B5CF6', speed: 0.8 },
+  ] : [
     { position: [-3.5, 1.5, -2] as [number, number, number], scale: 0.7, color: '#0066FF', speed: 0.9 },
     { position: [3.5, -0.5, -1.5] as [number, number, number], scale: 0.9, color: '#000000', speed: 0.75 },
     { position: [-2.5, -1.5, 1] as [number, number, number], scale: 0.55, color: '#00D4FF', speed: 1.1 },
@@ -96,6 +107,7 @@ function ShardsGroup() {
 export function ShardScene({ className = '' }: { className?: string }) {
   const [isVisible, setIsVisible] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { isDark } = useTheme()
 
   // Lazy load 3D scene - only render when in viewport
   useEffect(() => {
@@ -127,17 +139,17 @@ export function ShardScene({ className = '' }: { className?: string }) {
         >
           <Suspense fallback={null}>
             {/* Environment for reflections */}
-            <Environment preset="city" />
+            <Environment preset={isDark ? 'night' : 'city'} />
 
             {/* Lighting for glass/chrome effect */}
-            <ambientLight intensity={0.4} />
-            <directionalLight position={[10, 10, 5]} intensity={1} />
-            <directionalLight position={[-10, -10, -5]} intensity={0.5} />
+            <ambientLight intensity={isDark ? 0.3 : 0.4} />
+            <directionalLight position={[10, 10, 5]} intensity={isDark ? 0.8 : 1} />
+            <directionalLight position={[-10, -10, -5]} intensity={isDark ? 0.4 : 0.5} />
             <directionalLight position={[0, -10, 0]} intensity={0.3} />
-            <pointLight position={[0, 5, 0]} intensity={0.5} />
+            <pointLight position={[0, 5, 0]} intensity={isDark ? 0.4 : 0.5} color={isDark ? '#8B5CF6' : '#FFFFFF'} />
 
-            <ShardsGroup />
-            <Particles count={80} />
+            <ShardsGroup isDark={isDark} />
+            <Particles count={80} isDark={isDark} />
           </Suspense>
         </Canvas>
       )}

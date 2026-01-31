@@ -3,6 +3,7 @@
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef } from 'react'
 import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 
 const barriers = [
   {
@@ -43,26 +44,33 @@ export function Problem() {
     <section
       id="problem"
       ref={containerRef}
-      className="relative min-h-screen flex items-center py-32 overflow-hidden bg-white"
+      className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background)' }}
     >
       {/* Subtle grid */}
       <div className="absolute inset-0 bg-grid opacity-50" />
 
       <motion.div style={{ opacity }} className="container mx-auto px-6 relative z-10">
         <FadeIn>
-          <p className="text-sm font-medium tracking-widest text-muted uppercase mb-4 text-center">
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
             The Problem
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6 text-black">
-            Crypto wasn't built for humans
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Crypto wasn't built for humans
+            </GlitchText>
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-muted text-center text-lg md:text-xl max-w-2xl mx-auto mb-20">
+          <p className="text-center text-lg md:text-xl max-w-2xl mx-auto mb-20" style={{ color: 'var(--foreground-muted)' }}>
             It was built for machines. We're changing that.
           </p>
         </FadeIn>
@@ -72,28 +80,30 @@ export function Problem() {
             <FadeIn key={index} delay={0.3 + index * 0.1}>
               <motion.button
                 onClick={scrollToSolution}
-                className="group flex items-start gap-8 py-10 border-t border-black/10 first:border-t-0 w-full text-left cursor-pointer"
+                className="group flex items-start gap-8 py-10 w-full text-left cursor-pointer"
+                style={{ borderTop: index === 0 ? 'none' : '1px solid var(--border)' }}
                 whileHover={{ x: 8 }}
                 transition={{ duration: 0.2 }}
               >
-                <span className="text-sm font-mono text-muted-light mt-1">
+                <span className="text-sm font-mono mt-1" style={{ color: 'var(--foreground-light)' }}>
                   {barrier.number}
                 </span>
                 <div className="flex-1">
-                  <h3 className="text-2xl md:text-3xl font-semibold text-black mb-3 group-hover:text-gradient-blue transition-all duration-300">
+                  <h3 className="text-2xl md:text-3xl font-semibold mb-3 group-hover:text-gradient-blue transition-all duration-300" style={{ color: 'var(--foreground)' }}>
                     {barrier.title}
                   </h3>
-                  <p className="text-muted text-lg leading-relaxed">
+                  <p className="text-lg leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
                     {barrier.description}
                   </p>
                 </div>
                 <div className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-sm text-muted whitespace-nowrap">{barrier.solution}</span>
+                  <span className="text-sm whitespace-nowrap" style={{ color: 'var(--foreground-muted)' }}>{barrier.solution}</span>
                   <svg
-                    className="w-5 h-5 text-black"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    style={{ color: 'var(--foreground)' }}
                   >
                     <path
                       strokeLinecap="round"
@@ -110,7 +120,7 @@ export function Problem() {
 
         <FadeIn delay={0.7}>
           <div className="max-w-3xl mx-auto mt-20 text-center">
-            <p className="text-2xl md:text-3xl text-black font-light leading-relaxed">
+            <p className="text-2xl md:text-3xl font-light leading-relaxed" style={{ color: 'var(--foreground)' }}>
               Mass adoption isn't blocked by technology.
               <br />
               <span className="font-semibold">It's blocked by experience.</span>

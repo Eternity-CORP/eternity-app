@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { FadeIn, StaggerContainer, StaggerItem } from '@/components/animations/FadeIn'
+import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 
 const comingSoonFeatures = [
   {
@@ -45,24 +46,30 @@ function FeatureCard({ feature, index }: { feature: typeof comingSoonFeatures[0]
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
-      <div className="relative p-8 bg-white border border-black/5 rounded-2xl transition-all duration-300 hover:border-black/20 hover:shadow-subtle">
+      <div
+        className="relative p-8 rounded-2xl transition-all duration-300 hover:shadow-subtle"
+        style={{
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border-light)'
+        }}
+      >
         {/* Status badge */}
         <div className="absolute top-6 right-6">
-          <span className="text-xs font-mono text-muted-light tracking-wider">
+          <span className="text-xs font-mono tracking-wider" style={{ color: 'var(--foreground-light)' }}>
             {feature.status}
           </span>
         </div>
 
         {/* Number */}
-        <div className="text-sm font-mono text-muted-light mb-6">
+        <div className="text-sm font-mono mb-6" style={{ color: 'var(--foreground-light)' }}>
           0{index + 1}
         </div>
 
         {/* Content */}
-        <h3 className="text-xl font-semibold text-black mb-3 group-hover:text-gradient-blue transition-all duration-300">
+        <h3 className="text-xl font-semibold mb-3 group-hover:text-gradient-blue transition-all duration-300" style={{ color: 'var(--foreground)' }}>
           {feature.title}
         </h3>
-        <p className="text-muted text-sm leading-relaxed">
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
           {feature.description}
         </p>
 
@@ -83,26 +90,33 @@ export function ComingSoon() {
   return (
     <section
       id="coming-soon"
-      className="relative min-h-screen flex items-center py-32 overflow-hidden bg-surface-light"
+      className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background-secondary)' }}
     >
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-dots opacity-30" />
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>
-          <p className="text-sm font-medium tracking-widest text-muted uppercase mb-4 text-center">
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
             Roadmap
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6 text-black">
-            Coming Soon
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Coming Soon
+            </GlitchText>
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-muted text-center text-lg md:text-xl max-w-2xl mx-auto mb-16">
+          <p className="text-center text-lg md:text-xl max-w-2xl mx-auto mb-16" style={{ color: 'var(--foreground-muted)' }}>
             The future we're building
           </p>
         </FadeIn>
@@ -122,7 +136,7 @@ export function ComingSoon() {
 
         {/* Bottom note */}
         <FadeIn delay={0.5}>
-          <p className="text-center text-muted-light text-sm mt-16">
+          <p className="text-center text-sm mt-16" style={{ color: 'var(--foreground-light)' }}>
             Dates are estimates and subject to change based on development progress.
           </p>
         </FadeIn>

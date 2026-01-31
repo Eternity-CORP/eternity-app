@@ -109,14 +109,14 @@ export function GlitchText({
         {children}
       </Component>
 
-      {/* Red channel (left offset) */}
+      {/* Dark channel (left offset) */}
       <motion.span
         className={`absolute inset-0 ${className}`}
         style={{
           ...style,
           color: 'transparent',
-          textShadow: `${-intensity.x}px 0 rgba(255, 0, 0, 0.7)`,
-          mixBlendMode: 'screen',
+          textShadow: `${-intensity.x}px 0 rgba(80, 80, 80, 0.8)`,
+          mixBlendMode: 'multiply',
         }}
         initial={{ opacity: 0, x: -intensity.x * 3 }}
         animate={redControls}
@@ -125,13 +125,13 @@ export function GlitchText({
         {children}
       </motion.span>
 
-      {/* Cyan/Blue channel (right offset) */}
+      {/* White channel (right offset) */}
       <motion.span
         className={`absolute inset-0 ${className}`}
         style={{
           ...style,
           color: 'transparent',
-          textShadow: `${intensity.x}px 0 rgba(0, 255, 255, 0.7)`,
+          textShadow: `${intensity.x}px 0 rgba(255, 255, 255, 0.7)`,
           mixBlendMode: 'screen',
         }}
         initial={{ opacity: 0, x: intensity.x * 3 }}

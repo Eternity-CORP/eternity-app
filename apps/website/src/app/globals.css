@@ -4,9 +4,34 @@
 
 :root {
   --background: #FFFFFF;
+  --background-secondary: #FAFAFA;
   --foreground: #000000;
+  --foreground-muted: #666666;
+  --foreground-light: #999999;
+  --surface: #F5F5F5;
+  --surface-light: #FAFAFA;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-light: rgba(0, 0, 0, 0.05);
   --accent-blue: #0066FF;
   --accent-cyan: #00D4FF;
+  --card-bg: #FFFFFF;
+  --input-bg: #F5F5F5;
+}
+
+.dark {
+  --background: #0A0A0A;
+  --background-secondary: #111111;
+  --foreground: #FFFFFF;
+  --foreground-muted: #A0A0A0;
+  --foreground-light: #666666;
+  --surface: #1A1A1A;
+  --surface-light: #141414;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.05);
+  --accent-blue: #3388FF;
+  --accent-cyan: #00E5FF;
+  --card-bg: #141414;
+  --input-bg: #1A1A1A;
 }
 
 * {
@@ -23,49 +48,56 @@ body {
   background: var(--background);
   color: var(--foreground);
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom scrollbar */
+/* Theme transition for smooth switching */
+.theme-transition,
+.theme-transition * {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom scrollbar - light */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F5F5F5;
+  background: var(--surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #000000;
+  background: var(--foreground);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #333333;
+  background: var(--foreground-muted);
 }
 
 /* Selection */
 ::selection {
-  background: #000000;
-  color: white;
+  background: var(--foreground);
+  color: var(--background);
 }
 
-/* Grid background - more visible for light theme */
+/* Grid background - theme aware */
 .bg-grid {
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.08) 1px, transparent 1px);
+    linear-gradient(var(--border-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
-/* Dot pattern - more visible */
+/* Dot pattern - theme aware */
 .bg-dots {
-  background-image: radial-gradient(rgba(0, 0, 0, 0.15) 1.5px, transparent 1.5px);
+  background-image: radial-gradient(var(--border) 1.5px, transparent 1.5px);
   background-size: 20px 20px;
 }
 
-/* Gradient text - black to gray */
+/* Gradient text - theme aware */
 .text-gradient {
-  background: linear-gradient(135deg, #000000, #666666);
+  background: linear-gradient(135deg, var(--foreground), var(--foreground-muted));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -79,20 +111,32 @@ body {
   background-clip: text;
 }
 
-/* Subtle shadow for cards */
+/* Subtle shadow for cards - theme aware */
 .shadow-subtle {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.dark .shadow-subtle {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .shadow-hover {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
 }
 
-/* Glass effect for light theme */
+.dark .shadow-hover {
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Glass effect - theme aware */
 .glass {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-light);
+}
+
+.dark .glass {
+  background: rgba(20, 20, 20, 0.8);
 }
 
 /* Gradient border */
@@ -104,7 +148,7 @@ body {
   content: '';
   position: absolute;
   inset: -1px;
-  background: linear-gradient(135deg, #000000, #666666, #000000);
+  background: linear-gradient(135deg, var(--foreground), var(--foreground-muted), var(--foreground));
   background-size: 400% 400%;
   border-radius: inherit;
   z-index: -1;
@@ -148,7 +192,7 @@ body {
   left: 0;
   width: 0;
   height: 1px;
-  background: #000000;
+  background: var(--foreground);
   transition: width 0.3s ease;
 }
 
@@ -180,7 +224,7 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
+
   html {
     scroll-behavior: auto;
   }

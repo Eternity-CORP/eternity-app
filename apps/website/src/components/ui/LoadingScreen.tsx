@@ -51,6 +51,17 @@ export function LoadingScreen({
           }}
         >
           {/* Progress counter */}
+          {/* Logo */}
+          <div className="absolute top-8 left-8">
+            <svg width="40" height="40" viewBox="0 0 100 100" fill="none">
+              <polygon points="50,5 85,55 50,55" fill="#666" />
+              <polygon points="50,5 50,55 15,55" fill="#555" />
+              <polygon points="50,55 85,55 50,95" fill="#888" />
+              <polygon points="50,55 50,95 15,55" fill="#777" />
+            </svg>
+          </div>
+
+          {/* Progress counter */}
           <motion.div
             className="p-8 md:p-12"
             initial={{ opacity: 0 }}
@@ -58,11 +69,11 @@ export function LoadingScreen({
             transition={{ duration: 0.3 }}
           >
             <span
-              className="font-mono text-4xl md:text-6xl font-light tracking-tighter"
+              className="font-mono text-6xl md:text-9xl font-light tracking-tighter"
               style={{ color: '#ffffff' }}
             >
               {progress}
-              <span className="text-2xl md:text-4xl opacity-50">%</span>
+              <span className="text-4xl md:text-6xl opacity-50">%</span>
             </span>
           </motion.div>
         </motion.div>

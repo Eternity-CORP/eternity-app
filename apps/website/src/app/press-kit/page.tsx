@@ -31,11 +31,12 @@ const facts = [
 
 export default function PressKitPage() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen theme-transition" style={{ background: 'var(--background)' }}>
       <div className="container mx-auto px-6 py-20">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted hover:text-black transition-colors mb-8"
+          className="inline-flex items-center gap-2 transition-colors mb-8"
+          style={{ color: 'var(--foreground-muted)' }}
         >
           <svg
             className="w-4 h-4"
@@ -54,19 +55,20 @@ export default function PressKitPage() {
         </Link>
 
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-black">Press Kit</h1>
-          <p className="text-muted text-xl mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>Press Kit</h1>
+          <p className="text-xl mb-12" style={{ color: 'var(--foreground-muted)' }}>
             Everything you need to write about Eternity
           </p>
 
           {/* Logo Downloads */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-black mb-6">Logos</h2>
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>Logos</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {logos.map((logo) => (
                 <motion.div
                   key={logo.name}
-                  className="p-6 rounded-2xl bg-surface-light border border-black/5 text-center"
+                  className="p-6 rounded-2xl text-center"
+                  style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}
                   whileHover={{ scale: 1.02 }}
                 >
                   <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
@@ -78,14 +80,15 @@ export default function PressKitPage() {
                       className="max-w-full max-h-full"
                     />
                   </div>
-                  <h3 className="font-medium text-black mb-3">{logo.name}</h3>
+                  <h3 className="font-medium mb-3" style={{ color: 'var(--foreground)' }}>{logo.name}</h3>
                   <div className="flex gap-2 justify-center">
                     {logo.formats.map((format) => (
                       <a
                         key={format}
                         href={`/images/${logo.file}.${format}`}
                         download
-                        className="px-3 py-1 text-xs rounded-full bg-white border border-black/10 text-muted hover:text-black hover:border-black/20 transition-colors"
+                        className="px-3 py-1 text-xs rounded-full transition-colors"
+                        style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', color: 'var(--foreground-muted)' }}
                       >
                         {format.toUpperCase()}
                       </a>
@@ -98,20 +101,21 @@ export default function PressKitPage() {
 
           {/* Colors */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-black mb-6">Brand Colors</h2>
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>Brand Colors</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {colors.map((color) => (
                 <div
                   key={color.name}
-                  className="p-4 rounded-2xl bg-surface-light border border-black/5"
+                  className="p-4 rounded-2xl"
+                  style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}
                 >
                   <div
-                    className="w-full h-16 rounded-lg mb-4 border border-black/10"
-                    style={{ backgroundColor: color.hex }}
+                    className="w-full h-16 rounded-lg mb-4"
+                    style={{ backgroundColor: color.hex, border: '1px solid var(--border)' }}
                   />
-                  <h3 className="font-medium text-black">{color.name}</h3>
-                  <p className="text-muted text-sm">{color.hex}</p>
-                  <p className="text-muted text-xs">RGB: {color.rgb}</p>
+                  <h3 className="font-medium" style={{ color: 'var(--foreground)' }}>{color.name}</h3>
+                  <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>{color.hex}</p>
+                  <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>RGB: {color.rgb}</p>
                 </div>
               ))}
             </div>
@@ -119,14 +123,13 @@ export default function PressKitPage() {
 
           {/* Eternity Shard */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-black mb-6">Eternity Shard</h2>
-            <div className="p-6 rounded-2xl bg-surface-light border border-black/5 mb-6">
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>Eternity Shard</h2>
+            <div className="p-6 rounded-2xl mb-6" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
               <div className="flex flex-col md:flex-row gap-8 items-start">
                 {/* Shard Visual */}
                 <div className="w-full md:w-1/3 flex justify-center">
                   <div className="relative w-32 h-48">
                     <svg viewBox="0 0 100 150" className="w-full h-full">
-                      {/* Eternity Shard - elongated octahedron */}
                       <defs>
                         <linearGradient id="shardGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                           <stop offset="0%" stopColor="#333" />
@@ -134,15 +137,11 @@ export default function PressKitPage() {
                           <stop offset="100%" stopColor="#333" />
                         </linearGradient>
                       </defs>
-                      {/* Top pyramid - front faces */}
                       <polygon points="50,5 85,55 50,55" fill="#555" stroke="#000" strokeWidth="0.5" />
                       <polygon points="50,5 50,55 15,55" fill="#444" stroke="#000" strokeWidth="0.5" />
-                      {/* Bottom pyramid - front faces */}
                       <polygon points="50,55 85,55 50,140" fill="#666" stroke="#000" strokeWidth="0.5" />
                       <polygon points="50,55 50,140 15,55" fill="#555" stroke="#000" strokeWidth="0.5" />
-                      {/* Center line */}
                       <line x1="50" y1="5" x2="50" y2="140" stroke="#000" strokeWidth="1" />
-                      {/* Middle line */}
                       <line x1="15" y1="55" x2="85" y2="55" stroke="#000" strokeWidth="1" />
                     </svg>
                   </div>
@@ -150,12 +149,12 @@ export default function PressKitPage() {
 
                 {/* Description */}
                 <div className="w-full md:w-2/3">
-                  <h3 className="font-semibold text-black text-lg mb-3">Brand Symbol</h3>
-                  <p className="text-muted leading-relaxed mb-4">
+                  <h3 className="font-semibold text-lg mb-3" style={{ color: 'var(--foreground)' }}>Brand Symbol</h3>
+                  <p className="leading-relaxed mb-4" style={{ color: 'var(--foreground-muted)' }}>
                     The Eternity Shard is our unique brand symbol — a stylized crystal that represents
                     the core values of our project: transparency, stability, and timelessness.
                   </p>
-                  <p className="text-muted leading-relaxed mb-4">
+                  <p className="leading-relaxed mb-4" style={{ color: 'var(--foreground-muted)' }}>
                     The shard symbolizes "shards" or fragments of value that users exchange through
                     our platform, as well as the crystal clarity of our mission to make crypto simple.
                   </p>
@@ -164,18 +163,18 @@ export default function PressKitPage() {
             </div>
 
             {/* Differences from Ethereum */}
-            <div className="p-6 rounded-2xl bg-white border border-black/10">
-              <h3 className="font-semibold text-black text-lg mb-4">
+            <div className="p-6 rounded-2xl" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)' }}>
+              <h3 className="font-semibold text-lg mb-4" style={{ color: 'var(--foreground)' }}>
                 Design Specifications & Differences
               </h3>
-              <p className="text-muted text-sm mb-4">
+              <p className="text-sm mb-4" style={{ color: 'var(--foreground-muted)' }}>
                 While inspired by the blockchain aesthetic, the Eternity Shard has distinct differences
                 from other crypto symbols:
               </p>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-surface-light">
-                  <h4 className="font-medium text-black mb-2">Eternity Shard</h4>
-                  <ul className="text-muted text-sm space-y-1">
+                <div className="p-4 rounded-xl" style={{ background: 'var(--surface-light)' }}>
+                  <h4 className="font-medium mb-2" style={{ color: 'var(--foreground)' }}>Eternity Shard</h4>
+                  <ul className="text-sm space-y-1" style={{ color: 'var(--foreground-muted)' }}>
                     <li>• Asymmetric proportions (60/40 top/bottom)</li>
                     <li>• 4 vertices at middle ring</li>
                     <li>• Glass/chrome material finish</li>
@@ -183,9 +182,9 @@ export default function PressKitPage() {
                     <li>• Black and blue/cyan color palette</li>
                   </ul>
                 </div>
-                <div className="p-4 rounded-xl bg-surface-light">
-                  <h4 className="font-medium text-black mb-2">vs. Ethereum Logo</h4>
-                  <ul className="text-muted text-sm space-y-1">
+                <div className="p-4 rounded-xl" style={{ background: 'var(--surface-light)' }}>
+                  <h4 className="font-medium mb-2" style={{ color: 'var(--foreground)' }}>vs. Ethereum Logo</h4>
+                  <ul className="text-sm space-y-1" style={{ color: 'var(--foreground-muted)' }}>
                     <li>• Ethereum uses stacked triangles (flat 2D)</li>
                     <li>• Eternity uses 3D volumetric crystal</li>
                     <li>• Different vertex positioning</li>
@@ -194,9 +193,9 @@ export default function PressKitPage() {
                   </ul>
                 </div>
               </div>
-              <div className="mt-4 p-4 rounded-xl bg-black/5">
-                <p className="text-sm text-muted">
-                  <strong className="text-black">Usage:</strong> The Eternity Shard should always be
+              <div className="mt-4 p-4 rounded-xl" style={{ background: 'var(--surface-light)' }}>
+                <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                  <strong style={{ color: 'var(--foreground)' }}>Usage:</strong> The Eternity Shard should always be
                   presented with proper spacing. Do not stretch, rotate beyond animation bounds,
                   or alter the proportions. Use approved color variations only.
                 </p>
@@ -206,21 +205,21 @@ export default function PressKitPage() {
 
           {/* About */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-black mb-6">About Eternity</h2>
-            <div className="p-6 rounded-2xl bg-surface-light border border-black/5">
-              <p className="text-muted leading-relaxed mb-4">
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>About Eternity</h2>
+            <div className="p-6 rounded-2xl" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
+              <p className="leading-relaxed mb-4" style={{ color: 'var(--foreground-muted)' }}>
                 Eternity is a next-generation cryptocurrency wallet designed to make
                 crypto accessible to everyone. By introducing BLIK-style 6-digit
                 codes for transfers, Eternity eliminates the fear and complexity that
                 prevents mainstream adoption.
               </p>
-              <p className="text-muted leading-relaxed mb-4">
+              <p className="leading-relaxed mb-4" style={{ color: 'var(--foreground-muted)' }}>
                 Instead of sharing long wallet addresses, users simply share a
                 6-digit code that expires in 2 minutes. The recipient enters the
                 code, and funds transfer instantly. No wrong addresses, no lost
                 funds, no fear.
               </p>
-              <p className="text-muted leading-relaxed">
+              <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
                 Eternity also features @username support, allowing users to send crypto
                 to human-readable names like @alex instead of cryptic addresses.
               </p>
@@ -229,15 +228,16 @@ export default function PressKitPage() {
 
           {/* Key Facts */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-black mb-6">Key Facts</h2>
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>Key Facts</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {facts.map((fact) => (
                 <div
                   key={fact.label}
-                  className="p-4 rounded-2xl bg-surface-light border border-black/5"
+                  className="p-4 rounded-2xl"
+                  style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}
                 >
-                  <p className="text-muted text-sm mb-1">{fact.label}</p>
-                  <p className="text-black font-semibold">{fact.value}</p>
+                  <p className="text-sm mb-1" style={{ color: 'var(--foreground-muted)' }}>{fact.label}</p>
+                  <p className="font-semibold" style={{ color: 'var(--foreground)' }}>{fact.value}</p>
                 </div>
               ))}
             </div>
@@ -245,11 +245,11 @@ export default function PressKitPage() {
 
           {/* Boilerplate */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-black mb-6">
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>
               Boilerplate (Copy-Ready)
             </h2>
-            <div className="p-6 rounded-2xl bg-surface-light border border-black/5">
-              <p className="text-muted leading-relaxed italic">
+            <div className="p-6 rounded-2xl" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
+              <p className="leading-relaxed italic" style={{ color: 'var(--foreground-muted)' }}>
                 "Eternity is the first crypto wallet with BLIK-style codes, enabling
                 anyone to send and receive cryptocurrency using just 6 digits. By
                 eliminating complex addresses and network confusion, Eternity makes
@@ -262,7 +262,8 @@ export default function PressKitPage() {
                     'Eternity is the first crypto wallet with BLIK-style codes, enabling anyone to send and receive cryptocurrency using just 6 digits. By eliminating complex addresses and network confusion, Eternity makes crypto as simple as sending a text message. The wallet for everyone.'
                   )
                 }}
-                className="mt-4 text-sm text-accent-blue hover:underline"
+                className="mt-4 text-sm hover:underline"
+                style={{ color: 'var(--accent-blue)' }}
               >
                 Copy to clipboard
               </button>
@@ -271,9 +272,9 @@ export default function PressKitPage() {
 
           {/* Contact */}
           <section>
-            <h2 className="text-2xl font-bold text-black mb-6">Press Contact</h2>
-            <div className="p-6 rounded-2xl bg-surface-light border border-black/5">
-              <p className="text-muted">
+            <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--foreground)' }}>Press Contact</h2>
+            <div className="p-6 rounded-2xl" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
+              <p style={{ color: 'var(--foreground-muted)' }}>
                 For press inquiries, interviews, or additional assets, please use our
                 waitlist form on the homepage and mention that you are from the press.
                 We will get back to you as soon as possible.

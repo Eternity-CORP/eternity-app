@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { FadeIn } from '@/components/animations/FadeIn'
 import { GlitchText } from '@/components/animations/GlitchText'
-import { useTheme } from '@/context/ThemeContext'
 
 // Dynamic import for 3D scene to avoid SSR issues
 const ShardScene = dynamic(
@@ -14,15 +13,13 @@ const ShardScene = dynamic(
 )
 
 export function Hero() {
-  const { isDark } = useTheme()
-  
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
     element?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
-    <section 
+    <section
       className="relative min-h-screen flex items-center justify-center overflow-hidden theme-transition"
       style={{ background: 'var(--background)' }}
     >
@@ -31,13 +28,13 @@ export function Hero() {
 
       {/* 3D Shards Scene */}
       <div className="absolute inset-0 z-0">
-        <ShardScene isDark={isDark} />
+        <ShardScene />
       </div>
 
       {/* Gradient Overlay - theme aware */}
-      <div 
+      <div
         className="absolute inset-0 z-10 pointer-events-none"
-        style={{ 
+        style={{
           background: `linear-gradient(to bottom, var(--background), transparent, var(--background))`
         }}
       />
@@ -70,7 +67,7 @@ export function Hero() {
         </motion.div>
 
         <FadeIn delay={0.4}>
-          <p 
+          <p
             className="text-xl md:text-2xl max-w-2xl mx-auto mb-12"
             style={{ color: 'var(--foreground-muted)' }}
           >

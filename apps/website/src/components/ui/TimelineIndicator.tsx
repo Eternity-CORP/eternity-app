@@ -87,10 +87,10 @@ export function TimelineIndicator() {
                 className={cn(
                   'text-xs font-medium transition-all duration-300',
                   isActive
-                    ? 'text-black'
+                    ? 'text-black dark:text-white'
                     : isPast
-                      ? 'text-black/40'
-                      : 'text-black/25 group-hover:text-black/50'
+                      ? 'text-black/40 dark:text-white/40'
+                      : 'text-black/25 dark:text-white/25 group-hover:text-black/50 dark:group-hover:text-white/50'
                 )}
               >
                 {section.label}
@@ -102,10 +102,10 @@ export function TimelineIndicator() {
                   className={cn(
                     'w-3 h-3 rounded-full transition-all duration-300 border-2',
                     isActive
-                      ? 'bg-black border-black scale-125'
+                      ? 'bg-black dark:bg-white border-black dark:border-white scale-125'
                       : isPast
-                        ? 'bg-black/40 border-black/40'
-                        : 'bg-transparent border-black/20 group-hover:border-black/40'
+                        ? 'bg-black/40 dark:bg-white/40 border-black/40 dark:border-white/40'
+                        : 'bg-transparent border-black/20 dark:border-white/20 group-hover:border-black/40 dark:group-hover:border-white/40'
                   )}
                   animate={isActive ? { scale: [1.25, 1.4, 1.25] } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
@@ -114,7 +114,7 @@ export function TimelineIndicator() {
                 {/* Active glow */}
                 {isActive && (
                   <motion.div
-                    className="absolute -inset-1 bg-black/10 rounded-full blur-sm"
+                    className="absolute -inset-1 bg-black/10 dark:bg-white/10 rounded-full blur-sm"
                     animate={{ opacity: [0.5, 0.8, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   />
@@ -128,7 +128,7 @@ export function TimelineIndicator() {
                 <div
                   className={cn(
                     'w-px h-full transition-colors duration-300',
-                    isPast ? 'bg-black/30' : 'bg-black/10'
+                    isPast ? 'bg-black/30 dark:bg-white/30' : 'bg-black/10 dark:bg-white/10'
                   )}
                 />
               </div>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 
 const features = [
   {
@@ -100,17 +101,17 @@ function IPhoneMockup({ activeFeature }: { activeFeature: typeof features[0] }) 
         {/* Inner bezel */}
         <div className="w-full h-full rounded-[47px] bg-gradient-to-b from-gray-700 to-gray-800 p-[2px]">
           {/* Screen area */}
-          <div className="w-full h-full rounded-[45px] bg-black overflow-hidden relative">
+          <div className="w-full h-full rounded-[45px] overflow-hidden relative bg-black">
             {/* Dynamic Island / Notch */}
             <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
-              <div className="w-28 h-8 bg-black rounded-full flex items-center justify-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-gray-800" /> {/* Camera */}
-                <div className="w-10 h-4 rounded-full bg-gray-900" /> {/* Speaker area */}
+              <div className="w-28 h-8 rounded-full flex items-center justify-center gap-2 bg-black">
+                <div className="w-2 h-2 rounded-full bg-gray-800" />
+                <div className="w-10 h-4 rounded-full bg-gray-900" />
               </div>
             </div>
 
-            {/* Screen content */}
-            <div className="w-full h-full bg-white rounded-[45px] overflow-hidden">
+            {/* Screen content - always light background for phone UI */}
+            <div className="w-full h-full rounded-[45px] overflow-hidden bg-white">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeFeature.id}
@@ -121,8 +122,8 @@ function IPhoneMockup({ activeFeature }: { activeFeature: typeof features[0] }) 
                   className="h-full flex flex-col"
                 >
                   {/* App header */}
-                  <div className="px-6 py-4 pt-14 border-b border-black/5">
-                    <h4 className="text-xl font-bold text-black text-center">
+                  <div className="px-6 py-4 pt-14 border-b border-gray-100">
+                    <h4 className="text-xl font-bold text-center text-black">
                       {activeFeature.screen.title}
                     </h4>
                   </div>
@@ -130,20 +131,20 @@ function IPhoneMockup({ activeFeature }: { activeFeature: typeof features[0] }) 
                   {/* Main content */}
                   <div className="flex-1 p-6 flex flex-col">
                     {/* Content card */}
-                    <div className="bg-surface-light rounded-2xl p-6 mb-6">
-                      <div className="text-3xl font-bold text-black text-center">
+                    <div className="rounded-2xl p-6 mb-6 bg-gray-50">
+                      <div className="text-3xl font-bold text-center text-black">
                         {activeFeature.screen.content}
                       </div>
                       {activeFeature.id === 'blik' && (
                         <div className="mt-4">
-                          <div className="h-1.5 bg-black/10 rounded-full overflow-hidden">
+                          <div className="h-1.5 rounded-full overflow-hidden bg-gray-200">
                             <motion.div
-                              className="h-full bg-black rounded-full"
+                              className="h-full rounded-full bg-black"
                               animate={{ width: ['100%', '0%'] }}
                               transition={{ duration: 120, ease: 'linear', repeat: Infinity }}
                             />
                           </div>
-                          <p className="text-xs text-muted text-center mt-2">Expires in 2:00</p>
+                          <p className="text-xs text-center mt-2 text-gray-500">Expires in 2:00</p>
                         </div>
                       )}
                     </div>
@@ -156,9 +157,9 @@ function IPhoneMockup({ activeFeature }: { activeFeature: typeof features[0] }) 
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.1 * i }}
-                          className="flex items-center gap-3 text-sm text-muted bg-white rounded-xl p-3 border border-black/5"
+                          className="flex items-center gap-3 text-sm rounded-xl p-3 text-gray-600 bg-white border border-gray-100"
                         >
-                          <div className="w-2 h-2 rounded-full bg-black flex-shrink-0" />
+                          <div className="w-2 h-2 rounded-full flex-shrink-0 bg-black" />
                           {detail}
                         </motion.div>
                       ))}
@@ -167,7 +168,7 @@ function IPhoneMockup({ activeFeature }: { activeFeature: typeof features[0] }) 
 
                   {/* Home indicator */}
                   <div className="pb-2 pt-2">
-                    <div className="w-32 h-1 mx-auto bg-black rounded-full" />
+                    <div className="w-32 h-1 mx-auto rounded-full bg-black" />
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -177,10 +178,8 @@ function IPhoneMockup({ activeFeature }: { activeFeature: typeof features[0] }) 
       </div>
 
       {/* Side buttons */}
-      {/* Volume buttons */}
       <div className="absolute -left-[2px] top-28 w-[3px] h-8 bg-gray-700 rounded-l-sm" />
       <div className="absolute -left-[2px] top-40 w-[3px] h-8 bg-gray-700 rounded-l-sm" />
-      {/* Power button */}
       <div className="absolute -right-[2px] top-36 w-[3px] h-16 bg-gray-700 rounded-r-sm" />
 
       {/* Reflection */}
@@ -198,25 +197,32 @@ export function Features() {
   return (
     <section
       id="features"
-      className="relative min-h-screen flex items-center py-32 overflow-hidden bg-white"
+      className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background)' }}
     >
       <div className="absolute inset-0 bg-grid opacity-50" />
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>
-          <p className="text-sm font-medium tracking-widest text-muted uppercase mb-4 text-center">
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
             Features
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6 text-black">
-            Available Now
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Available Now
+            </GlitchText>
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-muted text-center text-lg md:text-xl mb-16">
+          <p className="text-center text-lg md:text-xl mb-16" style={{ color: 'var(--foreground-muted)' }}>
             Already working. Ready to try.
           </p>
         </FadeIn>
@@ -233,25 +239,28 @@ export function Features() {
               {features.map((feature, index) => (
                 <StaggerItem key={feature.id}>
                   <motion.button
-                    className={`w-full p-4 rounded-xl text-left transition-all duration-300 ${
-                      activeIndex === index
-                        ? 'bg-black text-white'
-                        : 'bg-surface-light border border-black/5 hover:border-black/10'
-                    }`}
+                    className="w-full p-4 rounded-xl text-left transition-all duration-300"
+                    style={{
+                      background: activeIndex === index ? 'var(--foreground)' : 'var(--surface-light)',
+                      border: activeIndex === index ? 'none' : '1px solid var(--border-light)',
+                    }}
                     onClick={() => setActiveIndex(index)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     <span
-                      className={`text-sm font-semibold block mb-1 ${
-                        activeIndex === index ? 'text-white' : 'text-black'
-                      }`}
+                      className="text-sm font-semibold block mb-1"
+                      style={{ color: activeIndex === index ? 'var(--background)' : 'var(--foreground)' }}
                     >
                       {feature.title}
                     </span>
-                    <p className={`text-xs line-clamp-2 ${
-                      activeIndex === index ? 'text-white/70' : 'text-muted'
-                    }`}>
+                    <p
+                      className="text-xs line-clamp-2"
+                      style={{
+                        color: activeIndex === index ? 'var(--background)' : 'var(--foreground-muted)',
+                        opacity: activeIndex === index ? 0.7 : 1
+                      }}
+                    >
                       {feature.description}
                     </p>
                   </motion.button>
