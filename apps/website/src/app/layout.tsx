@@ -17,11 +17,8 @@ export const metadata: Metadata = {
   keywords: ['crypto wallet', 'BLIK', 'cryptocurrency', 'ethereum', 'web3', 'defi'],
   authors: [{ name: 'Eternity Team' }],
   icons: {
-    icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/images/loho_purple.png', type: 'image/png' },
-    ],
-    apple: '/images/loho_purple.png',
+    icon: { url: '/favicon.svg', type: 'image/svg+xml' },
+    apple: '/images/loho_purple.svg',
   },
   openGraph: {
     title: 'Eternity | The Wallet for Everyone',
