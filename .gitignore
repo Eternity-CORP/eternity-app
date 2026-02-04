@@ -54,3 +54,4 @@ apps/api/data/
 .worktrees/
 .security-key
 logs/security/
+.vercel

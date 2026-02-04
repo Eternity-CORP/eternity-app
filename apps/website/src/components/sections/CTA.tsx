@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 
 export function CTA() {
   const [email, setEmail] = useState('')
+  const [message, setMessage] = useState('')
   const [isBetaTester, setIsBetaTester] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -29,7 +30,7 @@ export function CTA() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, isBetaTester }),
+        body: JSON.stringify({ email, message, isBetaTester }),
       })
 
       const data = await response.json()
@@ -218,6 +219,21 @@ export function CTA() {
                         {errorMessage}
                       </motion.p>
                     )}
+                  </div>
+
+                  <div className="mb-4">
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Any feedback or suggestions? (optional)"
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl outline-none transition-colors resize-none"
+                      style={{
+                        background: 'var(--input-bg)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--foreground)',
+                      }}
+                    />
                   </div>
 
                   <label className="flex items-center gap-3 mb-6 cursor-pointer">

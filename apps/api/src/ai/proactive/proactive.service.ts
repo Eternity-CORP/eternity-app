@@ -4,8 +4,6 @@
  */
 
 import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThan, IsNull } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import {
   AiSuggestion,
@@ -16,6 +14,27 @@ import {
 import { AiGateway } from '../ai.gateway';
 import { ScheduledService } from '../../scheduled/scheduled.service';
 import { UsernameService } from '../../username/username.service';
+import { SupabaseService } from '../../supabase/supabase.service';
+
+/**
+ * Database row type (snake_case)
+ */
+interface AiSuggestionRow {
+  id: string;
+  user_address: string;
+  type: SuggestionType;
+  title: string;
+  message: string;
+  action: SuggestionAction | null;
+  priority: SuggestionPriority;
+  status: 'pending' | 'shown' | 'dismissed' | 'actioned';
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  shown_at: string | null;
+  dismissed_at: string | null;
+  actioned_at: string | null;
+  expires_at: string | null;
+}
 
 export interface CreateSuggestionParams {
   userAddress: string;
@@ -33,8 +52,7 @@ export class ProactiveService {
   private readonly logger = new Logger(ProactiveService.name);
 
   constructor(
-    @InjectRepository(AiSuggestion)
-    private readonly suggestionRepository: Repository<AiSuggestion>,
+    private readonly supabase: SupabaseService,
     @Inject(forwardRef(() => AiGateway))
     private readonly aiGateway: AiGateway,
     @Inject(forwardRef(() => ScheduledService))
@@ -46,19 +64,28 @@ export class ProactiveService {
    * Create a new suggestion for a user
    */
   async createSuggestion(params: CreateSuggestionParams): Promise<AiSuggestion> {
-    const suggestion = this.suggestionRepository.create({
-      userAddress: params.userAddress.toLowerCase(),
-      type: params.type,
-      title: params.title,
-      message: params.message,
-      priority: params.priority || 'low',
-      action: params.action || null,
-      metadata: params.metadata || null,
-      expiresAt: params.expiresAt || null,
-      status: 'pending',
-    });
+    const { data, error } = await this.supabase
+      .from('ai_suggestions')
+      .insert({
+        user_address: params.userAddress.toLowerCase(),
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        priority: params.priority || 'low',
+        action: params.action || null,
+        metadata: params.metadata || null,
+        expires_at: params.expiresAt || null,
+        status: 'pending',
+      })
+      .select()
+      .single();
 
-    const saved = await this.suggestionRepository.save(suggestion);
+    if (error) {
+      throw new Error(`Failed to create suggestion: ${error.message}`);
+    }
+
+    // Convert snake_case to camelCase
+    const saved = this.mapToEntity(data);
     this.logger.log(`Created suggestion ${saved.id} for ${params.userAddress}`);
 
     // Try to send via WebSocket immediately
@@ -73,45 +100,56 @@ export class ProactiveService {
   async getPendingSuggestions(userAddress: string): Promise<AiSuggestion[]> {
     const now = new Date();
 
-    return this.suggestionRepository.find({
-      where: [
-        {
-          userAddress: userAddress.toLowerCase(),
-          status: 'pending',
-          expiresAt: IsNull(),
-        },
-        {
-          userAddress: userAddress.toLowerCase(),
-          status: 'pending',
-          expiresAt: MoreThan(now),
-        },
-      ],
-      order: {
-        priority: 'DESC',
-        createdAt: 'DESC',
-      },
-      take: 10,
-    });
+    const { data, error } = await this.supabase
+      .from('ai_suggestions')
+      .select('*')
+      .eq('user_address', userAddress.toLowerCase())
+      .eq('status', 'pending')
+      .or('expires_at.is.null,expires_at.gt.' + now.toISOString())
+      .order('priority', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      throw new Error(`Failed to get pending suggestions: ${error.message}`);
+    }
+
+    return data ? data.map((row) => this.mapToEntity(row)) : [];
   }
 
   /**
    * Mark suggestion as shown
    */
   async markAsShown(suggestionId: string): Promise<void> {
-    await this.suggestionRepository.update(suggestionId, {
-      status: 'shown',
-      shownAt: new Date(),
-    });
+    const { error } = await this.supabase
+      .from('ai_suggestions')
+      .update({
+        status: 'shown',
+        shown_at: new Date().toISOString(),
+      })
+      .eq('id', suggestionId);
+
+    if (error) {
+      throw new Error(`Failed to mark suggestion as shown: ${error.message}`);
+    }
   }
 
   /**
    * Dismiss a suggestion
    */
   async dismissSuggestion(suggestionId: string): Promise<void> {
-    await this.suggestionRepository.update(suggestionId, {
-      status: 'dismissed',
-      dismissedAt: new Date(),
-    });
+    const { error } = await this.supabase
+      .from('ai_suggestions')
+      .update({
+        status: 'dismissed',
+        dismissed_at: new Date().toISOString(),
+      })
+      .eq('id', suggestionId);
+
+    if (error) {
+      throw new Error(`Failed to dismiss suggestion: ${error.message}`);
+    }
+
     this.logger.log(`Dismissed suggestion ${suggestionId}`);
   }
 
@@ -119,10 +157,18 @@ export class ProactiveService {
    * Mark suggestion as actioned (user took the action)
    */
   async markAsActioned(suggestionId: string): Promise<void> {
-    await this.suggestionRepository.update(suggestionId, {
-      status: 'actioned',
-      actionedAt: new Date(),
-    });
+    const { error } = await this.supabase
+      .from('ai_suggestions')
+      .update({
+        status: 'actioned',
+        actioned_at: new Date().toISOString(),
+      })
+      .eq('id', suggestionId);
+
+    if (error) {
+      throw new Error(`Failed to mark suggestion as actioned: ${error.message}`);
+    }
+
     this.logger.log(`Actioned suggestion ${suggestionId}`);
   }
 
@@ -130,7 +176,20 @@ export class ProactiveService {
    * Get suggestion by ID
    */
   async getSuggestionById(id: string): Promise<AiSuggestion | null> {
-    return this.suggestionRepository.findOne({ where: { id } });
+    const { data, error } = await this.supabase
+      .from('ai_suggestions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw new Error(`Failed to get suggestion: ${error.message}`);
+    }
+
+    return data ? this.mapToEntity(data) : null;
   }
 
   /**
@@ -141,19 +200,22 @@ export class ProactiveService {
   async cleanupExpiredSuggestions(): Promise<void> {
     const now = new Date();
 
-    const result = await this.suggestionRepository.update(
-      {
-        status: 'pending',
-        expiresAt: LessThan(now),
-      },
-      {
+    const { data, error } = await this.supabase
+      .from('ai_suggestions')
+      .update({
         status: 'dismissed',
-        dismissedAt: now,
-      },
-    );
+        dismissed_at: now.toISOString(),
+      })
+      .eq('status', 'pending')
+      .lt('expires_at', now.toISOString())
+      .select();
 
-    if (result.affected && result.affected > 0) {
-      this.logger.log(`Cleaned up ${result.affected} expired suggestions`);
+    if (error) {
+      throw new Error(`Failed to cleanup expired suggestions: ${error.message}`);
+    }
+
+    if (data && data.length > 0) {
+      this.logger.log(`Cleaned up ${data.length} expired suggestions`);
     }
   }
 
@@ -200,17 +262,29 @@ export class ProactiveService {
   async checkPaymentReminders(): Promise<void> {
     this.logger.debug('Checking for upcoming payment reminders...');
 
-    // Get all unique user addresses with pending payments in next 24 hours
-    const result = await this.suggestionRepository.query(`
-      SELECT DISTINCT creator_address
-      FROM scheduled_payments
-      WHERE status = 'pending'
-        AND scheduled_at > NOW()
-        AND scheduled_at <= NOW() + INTERVAL '24 hours'
-    `);
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    for (const row of result) {
-      await this.checkUserPaymentReminders(row.creator_address);
+    // Get all unique user addresses with pending payments in next 24 hours
+    const { data, error } = await this.supabase
+      .from('scheduled_payments')
+      .select('creator_address')
+      .eq('status', 'pending')
+      .gt('scheduled_at', now.toISOString())
+      .lte('scheduled_at', tomorrow.toISOString());
+
+    if (error) {
+      this.logger.error(`Failed to check payment reminders: ${error.message}`);
+      return;
+    }
+
+    if (!data) return;
+
+    // Get unique addresses
+    const uniqueAddresses = [...new Set(data.map((row) => row.creator_address))];
+
+    for (const address of uniqueAddresses) {
+      await this.checkUserPaymentReminders(address);
     }
   }
 
@@ -223,13 +297,14 @@ export class ProactiveService {
 
     for (const payment of upcoming) {
       // Check if we already reminded for this payment
-      const existingReminder = await this.suggestionRepository.findOne({
-        where: {
-          userAddress: userAddress.toLowerCase(),
-          type: 'payment_reminder',
-          metadata: { paymentId: payment.id } as any,
-        },
-      });
+      const { data: existingReminder } = await this.supabase
+        .from('ai_suggestions')
+        .select('*')
+        .eq('user_address', userAddress.toLowerCase())
+        .eq('type', 'payment_reminder')
+        .contains('metadata', { paymentId: payment.id })
+        .limit(1)
+        .single();
 
       if (existingReminder) continue;
 
@@ -282,17 +357,18 @@ export class ProactiveService {
     const { userAddress, txHash, amount, token, usdValue } = params;
 
     // Check if we already alerted for this transaction
-    const existingAlert = await this.suggestionRepository.findOne({
-      where: {
-        userAddress: userAddress.toLowerCase(),
-        type: 'security_alert',
-        metadata: { txHash } as any,
-      },
-    });
+    const { data: existingAlert } = await this.supabase
+      .from('ai_suggestions')
+      .select('*')
+      .eq('user_address', userAddress.toLowerCase())
+      .eq('type', 'security_alert')
+      .contains('metadata', { txHash })
+      .limit(1)
+      .single();
 
     if (existingAlert) {
       this.logger.debug(`Already alerted for transaction ${txHash}`);
-      return existingAlert;
+      return this.mapToEntity(existingAlert);
     }
 
     return this.createSuggestion({
@@ -360,13 +436,14 @@ export class ProactiveService {
     }
 
     // Check if we already suggested this
-    const existingSuggestion = await this.suggestionRepository.findOne({
-      where: {
-        userAddress: userAddress.toLowerCase(),
-        type: 'transaction_tip',
-        metadata: { suggestionType: 'setup_username' } as any,
-      },
-    });
+    const { data: existingSuggestion } = await this.supabase
+      .from('ai_suggestions')
+      .select('*')
+      .eq('user_address', userAddress.toLowerCase())
+      .eq('type', 'transaction_tip')
+      .contains('metadata', { suggestionType: 'setup_username' })
+      .limit(1)
+      .single();
 
     if (existingSuggestion) {
       return null;
@@ -405,13 +482,14 @@ export class ProactiveService {
     }
 
     // Check if we already suggested this
-    const existingSuggestion = await this.suggestionRepository.findOne({
-      where: {
-        userAddress: userAddress.toLowerCase(),
-        type: 'transaction_tip',
-        metadata: { recipientAddress: recipientAddress.toLowerCase() } as any,
-      },
-    });
+    const { data: existingSuggestion } = await this.supabase
+      .from('ai_suggestions')
+      .select('*')
+      .eq('user_address', userAddress.toLowerCase())
+      .eq('type', 'transaction_tip')
+      .contains('metadata', { recipientAddress: recipientAddress.toLowerCase() })
+      .limit(1)
+      .single();
 
     if (existingSuggestion) {
       return null;
@@ -455,5 +533,27 @@ export class ProactiveService {
       priority: 'low',
       metadata: { tipType },
     });
+  }
+
+  /**
+   * Map database row (snake_case) to entity (camelCase)
+   */
+  private mapToEntity(row: AiSuggestionRow): AiSuggestion {
+    return {
+      id: row.id,
+      userAddress: row.user_address,
+      type: row.type,
+      title: row.title,
+      message: row.message,
+      action: row.action,
+      priority: row.priority,
+      status: row.status,
+      metadata: row.metadata,
+      createdAt: new Date(row.created_at),
+      shownAt: row.shown_at ? new Date(row.shown_at) : null,
+      dismissedAt: row.dismissed_at ? new Date(row.dismissed_at) : null,
+      actionedAt: row.actioned_at ? new Date(row.actioned_at) : null,
+      expiresAt: row.expires_at ? new Date(row.expires_at) : null,
+    };
   }
 }

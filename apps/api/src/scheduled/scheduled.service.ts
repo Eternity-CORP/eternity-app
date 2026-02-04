@@ -7,13 +7,41 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThan, Not, IsNull } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { JsonRpcProvider } from 'ethers';
 import { ScheduledPayment, RecurringInterval } from './entities';
 import { CreateScheduledDto, UpdateScheduledDto, ExecuteScheduledDto } from './dto';
 import { ScheduledGateway } from './scheduled.gateway';
+import { SupabaseService } from '../supabase/supabase.service';
+import { ScheduledPaymentStatus } from './entities';
+
+/**
+ * Database row type (snake_case)
+ */
+interface ScheduledPaymentRow {
+  id: string;
+  creator_address: string;
+  recipient: string;
+  recipient_username: string | null;
+  recipient_name: string | null;
+  amount: string;
+  token_symbol: string;
+  scheduled_at: string;
+  recurring_interval: RecurringInterval | null;
+  recurring_end_date: string | null;
+  description: string | null;
+  status: ScheduledPaymentStatus;
+  executed_tx_hash: string | null;
+  executed_at: string | null;
+  reminder_sent: boolean;
+  signed_transaction: string | null;
+  estimated_gas_price: string | null;
+  nonce: number | null;
+  chain_id: number | null;
+  failure_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // Chain ID to RPC URL mapping (subset of commonly used chains)
 const CHAIN_RPC_URLS: Record<number, string> = {
@@ -41,13 +69,42 @@ export class ScheduledService {
   private readonly alchemyApiKey: string;
 
   constructor(
-    @InjectRepository(ScheduledPayment)
-    private readonly scheduledRepository: Repository<ScheduledPayment>,
+    private readonly supabaseService: SupabaseService,
     @Inject(forwardRef(() => ScheduledGateway))
     private readonly scheduledGateway: ScheduledGateway,
     private readonly configService: ConfigService,
   ) {
     this.alchemyApiKey = this.configService.get<string>('ALCHEMY_API_KEY') || '';
+  }
+
+  /**
+   * Map Supabase row (snake_case) to entity (camelCase)
+   */
+  private mapToEntity(row: ScheduledPaymentRow): ScheduledPayment {
+    return {
+      id: row.id,
+      creatorAddress: row.creator_address,
+      recipient: row.recipient,
+      recipientUsername: row.recipient_username,
+      recipientName: row.recipient_name,
+      amount: row.amount,
+      tokenSymbol: row.token_symbol,
+      scheduledAt: new Date(row.scheduled_at),
+      recurringInterval: row.recurring_interval,
+      recurringEndDate: row.recurring_end_date ? new Date(row.recurring_end_date) : null,
+      description: row.description,
+      status: row.status,
+      executedTxHash: row.executed_tx_hash,
+      executedAt: row.executed_at ? new Date(row.executed_at) : null,
+      reminderSent: row.reminder_sent,
+      signedTransaction: row.signed_transaction,
+      estimatedGasPrice: row.estimated_gas_price,
+      nonce: row.nonce,
+      chainId: row.chain_id,
+      failureReason: row.failure_reason,
+      createdAt: new Date(row.created_at),
+      updatedAt: new Date(row.updated_at),
+    };
   }
 
   /**
@@ -73,25 +130,34 @@ export class ScheduledService {
   async create(dto: CreateScheduledDto): Promise<ScheduledPayment> {
     this.logger.log(`Creating scheduled payment for ${dto.creatorAddress}`);
 
-    const payment = this.scheduledRepository.create({
-      creatorAddress: dto.creatorAddress.toLowerCase(),
-      recipient: dto.recipient.toLowerCase(),
-      recipientUsername: dto.recipientUsername,
-      recipientName: dto.recipientName,
-      amount: dto.amount,
-      tokenSymbol: dto.tokenSymbol,
-      scheduledAt: new Date(dto.scheduledAt),
-      recurringInterval: dto.recurringInterval,
-      recurringEndDate: dto.recurringEndDate ? new Date(dto.recurringEndDate) : null,
-      description: dto.description,
-      status: 'pending',
-      signedTransaction: dto.signedTransaction || null,
-      estimatedGasPrice: dto.estimatedGasPrice || null,
-      nonce: dto.nonce ?? null,
-      chainId: dto.chainId ?? null,
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .insert({
+        creator_address: dto.creatorAddress.toLowerCase(),
+        recipient: dto.recipient.toLowerCase(),
+        recipient_username: dto.recipientUsername,
+        recipient_name: dto.recipientName,
+        amount: dto.amount,
+        token_symbol: dto.tokenSymbol,
+        scheduled_at: new Date(dto.scheduledAt).toISOString(),
+        recurring_interval: dto.recurringInterval,
+        recurring_end_date: dto.recurringEndDate ? new Date(dto.recurringEndDate).toISOString() : null,
+        description: dto.description,
+        status: 'pending',
+        signed_transaction: dto.signedTransaction || null,
+        estimated_gas_price: dto.estimatedGasPrice || null,
+        nonce: dto.nonce ?? null,
+        chain_id: dto.chainId ?? null,
+      })
+      .select()
+      .single();
 
-    const saved = await this.scheduledRepository.save(payment);
+    if (error) {
+      this.logger.error(`Failed to create scheduled payment: ${error.message}`);
+      throw new BadRequestException(`Failed to create scheduled payment: ${error.message}`);
+    }
+
+    const saved = this.mapToEntity(data);
     this.logger.log(`Scheduled payment created: ${saved.id}`);
 
     // Notify via WebSocket
@@ -101,44 +167,68 @@ export class ScheduledService {
   }
 
   async findById(id: string): Promise<ScheduledPayment> {
-    const payment = await this.scheduledRepository.findOne({ where: { id } });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!payment) {
+    if (error || !data) {
       throw new NotFoundException(`Scheduled payment ${id} not found`);
     }
 
-    return payment;
+    return this.mapToEntity(data);
   }
 
   async findByCreator(creatorAddress: string): Promise<ScheduledPayment[]> {
-    return this.scheduledRepository.find({
-      where: { creatorAddress: creatorAddress.toLowerCase() },
-      order: { scheduledAt: 'ASC' },
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('creator_address', creatorAddress.toLowerCase())
+      .order('scheduled_at', { ascending: true });
+
+    if (error) {
+      this.logger.error(`Failed to find payments by creator: ${error.message}`);
+      return [];
+    }
+
+    return (data || []).map(item => this.mapToEntity(item));
   }
 
   async findPending(creatorAddress: string): Promise<ScheduledPayment[]> {
-    return this.scheduledRepository.find({
-      where: {
-        creatorAddress: creatorAddress.toLowerCase(),
-        status: 'pending',
-      },
-      order: { scheduledAt: 'ASC' },
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('creator_address', creatorAddress.toLowerCase())
+      .eq('status', 'pending')
+      .order('scheduled_at', { ascending: true });
+
+    if (error) {
+      this.logger.error(`Failed to find pending payments: ${error.message}`);
+      return [];
+    }
+
+    return (data || []).map(item => this.mapToEntity(item));
   }
 
   async findUpcoming(creatorAddress: string, days: number = 7): Promise<ScheduledPayment[]> {
     const now = new Date();
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-    return this.scheduledRepository.find({
-      where: {
-        creatorAddress: creatorAddress.toLowerCase(),
-        status: 'pending',
-        scheduledAt: LessThanOrEqual(futureDate),
-      },
-      order: { scheduledAt: 'ASC' },
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('creator_address', creatorAddress.toLowerCase())
+      .eq('status', 'pending')
+      .lte('scheduled_at', futureDate.toISOString())
+      .order('scheduled_at', { ascending: true });
+
+    if (error) {
+      this.logger.error(`Failed to find upcoming payments: ${error.message}`);
+      return [];
+    }
+
+    return (data || []).map(item => this.mapToEntity(item));
   }
 
   async update(
@@ -156,29 +246,40 @@ export class ScheduledService {
       throw new BadRequestException('Can only update pending payments');
     }
 
-    // Update fields
-    if (dto.recipient) payment.recipient = dto.recipient.toLowerCase();
-    if (dto.recipientUsername !== undefined) payment.recipientUsername = dto.recipientUsername;
-    if (dto.recipientName !== undefined) payment.recipientName = dto.recipientName;
-    if (dto.amount) payment.amount = dto.amount;
-    if (dto.tokenSymbol) payment.tokenSymbol = dto.tokenSymbol;
-    if (dto.scheduledAt) payment.scheduledAt = new Date(dto.scheduledAt);
-    if (dto.recurringInterval !== undefined) payment.recurringInterval = dto.recurringInterval;
-    if (dto.recurringEndDate !== undefined) {
-      payment.recurringEndDate = dto.recurringEndDate ? new Date(dto.recurringEndDate) : null;
-    }
-    if (dto.description !== undefined) payment.description = dto.description;
-    if (dto.signedTransaction !== undefined) payment.signedTransaction = dto.signedTransaction;
-    if (dto.estimatedGasPrice !== undefined) payment.estimatedGasPrice = dto.estimatedGasPrice;
-    if (dto.nonce !== undefined) payment.nonce = dto.nonce;
-    if (dto.chainId !== undefined) payment.chainId = dto.chainId;
-
-    // Reset reminder if schedule changed
+    // Build update object
+    const updateData: any = {};
+    if (dto.recipient) updateData.recipient = dto.recipient.toLowerCase();
+    if (dto.recipientUsername !== undefined) updateData.recipient_username = dto.recipientUsername;
+    if (dto.recipientName !== undefined) updateData.recipient_name = dto.recipientName;
+    if (dto.amount) updateData.amount = dto.amount;
+    if (dto.tokenSymbol) updateData.token_symbol = dto.tokenSymbol;
     if (dto.scheduledAt) {
-      payment.reminderSent = false;
+      updateData.scheduled_at = new Date(dto.scheduledAt).toISOString();
+      updateData.reminder_sent = false; // Reset reminder if schedule changed
+    }
+    if (dto.recurringInterval !== undefined) updateData.recurring_interval = dto.recurringInterval;
+    if (dto.recurringEndDate !== undefined) {
+      updateData.recurring_end_date = dto.recurringEndDate ? new Date(dto.recurringEndDate).toISOString() : null;
+    }
+    if (dto.description !== undefined) updateData.description = dto.description;
+    if (dto.signedTransaction !== undefined) updateData.signed_transaction = dto.signedTransaction;
+    if (dto.estimatedGasPrice !== undefined) updateData.estimated_gas_price = dto.estimatedGasPrice;
+    if (dto.nonce !== undefined) updateData.nonce = dto.nonce;
+    if (dto.chainId !== undefined) updateData.chain_id = dto.chainId;
+
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to update scheduled payment: ${error.message}`);
+      throw new BadRequestException(`Failed to update scheduled payment: ${error.message}`);
     }
 
-    const updated = await this.scheduledRepository.save(payment);
+    const updated = this.mapToEntity(data);
 
     // Notify via WebSocket
     this.scheduledGateway.notifyPaymentUpdated(updated);
@@ -201,11 +302,23 @@ export class ScheduledService {
       throw new BadRequestException('Payment is not pending');
     }
 
-    payment.status = 'executed';
-    payment.executedTxHash = dto.txHash;
-    payment.executedAt = new Date();
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .update({
+        status: 'executed',
+        executed_tx_hash: dto.txHash,
+        executed_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
 
-    const executed = await this.scheduledRepository.save(payment);
+    if (error) {
+      this.logger.error(`Failed to execute scheduled payment: ${error.message}`);
+      throw new BadRequestException(`Failed to execute scheduled payment: ${error.message}`);
+    }
+
+    const executed = this.mapToEntity(data);
 
     this.logger.log(`Scheduled payment ${id} executed with tx ${dto.txHash}`);
 
@@ -231,8 +344,19 @@ export class ScheduledService {
       throw new BadRequestException('Payment is not pending');
     }
 
-    payment.status = 'cancelled';
-    const cancelled = await this.scheduledRepository.save(payment);
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to cancel scheduled payment: ${error.message}`);
+      throw new BadRequestException(`Failed to cancel scheduled payment: ${error.message}`);
+    }
+
+    const cancelled = this.mapToEntity(data);
 
     this.logger.log(`Scheduled payment ${id} cancelled`);
 
@@ -249,7 +373,16 @@ export class ScheduledService {
       throw new BadRequestException('Only creator can delete scheduled payment');
     }
 
-    await this.scheduledRepository.remove(payment);
+    const { error } = await this.supabaseService
+      .from('scheduled_payments')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      this.logger.error(`Failed to delete scheduled payment: ${error.message}`);
+      throw new BadRequestException(`Failed to delete scheduled payment: ${error.message}`);
+    }
+
     this.logger.log(`Scheduled payment ${id} deleted`);
   }
 
@@ -265,21 +398,30 @@ export class ScheduledService {
       return;
     }
 
-    const nextPayment = this.scheduledRepository.create({
-      creatorAddress: payment.creatorAddress,
-      recipient: payment.recipient,
-      recipientUsername: payment.recipientUsername,
-      recipientName: payment.recipientName,
-      amount: payment.amount,
-      tokenSymbol: payment.tokenSymbol,
-      scheduledAt: nextDate,
-      recurringInterval: payment.recurringInterval,
-      recurringEndDate: payment.recurringEndDate,
-      description: payment.description,
-      status: 'pending',
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .insert({
+        creator_address: payment.creatorAddress,
+        recipient: payment.recipient,
+        recipient_username: payment.recipientUsername,
+        recipient_name: payment.recipientName,
+        amount: payment.amount,
+        token_symbol: payment.tokenSymbol,
+        scheduled_at: nextDate.toISOString(),
+        recurring_interval: payment.recurringInterval,
+        recurring_end_date: payment.recurringEndDate ? payment.recurringEndDate.toISOString() : null,
+        description: payment.description,
+        status: 'pending',
+      })
+      .select()
+      .single();
 
-    const saved = await this.scheduledRepository.save(nextPayment);
+    if (error) {
+      this.logger.error(`Failed to create next recurring payment: ${error.message}`);
+      return;
+    }
+
+    const saved = this.mapToEntity(data);
     this.logger.log(`Created next recurring payment ${saved.id} scheduled for ${nextDate}`);
 
     // Notify via WebSocket
@@ -319,13 +461,19 @@ export class ScheduledService {
     const reminderThreshold = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes
 
     // Find pending payments due within 15 minutes that haven't had reminders sent
-    const upcomingPayments = await this.scheduledRepository.find({
-      where: {
-        status: 'pending',
-        scheduledAt: LessThanOrEqual(reminderThreshold),
-        reminderSent: false,
-      },
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_at', reminderThreshold.toISOString())
+      .eq('reminder_sent', false);
+
+    if (error) {
+      this.logger.error(`Failed to fetch upcoming payments: ${error.message}`);
+      return;
+    }
+
+    const upcomingPayments = (data || []).map(item => this.mapToEntity(item));
 
     for (const payment of upcomingPayments) {
       this.logger.log(`Sending reminder for payment ${payment.id}`);
@@ -334,8 +482,10 @@ export class ScheduledService {
       this.scheduledGateway.notifyPaymentReminder(payment);
 
       // Mark reminder as sent
-      payment.reminderSent = true;
-      await this.scheduledRepository.save(payment);
+      await this.supabaseService
+        .from('scheduled_payments')
+        .update({ reminder_sent: true })
+        .eq('id', payment.id);
     }
 
     if (upcomingPayments.length > 0) {
@@ -355,18 +505,26 @@ export class ScheduledService {
     const overdueThreshold = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
 
     // Find pending payments that are more than 24 hours overdue
-    const overduePayments = await this.scheduledRepository.find({
-      where: {
-        status: 'pending',
-        scheduledAt: LessThanOrEqual(overdueThreshold),
-      },
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_at', overdueThreshold.toISOString());
+
+    if (error) {
+      this.logger.error(`Failed to fetch overdue payments: ${error.message}`);
+      return;
+    }
+
+    const overduePayments = (data || []).map(item => this.mapToEntity(item));
 
     for (const payment of overduePayments) {
       this.logger.warn(`Marking payment ${payment.id} as failed (overdue)`);
 
-      payment.status = 'failed';
-      await this.scheduledRepository.save(payment);
+      await this.supabaseService
+        .from('scheduled_payments')
+        .update({ status: 'failed' })
+        .eq('id', payment.id);
 
       // Notify user
       this.scheduledGateway.notifyUser(
@@ -395,13 +553,19 @@ export class ScheduledService {
     const now = new Date();
 
     // Find pending payments with signed transactions that are due
-    const duePayments = await this.scheduledRepository.find({
-      where: {
-        status: 'pending',
-        signedTransaction: Not(IsNull()),
-        scheduledAt: LessThanOrEqual(now),
-      },
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('status', 'pending')
+      .not('signed_transaction', 'is', null)
+      .lte('scheduled_at', now.toISOString());
+
+    if (error) {
+      this.logger.error(`Failed to fetch due payments: ${error.message}`);
+      return;
+    }
+
+    const duePayments = (data || []).map(item => this.mapToEntity(item));
 
     if (duePayments.length === 0) {
       return;
@@ -423,9 +587,13 @@ export class ScheduledService {
 
       if (!payment.chainId || !payment.signedTransaction || !payment.estimatedGasPrice) {
         this.logger.error(`Payment ${payment.id} missing required fields for execution`);
-        payment.status = 'failed';
-        payment.failureReason = 'Missing signed transaction data';
-        await this.scheduledRepository.save(payment);
+        await this.supabaseService
+          .from('scheduled_payments')
+          .update({
+            status: 'failed',
+            failure_reason: 'Missing signed transaction data',
+          })
+          .eq('id', payment.id);
         return;
       }
 
@@ -437,9 +605,13 @@ export class ScheduledService {
 
       if (!currentGasPrice) {
         this.logger.error(`Failed to fetch current gas price for payment ${payment.id}`);
-        payment.status = 'failed';
-        payment.failureReason = 'Unable to fetch current gas price';
-        await this.scheduledRepository.save(payment);
+        await this.supabaseService
+          .from('scheduled_payments')
+          .update({
+            status: 'failed',
+            failure_reason: 'Unable to fetch current gas price',
+          })
+          .eq('id', payment.id);
         this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
           payment,
           reason: 'Unable to fetch current gas price',
@@ -452,9 +624,13 @@ export class ScheduledService {
       // If gas price increased more than 50%, mark as failed
       if (currentGasPrice > (estimatedGas * GAS_PRICE_THRESHOLD_PERCENT) / 100n) {
         this.logger.warn(`Gas price too high for payment ${payment.id}`);
-        payment.status = 'failed';
-        payment.failureReason = `Gas price increased significantly (from ${estimatedGas.toString()} to ${currentGasPrice.toString()} wei)`;
-        await this.scheduledRepository.save(payment);
+        await this.supabaseService
+          .from('scheduled_payments')
+          .update({
+            status: 'failed',
+            failure_reason: `Gas price increased significantly (from ${estimatedGas.toString()} to ${currentGasPrice.toString()} wei)`,
+          })
+          .eq('id', payment.id);
         this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
           payment,
           reason: 'Gas price increased more than 50% since signing',
@@ -479,10 +655,18 @@ export class ScheduledService {
       }
 
       // Update payment status
+      await this.supabaseService
+        .from('scheduled_payments')
+        .update({
+          status: 'executed',
+          executed_tx_hash: receipt.hash,
+          executed_at: new Date().toISOString(),
+        })
+        .eq('id', payment.id);
+
       payment.status = 'executed';
       payment.executedTxHash = receipt.hash;
       payment.executedAt = new Date();
-      await this.scheduledRepository.save(payment);
 
       this.logger.log(`Payment ${payment.id} executed successfully with tx ${receipt.hash}`);
 
@@ -497,13 +681,22 @@ export class ScheduledService {
     } catch (error) {
       this.logger.error(`Failed to execute payment ${payment.id}:`, error);
 
+      const failureReason = error instanceof Error ? error.message : 'Unknown error';
+
+      await this.supabaseService
+        .from('scheduled_payments')
+        .update({
+          status: 'failed',
+          failure_reason: failureReason,
+        })
+        .eq('id', payment.id);
+
       payment.status = 'failed';
-      payment.failureReason = error instanceof Error ? error.message : 'Unknown error';
-      await this.scheduledRepository.save(payment);
+      payment.failureReason = failureReason;
 
       this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
         payment,
-        reason: payment.failureReason,
+        reason: failureReason,
       });
     }
   }
@@ -521,23 +714,32 @@ export class ScheduledService {
       return;
     }
 
-    const nextPayment = this.scheduledRepository.create({
-      creatorAddress: payment.creatorAddress,
-      recipient: payment.recipient,
-      recipientUsername: payment.recipientUsername,
-      recipientName: payment.recipientName,
-      amount: payment.amount,
-      tokenSymbol: payment.tokenSymbol,
-      scheduledAt: nextDate,
-      recurringInterval: payment.recurringInterval,
-      recurringEndDate: payment.recurringEndDate,
-      description: payment.description,
-      status: 'pending',
-      // Note: No signed transaction - user needs to re-sign
-      // This is important because nonce and gas prices will have changed
-    });
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .insert({
+        creator_address: payment.creatorAddress,
+        recipient: payment.recipient,
+        recipient_username: payment.recipientUsername,
+        recipient_name: payment.recipientName,
+        amount: payment.amount,
+        token_symbol: payment.tokenSymbol,
+        scheduled_at: nextDate.toISOString(),
+        recurring_interval: payment.recurringInterval,
+        recurring_end_date: payment.recurringEndDate ? payment.recurringEndDate.toISOString() : null,
+        description: payment.description,
+        status: 'pending',
+        // Note: No signed transaction - user needs to re-sign
+        // This is important because nonce and gas prices will have changed
+      })
+      .select()
+      .single();
 
-    const saved = await this.scheduledRepository.save(nextPayment);
+    if (error) {
+      this.logger.error(`Failed to create next recurring payment: ${error.message}`);
+      return;
+    }
+
+    const saved = this.mapToEntity(data);
     this.logger.log(`Created next recurring payment ${saved.id} scheduled for ${nextDate} (requires re-signing)`);
 
     // Notify via WebSocket that a new recurring payment was created and needs signing

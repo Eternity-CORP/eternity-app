@@ -7,7 +7,7 @@ const SUPABASE_ANON_KEY = '***REDACTED_SUPABASE_ANON_KEY***'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, isBetaTester } = body
+    const { email, message, isBetaTester } = body
 
     // Validate email
     if (!email || typeof email !== 'string' || !email.includes('@')) {
@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         email: email.toLowerCase().trim(),
+        message: message ? String(message).trim() : null,
         is_beta_tester: Boolean(isBetaTester),
         source: 'website',
       }),

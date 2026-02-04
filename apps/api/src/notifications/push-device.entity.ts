@@ -1,36 +1,14 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
-} from 'typeorm';
-
-@Entity('push_devices')
-export class PushDevice {
-  @PrimaryGeneratedColumn('uuid')
+/**
+ * PushDevice interface
+ * Represents a push notification device in the database
+ */
+export interface PushDevice {
   id: string;
-
-  @Column({ name: 'wallet_address' })
-  @Index()
-  walletAddress: string;
-
-  @Column({ name: 'push_token', unique: true })
-  pushToken: string;
-
-  @Column({ default: 'ios' })
+  wallet_address: string;
+  push_token: string;
   platform: 'ios' | 'android';
-
-  @Column({ name: 'device_name', nullable: true })
-  deviceName: string;
-
-  @Column({ default: true })
+  device_name: string | null;
   active: boolean;
-
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  created_at: string;
+  updated_at: string;
 }

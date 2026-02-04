@@ -1,8 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { PushDevice } from './push-device.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 import { RegisterDeviceDto, UnregisterDeviceDto } from './dto/register-device.dto';
+
+interface PushDevice {
+  id: string;
+  wallet_address: string;
+  push_token: string;
+  platform: string;
+  device_name?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 interface ExpoPushMessage {
   to: string;
@@ -28,8 +37,7 @@ export class NotificationsService {
   private readonly expoPushUrl = 'https://exp.host/--/api/v2/push/send';
 
   constructor(
-    @InjectRepository(PushDevice)
-    private readonly pushDeviceRepository: Repository<PushDevice>,
+    private readonly supabase: SupabaseService,
   ) {}
 
   /**
@@ -37,47 +45,73 @@ export class NotificationsService {
    */
   async registerDevice(dto: RegisterDeviceDto): Promise<PushDevice> {
     // Check if device already exists
-    let device = await this.pushDeviceRepository.findOne({
-      where: { pushToken: dto.pushToken },
-    });
+    const { data: existingDevice } = await this.supabase
+      .from('push_devices')
+      .select('*')
+      .eq('push_token', dto.pushToken)
+      .single();
 
-    if (device) {
+    if (existingDevice) {
       // Update existing device
-      device.walletAddress = dto.walletAddress;
-      device.platform = dto.platform;
-      device.deviceName = dto.deviceName || device.deviceName;
-      device.active = true;
+      const { data, error } = await this.supabase
+        .from('push_devices')
+        .update({
+          wallet_address: dto.walletAddress,
+          platform: dto.platform,
+          device_name: dto.deviceName || existingDevice.device_name,
+          active: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('push_token', dto.pushToken)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     } else {
       // Create new device
-      device = this.pushDeviceRepository.create({
-        walletAddress: dto.walletAddress,
-        pushToken: dto.pushToken,
-        platform: dto.platform,
-        deviceName: dto.deviceName,
-        active: true,
-      });
-    }
+      const { data, error } = await this.supabase
+        .from('push_devices')
+        .insert({
+          wallet_address: dto.walletAddress,
+          push_token: dto.pushToken,
+          platform: dto.platform,
+          device_name: dto.deviceName,
+          active: true,
+        })
+        .select()
+        .single();
 
-    return this.pushDeviceRepository.save(device);
+      if (error) throw error;
+      return data;
+    }
   }
 
   /**
    * Unregister a device
    */
   async unregisterDevice(dto: UnregisterDeviceDto): Promise<void> {
-    await this.pushDeviceRepository.update(
-      { pushToken: dto.pushToken, walletAddress: dto.walletAddress },
-      { active: false },
-    );
+    const { error } = await this.supabase
+      .from('push_devices')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('push_token', dto.pushToken)
+      .eq('wallet_address', dto.walletAddress);
+
+    if (error) throw error;
   }
 
   /**
    * Get all active devices for a wallet address
    */
   async getDevicesForWallet(walletAddress: string): Promise<PushDevice[]> {
-    return this.pushDeviceRepository.find({
-      where: { walletAddress: walletAddress.toLowerCase(), active: true },
-    });
+    const { data, error } = await this.supabase
+      .from('push_devices')
+      .select('*')
+      .eq('wallet_address', walletAddress.toLowerCase())
+      .eq('active', true);
+
+    if (error) throw error;
+    return data || [];
   }
 
   /**
@@ -100,7 +134,7 @@ export class NotificationsService {
     }
 
     const messages: ExpoPushMessage[] = devices.map((device) => ({
-      to: device.pushToken,
+      to: device.push_token,
       title: notification.title,
       body: notification.body,
       data: notification.data,
@@ -137,7 +171,7 @@ export class NotificationsService {
     }
 
     const messages: ExpoPushMessage[] = allDevices.map((device) => ({
-      to: device.pushToken,
+      to: device.push_token,
       title: notification.title,
       body: notification.body,
       data: notification.data,
@@ -318,10 +352,14 @@ export class NotificationsService {
    * Mark a device as inactive (invalid token)
    */
   private async markDeviceInactive(pushToken: string): Promise<void> {
-    await this.pushDeviceRepository.update(
-      { pushToken },
-      { active: false },
-    );
+    const { error } = await this.supabase
+      .from('push_devices')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('push_token', pushToken);
+
+    if (error) {
+      this.logger.error(`Failed to mark device inactive: ${error.message}`);
+    }
   }
 
   /**

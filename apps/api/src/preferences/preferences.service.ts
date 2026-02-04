@@ -1,28 +1,64 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { verifyMessage } from 'ethers';
-import { AddressPreferences } from './entities/address-preferences.entity';
+import { SupabaseService } from '../supabase/supabase.service';
 
 // Signature message timestamp validity (5 minutes)
 const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
+
+// Supabase row format (snake_case)
+interface AddressPreferencesRow {
+  address: string;
+  default_network: string | null;
+  token_overrides: Record<string, string>;
+  updated_at: string;
+}
+
+// Entity format (camelCase)
+export interface AddressPreferences {
+  address: string;
+  defaultNetwork: string | null;
+  tokenOverrides: Record<string, string>;
+  updatedAt: Date;
+}
 
 @Injectable()
 export class PreferencesService {
   private readonly logger = new Logger(PreferencesService.name);
 
-  constructor(
-    @InjectRepository(AddressPreferences)
-    private readonly preferencesRepository: Repository<AddressPreferences>,
-  ) {}
+  constructor(private readonly supabase: SupabaseService) {}
+
+  /**
+   * Map Supabase row to entity
+   */
+  private mapToEntity(row: AddressPreferencesRow): AddressPreferences {
+    return {
+      address: row.address,
+      defaultNetwork: row.default_network,
+      tokenOverrides: row.token_overrides,
+      updatedAt: new Date(row.updated_at),
+    };
+  }
 
   /**
    * Find preferences by address
    */
   async findByAddress(address: string): Promise<AddressPreferences | null> {
-    return this.preferencesRepository.findOne({
-      where: { address: address.toLowerCase() },
-    });
+    const { data, error } = await this.supabase
+      .from('address_preferences')
+      .select('*')
+      .eq('address', address.toLowerCase())
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows found
+        return null;
+      }
+      this.logger.error(`Error finding preferences for ${address}`, error);
+      throw error;
+    }
+
+    return this.mapToEntity(data);
   }
 
   /**
@@ -35,20 +71,22 @@ export class PreferencesService {
   ): Promise<AddressPreferences> {
     const normalizedAddress = address.toLowerCase();
 
-    let preferences = await this.findByAddress(normalizedAddress);
-
-    if (preferences) {
-      preferences.defaultNetwork = defaultNetwork;
-      preferences.tokenOverrides = tokenOverrides;
-    } else {
-      preferences = this.preferencesRepository.create({
+    const { data, error } = await this.supabase
+      .from('address_preferences')
+      .upsert({
         address: normalizedAddress,
-        defaultNetwork,
-        tokenOverrides,
-      });
+        default_network: defaultNetwork,
+        token_overrides: tokenOverrides,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      this.logger.error(`Error upserting preferences for ${address}`, error);
+      throw error;
     }
 
-    return this.preferencesRepository.save(preferences);
+    return this.mapToEntity(data);
   }
 
   /**

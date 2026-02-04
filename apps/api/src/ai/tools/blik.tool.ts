@@ -108,7 +108,7 @@ export class BlikGenerateTool implements AIToolHandler {
 
       // Create BLIK code via service
       // Note: We use 'ai' as socketId since this is from AI chat
-      const blikCode = this.blikService.createCode(
+      const blikCode = await this.blikService.createCode(
         userAddress,
         undefined, // username resolved by frontend
         amount,
@@ -223,7 +223,7 @@ export class BlikLookupTool implements AIToolHandler {
 
     try {
       // Look up the code
-      const blikCode = this.blikService.lookupCode(normalizedCode);
+      const blikCode = await this.blikService.lookupCode(normalizedCode);
 
       if (!blikCode) {
         return {
@@ -271,7 +271,7 @@ export class BlikLookupTool implements AIToolHandler {
       };
 
       // Mark as pending (someone is viewing it)
-      this.blikService.markPending(normalizedCode);
+      await this.blikService.markPending(normalizedCode);
 
       return {
         success: true,

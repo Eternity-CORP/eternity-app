@@ -1,31 +1,12 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
-} from 'typeorm';
-
-@Entity('usernames')
-export class Username {
-  @PrimaryGeneratedColumn('uuid')
+/**
+ * Username interface
+ * Represents a username record in the database
+ */
+export interface Username {
   id: string;
-
-  @Column({ type: 'varchar', length: 20, unique: true })
-  @Index()
   username: string;
-
-  @Column({ type: 'varchar', length: 42, unique: true })
-  @Index()
   address: string;
-
-  @Column({ type: 'text' })
-  signature: string;
-
-  @CreateDateColumn()
+  signature: string | null;
   createdAt: Date;
-
-  @UpdateDateColumn()
   updatedAt: Date;
 }

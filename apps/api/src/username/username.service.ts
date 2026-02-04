@@ -1,10 +1,8 @@
 import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { verifyMessage } from 'ethers';
-import { Username } from './username.entity';
 import { RegisterUsernameDto, UpdateUsernameDto, DeleteUsernameDto } from './dto';
 import { PreferencesService } from '../preferences/preferences.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 // Reserved usernames that cannot be claimed
 const RESERVED_USERNAMES = [
@@ -20,8 +18,7 @@ const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 @Injectable()
 export class UsernameService {
   constructor(
-    @InjectRepository(Username)
-    private usernameRepository: Repository<Username>,
+    private readonly supabase: SupabaseService,
     private readonly preferencesService: PreferencesService,
   ) {}
 
@@ -35,11 +32,13 @@ export class UsernameService {
     createdAt: Date;
   } | null> {
     const normalizedUsername = username.toLowerCase();
-    const record = await this.usernameRepository.findOne({
-      where: { username: normalizedUsername },
-    });
+    const { data: record, error } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('username', normalizedUsername)
+      .single();
 
-    if (!record) {
+    if (error || !record) {
       return null;
     }
 
@@ -55,7 +54,7 @@ export class UsernameService {
             tokenOverrides: preferences.tokenOverrides,
           }
         : null,
-      createdAt: record.createdAt,
+      createdAt: new Date(record.created_at),
     };
   }
 
@@ -64,11 +63,13 @@ export class UsernameService {
    */
   async lookupByAddress(address: string): Promise<{ username: string; address: string } | null> {
     const normalizedAddress = address.toLowerCase();
-    const record = await this.usernameRepository.findOne({
-      where: { address: normalizedAddress },
-    });
+    const { data: record, error } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('address', normalizedAddress)
+      .single();
 
-    if (!record) {
+    if (error || !record) {
       return null;
     }
 
@@ -90,9 +91,11 @@ export class UsernameService {
     }
 
     // Check if already taken
-    const existing = await this.usernameRepository.findOne({
-      where: { username: normalizedUsername },
-    });
+    const { data: existing } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('username', normalizedUsername)
+      .single();
 
     return !existing;
   }
@@ -121,9 +124,11 @@ export class UsernameService {
     }
 
     // Check if username is taken
-    const existingUsername = await this.usernameRepository.findOne({
-      where: { username: normalizedUsername },
-    });
+    const { data: existingUsername } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('username', normalizedUsername)
+      .single();
     if (existingUsername) {
       throw new ConflictException({
         code: 'USERNAME_TAKEN',
@@ -132,9 +137,11 @@ export class UsernameService {
     }
 
     // Check if address already has a username
-    const existingAddress = await this.usernameRepository.findOne({
-      where: { address: normalizedAddress },
-    });
+    const { data: existingAddress } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('address', normalizedAddress)
+      .single();
     if (existingAddress) {
       throw new ConflictException({
         code: 'ADDRESS_HAS_USERNAME',
@@ -146,13 +153,22 @@ export class UsernameService {
     this.verifySignature(normalizedUsername, normalizedAddress, dto.signature, dto.timestamp, 'claim');
 
     // Create record
-    const record = this.usernameRepository.create({
-      username: normalizedUsername,
-      address: normalizedAddress,
-      signature: dto.signature,
-    });
+    const { data: record, error } = await this.supabase
+      .from('usernames')
+      .insert({
+        username: normalizedUsername,
+        address: normalizedAddress,
+        signature: dto.signature,
+      })
+      .select()
+      .single();
 
-    await this.usernameRepository.save(record);
+    if (error || !record) {
+      throw new BadRequestException({
+        code: 'USERNAME_CREATE_FAILED',
+        message: 'Failed to create username',
+      });
+    }
 
     return {
       username: record.username,
@@ -168,10 +184,12 @@ export class UsernameService {
     const normalizedAddress = dto.address.toLowerCase();
 
     // Find existing record for this address
-    const existingRecord = await this.usernameRepository.findOne({
-      where: { address: normalizedAddress },
-    });
-    if (!existingRecord) {
+    const { data: existingRecord, error: findError } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('address', normalizedAddress)
+      .single();
+    if (findError || !existingRecord) {
       throw new NotFoundException({
         code: 'USERNAME_NOT_FOUND',
         message: 'No username found for this address',
@@ -195,9 +213,11 @@ export class UsernameService {
     }
 
     // Check if new username is taken (by someone else)
-    const existingUsername = await this.usernameRepository.findOne({
-      where: { username: normalizedNewUsername },
-    });
+    const { data: existingUsername } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('username', normalizedNewUsername)
+      .single();
     if (existingUsername && existingUsername.address !== normalizedAddress) {
       throw new ConflictException({
         code: 'USERNAME_TAKEN',
@@ -209,13 +229,26 @@ export class UsernameService {
     this.verifySignature(normalizedNewUsername, normalizedAddress, dto.signature, dto.timestamp, 'update');
 
     // Update record
-    existingRecord.username = normalizedNewUsername;
-    existingRecord.signature = dto.signature;
-    await this.usernameRepository.save(existingRecord);
+    const { data: updatedRecord, error: updateError } = await this.supabase
+      .from('usernames')
+      .update({
+        username: normalizedNewUsername,
+        signature: dto.signature,
+      })
+      .eq('id', existingRecord.id)
+      .select()
+      .single();
+
+    if (updateError || !updatedRecord) {
+      throw new BadRequestException({
+        code: 'USERNAME_UPDATE_FAILED',
+        message: 'Failed to update username',
+      });
+    }
 
     return {
-      username: existingRecord.username,
-      address: existingRecord.address,
+      username: updatedRecord.username,
+      address: updatedRecord.address,
     };
   }
 
@@ -226,10 +259,12 @@ export class UsernameService {
     const normalizedAddress = dto.address.toLowerCase();
 
     // Find existing record
-    const existingRecord = await this.usernameRepository.findOne({
-      where: { address: normalizedAddress },
-    });
-    if (!existingRecord) {
+    const { data: existingRecord, error: findError } = await this.supabase
+      .from('usernames')
+      .select('*')
+      .eq('address', normalizedAddress)
+      .single();
+    if (findError || !existingRecord) {
       throw new NotFoundException({
         code: 'USERNAME_NOT_FOUND',
         message: 'No username found for this address',
@@ -240,7 +275,17 @@ export class UsernameService {
     this.verifySignature(existingRecord.username, normalizedAddress, dto.signature, dto.timestamp, 'delete');
 
     // Delete record
-    await this.usernameRepository.remove(existingRecord);
+    const { error: deleteError } = await this.supabase
+      .from('usernames')
+      .delete()
+      .eq('id', existingRecord.id);
+
+    if (deleteError) {
+      throw new BadRequestException({
+        code: 'USERNAME_DELETE_FAILED',
+        message: 'Failed to delete username',
+      });
+    }
   }
 
   /**

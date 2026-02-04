@@ -1,6 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiGateway } from './ai.gateway';
@@ -21,7 +20,6 @@ import {
   AiAuditLogger,
 } from './security';
 import { ProactiveService } from './proactive';
-import { AiSuggestion } from './entities';
 import { BalanceServiceAi, HistoryServiceAi } from './services';
 import { ScheduledModule } from '../scheduled/scheduled.module';
 import { UsernameModule } from '../username/username.module';
@@ -30,7 +28,6 @@ import { BlikModule } from '../blik/blik.module';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([AiSuggestion]),
     forwardRef(() => ScheduledModule),
     UsernameModule,
     BlikModule,

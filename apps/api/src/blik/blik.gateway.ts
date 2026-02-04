@@ -51,12 +51,14 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
   onModuleInit() {
     // Set up periodic expiration check that notifies receivers
-    this.cleanupInterval = setInterval(() => {
-      const expiredCodes = this.blikService.cleanup();
+    this.cleanupInterval = setInterval(async () => {
+      const expiredCodes = await this.blikService.cleanup();
       for (const code of expiredCodes) {
         // Notify receiver about expiration
-        const expiredPayload: CodeExpiredPayload = { code: code.code };
-        this.server.to(code.receiverSocketId).emit(BLIK_EVENTS.CODE_EXPIRED, expiredPayload);
+        if (code.receiverSocketId) {
+          const expiredPayload: CodeExpiredPayload = { code: code.code };
+          this.server.to(code.receiverSocketId).emit(BLIK_EVENTS.CODE_EXPIRED, expiredPayload);
+        }
       }
     }, 30000);
   }
@@ -79,7 +81,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
    * Create a new BLIK code (Receiver)
    */
   @SubscribeMessage(BLIK_EVENTS.CREATE_CODE)
-  handleCreateCode(
+  async handleCreateCode(
     @MessageBody() data: CreateCodePayload,
     @ConnectedSocket() client: Socket,
   ) {
@@ -91,7 +93,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         return;
       }
 
-      const blikCode = this.blikService.createCode(
+      const blikCode = await this.blikService.createCode(
         receiverAddress,
         receiverUsername,
         amount,
@@ -118,7 +120,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
    * Cancel a BLIK code (Receiver)
    */
   @SubscribeMessage(BLIK_EVENTS.CANCEL_CODE)
-  handleCancelCode(
+  async handleCancelCode(
     @MessageBody() data: CancelCodePayload,
     @ConnectedSocket() client: Socket,
   ) {
@@ -130,7 +132,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         return;
       }
 
-      const success = this.blikService.cancelCode(code, receiverAddress);
+      const success = await this.blikService.cancelCode(code, receiverAddress);
 
       if (success) {
         client.emit(BLIK_EVENTS.CODE_CANCELLED, { code });
@@ -148,7 +150,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
    * Look up a BLIK code (Sender)
    */
   @SubscribeMessage(BLIK_EVENTS.LOOKUP_CODE)
-  handleLookupCode(
+  async handleLookupCode(
     @MessageBody() data: LookupCodePayload,
     @ConnectedSocket() client: Socket,
   ) {
@@ -160,7 +162,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         return;
       }
 
-      const blikCode = this.blikService.lookupCode(code);
+      const blikCode = await this.blikService.lookupCode(code);
 
       if (!blikCode) {
         const notFoundPayload: CodeNotFoundPayload = {
@@ -172,7 +174,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       }
 
       // Notify receiver that someone is looking at their code
-      if (senderAddress) {
+      if (senderAddress && blikCode.receiverSocketId) {
         const lookupPayload: CodeLookupPayload = { senderAddress };
         this.server.to(blikCode.receiverSocketId).emit(BLIK_EVENTS.CODE_LOOKUP, lookupPayload);
 
@@ -210,7 +212,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
    * Confirm payment for a BLIK code (Sender)
    */
   @SubscribeMessage(BLIK_EVENTS.CONFIRM_PAYMENT)
-  handleConfirmPayment(
+  async handleConfirmPayment(
     @MessageBody() data: ConfirmPaymentPayload,
     @ConnectedSocket() client: Socket,
   ) {
@@ -222,7 +224,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         return;
       }
 
-      const result = this.blikService.confirmPayment(code, txHash, senderAddress, network);
+      const result = await this.blikService.confirmPayment(code, txHash, senderAddress, network);
 
       if (!result) {
         const notFoundPayload: CodeNotFoundPayload = {
@@ -234,12 +236,14 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       }
 
       // Notify receiver about successful payment
-      const confirmedPayload: PaymentConfirmedPayload = {
-        txHash: result.txHash,
-        senderAddress: result.senderAddress,
-        network: result.network,
-      };
-      this.server.to(result.blikCode.receiverSocketId).emit(BLIK_EVENTS.PAYMENT_CONFIRMED, confirmedPayload);
+      if (result.blikCode.receiverSocketId) {
+        const confirmedPayload: PaymentConfirmedPayload = {
+          txHash: result.txHash,
+          senderAddress: result.senderAddress,
+          network: result.network,
+        };
+        this.server.to(result.blikCode.receiverSocketId).emit(BLIK_EVENTS.PAYMENT_CONFIRMED, confirmedPayload);
+      }
 
       // Send push notification to receiver (for when app is in background)
       this.notificationsService.sendBlikConfirmedNotification(
@@ -270,7 +274,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
    * Register receiver address for reconnection (Receiver)
    */
   @SubscribeMessage('register')
-  handleRegister(
+  async handleRegister(
     @MessageBody() data: { receiverAddress: string },
     @ConnectedSocket() client: Socket,
   ) {
@@ -278,10 +282,10 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
     if (receiverAddress) {
       // Update socket ID for any active codes belonging to this address
-      this.blikService.updateReceiverSocket(receiverAddress, client.id);
+      await this.blikService.updateReceiverSocket(receiverAddress, client.id);
 
       // Check if there's an active code and notify receiver
-      const activeCode = this.blikService.getActiveCodeForReceiver(receiverAddress);
+      const activeCode = await this.blikService.getActiveCodeForReceiver(receiverAddress);
       if (activeCode) {
         const response: CodeCreatedPayload = {
           code: activeCode.code,
