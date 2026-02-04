@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
 import { createBlikCode, lookupBlikCode, updateBlikStatus, subscribeToBlikCode, BlikCode } from '@/lib/blik'
+import Link from 'next/link'
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
 const NETWORK = 'sepolia'
@@ -114,7 +115,6 @@ export default function BlikPage() {
     setError('')
 
     try {
-      // Update status to pending
       await updateBlikStatus(foundCode.id, 'pending')
 
       const provider = new ethers.JsonRpcProvider(
@@ -129,7 +129,6 @@ export default function BlikPage() {
 
       await tx.wait()
 
-      // Update status to completed
       await updateBlikStatus(foundCode.id, 'completed')
 
       router.push(`/wallet/send/success?hash=${tx.hash}`)
@@ -142,155 +141,207 @@ export default function BlikPage() {
     }
   }
 
+  const handleBack = () => {
+    if (mode === 'select') {
+      router.push('/wallet')
+    } else {
+      setMode('select')
+      setCreatedCode(null)
+      setFoundCode(null)
+      setError('')
+      setInputCode('')
+      setAmount('')
+    }
+  }
+
   return (
-    <main className="min-h-screen bg-vignette-grid flex items-center justify-center p-6">
-      <div className="w-full max-w-sm glass-card p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <header className="border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
           <button
-            onClick={() => mode === 'select' ? router.push('/wallet') : setMode('select')}
+            onClick={handleBack}
             className="text-white/50 hover:text-white transition-colors"
           >
-            ← Back
+            ← {mode === 'select' ? 'Back to Wallet' : 'Back'}
           </button>
-          <h1 className="text-xl font-bold">BLIK</h1>
-          <div className="w-12" />
+          <h1 className="text-xl font-bold">BLIK Payments</h1>
+          <div className="w-32" />
         </div>
+      </header>
 
+      {/* Main Content */}
+      <div className="max-w-xl mx-auto px-8 py-16">
         {/* Mode Selection */}
         {mode === 'select' && (
-          <div>
-            <p className="text-white/50 text-center mb-6">
-              Send or receive ETH with a 6-digit code
-            </p>
+          <>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-3">BLIK Payments</h2>
+              <p className="text-white/50">Send or receive ETH with a 6-digit code</p>
+            </div>
 
             <div className="space-y-4">
               <button
                 onClick={() => setMode('create')}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors text-left"
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 hover:border-white/20 transition-all text-left"
               >
-                <h3 className="font-bold mb-1">Request Payment</h3>
-                <p className="text-sm text-white/50">
-                  Generate a code for someone to send you ETH
-                </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <polyline points="19 12 12 19 5 12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">Request Payment</h3>
+                    <p className="text-sm text-white/50">Generate a code for someone to send you ETH</p>
+                  </div>
+                </div>
               </button>
 
               <button
                 onClick={() => setMode('lookup')}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-colors text-left"
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 hover:border-white/20 transition-all text-left"
               >
-                <h3 className="font-bold mb-1">Send Payment</h3>
-                <p className="text-sm text-white/50">
-                  Enter a code to send ETH to someone
-                </p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="19" x2="12" y2="5"/>
+                      <polyline points="5 12 12 5 19 12"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-1">Send Payment</h3>
+                    <p className="text-sm text-white/50">Enter a code to send ETH to someone</p>
+                  </div>
+                </div>
               </button>
             </div>
-          </div>
+          </>
         )}
 
         {/* Create Code - Enter Amount */}
         {mode === 'create' && !createdCode && (
-          <div>
-            <p className="text-white/50 text-center mb-6">
-              Enter amount you want to receive
-            </p>
+          <>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-3">Request Payment</h2>
+              <p className="text-white/50">Enter the amount you want to receive</p>
+            </div>
 
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.0"
-              step="0.0001"
-              className="w-full py-4 px-6 bg-white/5 text-white text-center border border-white/10 rounded-full placeholder:text-white/30 focus:border-white/30 focus:outline-none transition-all duration-200 mb-6"
-            />
+            <div className="mb-8">
+              <label className="block text-sm text-white/60 mb-3">Amount (ETH)</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.0"
+                step="0.0001"
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-2xl text-center placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                autoFocus
+              />
+            </div>
 
             <button
               onClick={handleCreateCode}
               disabled={!amount || parseFloat(amount) <= 0}
-              className="w-full py-4 px-6 bg-white text-black font-medium rounded-full hover:bg-white/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Generate Code
             </button>
-          </div>
+          </>
         )}
 
         {/* Create Code - Show Generated Code */}
         {mode === 'create' && createdCode && (
           <div className="text-center">
-            <p className="text-white/50 mb-6">
-              Share this code with the sender
-            </p>
-
-            <div className="mb-6">
-              <p className="text-5xl font-mono font-bold tracking-widest mb-4">
-                {createdCode.code}
-              </p>
-              <p className="text-2xl font-bold">{createdCode.amount} ETH</p>
+            <div className="mb-12">
+              <h2 className="text-3xl font-bold mb-3">Your BLIK Code</h2>
+              <p className="text-white/50">Share this code with the sender</p>
             </div>
 
-            <div className="flex items-center justify-center gap-2 text-white/50 text-sm">
+            <div className="mb-10">
+              <p className="text-7xl font-mono font-bold tracking-[0.3em] mb-6">
+                {createdCode.code}
+              </p>
+              <p className="text-3xl font-bold">{createdCode.amount} ETH</p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 text-white/50">
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span>Expires in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+              <span className="text-lg">
+                Expires in {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </span>
             </div>
           </div>
         )}
 
         {/* Lookup Code - Enter Code */}
         {mode === 'lookup' && !foundCode && (
-          <div>
-            <p className="text-white/50 text-center mb-6">
-              Enter the 6-digit code
-            </p>
+          <>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-3">Send Payment</h2>
+              <p className="text-white/50">Enter the 6-digit BLIK code</p>
+            </div>
 
-            <input
-              type="text"
-              value={inputCode}
-              onChange={(e) => setInputCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="000000"
-              maxLength={6}
-              className="w-full py-4 px-6 bg-white/5 text-white text-center text-4xl font-mono tracking-widest border border-white/10 rounded-full placeholder:text-white/30 focus:border-white/30 focus:outline-none transition-all duration-200 mb-4"
-            />
+            <div className="mb-8">
+              <input
+                type="text"
+                value={inputCode}
+                onChange={(e) => setInputCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                className="w-full px-5 py-6 bg-white/5 border border-white/10 rounded-xl text-white text-5xl font-mono text-center tracking-[0.4em] placeholder:text-white/20 focus:outline-none focus:border-white/30 transition-colors"
+                autoFocus
+              />
+            </div>
 
-            {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+            {error && <p className="text-red-500 text-sm mb-6 text-center">{error}</p>}
 
             <button
               onClick={handleLookupCode}
               disabled={inputCode.length !== 6}
-              className="w-full py-4 px-6 bg-white text-black font-medium rounded-full hover:bg-white/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Find Code
             </button>
-          </div>
+          </>
         )}
 
         {/* Lookup Code - Confirm Send */}
         {mode === 'lookup' && foundCode && (
-          <div>
-            <p className="text-white/50 text-center mb-6">
-              Confirm payment
-            </p>
+          <>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold mb-3">Confirm Payment</h2>
+              <p className="text-white/50">Review and confirm the transaction</p>
+            </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
-              <div className="text-center mb-4">
-                <p className="text-4xl font-bold">{foundCode.amount} ETH</p>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-8">
+              <div className="text-center mb-6">
+                <p className="text-5xl font-bold">{foundCode.amount} ETH</p>
               </div>
-              <div className="text-sm text-white/50">
-                <p className="mb-1">To:</p>
-                <p className="font-mono break-all text-white/70">{foundCode.receiver_address}</p>
+              <div className="pt-6 border-t border-white/10">
+                <p className="text-sm text-white/50 mb-2">Sending to</p>
+                <p className="font-mono text-sm break-all text-white/80">{foundCode.receiver_address}</p>
               </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+            {error && <p className="text-red-500 text-sm mb-6 text-center">{error}</p>}
 
             <button
               onClick={handleSend}
               disabled={sending}
-              className="w-full py-4 px-6 bg-white text-black font-medium rounded-full hover:bg-white/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {sending ? 'Sending...' : 'Confirm & Send'}
             </button>
-          </div>
+          </>
         )}
+
+        {/* Network */}
+        <div className="flex items-center justify-center gap-2 mt-12 text-sm text-white/40">
+          <span className="w-2 h-2 rounded-full bg-green-500" />
+          <span>Sepolia Testnet</span>
+        </div>
       </div>
     </main>
   )

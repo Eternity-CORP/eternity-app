@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { getTransactions, Transaction } from '@/lib/supabase'
+import Link from 'next/link'
 
 export default function HistoryPage() {
   const router = useRouter()
@@ -37,31 +38,43 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-vignette-grid flex items-center justify-center p-6">
-      <div className="glass-card w-full max-w-sm p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <button
-            onClick={() => router.push('/wallet')}
-            className="text-white/70 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="text-2xl font-bold">History</h1>
-          <div className="w-12" />
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <header className="border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+          <Link href="/wallet" className="text-white/50 hover:text-white transition-colors">
+            ← Back to Wallet
+          </Link>
+          <h1 className="text-xl font-bold">Transaction History</h1>
+          <div className="w-32" />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="max-w-3xl mx-auto px-8 py-16">
+        <div className="mb-10">
+          <h2 className="text-3xl font-bold mb-3">Transaction History</h2>
+          <p className="text-white/50">View all your past transactions</p>
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <div className="flex justify-center py-20">
+            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="text-white/50 text-center py-12">
-            <p>No transactions yet</p>
+          <div className="text-center py-20">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full border border-white/20 flex items-center justify-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <p className="text-white/50 text-lg">No transactions yet</p>
+            <p className="text-white/30 mt-2">Your transaction history will appear here</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {transactions.map((tx) => {
               const isSent = tx.from_address.toLowerCase() === address.toLowerCase()
               const otherAddress = isSent ? tx.to_address : tx.from_address
@@ -72,26 +85,40 @@ export default function HistoryPage() {
                   href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between hover:bg-white/10 transition-colors"
+                  className="block bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 hover:border-white/20 transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                      <span className="text-lg">{isSent ? '↑' : '↓'}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                          {isSent ? (
+                            <>
+                              <line x1="12" y1="19" x2="12" y2="5"/>
+                              <polyline points="5 12 12 5 19 12"/>
+                            </>
+                          ) : (
+                            <>
+                              <line x1="12" y1="5" x2="12" y2="19"/>
+                              <polyline points="19 12 12 19 5 12"/>
+                            </>
+                          )}
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-lg">{isSent ? 'Sent' : 'Received'}</p>
+                        <p className="text-sm text-white/50">
+                          {isSent ? 'To' : 'From'} {formatAddress(otherAddress)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{isSent ? 'Sent' : 'Received'}</p>
-                      <p className="text-sm text-white/50">
-                        {isSent ? 'To' : 'From'} {formatAddress(otherAddress)}
+                    <div className="text-right">
+                      <p className={`font-semibold text-lg ${isSent ? 'text-white/70' : 'text-white'}`}>
+                        {isSent ? '-' : '+'}{tx.amount} {tx.token_symbol}
+                      </p>
+                      <p className="text-sm text-white/40">
+                        {formatDate(tx.created_at)}
                       </p>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-medium ${isSent ? 'text-white/50' : 'text-white'}`}>
-                      {isSent ? '-' : '+'}{tx.amount} {tx.token_symbol}
-                    </p>
-                    <p className="text-xs text-white/50">
-                      {formatDate(tx.created_at)}
-                    </p>
                   </div>
                 </a>
               )

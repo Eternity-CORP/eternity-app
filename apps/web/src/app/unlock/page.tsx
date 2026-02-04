@@ -32,76 +32,89 @@ function UnlockContent() {
   }
 
   return (
-    <main className="min-h-screen bg-black bg-grid flex flex-col items-center justify-center px-6 py-12">
-      {/* Logo */}
-      <div className="mb-16 text-center">
-        <h1 className="text-4xl font-bold tracking-tight mb-3">Eternity</h1>
-        <p className="text-white/50">Welcome back</p>
-      </div>
-
-      {/* Form Card */}
-      <div className="w-full max-w-[400px]">
-        <div className="text-center mb-10">
-          <div className="w-16 h-16 mx-auto mb-8 rounded-full border border-white/20 flex items-center justify-center">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/60">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </div>
-          <h2 className="text-2xl font-semibold mb-2">Unlock Wallet</h2>
-          <p className="text-white/50">Enter your password to continue</p>
+    <main className="min-h-screen bg-black flex">
+      {/* Left side - branding */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-white/10">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Eternity</h1>
+          <p className="text-white/40">Web3 Wallet</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                setError('')
-              }}
-              placeholder="Password"
-              className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-center text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
-              autoFocus
-            />
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-4">{error}</p>
-            )}
+        <div>
+          <p className="text-5xl font-bold leading-tight mb-6">
+            Your keys,<br/>your crypto.<br/>Always.
+          </p>
+          <p className="text-white/40 max-w-md">
+            Self-custody wallet with instant BLIK payments. We never see your private keys.
+          </p>
+        </div>
+
+        <p className="text-white/20 text-sm">
+          © 2024 Eternity. All rights reserved.
+        </p>
+      </div>
+
+      {/* Right side - form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden text-center mb-12">
+            <h1 className="text-3xl font-bold mb-2">Eternity</h1>
+            <p className="text-white/40">Welcome back</p>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading || !password}
-            className="w-full py-4 px-6 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Unlocking...' : 'Unlock'}
-          </button>
-        </form>
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold mb-3">Welcome back</h2>
+            <p className="text-white/50">Enter your password to unlock your wallet</p>
+          </div>
 
-        <div className="mt-12 pt-8 border-t border-white/10 text-center">
-          <p className="text-white/40 text-sm mb-6">Don&apos;t have a wallet?</p>
-          <div className="flex gap-4 justify-center">
-            <Link
-              href="/create"
-              className="px-6 py-3 border border-white/20 rounded-xl text-sm font-medium hover:bg-white/5 transition-colors"
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm text-white/60 mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setError('')
+                }}
+                placeholder="Enter your password"
+                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                autoFocus
+              />
+              {error && (
+                <p className="text-red-500 text-sm mt-3">{error}</p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !password}
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Create New
-            </Link>
-            <Link
-              href="/import"
-              className="px-6 py-3 text-white/50 text-sm font-medium hover:text-white transition-colors"
-            >
-              Import Existing
-            </Link>
+              {loading ? 'Unlocking...' : 'Unlock Wallet'}
+            </button>
+          </form>
+
+          <div className="mt-12 pt-8 border-t border-white/10">
+            <p className="text-white/40 text-sm mb-4">Don&apos;t have a wallet?</p>
+            <div className="flex gap-4">
+              <Link
+                href="/create"
+                className="flex-1 py-3 px-4 text-center border border-white/20 rounded-xl text-sm font-medium hover:bg-white/5 transition-colors"
+              >
+                Create New Wallet
+              </Link>
+              <Link
+                href="/import"
+                className="flex-1 py-3 px-4 text-center text-white/50 text-sm font-medium hover:text-white transition-colors"
+              >
+                Import Existing
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <p className="mt-16 text-white/30 text-sm">
-        Your keys, your crypto. Always.
-      </p>
     </main>
   )
 }
@@ -110,7 +123,7 @@ export default function UnlockWallet() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-2xl font-bold text-white/50">Eternity</div>
+        <div className="text-2xl font-bold text-white/50">Loading...</div>
       </div>
     }>
       <UnlockContent />

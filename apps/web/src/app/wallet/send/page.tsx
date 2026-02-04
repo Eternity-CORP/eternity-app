@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
 import { lookupUsername, saveTransaction } from '@/lib/supabase'
+import Link from 'next/link'
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
 const NETWORK = 'sepolia'
@@ -22,7 +23,6 @@ function SendContent() {
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
   const [error, setError] = useState('')
-  const [txHash, setTxHash] = useState('')
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | null>(null)
 
   useEffect(() => {
@@ -49,7 +49,6 @@ function SendContent() {
     }
   }
 
-  // Resolve recipient (address or @username)
   useEffect(() => {
     const resolve = async () => {
       setError('')
@@ -57,7 +56,6 @@ function SendContent() {
 
       if (!recipient) return
 
-      // Check if it's an address
       if (recipient.startsWith('0x') && recipient.length === 42) {
         if (ethers.isAddress(recipient)) {
           setResolvedAddress(recipient)
@@ -68,7 +66,6 @@ function SendContent() {
         return
       }
 
-      // Check if it's a username
       if (recipient.startsWith('@') || !recipient.startsWith('0x')) {
         setResolving(true)
         const username = recipient.startsWith('@') ? recipient.slice(1) : recipient
@@ -96,7 +93,7 @@ function SendContent() {
         `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}`
       )
       const feeData = await provider.getFeeData()
-      const gasLimit = BigInt(21000) // Standard ETH transfer
+      const gasLimit = BigInt(21000)
       const gasCost = gasLimit * (feeData.gasPrice || BigInt(0))
       setGasEstimate(ethers.formatEther(gasCost))
     } catch (err) {
@@ -127,10 +124,8 @@ function SendContent() {
         value: ethers.parseEther(amount),
       })
 
-      setTxHash(tx.hash)
       await tx.wait()
 
-      // Save transaction to history
       await saveTransaction({
         hash: tx.hash,
         from_address: wallet.address.toLowerCase(),
@@ -153,40 +148,48 @@ function SendContent() {
   const isValid = resolvedAddress && amount && parseFloat(amount) > 0 && parseFloat(amount) <= parseFloat(balance)
 
   return (
-    <main className="min-h-screen bg-vignette-grid flex items-center justify-center p-6">
-      <div className="glass-card w-full max-w-sm p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <a href="/wallet" className="text-white/50 hover:text-white transition-colors">
-            ← Back
-          </a>
-          <h1 className="font-bold">Send</h1>
-          <div className="w-12" />
+    <main className="min-h-screen bg-black">
+      {/* Header */}
+      <header className="border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
+          <Link href="/wallet" className="text-white/50 hover:text-white transition-colors">
+            ← Back to Wallet
+          </Link>
+          <h1 className="text-xl font-bold">Send ETH</h1>
+          <div className="w-32" />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="max-w-xl mx-auto px-8 py-16">
+        <div className="mb-10">
+          <h2 className="text-3xl font-bold mb-3">Send ETH</h2>
+          <p className="text-white/50">Send ETH to any address or username</p>
         </div>
 
         {/* Recipient */}
-        <div className="mb-6">
-          <label className="text-white/50 text-sm mb-2 block">To</label>
+        <div className="mb-8">
+          <label className="block text-sm text-white/60 mb-3">Recipient</label>
           <input
             type="text"
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
             placeholder="Address or @username"
-            className="w-full py-4 px-6 bg-white/5 text-white border border-white/10 rounded-full placeholder:text-white/30 focus:border-white/30 focus:outline-none transition-all duration-200"
+            className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
           />
           {resolving && (
-            <p className="text-sm text-white/50 mt-2">Resolving...</p>
+            <p className="text-sm text-white/50 mt-3">Resolving username...</p>
           )}
           {resolvedAddress && resolvedAddress !== recipient && (
-            <p className="text-sm text-white/70 mt-2">
-              → {resolvedAddress.slice(0, 10)}...{resolvedAddress.slice(-8)}
+            <p className="text-sm text-white/70 mt-3">
+              Resolved: {resolvedAddress.slice(0, 10)}...{resolvedAddress.slice(-8)}
             </p>
           )}
         </div>
 
         {/* Amount */}
-        <div className="mb-6">
-          <label className="text-white/50 text-sm mb-2 block">Amount</label>
+        <div className="mb-8">
+          <label className="block text-sm text-white/60 mb-3">Amount</label>
           <div className="relative">
             <input
               type="number"
@@ -194,47 +197,47 @@ function SendContent() {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.0"
               step="0.0001"
-              className="w-full py-4 px-6 bg-white/5 text-white border border-white/10 rounded-full placeholder:text-white/30 focus:border-white/30 focus:outline-none transition-all duration-200"
+              className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors pr-20"
             />
             <button
               onClick={() => setAmount(balance)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 text-sm text-white/70 hover:text-white bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200"
+              className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 text-sm text-white/70 hover:text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
             >
               MAX
             </button>
           </div>
-          <p className="text-sm text-white/50 mt-2">
-            Balance: {parseFloat(balance).toFixed(4)} ETH
+          <p className="text-sm text-white/50 mt-3">
+            Available: {parseFloat(balance).toFixed(4)} ETH
           </p>
         </div>
 
         {/* Gas estimate */}
         {gasEstimate && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
-            <div className="flex justify-between text-sm">
-              <span className="text-white/50">Estimated gas</span>
-              <span className="text-white">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
+            <div className="flex justify-between">
+              <span className="text-white/50">Estimated gas fee</span>
+              <span className="text-white font-medium">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
             </div>
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <p className="text-white/70 text-sm mb-6">{error}</p>
+          <p className="text-red-500 text-sm mb-8">{error}</p>
         )}
 
         {/* Send button */}
         <button
           onClick={handleSend}
           disabled={!isValid || loading}
-          className="w-full py-4 px-6 bg-white text-black font-medium rounded-full hover:bg-white/90 transition-all duration-200 disabled:opacity-50"
+          className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {loading ? 'Sending...' : 'Send'}
+          {loading ? 'Sending...' : 'Send ETH'}
         </button>
 
         {/* Network */}
-        <div className="text-white/30 text-sm text-center mt-6 flex items-center justify-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
+        <div className="flex items-center justify-center gap-2 mt-8 text-sm text-white/40">
+          <span className="w-2 h-2 rounded-full bg-green-500" />
           <span>Sepolia Testnet</span>
         </div>
       </div>
@@ -244,7 +247,11 @@ function SendContent() {
 
 export default function SendPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-xl text-white/50">Loading...</div>
+      </div>
+    }>
       <SendContent />
     </Suspense>
   )
