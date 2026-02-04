@@ -32,84 +32,76 @@ function UnlockContent() {
   }
 
   return (
-    <main className="bg-app bg-grid min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-12 animate-fadeIn">
-          <div className="logo text-4xl mb-3">Eternity</div>
-          <p className="text-body">Welcome back</p>
-        </div>
-
-        {/* Card */}
-        <div className="card-elevated p-8 animate-slideUp">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            </div>
-            <h1 className="text-heading mb-2">Unlock Wallet</h1>
-            <p className="text-body">Enter your password to continue</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setError('')
-                }}
-                placeholder="Enter password"
-                className="input input-lg input-center"
-                autoFocus
-              />
-              {error && (
-                <p className="text-[var(--error)] text-sm text-center mt-3 animate-fadeIn">
-                  {error}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !password}
-              className="btn btn-primary btn-lg w-full"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
-                  </svg>
-                  Unlocking...
-                </>
-              ) : (
-                'Unlock'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-8 pt-6 border-t border-[var(--border)] text-center">
-            <p className="text-caption mb-4">Don&apos;t have a wallet?</p>
-            <div className="flex gap-3 justify-center">
-              <Link href="/create" className="btn btn-secondary btn-sm">
-                Create New
-              </Link>
-              <Link href="/import" className="btn btn-ghost btn-sm">
-                Import Existing
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-caption mt-8 animate-fadeIn">
-          Your keys, your crypto. Always.
-        </p>
+    <main className="min-h-screen bg-black bg-grid flex flex-col items-center justify-center px-6 py-12">
+      {/* Logo */}
+      <div className="mb-16 text-center">
+        <h1 className="text-4xl font-bold tracking-tight mb-3">Eternity</h1>
+        <p className="text-white/50">Welcome back</p>
       </div>
+
+      {/* Form Card */}
+      <div className="w-full max-w-[400px]">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 mx-auto mb-8 rounded-full border border-white/20 flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/60">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <h2 className="text-2xl font-semibold mb-2">Unlock Wallet</h2>
+          <p className="text-white/50">Enter your password to continue</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setError('')
+              }}
+              placeholder="Password"
+              className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-center text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+              autoFocus
+            />
+            {error && (
+              <p className="text-red-500 text-sm text-center mt-4">{error}</p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || !password}
+            className="w-full py-4 px-6 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Unlocking...' : 'Unlock'}
+          </button>
+        </form>
+
+        <div className="mt-12 pt-8 border-t border-white/10 text-center">
+          <p className="text-white/40 text-sm mb-6">Don&apos;t have a wallet?</p>
+          <div className="flex gap-4 justify-center">
+            <Link
+              href="/create"
+              className="px-6 py-3 border border-white/20 rounded-xl text-sm font-medium hover:bg-white/5 transition-colors"
+            >
+              Create New
+            </Link>
+            <Link
+              href="/import"
+              className="px-6 py-3 text-white/50 text-sm font-medium hover:text-white transition-colors"
+            >
+              Import Existing
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <p className="mt-16 text-white/30 text-sm">
+        Your keys, your crypto. Always.
+      </p>
     </main>
   )
 }
@@ -117,8 +109,8 @@ function UnlockContent() {
 export default function UnlockWallet() {
   return (
     <Suspense fallback={
-      <div className="bg-app min-h-screen flex items-center justify-center">
-        <div className="logo text-3xl animate-pulse">Eternity</div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-2xl font-bold text-white/50">Eternity</div>
       </div>
     }>
       <UnlockContent />
