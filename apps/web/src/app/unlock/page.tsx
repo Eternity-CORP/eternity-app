@@ -3,8 +3,10 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loadAndDecrypt } from '@e-y/storage'
+import { getAddressFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { ensureDefaultAccount } from '@/lib/account-storage'
 
 function UnlockContent() {
   const router = useRouter()
@@ -22,6 +24,7 @@ function UnlockContent() {
 
     try {
       const mnemonic = await loadAndDecrypt(password)
+      ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
       sessionStorage.setItem('session_mnemonic', mnemonic)
       router.push(redirect || '/wallet')
     } catch (err) {
@@ -33,21 +36,21 @@ function UnlockContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen relative z-[2]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[440px] mx-auto px-6 py-16">
-        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
+        <div className="glass-card gradient-border rounded-2xl p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)]">
               <span className="text-black font-bold text-2xl">E</span>
             </div>
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
-            <p className="text-[#9b9b9b]">Enter your password to unlock</p>
+            <h1 className="text-2xl font-bold text-gradient mb-2">Welcome back</h1>
+            <p className="text-white/50">Enter your password to unlock</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,7 +63,7 @@ function UnlockContent() {
                   setError('')
                 }}
                 placeholder="Enter your password"
-                className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#252525] rounded-xl text-white text-lg placeholder:text-[#4a4a4a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
+                className="w-full px-5 py-4 bg-white/3 border border-white/8 rounded-xl text-white text-lg placeholder:text-white/25 focus:outline-none focus:border-white/20 focus:shadow-[0_0_20px_rgba(51,136,255,0.05)] transition-all"
                 autoFocus
               />
               {error && (
@@ -71,7 +74,7 @@ function UnlockContent() {
             <button
               type="submit"
               disabled={loading || !password}
-              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -84,18 +87,18 @@ function UnlockContent() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-[#1f1f1f]">
-            <p className="text-[#6b6b6b] text-sm text-center mb-4">Don&apos;t have a wallet?</p>
+          <div className="mt-8 pt-6 border-t border-white/5">
+            <p className="text-white/30 text-sm text-center mb-4">Don&apos;t have a wallet?</p>
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/create"
-                className="py-3 px-4 text-center border border-[#2a2a2a] rounded-xl text-sm font-semibold text-white hover:bg-[#1f1f1f] transition-colors"
+                className="py-3 px-4 text-center glass-card rounded-xl text-sm font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Create New
               </Link>
               <Link
                 href="/import"
-                className="py-3 px-4 text-center text-[#9b9b9b] text-sm font-semibold hover:text-white transition-colors"
+                className="py-3 px-4 text-center text-white/50 text-sm font-semibold hover:text-white transition-colors"
               >
                 Import
               </Link>
@@ -110,8 +113,8 @@ function UnlockContent() {
 export default function UnlockWallet() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#3a3a3a] border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     }>
       <UnlockContent />

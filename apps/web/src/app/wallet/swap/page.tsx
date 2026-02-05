@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
+import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 import {
   SwapToken,
@@ -17,13 +17,11 @@ import {
   NATIVE_TOKEN_ADDRESS,
 } from '@/lib/swap'
 
-const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
 const CHAIN_ID = 1 // Mainnet for swap (LI.FI doesn't support Sepolia)
 
 export default function SwapPage() {
   const router = useRouter()
-  const [address, setAddress] = useState('')
-  const [wallet, setWallet] = useState<ethers.HDNodeWallet | null>(null)
+  const { wallet, address, network, isLoggedIn } = useAccount()
 
   const [tokens, setTokens] = useState<SwapToken[]>([])
   const [fromToken, setFromToken] = useState<SwapToken | null>(null)
@@ -39,20 +37,18 @@ export default function SwapPage() {
   const [showFromTokens, setShowFromTokens] = useState(false)
   const [showToTokens, setShowToTokens] = useState(false)
 
+  // Auth guard: redirect to /unlock when not logged in (skip while context is loading)
   useEffect(() => {
-    const mnemonic = sessionStorage.getItem('session_mnemonic')
-    if (!mnemonic) {
+    if (!isLoggedIn && address !== '') {
       router.push('/unlock')
-      return
     }
+  }, [isLoggedIn, address, router])
 
-    const w = deriveWalletFromMnemonic(mnemonic, 0)
-    setWallet(w)
-    setAddress(w.address)
-
-    // Load tokens
+  // Load tokens when logged in
+  useEffect(() => {
+    if (!isLoggedIn) return
     loadTokens()
-  }, [router])
+  }, [isLoggedIn])
 
   const loadTokens = async () => {
     const popular = await getPopularTokens(CHAIN_ID)
@@ -121,9 +117,7 @@ export default function SwapPage() {
     setSuccess('')
 
     try {
-      const provider = new ethers.JsonRpcProvider(
-        `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}`
-      )
+      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
       const connectedWallet = wallet.connect(provider)
 
       const tx = await executeSwap(quote, connectedWallet)
@@ -138,11 +132,6 @@ export default function SwapPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleLogout = () => {
-    sessionStorage.removeItem('session_mnemonic')
-    router.push('/unlock')
   }
 
   const selectFromToken = (token: SwapToken) => {
@@ -164,25 +153,25 @@ export default function SwapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
+    <div className="min-h-screen relative z-[2]">
+      <Navigation isLoggedIn={true} />
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
-          <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
+          <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-8">Swap</h1>
 
             {/* Mainnet Notice */}
-            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-3 mb-4">
-              <p className="text-xs text-[#6b6b6b] text-center">
+            <div className="bg-white/3 border border-white/8 rounded-xl p-3 mb-4">
+              <p className="text-xs text-white/40 text-center">
                 Swaps use Ethereum Mainnet via LI.FI
               </p>
             </div>
 
             {/* From Token */}
-            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-2">
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-2">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-[#6b6b6b] uppercase tracking-wide">You pay</label>
+                <label className="text-xs text-white/40 uppercase tracking-wide">You pay</label>
               </div>
               <div className="flex items-center gap-3">
                 <input
@@ -191,17 +180,17 @@ export default function SwapPage() {
                   onChange={(e) => setFromAmount(e.target.value)}
                   placeholder="0"
                   step="0.0001"
-                  className="flex-1 min-w-0 bg-transparent text-2xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
+                  className="flex-1 min-w-0 bg-transparent text-2xl font-bold text-white placeholder:text-white/25 focus:outline-none"
                 />
                 <button
                   onClick={() => setShowFromTokens(!showFromTokens)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#252525] rounded-lg hover:bg-[#2a2a2a] transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-white/8 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   {fromToken?.logoURI && (
                     <img src={fromToken.logoURI} alt="" className="w-5 h-5 rounded-full" />
                   )}
                   <span className="text-white font-medium">{fromToken?.symbol || 'Select'}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
@@ -214,16 +203,16 @@ export default function SwapPage() {
                     <button
                       key={token.address}
                       onClick={() => selectFromToken(token)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-[#252525] transition-colors"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/8 transition-colors"
                     >
                       {token.logoURI ? (
                         <img src={token.logoURI} alt="" className="w-6 h-6 rounded-full" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-[#3a3a3a]" />
+                        <div className="w-6 h-6 rounded-full bg-white/20" />
                       )}
                       <div className="text-left">
                         <p className="text-white text-sm font-medium">{token.symbol}</p>
-                        <p className="text-xs text-[#6b6b6b]">{token.name}</p>
+                        <p className="text-xs text-white/40">{token.name}</p>
                       </div>
                     </button>
                   ))}
@@ -235,7 +224,7 @@ export default function SwapPage() {
             <div className="flex justify-center -my-1 relative z-10">
               <button
                 onClick={handleSwapTokens}
-                className="w-10 h-10 rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] flex items-center justify-center text-white hover:bg-[#2a2a2a] transition-colors"
+                className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-white hover:border-white/15 transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M7 16V4M7 4L3 8M7 4L11 8"/>
@@ -245,14 +234,14 @@ export default function SwapPage() {
             </div>
 
             {/* To Token */}
-            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-[#6b6b6b] uppercase tracking-wide">You receive</label>
+                <label className="text-xs text-white/40 uppercase tracking-wide">You receive</label>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   {quoteLoading ? (
-                    <div className="h-8 w-24 bg-[#252525] rounded animate-pulse" />
+                    <div className="h-8 w-24 bg-white/8 rounded animate-pulse" />
                   ) : (
                     <p className="text-2xl font-bold text-white">
                       {quote ? formatTokenAmount(quote.toAmount, quote.toToken.decimals, 6) : '0'}
@@ -261,13 +250,13 @@ export default function SwapPage() {
                 </div>
                 <button
                   onClick={() => setShowToTokens(!showToTokens)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#252525] rounded-lg hover:bg-[#2a2a2a] transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-white/8 rounded-lg hover:bg-white/10 transition-colors"
                 >
                   {toToken?.logoURI && (
                     <img src={toToken.logoURI} alt="" className="w-5 h-5 rounded-full" />
                   )}
                   <span className="text-white font-medium">{toToken?.symbol || 'Select'}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
@@ -280,16 +269,16 @@ export default function SwapPage() {
                     <button
                       key={token.address}
                       onClick={() => selectToToken(token)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-[#252525] transition-colors"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/8 transition-colors"
                     >
                       {token.logoURI ? (
                         <img src={token.logoURI} alt="" className="w-6 h-6 rounded-full" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-[#3a3a3a]" />
+                        <div className="w-6 h-6 rounded-full bg-white/20" />
                       )}
                       <div className="text-left">
                         <p className="text-white text-sm font-medium">{token.symbol}</p>
-                        <p className="text-xs text-[#6b6b6b]">{token.name}</p>
+                        <p className="text-xs text-white/40">{token.name}</p>
                       </div>
                     </button>
                   ))}
@@ -299,23 +288,23 @@ export default function SwapPage() {
 
             {/* Quote Details */}
             {quote && (
-              <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4 space-y-2">
+              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4 space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#6b6b6b]">Rate</span>
+                  <span className="text-white/40">Rate</span>
                   <span className="text-white">
                     1 {fromToken?.symbol} = {parseFloat(quote.exchangeRate).toFixed(4)} {toToken?.symbol}
                   </span>
                 </div>
                 {parseFloat(quote.priceImpact) > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-[#6b6b6b]">Price Impact</span>
+                    <span className="text-white/40">Price Impact</span>
                     <span className={parseFloat(quote.priceImpact) > 1 ? 'text-[#f87171]' : 'text-white'}>
                       {parseFloat(quote.priceImpact).toFixed(2)}%
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#6b6b6b]">Network Fee</span>
+                  <span className="text-white/40">Network Fee</span>
                   <span className="text-white">${parseFloat(quote.gasCostUSD).toFixed(2)}</span>
                 </div>
               </div>
@@ -323,14 +312,14 @@ export default function SwapPage() {
 
             {/* Error */}
             {error && (
-              <div className="px-4 py-3 bg-[#2d1515] border border-[#4d2525] rounded-xl mb-4">
+              <div className="px-4 py-3 bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl mb-4">
                 <p className="text-[#f87171] text-sm">{error}</p>
               </div>
             )}
 
             {/* Success */}
             {success && (
-              <div className="px-4 py-3 bg-[#0d2818] border border-[#134e29] rounded-xl mb-4">
+              <div className="px-4 py-3 bg-[#22c55e]/8 border border-[#22c55e]/20 rounded-xl mb-4">
                 <p className="text-[#22c55e] text-sm">{success}</p>
               </div>
             )}
@@ -339,7 +328,7 @@ export default function SwapPage() {
             <button
               onClick={handleSwap}
               disabled={!quote || loading || quoteLoading}
-              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black hover:bg-[#e5e5e5]"
+              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
               {loading ? 'Swapping...' : quoteLoading ? 'Getting quote...' : 'Swap'}
             </button>

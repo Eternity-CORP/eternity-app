@@ -2,25 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { QRCodeSVG } from 'qrcode.react'
+import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 
 export default function ReceivePage() {
   const router = useRouter()
-  const [address, setAddress] = useState('')
+  const { address, isLoggedIn, network } = useAccount()
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    const mnemonic = sessionStorage.getItem('session_mnemonic')
-    if (!mnemonic) {
+    if (!address) return
+    if (!isLoggedIn) {
       router.push('/unlock')
-      return
     }
-
-    const wallet = deriveWalletFromMnemonic(mnemonic, 0)
-    setAddress(wallet.address)
-  }, [router])
+  }, [isLoggedIn, address, router])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(address)
@@ -28,18 +24,13 @@ export default function ReceivePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('session_mnemonic')
-    router.push('/unlock')
-  }
-
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
+    <div className="min-h-screen relative z-[2]">
+      <Navigation isLoggedIn={true} />
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
-          <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
+          <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-8">Receive</h1>
 
             {/* QR Code */}
@@ -57,15 +48,15 @@ export default function ReceivePage() {
             </div>
 
             {/* Address */}
-            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
-              <p className="text-xs text-[#6b6b6b] uppercase tracking-wide mb-2">Your address</p>
-              <p className="font-mono text-sm text-[#9b9b9b] break-all leading-relaxed">{address}</p>
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
+              <p className="text-xs text-white/40 uppercase tracking-wide mb-2">Your address</p>
+              <p className="font-mono text-sm text-white/50 break-all leading-relaxed">{address}</p>
             </div>
 
             {/* Copy button */}
             <button
               onClick={handleCopy}
-              className="w-full py-4 rounded-xl font-semibold transition-all bg-white text-black hover:bg-[#e5e5e5] flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl font-semibold transition-all bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2"
             >
               {copied ? (
                 <>

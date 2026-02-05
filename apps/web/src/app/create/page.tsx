@@ -30,14 +30,14 @@ export default function CreateWallet() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen relative z-[2]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[600px] mx-auto px-6 py-12">
-        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
+        <div className="glass-card gradient-border rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">Recovery Phrase</h1>
-            <p className="text-[#9b9b9b]">Write these 12 words down and keep them safe</p>
+            <h1 className="text-2xl font-bold text-gradient mb-2">Recovery Phrase</h1>
+            <p className="text-white/50">Write these 12 words down and keep them safe</p>
           </div>
 
           {/* Seed phrase grid */}
@@ -45,9 +45,9 @@ export default function CreateWallet() {
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-3"
+                className="bg-white/3 border border-white/8 rounded-xl p-3 hover:border-white/12 transition-colors"
               >
-                <span className="text-[#6b6b6b] text-xs">{i + 1}.</span>
+                <span className="text-white/30 text-xs">{i + 1}.</span>
                 <span className="ml-2 font-medium text-white">{word}</span>
               </div>
             ))}
@@ -56,7 +56,7 @@ export default function CreateWallet() {
           {/* Copy button */}
           <button
             onClick={handleCopy}
-            className="w-full py-3 px-6 bg-[#1f1f1f] border border-[#2a2a2a] rounded-xl font-semibold text-white hover:bg-[#2a2a2a] transition-colors mb-6 flex items-center justify-center gap-2"
+            className="w-full py-3 px-6 glass-card rounded-xl font-semibold text-white hover:border-white/15 transition-all mb-6 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
           >
             {copied ? (
               <>
@@ -77,21 +77,21 @@ export default function CreateWallet() {
           </button>
 
           {/* Warning */}
-          <div className="bg-[#2d1515] border border-[#4d2525] rounded-xl p-4 mb-6">
+          <div className="bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl p-4 mb-6">
             <p className="text-[#f87171] text-sm font-medium">
               Never share your recovery phrase. Anyone with these words can access your wallet.
             </p>
           </div>
 
           {/* Confirmation checkbox */}
-          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-[#1a1a1a] border border-[#252525] hover:border-[#2a2a2a] transition-colors">
+          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-white/3 border border-white/8 hover:border-white/12 transition-colors">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded border-[#3a3a3a] bg-transparent accent-white"
+              className="mt-0.5 w-5 h-5 rounded border-white/20 bg-transparent accent-white"
             />
-            <span className="text-[#9b9b9b] text-sm">
+            <span className="text-white/50 text-sm">
               I have written down my recovery phrase and stored it in a safe place
             </span>
           </label>
@@ -100,14 +100,14 @@ export default function CreateWallet() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="py-4 text-center rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
+              className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Back
             </Link>
             <button
               onClick={handleContinue}
               disabled={!confirmed}
-              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Continue
             </button>

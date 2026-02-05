@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { encryptAndSave } from '@e-y/storage'
+import { getAddressFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { ensureDefaultAccount } from '@/lib/account-storage'
 
 export default function ImportPassword() {
   const router = useRouter()
@@ -41,6 +43,7 @@ export default function ImportPassword() {
 
     try {
       await encryptAndSave(mnemonic, password)
+      ensureDefaultAccount(mnemonic, 'real', getAddressFromMnemonic)
       sessionStorage.removeItem('temp_mnemonic')
       sessionStorage.setItem('session_mnemonic', mnemonic)
       router.push('/wallet')
@@ -53,37 +56,37 @@ export default function ImportPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen relative z-[2]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[440px] mx-auto px-6 py-12">
-        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
+        <div className="glass-card gradient-border rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">Set Password</h1>
-            <p className="text-[#9b9b9b]">Create a password to encrypt your wallet</p>
+            <h1 className="text-2xl font-bold text-gradient mb-2">Set Password</h1>
+            <p className="text-white/50">Create a password to encrypt your wallet</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-[#9b9b9b] font-medium mb-2">Password</label>
+              <label className="block text-sm text-white/50 font-medium mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#252525] rounded-xl text-white placeholder:text-[#4a4a4a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
+                className="w-full px-5 py-4 bg-white/3 border border-white/8 rounded-xl text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-sm text-[#9b9b9b] font-medium mb-2">Confirm Password</label>
+              <label className="block text-sm text-white/50 font-medium mb-2">Confirm Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#252525] rounded-xl text-white placeholder:text-[#4a4a4a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
+                className="w-full px-5 py-4 bg-white/3 border border-white/8 rounded-xl text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
               />
             </div>
 
@@ -94,14 +97,14 @@ export default function ImportPassword() {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <Link
                 href="/import"
-                className="py-4 text-center rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
+                className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
               >
                 Back
               </Link>
               <button
                 type="submit"
                 disabled={loading || !password || !confirmPassword}
-                className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? 'Importing...' : 'Import Wallet'}
               </button>
