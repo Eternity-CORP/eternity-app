@@ -155,46 +155,46 @@ function SendContent() {
   const isValid = resolvedAddress && amount && parseFloat(amount) > 0 && parseFloat(amount) <= parseFloat(balance)
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      <main className="max-w-[500px] mx-auto px-6 py-12">
+      <main className="max-w-[480px] mx-auto px-6 py-12">
         {/* Card */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mb-6">
-            <button className="flex-1 py-2.5 px-4 rounded-xl bg-white/10 text-white font-medium text-sm">
+          <div className="flex items-center gap-1 p-1.5 bg-[#1a1a1a] rounded-xl mb-6">
+            <button className="flex-1 py-3 px-4 rounded-lg bg-[#252525] text-white font-semibold text-sm">
               Send
             </button>
             <button
               onClick={() => router.push('/wallet/receive')}
-              className="flex-1 py-2.5 px-4 rounded-xl text-white/50 font-medium text-sm hover:text-white transition-colors"
+              className="flex-1 py-3 px-4 rounded-lg text-[#9b9b9b] font-semibold text-sm hover:text-white transition-colors"
             >
               Receive
             </button>
             <button
               onClick={() => router.push('/wallet/blik')}
-              className="flex-1 py-2.5 px-4 rounded-xl text-white/50 font-medium text-sm hover:text-white transition-colors"
+              className="flex-1 py-3 px-4 rounded-lg text-[#9b9b9b] font-semibold text-sm hover:text-white transition-colors"
             >
               BLIK
             </button>
           </div>
 
           {/* Recipient Input */}
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 mb-3">
-            <label className="text-sm text-white/50 mb-2 block">To</label>
+          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-3">
+            <label className="text-sm text-[#9b9b9b] mb-2 block font-medium">To</label>
             <input
               type="text"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
               placeholder="Address or @username"
-              className="w-full bg-transparent text-xl font-medium placeholder:text-white/20 focus:outline-none"
+              className="w-full bg-transparent text-xl font-semibold text-white placeholder:text-[#4a4a4a] focus:outline-none"
             />
             {resolving && (
-              <p className="text-sm text-white/50 mt-2">Resolving...</p>
+              <p className="text-sm text-[#9b9b9b] mt-2">Resolving...</p>
             )}
             {resolvedAddress && resolvedAddress !== recipient && (
-              <p className="text-sm text-white/50 mt-2 font-mono">
+              <p className="text-sm text-[#6b6b6b] mt-2 font-mono">
                 {resolvedAddress.slice(0, 12)}...{resolvedAddress.slice(-10)}
               </p>
             )}
@@ -202,8 +202,8 @@ function SendContent() {
 
           {/* Swap Icon */}
           <div className="flex justify-center -my-1 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50">
+            <div className="w-10 h-10 rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <polyline points="19 12 12 19 5 12"/>
               </svg>
@@ -211,10 +211,10 @@ function SendContent() {
           </div>
 
           {/* Amount Input */}
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 mb-4">
+          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-white/50">Amount</label>
-              <span className="text-sm text-white/50">
+              <label className="text-sm text-[#9b9b9b] font-medium">Amount</label>
+              <span className="text-sm text-[#6b6b6b]">
                 Balance: {parseFloat(balance).toFixed(4)}
               </span>
             </div>
@@ -225,22 +225,22 @@ function SendContent() {
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0"
                 step="0.0001"
-                className="flex-1 bg-transparent text-4xl font-medium placeholder:text-white/20 focus:outline-none"
+                className="flex-1 bg-transparent text-4xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
               />
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setAmount(balance)}
-                  className="px-2 py-1 text-xs font-medium text-white/60 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold text-[#9b9b9b] bg-[#252525] rounded-lg hover:bg-[#2a2a2a] transition-colors"
                 >
                   MAX
                 </button>
-                <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-xl">
-                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#252525] rounded-xl">
+                  <div className="w-6 h-6 rounded-full bg-[#3a3a3a] flex items-center justify-center">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-white">
                       <path d="M12 1.5l-8 14h16l-8-14z"/>
                     </svg>
                   </div>
-                  <span className="font-medium">ETH</span>
+                  <span className="font-semibold text-white">ETH</span>
                 </div>
               </div>
             </div>
@@ -248,16 +248,16 @@ function SendContent() {
 
           {/* Gas Estimate */}
           {gasEstimate && (
-            <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] rounded-xl mb-4">
-              <span className="text-sm text-white/50">Network fee</span>
-              <span className="text-sm font-medium">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
+            <div className="flex items-center justify-between px-4 py-3 bg-[#1a1a1a] border border-[#252525] rounded-xl mb-4">
+              <span className="text-sm text-[#9b9b9b]">Network fee</span>
+              <span className="text-sm font-semibold text-white">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
             </div>
           )}
 
           {/* Error */}
           {error && (
-            <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="px-4 py-3 bg-[#2d1515] border border-[#4d2525] rounded-xl mb-4">
+              <p className="text-[#f87171] text-sm font-medium">{error}</p>
             </div>
           )}
 
@@ -265,7 +265,7 @@ function SendContent() {
           <button
             onClick={handleSend}
             disabled={!isValid || loading}
-            className="w-full py-4 rounded-2xl font-semibold text-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black hover:bg-white/90"
+            className="w-full py-4 rounded-xl font-semibold text-base transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black hover:bg-[#e5e5e5]"
           >
             {loading ? 'Sending...' : 'Send'}
           </button>

@@ -30,14 +30,14 @@ export default function CreateWallet() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[600px] mx-auto px-6 py-12">
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Recovery Phrase</h1>
-            <p className="text-white/50">Write these 12 words down and keep them safe</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Recovery Phrase</h1>
+            <p className="text-[#9b9b9b]">Write these 12 words down and keep them safe</p>
           </div>
 
           {/* Seed phrase grid */}
@@ -45,10 +45,10 @@ export default function CreateWallet() {
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="bg-white/[0.03] border border-white/10 rounded-xl p-3"
+                className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-3"
               >
-                <span className="text-white/30 text-xs">{i + 1}.</span>
-                <span className="ml-2 font-medium">{word}</span>
+                <span className="text-[#6b6b6b] text-xs">{i + 1}.</span>
+                <span className="ml-2 font-medium text-white">{word}</span>
               </div>
             ))}
           </div>
@@ -56,14 +56,14 @@ export default function CreateWallet() {
           {/* Copy button */}
           <button
             onClick={handleCopy}
-            className="w-full py-3 px-6 border border-white/20 rounded-xl font-medium hover:bg-white/5 transition-colors mb-6 flex items-center justify-center gap-2"
+            className="w-full py-3 px-6 bg-[#1f1f1f] border border-[#2a2a2a] rounded-xl font-semibold text-white hover:bg-[#2a2a2a] transition-colors mb-6 flex items-center justify-center gap-2"
           >
             {copied ? (
               <>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#22c55e]">
                   <path d="M20 6L9 17l-5-5"/>
                 </svg>
-                Copied
+                <span className="text-[#22c55e]">Copied</span>
               </>
             ) : (
               <>
@@ -77,21 +77,21 @@ export default function CreateWallet() {
           </button>
 
           {/* Warning */}
-          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 mb-6">
-            <p className="text-red-400/80 text-sm">
+          <div className="bg-[#2d1515] border border-[#4d2525] rounded-xl p-4 mb-6">
+            <p className="text-[#f87171] text-sm font-medium">
               Never share your recovery phrase. Anyone with these words can access your wallet.
             </p>
           </div>
 
           {/* Confirmation checkbox */}
-          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-colors">
+          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-[#1a1a1a] border border-[#252525] hover:border-[#2a2a2a] transition-colors">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded border-white/20 bg-white/5 accent-white"
+              className="mt-0.5 w-5 h-5 rounded border-[#3a3a3a] bg-transparent accent-white"
             />
-            <span className="text-white/70 text-sm">
+            <span className="text-[#9b9b9b] text-sm">
               I have written down my recovery phrase and stored it in a safe place
             </span>
           </label>
@@ -100,14 +100,14 @@ export default function CreateWallet() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="py-4 text-center rounded-xl bg-white/5 border border-white/10 font-medium hover:bg-white/10 transition-colors"
+              className="py-4 text-center rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
             >
               Back
             </Link>
             <button
               onClick={handleContinue}
               disabled={!confirmed}
-              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Continue
             </button>

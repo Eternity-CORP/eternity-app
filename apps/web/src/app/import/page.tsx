@@ -66,34 +66,34 @@ export default function ImportWallet() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[600px] mx-auto px-6 py-12">
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Import Wallet</h1>
-            <p className="text-white/50">Enter your recovery phrase to restore your wallet</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Import Wallet</h1>
+            <p className="text-[#9b9b9b]">Enter your recovery phrase to restore your wallet</p>
           </div>
 
           {/* Word count toggle */}
-          <div className="flex gap-2 p-1 bg-white/5 rounded-xl mb-6">
+          <div className="flex gap-2 p-1.5 bg-[#1a1a1a] rounded-xl mb-6">
             <button
               onClick={() => handleWordCountChange(12)}
-              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                 wordCount === 12
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-[#252525] text-white'
+                  : 'text-[#9b9b9b] hover:text-white'
               }`}
             >
               12 words
             </button>
             <button
               onClick={() => handleWordCountChange(24)}
-              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                 wordCount === 24
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-[#252525] text-white'
+                  : 'text-[#9b9b9b] hover:text-white'
               }`}
             >
               24 words
@@ -107,12 +107,12 @@ export default function ImportWallet() {
           >
             {words.map((word, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <span className="text-white/30 text-xs w-5">{i + 1}.</span>
+                <span className="text-[#6b6b6b] text-xs w-5">{i + 1}.</span>
                 <input
                   type="text"
                   value={word}
                   onChange={(e) => handleWordChange(i, e.target.value)}
-                  className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none transition-colors"
+                  className="flex-1 bg-[#1a1a1a] border border-[#252525] rounded-lg px-3 py-2.5 text-sm text-white focus:border-[#3a3a3a] focus:outline-none transition-colors"
                   autoComplete="off"
                   autoCapitalize="off"
                 />
@@ -120,27 +120,27 @@ export default function ImportWallet() {
             ))}
           </div>
 
-          <p className="text-xs text-white/40 mb-6 text-center">
+          <p className="text-xs text-[#6b6b6b] mb-6 text-center">
             Tip: You can paste your entire phrase at once
           </p>
 
           {error && (
-            <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-6">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="px-4 py-3 bg-[#2d1515] border border-[#4d2525] rounded-xl mb-6">
+              <p className="text-[#f87171] text-sm font-medium">{error}</p>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="py-4 text-center rounded-xl bg-white/5 border border-white/10 font-medium hover:bg-white/10 transition-colors"
+              className="py-4 text-center rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
             >
               Back
             </Link>
             <button
               onClick={handleContinue}
               disabled={loading}
-              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? 'Validating...' : 'Continue'}
             </button>

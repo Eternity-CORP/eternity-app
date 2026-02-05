@@ -53,64 +53,64 @@ export default function SetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[440px] mx-auto px-6 py-12">
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Set Password</h1>
-            <p className="text-white/50">This password encrypts your wallet on this device</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Set Password</h1>
+            <p className="text-[#9b9b9b]">This password encrypts your wallet on this device</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-white/60 mb-2">Password</label>
+              <label className="block text-sm text-[#9b9b9b] font-medium mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#252525] rounded-xl text-white placeholder:text-[#4a4a4a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-sm text-white/60 mb-2">Confirm Password</label>
+              <label className="block text-sm text-[#9b9b9b] font-medium mb-2">Confirm Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#252525] rounded-xl text-white placeholder:text-[#4a4a4a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
               />
             </div>
 
             {error && (
-              <p className="text-red-400 text-sm px-1">{error}</p>
+              <p className="text-[#f87171] text-sm px-1 font-medium">{error}</p>
             )}
 
-            <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4">
+            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4">
               <div className="flex items-center gap-2">
-                <span className={`text-sm ${password.length >= 8 ? 'text-green-500' : 'text-white/40'}`}>
+                <span className={`text-sm ${password.length >= 8 ? 'text-[#22c55e]' : 'text-[#4a4a4a]'}`}>
                   {password.length >= 8 ? '✓' : '○'}
                 </span>
-                <span className="text-sm text-white/60">At least 8 characters</span>
+                <span className="text-sm text-[#9b9b9b]">At least 8 characters</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2">
               <Link
                 href="/create"
-                className="py-4 text-center rounded-xl bg-white/5 border border-white/10 font-medium hover:bg-white/10 transition-colors"
+                className="py-4 text-center rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
               >
                 Back
               </Link>
               <button
                 type="submit"
                 disabled={loading || !password || !confirmPassword}
-                className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? 'Creating...' : 'Create Wallet'}
               </button>

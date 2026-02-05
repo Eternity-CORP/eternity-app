@@ -33,11 +33,11 @@ function UnlockContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={false} />
 
       <main className="max-w-[440px] mx-auto px-6 py-16">
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center">
@@ -46,8 +46,8 @@ function UnlockContent() {
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
-            <p className="text-white/50">Enter your password to unlock</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Welcome back</h1>
+            <p className="text-[#9b9b9b]">Enter your password to unlock</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -60,18 +60,18 @@ function UnlockContent() {
                   setError('')
                 }}
                 placeholder="Enter your password"
-                className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                className="w-full px-5 py-4 bg-[#1a1a1a] border border-[#252525] rounded-xl text-white text-lg placeholder:text-[#4a4a4a] focus:outline-none focus:border-[#3a3a3a] transition-colors"
                 autoFocus
               />
               {error && (
-                <p className="text-red-400 text-sm mt-3 px-1">{error}</p>
+                <p className="text-[#f87171] text-sm mt-3 px-1 font-medium">{error}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={loading || !password}
-              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-2xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-[#e5e5e5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -84,18 +84,18 @@ function UnlockContent() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <p className="text-white/40 text-sm text-center mb-4">Don&apos;t have a wallet?</p>
+          <div className="mt-8 pt-6 border-t border-[#1f1f1f]">
+            <p className="text-[#6b6b6b] text-sm text-center mb-4">Don&apos;t have a wallet?</p>
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/create"
-                className="py-3 px-4 text-center border border-white/20 rounded-xl text-sm font-medium hover:bg-white/5 transition-colors"
+                className="py-3 px-4 text-center border border-[#2a2a2a] rounded-xl text-sm font-semibold text-white hover:bg-[#1f1f1f] transition-colors"
               >
                 Create New
               </Link>
               <Link
                 href="/import"
-                className="py-3 px-4 text-center text-white/50 text-sm font-medium hover:text-white transition-colors"
+                className="py-3 px-4 text-center text-[#9b9b9b] text-sm font-semibold hover:text-white transition-colors"
               >
                 Import
               </Link>
@@ -110,8 +110,8 @@ function UnlockContent() {
 export default function UnlockWallet() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#3a3a3a] border-t-white rounded-full animate-spin" />
       </div>
     }>
       <UnlockContent />

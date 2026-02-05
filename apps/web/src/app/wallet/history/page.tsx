@@ -43,16 +43,16 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      <main className="max-w-[800px] mx-auto px-6 py-8">
+      <main className="max-w-[800px] mx-auto px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Transaction History</h1>
+          <h1 className="text-2xl font-bold text-white">Transaction History</h1>
           <button
             onClick={() => fetchTransactions(address)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium hover:bg-white/10 transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] text-sm font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9 9H3m9 9a9 9 0 0 1-9-9m9 9c1.66 0 3-4.03 3-9s-1.34-9-3-9m0 18c-1.66 0-3-4.03-3-9s1.34-9 3-9"/>
@@ -62,24 +62,24 @@ export default function HistoryPage() {
         </div>
 
         {/* Content */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl overflow-hidden">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl overflow-hidden">
           {loading ? (
             <div className="flex justify-center py-16">
-              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[#3a3a3a] border-t-white rounded-full animate-spin" />
             </div>
           ) : transactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/30">
+              <div className="w-16 h-16 rounded-2xl bg-[#1f1f1f] flex items-center justify-center mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#4a4a4a]">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
-              <p className="text-white/50 mb-1">No transactions yet</p>
-              <p className="text-white/30 text-sm">Your transaction history will appear here</p>
+              <p className="text-[#9b9b9b] font-medium mb-1">No transactions yet</p>
+              <p className="text-[#6b6b6b] text-sm">Your transaction history will appear here</p>
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-[#1f1f1f]">
               {transactions.map((tx) => {
                 const isSent = tx.from_address.toLowerCase() === address.toLowerCase()
                 const otherAddress = isSent ? tx.to_address : tx.from_address
@@ -90,13 +90,13 @@ export default function HistoryPage() {
                     href={`https://sepolia.etherscan.io/tx/${tx.hash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between p-5 hover:bg-white/[0.02] transition-colors"
+                    className="flex items-center justify-between p-5 hover:bg-[#1a1a1a] transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        isSent ? 'bg-white/5' : 'bg-green-500/10'
+                      <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${
+                        isSent ? 'bg-[#1f1f1f]' : 'bg-[#0d2818]'
                       }`}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isSent ? 'text-white/60' : 'text-green-500'}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isSent ? 'text-[#9b9b9b]' : 'text-[#22c55e]'}>
                           {isSent ? (
                             <>
                               <line x1="12" y1="19" x2="12" y2="5"/>
@@ -111,17 +111,17 @@ export default function HistoryPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="font-medium">{isSent ? 'Sent' : 'Received'}</p>
-                        <p className="text-sm text-white/50">
+                        <p className="font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
+                        <p className="text-sm text-[#6b6b6b]">
                           {isSent ? 'To' : 'From'} {formatAddress(otherAddress)}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-medium ${isSent ? 'text-white/70' : 'text-green-500'}`}>
+                      <p className={`font-semibold ${isSent ? 'text-[#9b9b9b]' : 'text-[#22c55e]'}`}>
                         {isSent ? '-' : '+'}{tx.amount} {tx.token_symbol}
                       </p>
-                      <p className="text-sm text-white/40">
+                      <p className="text-sm text-[#6b6b6b]">
                         {formatDate(tx.created_at)}
                       </p>
                     </div>

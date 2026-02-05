@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 interface NavigationProps {
   isLoggedIn?: boolean
@@ -12,7 +12,6 @@ interface NavigationProps {
 
 export default function Navigation({ isLoggedIn, address, onLogout }: NavigationProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const [copied, setCopied] = useState(false)
 
   const navItems = [
@@ -34,15 +33,15 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
   const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-      <nav className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 border-b border-[#1f1f1f] bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <nav className="max-w-[1200px] mx-auto px-8 h-[72px] flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-8">
-          <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-              <span className="text-black font-bold text-sm">E</span>
+        <div className="flex items-center gap-10">
+          <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center">
+              <span className="text-black font-bold text-base">E</span>
             </div>
-            <span className="text-lg font-semibold group-hover:text-white/80 transition-colors">
+            <span className="text-xl font-semibold text-white group-hover:text-[#9b9b9b] transition-colors">
               Eternity
             </span>
           </Link>
@@ -56,10 +55,10 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                       isActive
-                        ? 'bg-white/10 text-white'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                        ? 'bg-[#1f1f1f] text-white'
+                        : 'text-[#9b9b9b] hover:text-white hover:bg-[#1f1f1f]/50'
                     }`}
                   >
                     {item.label}
@@ -73,9 +72,9 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
         {/* Right Side */}
         <div className="flex items-center gap-3">
           {/* Network Badge */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-sm text-white/60">Sepolia</span>
+          <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-[#131313] border border-[#1f1f1f]">
+            <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
+            <span className="text-sm font-medium text-[#9b9b9b]">Sepolia</span>
           </div>
 
           {isLoggedIn && address ? (
@@ -83,15 +82,15 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
               {/* Address Button */}
               <button
                 onClick={handleCopyAddress}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#131313] border border-[#1f1f1f] hover:bg-[#1f1f1f] hover:border-[#2a2a2a] transition-all"
               >
-                <span className="font-mono text-sm">{shortAddress}</span>
+                <span className="font-mono text-sm font-medium text-white">{shortAddress}</span>
                 {copied ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#22c55e]">
                     <path d="M20 6L9 17l-5-5"/>
                   </svg>
                 ) : (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
@@ -101,19 +100,19 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
               {/* Lock Button */}
               <button
                 onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[#9b9b9b] hover:text-white hover:bg-[#1f1f1f] transition-all"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                 </svg>
-                <span className="hidden sm:inline text-sm font-medium">Lock</span>
+                <span className="hidden sm:inline text-sm font-semibold">Lock</span>
               </button>
             </>
           ) : (
             <Link
               href="/unlock"
-              className="px-5 py-2 rounded-xl bg-white text-black font-medium text-sm hover:bg-white/90 transition-colors"
+              className="px-6 py-2.5 rounded-xl bg-white text-black font-semibold text-sm hover:bg-[#e5e5e5] transition-colors"
             >
               Connect
             </Link>

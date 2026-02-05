@@ -93,45 +93,45 @@ export default function WalletDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      <main className="max-w-[1400px] mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="max-w-[1200px] mx-auto px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Balance Card */}
           <div className="lg:col-span-2">
-            <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 rounded-3xl p-8">
-              <div className="flex items-start justify-between mb-8">
+            <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
+              <div className="flex items-start justify-between mb-10">
                 <div>
-                  <p className="text-white/50 text-sm mb-1">Total Balance</p>
+                  <p className="text-[#9b9b9b] text-sm font-medium mb-2">Total Balance</p>
                   {loading ? (
-                    <div className="h-14 w-48 bg-white/10 rounded-xl animate-pulse" />
+                    <div className="h-16 w-56 bg-[#1f1f1f] rounded-xl animate-pulse" />
                   ) : (
-                    <div className="flex items-baseline gap-3">
-                      <span className="text-5xl font-bold tracking-tight">{formattedBalance}</span>
-                      <span className="text-2xl text-white/40">ETH</span>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-6xl font-bold tracking-tight text-white">{formattedBalance}</span>
+                      <span className="text-2xl font-medium text-[#6b6b6b]">ETH</span>
                     </div>
                   )}
                   {!loading && (
-                    <p className="text-white/40 mt-2">${balanceUsd} USD</p>
+                    <p className="text-[#6b6b6b] text-lg mt-3">${balanceUsd} USD</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-green-500 text-sm font-medium">Active</span>
+                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#0d2818] border border-[#134e29]">
+                  <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                  <span className="text-[#22c55e] text-sm font-semibold">Active</span>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 {quickActions.map((action) => (
                   <Link
                     key={action.label}
                     href={action.href}
-                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-medium transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-xl font-semibold text-base transition-all ${
                       action.primary
-                        ? 'bg-white text-black hover:bg-white/90'
-                        : 'bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20'
+                        ? 'bg-white text-black hover:bg-[#e5e5e5]'
+                        : 'bg-[#1f1f1f] text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] hover:border-[#3a3a3a]'
                     }`}
                   >
                     {action.icon}
@@ -143,39 +143,39 @@ export default function WalletDashboard() {
           </div>
 
           {/* Network Info Card */}
-          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
-            <h3 className="text-lg font-semibold mb-4">Network</h3>
-            <div className="space-y-4">
+          <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-5">Network</h3>
+            <div className="space-y-5">
               <div className="flex items-center justify-between">
-                <span className="text-white/50">Chain</span>
+                <span className="text-[#9b9b9b]">Chain</span>
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-white/60">
+                  <div className="w-7 h-7 rounded-full bg-[#1f1f1f] flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-[#9b9b9b]">
                       <path d="M12 1.5l-8 14h16l-8-14zm0 5l4.5 8h-9l4.5-8z"/>
                     </svg>
                   </div>
-                  <span className="font-medium">Sepolia</span>
+                  <span className="font-semibold text-white">Sepolia</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/50">Status</span>
+                <span className="text-[#9b9b9b]">Status</span>
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-green-500 font-medium">Connected</span>
+                  <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
+                  <span className="text-[#22c55e] font-semibold">Connected</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-white/50">Type</span>
-                <span className="font-medium">Testnet</span>
+                <span className="text-[#9b9b9b]">Type</span>
+                <span className="font-semibold text-white">Testnet</span>
               </div>
             </div>
 
-            <div className="mt-6 pt-6 border-t border-white/10">
+            <div className="mt-6 pt-6 border-t border-[#1f1f1f]">
               <a
                 href="https://sepoliafaucet.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-white/10 text-sm font-medium hover:bg-white/5 transition-colors"
+                className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] text-sm font-semibold text-white hover:bg-[#2a2a2a] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2v6m0 12v2M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m12 0h2M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/>
@@ -187,72 +187,72 @@ export default function WalletDashboard() {
 
           {/* Activity Section */}
           <div className="lg:col-span-2">
-            <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+            <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold">Recent Activity</h3>
+                <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
                 <Link
                   href="/wallet/history"
-                  className="text-sm text-white/50 hover:text-white transition-colors"
+                  className="text-sm text-[#9b9b9b] hover:text-white transition-colors font-medium"
                 >
                   View all
                 </Link>
               </div>
 
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/30">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-[#1f1f1f] flex items-center justify-center mb-5">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#4a4a4a]">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
                 </div>
-                <p className="text-white/50 mb-1">No recent activity</p>
-                <p className="text-white/30 text-sm">Your transactions will appear here</p>
+                <p className="text-[#9b9b9b] font-medium mb-1">No recent activity</p>
+                <p className="text-[#6b6b6b] text-sm">Your transactions will appear here</p>
               </div>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
-            <h3 className="text-lg font-semibold mb-4">Coming Soon</h3>
+          <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-white mb-5">Coming Soon</h3>
             <div className="space-y-3">
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a1a] border border-[#252525]">
+                <div className="w-11 h-11 rounded-xl bg-[#1f1f1f] flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
                     <path d="M12 2L2 7l10 5 10-5-10-5z"/>
                     <path d="M2 17l10 5 10-5"/>
                     <path d="M2 12l10 5 10-5"/>
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium">Tokens</p>
-                  <p className="text-sm text-white/40">ERC-20 support</p>
+                  <p className="font-semibold text-white">Tokens</p>
+                  <p className="text-sm text-[#6b6b6b]">ERC-20 support</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a1a] border border-[#252525]">
+                <div className="w-11 h-11 rounded-xl bg-[#1f1f1f] flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
                     <rect x="3" y="3" width="18" height="18" rx="2"/>
                     <path d="M3 9h18"/>
                     <path d="M9 21V9"/>
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium">NFTs</p>
-                  <p className="text-sm text-white/40">Collectibles gallery</p>
+                  <p className="font-semibold text-white">NFTs</p>
+                  <p className="text-sm text-[#6b6b6b]">Collectibles gallery</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-[#1a1a1a] border border-[#252525]">
+                <div className="w-11 h-11 rounded-xl bg-[#1f1f1f] flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
                     <circle cx="12" cy="12" r="10"/>
                     <path d="M12 6v6l4 2"/>
                   </svg>
                 </div>
                 <div>
-                  <p className="font-medium">Swap</p>
-                  <p className="text-sm text-white/40">Token exchange</p>
+                  <p className="font-semibold text-white">Swap</p>
+                  <p className="text-sm text-[#6b6b6b]">Token exchange</p>
                 </div>
               </div>
             </div>

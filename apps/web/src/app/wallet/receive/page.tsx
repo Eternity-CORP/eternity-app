@@ -49,26 +49,26 @@ export default function ReceivePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      <main className="max-w-[500px] mx-auto px-6 py-12">
+      <main className="max-w-[480px] mx-auto px-6 py-12">
         {/* Card */}
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
           {/* Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mb-6">
+          <div className="flex items-center gap-1 p-1.5 bg-[#1a1a1a] rounded-xl mb-6">
             <button
               onClick={() => router.push('/wallet/send')}
-              className="flex-1 py-2.5 px-4 rounded-xl text-white/50 font-medium text-sm hover:text-white transition-colors"
+              className="flex-1 py-3 px-4 rounded-lg text-[#9b9b9b] font-semibold text-sm hover:text-white transition-colors"
             >
               Send
             </button>
-            <button className="flex-1 py-2.5 px-4 rounded-xl bg-white/10 text-white font-medium text-sm">
+            <button className="flex-1 py-3 px-4 rounded-lg bg-[#252525] text-white font-semibold text-sm">
               Receive
             </button>
             <button
               onClick={() => router.push('/wallet/blik')}
-              className="flex-1 py-2.5 px-4 rounded-xl text-white/50 font-medium text-sm hover:text-white transition-colors"
+              className="flex-1 py-3 px-4 rounded-lg text-[#9b9b9b] font-semibold text-sm hover:text-white transition-colors"
             >
               BLIK
             </button>
@@ -89,47 +89,47 @@ export default function ReceivePage() {
           </div>
 
           {/* Address Box */}
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 mb-6">
+          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-6">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-white/50">Your address</label>
-              <div className="flex items-center gap-2 px-2 py-1 bg-white/5 rounded-lg">
-                <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
+              <label className="text-sm text-[#9b9b9b] font-medium">Your address</label>
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#252525] rounded-lg">
+                <div className="w-4 h-4 rounded-full bg-[#3a3a3a] flex items-center justify-center">
                   <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" className="text-white">
                     <path d="M12 1.5l-8 14h16l-8-14z"/>
                   </svg>
                 </div>
-                <span className="text-xs font-medium">ETH</span>
+                <span className="text-xs font-semibold text-white">ETH</span>
               </div>
             </div>
-            <p className="font-mono text-sm break-all text-white/80 leading-relaxed">{address}</p>
+            <p className="font-mono text-sm break-all text-[#9b9b9b] leading-relaxed">{address}</p>
           </div>
 
           {/* Actions */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleCopy}
-              className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white/5 border border-white/10 font-medium hover:bg-white/10 transition-colors"
+              className="flex items-center justify-center gap-2 py-4 rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] font-semibold hover:bg-[#2a2a2a] transition-colors"
             >
               {copied ? (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#22c55e]">
                     <path d="M20 6L9 17l-5-5"/>
                   </svg>
-                  Copied
+                  <span className="text-[#22c55e]">Copied</span>
                 </>
               ) : (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
-                  Copy
+                  <span className="text-white">Copy</span>
                 </>
               )}
             </button>
             <button
               onClick={handleShare}
-              className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white text-black font-medium hover:bg-white/90 transition-colors"
+              className="flex items-center justify-center gap-2 py-4 rounded-xl bg-white text-black font-semibold hover:bg-[#e5e5e5] transition-colors"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="18" cy="5" r="3"/>

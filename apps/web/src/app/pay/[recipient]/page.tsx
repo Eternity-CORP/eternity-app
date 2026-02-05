@@ -95,11 +95,11 @@ export default function PayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={false} />
 
-      <main className="max-w-[500px] mx-auto px-6 py-16">
-        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+      <main className="max-w-[480px] mx-auto px-6 py-16">
+        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center">
@@ -108,16 +108,16 @@ export default function PayPage() {
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold mb-2">Send to {displayName}</h1>
-            <p className="text-white/50">Connect your wallet to send ETH</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Send to {displayName}</h1>
+            <p className="text-[#9b9b9b]">Connect your wallet to send ETH</p>
           </div>
 
           {/* Recipient card */}
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-8">
-            <p className="text-sm text-white/50 mb-2">Recipient</p>
-            <p className="font-semibold text-lg">{displayName}</p>
+          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-5 mb-8">
+            <p className="text-sm text-[#9b9b9b] mb-2 font-medium">Recipient</p>
+            <p className="font-semibold text-lg text-white">{displayName}</p>
             {displayName !== resolvedAddress && (
-              <p className="text-xs text-white/40 font-mono mt-2 break-all">
+              <p className="text-xs text-[#6b6b6b] font-mono mt-2 break-all">
                 {resolvedAddress}
               </p>
             )}
@@ -125,22 +125,22 @@ export default function PayPage() {
 
           <button
             onClick={handleConnect}
-            className="w-full py-4 bg-white text-black font-semibold rounded-2xl hover:bg-white/90 transition-colors mb-4"
+            className="w-full py-4 bg-white text-black font-semibold rounded-xl hover:bg-[#e5e5e5] transition-colors mb-4"
           >
             Connect Wallet
           </button>
 
           <Link
             href="/"
-            className="block text-center text-white/50 hover:text-white transition-colors text-sm"
+            className="block text-center text-[#9b9b9b] hover:text-white transition-colors text-sm"
           >
             What is Eternity?
           </Link>
 
           {/* Network badge */}
-          <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-white/10">
-            <span className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-sm text-white/40">Sepolia Testnet</span>
+          <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-[#1f1f1f]">
+            <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
+            <span className="text-sm text-[#6b6b6b]">Sepolia Testnet</span>
           </div>
         </div>
       </main>
