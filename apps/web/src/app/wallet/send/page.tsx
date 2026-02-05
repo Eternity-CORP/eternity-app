@@ -161,11 +161,11 @@ function SendContent() {
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
           <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
-            <h1 className="text-xl font-bold text-white text-center mb-6">Send</h1>
+            <h1 className="text-xl font-semibold text-white text-center mb-8">Send</h1>
 
             {/* Recipient */}
-            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-3">
-              <label className="text-xs text-[#6b6b6b] mb-1 block">To</label>
+            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
+              <label className="text-xs text-[#6b6b6b] uppercase tracking-wide mb-2 block">To</label>
               <input
                 type="text"
                 value={recipient}
@@ -181,25 +181,25 @@ function SendContent() {
 
             {/* Amount */}
             <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs text-[#6b6b6b]">Amount</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs text-[#6b6b6b] uppercase tracking-wide">Amount</label>
                 <button
                   onClick={() => setAmount(balance)}
-                  className="text-xs text-[#6b6b6b] hover:text-white"
+                  className="text-xs text-[#6b6b6b] hover:text-white transition-colors"
                 >
                   Max: {parseFloat(balance).toFixed(4)}
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 overflow-hidden">
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0"
                   step="0.0001"
-                  className="flex-1 bg-transparent text-3xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
+                  className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
                 />
-                <span className="text-lg text-[#6b6b6b]">ETH</span>
+                <span className="flex-shrink-0 text-lg font-medium text-[#6b6b6b]">ETH</span>
               </div>
             </div>
 

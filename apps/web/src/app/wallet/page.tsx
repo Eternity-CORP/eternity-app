@@ -80,7 +80,7 @@ export default function WalletDashboard() {
               )}
             </div>
 
-            {/* Actions */}
+            {/* Primary Actions */}
             <div className="flex gap-3">
               <Link
                 href="/wallet/send"
@@ -102,17 +102,55 @@ export default function WalletDashboard() {
                 </svg>
                 Receive
               </Link>
-              <Link
-                href="/wallet/blik"
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-[#1f1f1f] text-white font-semibold border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="M7 15h0M2 9.5h20"/>
-                </svg>
-                BLIK
-              </Link>
             </div>
+          </div>
+
+          {/* Secondary Actions */}
+          <div className="grid grid-cols-4 gap-2 mt-4">
+            <Link
+              href="/wallet/blik"
+              className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-[#131313] border border-[#1f1f1f] text-white hover:bg-[#1a1a1a] transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="M7 15h0M2 9.5h20"/>
+              </svg>
+              <span className="text-xs font-medium">BLIK</span>
+            </Link>
+            <Link
+              href="/wallet/scheduled"
+              className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-[#131313] border border-[#1f1f1f] text-white hover:bg-[#1a1a1a] transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span className="text-xs font-medium">Scheduled</span>
+            </Link>
+            <Link
+              href="/wallet/split"
+              className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-[#131313] border border-[#1f1f1f] text-white hover:bg-[#1a1a1a] transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span className="text-xs font-medium">Split</span>
+            </Link>
+            <Link
+              href="/wallet/swap"
+              className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-[#131313] border border-[#1f1f1f] text-white hover:bg-[#1a1a1a] transition-colors"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M16 3l4 4-4 4"/>
+                <path d="M20 7H4"/>
+                <path d="M8 21l-4-4 4-4"/>
+                <path d="M4 17h16"/>
+              </svg>
+              <span className="text-xs font-medium">Swap</span>
+            </Link>
           </div>
 
           {/* Network indicator */}

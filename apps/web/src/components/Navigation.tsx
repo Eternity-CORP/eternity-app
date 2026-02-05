@@ -28,9 +28,7 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
         <nav className="w-full max-w-[1200px] h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-              <span className="text-black font-bold text-sm">E</span>
-            </div>
+            <img src="/logo.svg" alt="Eternity" className="w-7 h-7" />
             <span className="text-lg font-semibold text-white group-hover:text-[#9b9b9b] transition-colors">
               Eternity
             </span>

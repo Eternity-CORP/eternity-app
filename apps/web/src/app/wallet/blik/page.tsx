@@ -157,7 +157,7 @@ export default function BlikPage() {
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
           <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
-            <h1 className="text-xl font-bold text-white text-center mb-6">BLIK</h1>
+            <h1 className="text-xl font-semibold text-white text-center mb-8">BLIK</h1>
 
             {/* Mode Selection */}
             {mode === 'select' && (
@@ -200,18 +200,18 @@ export default function BlikPage() {
             {mode === 'request' && !createdCode && (
               <>
                 <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
-                  <label className="text-xs text-[#6b6b6b] mb-1 block">Amount</label>
-                  <div className="flex items-center gap-2">
+                  <label className="text-xs text-[#6b6b6b] uppercase tracking-wide mb-2 block">Amount</label>
+                  <div className="flex items-center gap-3 overflow-hidden">
                     <input
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0"
                       step="0.0001"
-                      className="flex-1 bg-transparent text-3xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
                       autoFocus
                     />
-                    <span className="text-lg text-[#6b6b6b]">ETH</span>
+                    <span className="flex-shrink-0 text-lg font-medium text-[#6b6b6b]">ETH</span>
                   </div>
                 </div>
 
@@ -262,7 +262,7 @@ export default function BlikPage() {
             {mode === 'send' && !foundCode && (
               <>
                 <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
-                  <label className="text-xs text-[#6b6b6b] mb-1 block">6-digit code</label>
+                  <label className="text-xs text-[#6b6b6b] uppercase tracking-wide mb-2 block">6-digit code</label>
                   <input
                     type="text"
                     value={inputCode}

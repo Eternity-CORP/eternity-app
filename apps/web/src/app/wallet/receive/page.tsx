@@ -40,7 +40,7 @@ export default function ReceivePage() {
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
           <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
-            <h1 className="text-xl font-bold text-white text-center mb-6">Receive</h1>
+            <h1 className="text-xl font-semibold text-white text-center mb-8">Receive</h1>
 
             {/* QR Code */}
             <div className="flex justify-center mb-6">
@@ -58,7 +58,7 @@ export default function ReceivePage() {
 
             {/* Address */}
             <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
-              <p className="text-xs text-[#6b6b6b] mb-2">Your address</p>
+              <p className="text-xs text-[#6b6b6b] uppercase tracking-wide mb-2">Your address</p>
               <p className="font-mono text-sm text-[#9b9b9b] break-all leading-relaxed">{address}</p>
             </div>
 
