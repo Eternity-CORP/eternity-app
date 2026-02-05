@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
 const NETWORK = 'sepolia'
@@ -14,7 +15,7 @@ export default function WalletDashboard() {
   const [address, setAddress] = useState('')
   const [balance, setBalance] = useState('0')
   const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
+  const [balanceUsd, setBalanceUsd] = useState('0.00')
 
   useEffect(() => {
     const mnemonic = sessionStorage.getItem('session_mnemonic')
@@ -39,7 +40,10 @@ export default function WalletDashboard() {
         `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}`
       )
       const bal = await provider.getBalance(addr)
-      setBalance(ethers.formatEther(bal))
+      const ethBalance = ethers.formatEther(bal)
+      setBalance(ethBalance)
+      // Mock USD conversion (in production, fetch from API)
+      setBalanceUsd((parseFloat(ethBalance) * 2500).toFixed(2))
     } catch (err) {
       console.error('Failed to fetch balance:', err)
     } finally {
@@ -47,164 +51,214 @@ export default function WalletDashboard() {
     }
   }
 
-  const handleCopyAddress = async () => {
-    await navigator.clipboard.writeText(address)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   const handleLogout = () => {
     sessionStorage.removeItem('session_mnemonic')
     router.push('/unlock')
   }
 
-  const shortAddress = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ''
   const formattedBalance = parseFloat(balance).toFixed(4)
 
+  const quickActions = [
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="12" y1="19" x2="12" y2="5"/>
+          <polyline points="5 12 12 5 19 12"/>
+        </svg>
+      ),
+      label: 'Send',
+      href: '/wallet/send',
+      primary: true,
+    },
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <polyline points="19 12 12 19 5 12"/>
+        </svg>
+      ),
+      label: 'Receive',
+      href: '/wallet/receive',
+    },
+    {
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="M7 15h0M2 9.5h20"/>
+        </svg>
+      ),
+      label: 'BLIK',
+      href: '/wallet/blik',
+    },
+  ]
+
   return (
-    <main className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Eternity</h1>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-white/40 text-sm">
-              <span className="w-2 h-2 rounded-full bg-green-500"/>
-              Sepolia
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              Lock
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-black">
+      <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-16">
-        {/* Balance Section */}
-        <div className="text-center mb-20">
-          <button
-            onClick={handleCopyAddress}
-            className="inline-flex items-center gap-2 px-4 py-2 mb-8 text-white/50 hover:text-white/70 transition-colors text-sm border border-white/10 rounded-full hover:border-white/20"
-          >
-            <span className="font-mono">{shortAddress}</span>
-            {copied ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            )}
-          </button>
-
-          {loading ? (
-            <div className="h-24 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
-            </div>
-          ) : (
-            <div className="flex items-baseline justify-center gap-4">
-              <span className="text-8xl font-bold tracking-tighter">{formattedBalance}</span>
-              <span className="text-3xl text-white/40">ETH</span>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-center gap-6 mb-20">
-          <Link
-            href="/wallet/send"
-            className="flex items-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="19" x2="12" y2="5"/>
-              <polyline points="5 12 12 5 19 12"/>
-            </svg>
-            Send
-          </Link>
-
-          <Link
-            href="/wallet/receive"
-            className="flex items-center gap-3 px-8 py-4 border border-white/20 rounded-full hover:bg-white/5 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <polyline points="19 12 12 19 5 12"/>
-            </svg>
-            Receive
-          </Link>
-
-          <Link
-            href="/wallet/blik"
-            className="flex items-center gap-3 px-8 py-4 border border-white/20 rounded-full hover:bg-white/5 transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="4" width="20" height="16" rx="2"/>
-              <path d="M7 15h0M2 9.5h20"/>
-            </svg>
-            BLIK
-          </Link>
-        </div>
-
-        {/* Quick Actions Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link
-            href="/wallet/history"
-            className="p-8 border border-white/10 rounded-2xl hover:bg-white/5 hover:border-white/20 transition-all group"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/60">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
+      <main className="max-w-[1400px] mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Balance Card */}
+          <div className="lg:col-span-2">
+            <div className="bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 rounded-3xl p-8">
+              <div className="flex items-start justify-between mb-8">
+                <div>
+                  <p className="text-white/50 text-sm mb-1">Total Balance</p>
+                  {loading ? (
+                    <div className="h-14 w-48 bg-white/10 rounded-xl animate-pulse" />
+                  ) : (
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-5xl font-bold tracking-tight">{formattedBalance}</span>
+                      <span className="text-2xl text-white/40">ETH</span>
+                    </div>
+                  )}
+                  {!loading && (
+                    <p className="text-white/40 mt-2">${balanceUsd} USD</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
+                  <span className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="text-green-500 text-sm font-medium">Active</span>
+                </div>
               </div>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 ml-auto group-hover:text-white/40 transition-colors">
-                <polyline points="9 18 15 12 9 6"/>
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold mb-2">Transaction History</h3>
-            <p className="text-white/40">View all your past transactions</p>
-          </Link>
 
-          <div className="p-8 border border-white/10 rounded-2xl opacity-50">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/60">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                  <path d="M2 17l10 5 10-5"/>
-                  <path d="M2 12l10 5 10-5"/>
-                </svg>
+              {/* Quick Actions */}
+              <div className="flex gap-3">
+                {quickActions.map((action) => (
+                  <Link
+                    key={action.label}
+                    href={action.href}
+                    className={`flex-1 flex items-center justify-center gap-3 py-4 rounded-2xl font-medium transition-all ${
+                      action.primary
+                        ? 'bg-white text-black hover:bg-white/90'
+                        : 'bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    {action.icon}
+                    <span>{action.label}</span>
+                  </Link>
+                ))}
               </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">Tokens</h3>
-            <p className="text-white/40">Coming soon</p>
           </div>
 
-          <div className="p-8 border border-white/10 rounded-2xl opacity-50">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/60">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <path d="M3 9h18"/>
-                  <path d="M9 21V9"/>
-                </svg>
+          {/* Network Info Card */}
+          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Network</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-white/50">Chain</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-white/60">
+                      <path d="M12 1.5l-8 14h16l-8-14zm0 5l4.5 8h-9l4.5-8z"/>
+                    </svg>
+                  </div>
+                  <span className="font-medium">Sepolia</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/50">Status</span>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-green-500 font-medium">Connected</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/50">Type</span>
+                <span className="font-medium">Testnet</span>
               </div>
             </div>
-            <h3 className="text-xl font-semibold mb-2">NFTs</h3>
-            <p className="text-white/40">Coming soon</p>
+
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <a
+                href="https://sepoliafaucet.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-white/10 text-sm font-medium hover:bg-white/5 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2v6m0 12v2M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m12 0h2M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"/>
+                </svg>
+                Get Test ETH
+              </a>
+            </div>
+          </div>
+
+          {/* Activity Section */}
+          <div className="lg:col-span-2">
+            <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">Recent Activity</h3>
+                <Link
+                  href="/wallet/history"
+                  className="text-sm text-white/50 hover:text-white transition-colors"
+                >
+                  View all
+                </Link>
+              </div>
+
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/30">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                </div>
+                <p className="text-white/50 mb-1">No recent activity</p>
+                <p className="text-white/30 text-sm">Your transactions will appear here</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Coming Soon</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-medium">Tokens</p>
+                  <p className="text-sm text-white/40">ERC-20 support</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18"/>
+                    <path d="M9 21V9"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-medium">NFTs</p>
+                  <p className="text-sm text-white/40">Collectibles gallery</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-medium">Swap</p>
+                  <p className="text-sm text-white/40">Token exchange</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

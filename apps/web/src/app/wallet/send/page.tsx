@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
 import { lookupUsername, saveTransaction } from '@/lib/supabase'
-import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
 const NETWORK = 'sepolia'
@@ -15,6 +15,7 @@ function SendContent() {
   const searchParams = useSearchParams()
   const prefillTo = searchParams.get('to')
 
+  const [address, setAddress] = useState('')
   const [recipient, setRecipient] = useState(prefillTo || '')
   const [amount, setAmount] = useState('')
   const [resolvedAddress, setResolvedAddress] = useState('')
@@ -34,6 +35,7 @@ function SendContent() {
 
     const w = deriveWalletFromMnemonic(mnemonic, 0)
     setWallet(w)
+    setAddress(w.address)
     fetchBalance(w.address)
   }, [router])
 
@@ -69,12 +71,12 @@ function SendContent() {
       if (recipient.startsWith('@') || !recipient.startsWith('0x')) {
         setResolving(true)
         const username = recipient.startsWith('@') ? recipient.slice(1) : recipient
-        const address = await lookupUsername(username)
+        const addr = await lookupUsername(username)
         setResolving(false)
 
-        if (address) {
-          setResolvedAddress(address)
-          estimateGas(address)
+        if (addr) {
+          setResolvedAddress(addr)
+          estimateGas(addr)
         } else {
           setError(`Username @${username} not found`)
         }
@@ -145,103 +147,131 @@ function SendContent() {
     }
   }
 
+  const handleLogout = () => {
+    sessionStorage.removeItem('session_mnemonic')
+    router.push('/unlock')
+  }
+
   const isValid = resolvedAddress && amount && parseFloat(amount) > 0 && parseFloat(amount) <= parseFloat(balance)
 
   return (
-    <main className="min-h-screen bg-black">
-      {/* Header */}
-      <header className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center justify-between">
-          <Link href="/wallet" className="text-white/50 hover:text-white transition-colors">
-            ← Back to Wallet
-          </Link>
-          <h1 className="text-xl font-bold">Send ETH</h1>
-          <div className="w-32" />
-        </div>
-      </header>
+    <div className="min-h-screen bg-black">
+      <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      {/* Main Content */}
-      <div className="max-w-xl mx-auto px-8 py-16">
-        <div className="mb-10">
-          <h2 className="text-3xl font-bold mb-3">Send ETH</h2>
-          <p className="text-white/50">Send ETH to any address or username</p>
-        </div>
-
-        {/* Recipient */}
-        <div className="mb-8">
-          <label className="block text-sm text-white/60 mb-3">Recipient</label>
-          <input
-            type="text"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="Address or @username"
-            className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
-          />
-          {resolving && (
-            <p className="text-sm text-white/50 mt-3">Resolving username...</p>
-          )}
-          {resolvedAddress && resolvedAddress !== recipient && (
-            <p className="text-sm text-white/70 mt-3">
-              Resolved: {resolvedAddress.slice(0, 10)}...{resolvedAddress.slice(-8)}
-            </p>
-          )}
-        </div>
-
-        {/* Amount */}
-        <div className="mb-8">
-          <label className="block text-sm text-white/60 mb-3">Amount</label>
-          <div className="relative">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.0"
-              step="0.0001"
-              className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors pr-20"
-            />
+      <main className="max-w-[500px] mx-auto px-6 py-12">
+        {/* Card */}
+        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-6">
+          {/* Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-white/5 rounded-2xl mb-6">
+            <button className="flex-1 py-2.5 px-4 rounded-xl bg-white/10 text-white font-medium text-sm">
+              Send
+            </button>
             <button
-              onClick={() => setAmount(balance)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1 text-sm text-white/70 hover:text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+              onClick={() => router.push('/wallet/receive')}
+              className="flex-1 py-2.5 px-4 rounded-xl text-white/50 font-medium text-sm hover:text-white transition-colors"
             >
-              MAX
+              Receive
+            </button>
+            <button
+              onClick={() => router.push('/wallet/blik')}
+              className="flex-1 py-2.5 px-4 rounded-xl text-white/50 font-medium text-sm hover:text-white transition-colors"
+            >
+              BLIK
             </button>
           </div>
-          <p className="text-sm text-white/50 mt-3">
-            Available: {parseFloat(balance).toFixed(4)} ETH
-          </p>
-        </div>
 
-        {/* Gas estimate */}
-        {gasEstimate && (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
-            <div className="flex justify-between">
-              <span className="text-white/50">Estimated gas fee</span>
-              <span className="text-white font-medium">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
+          {/* Recipient Input */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 mb-3">
+            <label className="text-sm text-white/50 mb-2 block">To</label>
+            <input
+              type="text"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
+              placeholder="Address or @username"
+              className="w-full bg-transparent text-xl font-medium placeholder:text-white/20 focus:outline-none"
+            />
+            {resolving && (
+              <p className="text-sm text-white/50 mt-2">Resolving...</p>
+            )}
+            {resolvedAddress && resolvedAddress !== recipient && (
+              <p className="text-sm text-white/50 mt-2 font-mono">
+                {resolvedAddress.slice(0, 12)}...{resolvedAddress.slice(-10)}
+              </p>
+            )}
+          </div>
+
+          {/* Swap Icon */}
+          <div className="flex justify-center -my-1 relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/50">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <polyline points="19 12 12 19 5 12"/>
+              </svg>
             </div>
           </div>
-        )}
 
-        {/* Error */}
-        {error && (
-          <p className="text-red-500 text-sm mb-8">{error}</p>
-        )}
+          {/* Amount Input */}
+          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-white/50">Amount</label>
+              <span className="text-sm text-white/50">
+                Balance: {parseFloat(balance).toFixed(4)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0"
+                step="0.0001"
+                className="flex-1 bg-transparent text-4xl font-medium placeholder:text-white/20 focus:outline-none"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setAmount(balance)}
+                  className="px-2 py-1 text-xs font-medium text-white/60 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                >
+                  MAX
+                </button>
+                <div className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-xl">
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                      <path d="M12 1.5l-8 14h16l-8-14z"/>
+                    </svg>
+                  </div>
+                  <span className="font-medium">ETH</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        {/* Send button */}
-        <button
-          onClick={handleSend}
-          disabled={!isValid || loading}
-          className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {loading ? 'Sending...' : 'Send ETH'}
-        </button>
+          {/* Gas Estimate */}
+          {gasEstimate && (
+            <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02] rounded-xl mb-4">
+              <span className="text-sm text-white/50">Network fee</span>
+              <span className="text-sm font-medium">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
+            </div>
+          )}
 
-        {/* Network */}
-        <div className="flex items-center justify-center gap-2 mt-8 text-sm text-white/40">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
-          <span>Sepolia Testnet</span>
+          {/* Error */}
+          {error && (
+            <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-4">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Send Button */}
+          <button
+            onClick={handleSend}
+            disabled={!isValid || loading}
+            className="w-full py-4 rounded-2xl font-semibold text-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black hover:bg-white/90"
+          >
+            {loading ? 'Sending...' : 'Send'}
+          </button>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }
 
@@ -249,7 +279,7 @@ export default function SendPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-xl text-white/50">Loading...</div>
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     }>
       <SendContent />

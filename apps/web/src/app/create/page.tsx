@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { generateMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 export default function CreateWallet() {
   const router = useRouter()
@@ -29,51 +30,25 @@ export default function CreateWallet() {
   }
 
   return (
-    <main className="min-h-screen bg-black flex">
-      {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-white/10">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Eternity</h1>
-          <p className="text-white/40">Web3 Wallet</p>
-        </div>
+    <div className="min-h-screen bg-black">
+      <Navigation isLoggedIn={false} />
 
-        <div>
-          <p className="text-5xl font-bold leading-tight mb-6">
-            Your keys,<br/>your crypto.<br/>Always.
-          </p>
-          <p className="text-white/40 max-w-md">
-            Write down your recovery phrase carefully. This is the only way to restore your wallet.
-          </p>
-        </div>
-
-        <p className="text-white/20 text-sm">
-          © 2024 Eternity. All rights reserved.
-        </p>
-      </div>
-
-      {/* Right side - content */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-lg">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-12">
-            <h1 className="text-3xl font-bold mb-2">Eternity</h1>
-            <p className="text-white/40">Create New Wallet</p>
-          </div>
-
-          <div className="mb-10">
-            <h2 className="text-3xl font-bold mb-3">Recovery Phrase</h2>
+      <main className="max-w-[600px] mx-auto px-6 py-12">
+        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold mb-2">Recovery Phrase</h1>
             <p className="text-white/50">Write these 12 words down and keep them safe</p>
           </div>
 
           {/* Seed phrase grid */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-3 gap-3 mb-6">
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="bg-white/5 border border-white/10 rounded-xl p-4"
+                className="bg-white/[0.03] border border-white/10 rounded-xl p-3"
               >
-                <div className="text-white/30 text-xs mb-1">{i + 1}</div>
-                <div className="text-white font-medium">{word}</div>
+                <span className="text-white/30 text-xs">{i + 1}.</span>
+                <span className="ml-2 font-medium">{word}</span>
               </div>
             ))}
           </div>
@@ -81,51 +56,64 @@ export default function CreateWallet() {
           {/* Copy button */}
           <button
             onClick={handleCopy}
-            className="w-full py-4 px-6 border border-white/20 rounded-xl font-medium hover:bg-white/5 transition-colors mb-8"
+            className="w-full py-3 px-6 border border-white/20 rounded-xl font-medium hover:bg-white/5 transition-colors mb-6 flex items-center justify-center gap-2"
           >
-            {copied ? 'Copied to clipboard' : 'Copy to clipboard'}
+            {copied ? (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-green-500">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Copied
+              </>
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy to clipboard
+              </>
+            )}
           </button>
 
           {/* Warning */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
-            <p className="text-white/70 text-sm leading-relaxed">
-              Never share your recovery phrase. Anyone with these words can access your wallet and steal your funds.
+          <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4 mb-6">
+            <p className="text-red-400/80 text-sm">
+              Never share your recovery phrase. Anyone with these words can access your wallet.
             </p>
           </div>
 
           {/* Confirmation checkbox */}
-          <label className="flex items-start gap-4 mb-8 cursor-pointer">
+          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-colors">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-1 w-5 h-5 rounded border-white/20 bg-white/5 accent-white"
+              className="mt-0.5 w-5 h-5 rounded border-white/20 bg-white/5 accent-white"
             />
-            <span className="text-white/70">
+            <span className="text-white/70 text-sm">
               I have written down my recovery phrase and stored it in a safe place
             </span>
           </label>
 
-          {/* Continue button */}
-          <button
-            onClick={handleContinue}
-            disabled={!confirmed}
-            className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Continue
-          </button>
-
-          {/* Back link */}
-          <div className="mt-8 text-center">
+          {/* Buttons */}
+          <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="text-white/50 hover:text-white transition-colors"
+              className="py-4 text-center rounded-xl bg-white/5 border border-white/10 font-medium hover:bg-white/10 transition-colors"
             >
-              ← Back to home
+              Back
             </Link>
+            <button
+              onClick={handleContinue}
+              disabled={!confirmed}
+              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Continue
+            </button>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

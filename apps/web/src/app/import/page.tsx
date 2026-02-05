@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 export default function ImportWallet() {
   const router = useRouter()
@@ -65,60 +66,34 @@ export default function ImportWallet() {
   }
 
   return (
-    <main className="min-h-screen bg-black flex">
-      {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-white/10">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Eternity</h1>
-          <p className="text-white/40">Web3 Wallet</p>
-        </div>
+    <div className="min-h-screen bg-black">
+      <Navigation isLoggedIn={false} />
 
-        <div>
-          <p className="text-5xl font-bold leading-tight mb-6">
-            Restore your<br/>wallet from<br/>backup.
-          </p>
-          <p className="text-white/40 max-w-md">
-            Enter your recovery phrase to restore access to your wallet and funds.
-          </p>
-        </div>
-
-        <p className="text-white/20 text-sm">
-          © 2024 Eternity. All rights reserved.
-        </p>
-      </div>
-
-      {/* Right side - content */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-lg">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-12">
-            <h1 className="text-3xl font-bold mb-2">Eternity</h1>
-            <p className="text-white/40">Import Wallet</p>
-          </div>
-
-          <div className="mb-10">
-            <h2 className="text-3xl font-bold mb-3">Import Wallet</h2>
+      <main className="max-w-[600px] mx-auto px-6 py-12">
+        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold mb-2">Import Wallet</h1>
             <p className="text-white/50">Enter your recovery phrase to restore your wallet</p>
           </div>
 
           {/* Word count toggle */}
-          <div className="flex gap-3 mb-8">
+          <div className="flex gap-2 p-1 bg-white/5 rounded-xl mb-6">
             <button
               onClick={() => handleWordCountChange(12)}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
                 wordCount === 12
-                  ? 'bg-white text-black'
-                  : 'bg-transparent text-white/50 border border-white/10 hover:bg-white/5'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/50 hover:text-white'
               }`}
             >
               12 words
             </button>
             <button
               onClick={() => handleWordCountChange(24)}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+              className={`flex-1 py-2.5 rounded-lg font-medium text-sm transition-all ${
                 wordCount === 24
-                  ? 'bg-white text-black'
-                  : 'bg-transparent text-white/50 border border-white/10 hover:bg-white/5'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/50 hover:text-white'
               }`}
             >
               24 words
@@ -127,18 +102,17 @@ export default function ImportWallet() {
 
           {/* Word inputs */}
           <div
-            className="grid grid-cols-3 gap-3 mb-4"
+            className="grid grid-cols-3 gap-2 mb-4"
             onPaste={handlePaste}
           >
             {words.map((word, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="flex items-center gap-1.5">
                 <span className="text-white/30 text-xs w-5">{i + 1}.</span>
                 <input
                   type="text"
                   value={word}
                   onChange={(e) => handleWordChange(i, e.target.value)}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none transition-colors"
-                  placeholder=""
+                  className="flex-1 bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-white/30 focus:outline-none transition-colors"
                   autoComplete="off"
                   autoCapitalize="off"
                 />
@@ -151,27 +125,28 @@ export default function ImportWallet() {
           </p>
 
           {error && (
-            <p className="text-red-500 text-sm mb-6 text-center">{error}</p>
+            <div className="px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-6">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
           )}
 
-          <button
-            onClick={handleContinue}
-            disabled={loading}
-            className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Validating...' : 'Continue'}
-          </button>
-
-          <div className="mt-8 text-center">
+          <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="text-white/50 hover:text-white transition-colors"
+              className="py-4 text-center rounded-xl bg-white/5 border border-white/10 font-medium hover:bg-white/10 transition-colors"
             >
-              ← Back to home
+              Back
             </Link>
+            <button
+              onClick={handleContinue}
+              disabled={loading}
+              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Validating...' : 'Continue'}
+            </button>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }

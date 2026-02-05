@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loadAndDecrypt } from '@e-y/storage'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 function UnlockContent() {
   const router = useRouter()
@@ -32,45 +33,25 @@ function UnlockContent() {
   }
 
   return (
-    <main className="min-h-screen bg-black flex">
-      {/* Left side - branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 border-r border-white/10">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Eternity</h1>
-          <p className="text-white/40">Web3 Wallet</p>
-        </div>
+    <div className="min-h-screen bg-black">
+      <Navigation isLoggedIn={false} />
 
-        <div>
-          <p className="text-5xl font-bold leading-tight mb-6">
-            Your keys,<br/>your crypto.<br/>Always.
-          </p>
-          <p className="text-white/40 max-w-md">
-            Self-custody wallet with instant BLIK payments. We never see your private keys.
-          </p>
-        </div>
-
-        <p className="text-white/20 text-sm">
-          © 2024 Eternity. All rights reserved.
-        </p>
-      </div>
-
-      {/* Right side - form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-12">
-            <h1 className="text-3xl font-bold mb-2">Eternity</h1>
-            <p className="text-white/40">Welcome back</p>
+      <main className="max-w-[440px] mx-auto px-6 py-16">
+        <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8">
+          {/* Logo */}
+          <div className="flex justify-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center">
+              <span className="text-black font-bold text-2xl">E</span>
+            </div>
           </div>
 
-          <div className="mb-10">
-            <h2 className="text-3xl font-bold mb-3">Welcome back</h2>
-            <p className="text-white/50">Enter your password to unlock your wallet</p>
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
+            <p className="text-white/50">Enter your password to unlock</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-white/60 mb-2">Password</label>
               <input
                 type="password"
                 value={password}
@@ -79,43 +60,50 @@ function UnlockContent() {
                   setError('')
                 }}
                 placeholder="Enter your password"
-                className="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
+                className="w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white text-lg placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors"
                 autoFocus
               />
               {error && (
-                <p className="text-red-500 text-sm mt-3">{error}</p>
+                <p className="text-red-400 text-sm mt-3 px-1">{error}</p>
               )}
             </div>
 
             <button
               type="submit"
               disabled={loading || !password}
-              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-2xl hover:bg-white/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? 'Unlocking...' : 'Unlock Wallet'}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  Unlocking...
+                </span>
+              ) : (
+                'Unlock'
+              )}
             </button>
           </form>
 
-          <div className="mt-12 pt-8 border-t border-white/10">
-            <p className="text-white/40 text-sm mb-4">Don&apos;t have a wallet?</p>
-            <div className="flex gap-4">
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <p className="text-white/40 text-sm text-center mb-4">Don&apos;t have a wallet?</p>
+            <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/create"
-                className="flex-1 py-3 px-4 text-center border border-white/20 rounded-xl text-sm font-medium hover:bg-white/5 transition-colors"
+                className="py-3 px-4 text-center border border-white/20 rounded-xl text-sm font-medium hover:bg-white/5 transition-colors"
               >
-                Create New Wallet
+                Create New
               </Link>
               <Link
                 href="/import"
-                className="flex-1 py-3 px-4 text-center text-white/50 text-sm font-medium hover:text-white transition-colors"
+                className="py-3 px-4 text-center text-white/50 text-sm font-medium hover:text-white transition-colors"
               >
-                Import Existing
+                Import
               </Link>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   )
 }
 
@@ -123,7 +111,7 @@ export default function UnlockWallet() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-2xl font-bold text-white/50">Loading...</div>
+        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
       </div>
     }>
       <UnlockContent />
