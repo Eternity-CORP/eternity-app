@@ -158,117 +158,75 @@ function SendContent() {
     <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      <main className="max-w-[480px] mx-auto px-6 py-12">
-        {/* Card */}
-        <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 p-1.5 bg-[#1a1a1a] rounded-xl mb-6">
-            <button className="flex-1 py-3 px-4 rounded-lg bg-[#252525] text-white font-semibold text-sm">
-              Send
-            </button>
-            <button
-              onClick={() => router.push('/wallet/receive')}
-              className="flex-1 py-3 px-4 rounded-lg text-[#9b9b9b] font-semibold text-sm hover:text-white transition-colors"
-            >
-              Receive
-            </button>
-            <button
-              onClick={() => router.push('/wallet/blik')}
-              className="flex-1 py-3 px-4 rounded-lg text-[#9b9b9b] font-semibold text-sm hover:text-white transition-colors"
-            >
-              BLIK
-            </button>
-          </div>
+      <main className="w-full flex justify-center px-6 pt-12 pb-12">
+        <div className="w-full max-w-[420px]">
+          <div className="bg-[#131313] border border-[#1f1f1f] rounded-2xl p-6">
+            <h1 className="text-xl font-bold text-white text-center mb-6">Send</h1>
 
-          {/* Recipient Input */}
-          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-3">
-            <label className="text-sm text-[#9b9b9b] mb-2 block font-medium">To</label>
-            <input
-              type="text"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder="Address or @username"
-              className="w-full bg-transparent text-xl font-semibold text-white placeholder:text-[#4a4a4a] focus:outline-none"
-            />
-            {resolving && (
-              <p className="text-sm text-[#9b9b9b] mt-2">Resolving...</p>
-            )}
-            {resolvedAddress && resolvedAddress !== recipient && (
-              <p className="text-sm text-[#6b6b6b] mt-2 font-mono">
-                {resolvedAddress.slice(0, 12)}...{resolvedAddress.slice(-10)}
-              </p>
-            )}
-          </div>
-
-          {/* Swap Icon */}
-          <div className="flex justify-center -my-1 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-[#1f1f1f] border border-[#2a2a2a] flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[#6b6b6b]">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <polyline points="19 12 12 19 5 12"/>
-              </svg>
-            </div>
-          </div>
-
-          {/* Amount Input */}
-          <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-[#9b9b9b] font-medium">Amount</label>
-              <span className="text-sm text-[#6b6b6b]">
-                Balance: {parseFloat(balance).toFixed(4)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
+            {/* Recipient */}
+            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-3">
+              <label className="text-xs text-[#6b6b6b] mb-1 block">To</label>
               <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0"
-                step="0.0001"
-                className="flex-1 bg-transparent text-4xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
+                type="text"
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+                placeholder="Address or @username"
+                className="w-full bg-transparent text-lg font-medium text-white placeholder:text-[#4a4a4a] focus:outline-none"
               />
-              <div className="flex items-center gap-2">
+              {resolving && <p className="text-xs text-[#6b6b6b] mt-2">Resolving...</p>}
+              {resolvedAddress && resolvedAddress !== recipient && (
+                <p className="text-xs text-[#6b6b6b] mt-2 font-mono truncate">{resolvedAddress}</p>
+              )}
+            </div>
+
+            {/* Amount */}
+            <div className="bg-[#1a1a1a] border border-[#252525] rounded-xl p-4 mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs text-[#6b6b6b]">Amount</label>
                 <button
                   onClick={() => setAmount(balance)}
-                  className="px-3 py-1.5 text-xs font-semibold text-[#9b9b9b] bg-[#252525] rounded-lg hover:bg-[#2a2a2a] transition-colors"
+                  className="text-xs text-[#6b6b6b] hover:text-white"
                 >
-                  MAX
+                  Max: {parseFloat(balance).toFixed(4)}
                 </button>
-                <div className="flex items-center gap-2 px-3 py-2 bg-[#252525] rounded-xl">
-                  <div className="w-6 h-6 rounded-full bg-[#3a3a3a] flex items-center justify-center">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-white">
-                      <path d="M12 1.5l-8 14h16l-8-14z"/>
-                    </svg>
-                  </div>
-                  <span className="font-semibold text-white">ETH</span>
-                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
+                  step="0.0001"
+                  className="flex-1 bg-transparent text-3xl font-bold text-white placeholder:text-[#4a4a4a] focus:outline-none"
+                />
+                <span className="text-lg text-[#6b6b6b]">ETH</span>
               </div>
             </div>
+
+            {/* Gas */}
+            {gasEstimate && (
+              <div className="flex items-center justify-between px-1 mb-4 text-sm">
+                <span className="text-[#6b6b6b]">Network fee</span>
+                <span className="text-white">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="px-4 py-3 bg-[#2d1515] border border-[#4d2525] rounded-xl mb-4">
+                <p className="text-[#f87171] text-sm">{error}</p>
+              </div>
+            )}
+
+            {/* Submit */}
+            <button
+              onClick={handleSend}
+              disabled={!isValid || loading}
+              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black hover:bg-[#e5e5e5]"
+            >
+              {loading ? 'Sending...' : 'Send'}
+            </button>
           </div>
-
-          {/* Gas Estimate */}
-          {gasEstimate && (
-            <div className="flex items-center justify-between px-4 py-3 bg-[#1a1a1a] border border-[#252525] rounded-xl mb-4">
-              <span className="text-sm text-[#9b9b9b]">Network fee</span>
-              <span className="text-sm font-semibold text-white">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
-            </div>
-          )}
-
-          {/* Error */}
-          {error && (
-            <div className="px-4 py-3 bg-[#2d1515] border border-[#4d2525] rounded-xl mb-4">
-              <p className="text-[#f87171] text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          {/* Send Button */}
-          <button
-            onClick={handleSend}
-            disabled={!isValid || loading}
-            className="w-full py-4 rounded-xl font-semibold text-base transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black hover:bg-[#e5e5e5]"
-          >
-            {loading ? 'Sending...' : 'Send'}
-          </button>
         </div>
       </main>
     </div>
@@ -278,8 +236,8 @@ function SendContent() {
 export default function SendPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#3a3a3a] border-t-white rounded-full animate-spin" />
       </div>
     }>
       <SendContent />
