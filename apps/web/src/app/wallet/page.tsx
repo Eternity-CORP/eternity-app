@@ -96,7 +96,8 @@ export default function WalletDashboard() {
     <div className="min-h-screen bg-[#0a0a0a]">
       <Navigation isLoggedIn={true} address={address} onLogout={handleLogout} />
 
-      <main className="max-w-[1200px] mx-auto px-8 py-12">
+      <main className="w-full flex justify-center px-6 py-12">
+        <div className="w-full max-w-[1200px]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Balance Card */}
           <div className="lg:col-span-2">
@@ -257,6 +258,7 @@ export default function WalletDashboard() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </main>
     </div>

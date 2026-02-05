@@ -34,7 +34,8 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#1f1f1f] bg-[#0a0a0a]/95 backdrop-blur-xl">
-      <nav className="max-w-[1200px] mx-auto px-8 h-[72px] flex items-center justify-between">
+      <div className="w-full flex justify-center px-6">
+        <nav className="w-full max-w-[1200px] h-[72px] flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-10">
           <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-3 group">
@@ -118,7 +119,8 @@ export default function Navigation({ isLoggedIn, address, onLogout }: Navigation
             </Link>
           )}
         </div>
-      </nav>
+        </nav>
+      </div>
     </header>
   )
 }

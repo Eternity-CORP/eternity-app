@@ -13,10 +13,19 @@
   --error: #EF4444;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  padding: 0;
+}
+
+/* Reset default margins only for specific elements */
+body, h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd {
   margin: 0;
+}
+
+ul, ol {
+  padding: 0;
 }
 
 html {
