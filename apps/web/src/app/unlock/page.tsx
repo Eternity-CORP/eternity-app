@@ -88,7 +88,7 @@ function UnlockContent() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-white/5">
-            <p className="text-white/30 text-sm text-center" style={{ marginBottom: '2.5rem' }}>Don&apos;t have a wallet?</p>
+            <p className="text-white/30 text-sm text-center" style={{ marginBottom: '1.25rem' }}>Don&apos;t have a wallet?</p>
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/create"
