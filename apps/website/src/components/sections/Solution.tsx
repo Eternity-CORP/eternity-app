@@ -26,8 +26,8 @@ const pillars = [
   {
     number: '04',
     title: 'AI Agent',
-    subtitle: 'Your crypto companion',
-    description: 'Proactive assistant that speaks your language and knows your style.',
+    subtitle: 'The brain behind your wallet',
+    description: 'AI that understands context, prevents mistakes, and speaks your language.',
   },
 ]
 
@@ -49,20 +49,14 @@ export function Solution() {
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
-            <GlitchText
-              delay={0.3}
-              glitchIntensity="medium"
-              style={{ color: 'var(--foreground)' }}
-            >
-              We built Eternity to fix this
-            </GlitchText>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6" style={{ color: 'var(--foreground)' }}>
+            <span className="text-gradient-blue">AI-Native</span> by Design
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
           <p className="text-center text-lg md:text-xl mb-20" style={{ color: 'var(--foreground-muted)' }}>
-            Four pillars. <span className="font-medium" style={{ color: 'var(--foreground)' }}>Zero fear.</span>
+            Intelligence built into every layer.
           </p>
         </FadeIn>
 

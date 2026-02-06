@@ -40,11 +40,11 @@ export function Footer() {
               />
               <span className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Eternity</span>
             </Link>
-            <p className="text-sm mb-4" style={{ color: 'var(--foreground-muted)' }}>The Wallet for Everyone</p>
+            <p className="text-sm mb-4 text-gradient-blue font-medium">AI-Native Crypto Wallet</p>
             <p className="text-xs mb-4" style={{ color: 'var(--foreground-muted)' }}>
-              Send crypto like you send a text.
+              Intelligence meets simplicity.
               <br />
-              No addresses. No fear. Just 6 digits.
+              No addresses. No fear. Just you and AI.
             </p>
             <a
               href="mailto:eternity.shard.business@gmail.com"
@@ -108,7 +108,7 @@ export function Footer() {
           </p>
 
           <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
-            Built for the future of crypto
+            Powered by AI. Built for humans.
           </p>
         </div>
       </div>

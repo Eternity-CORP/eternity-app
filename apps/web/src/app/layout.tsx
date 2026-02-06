@@ -9,8 +9,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Eternity Wallet',
-  description: 'Send crypto like you send a text. No addresses. No fear. Just 6 digits.',
+  title: 'Eternity — AI-Native Wallet',
+  description: 'AI-native crypto wallet. No addresses. No fear. Just you and your AI.',
   icons: {
     icon: '/favicon.svg',
   },

@@ -63,14 +63,10 @@ export function CTA() {
         </FadeIn>
 
         <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
-            <GlitchText
-              delay={0.3}
-              glitchIntensity="medium"
-              style={{ color: 'var(--foreground)' }}
-            >
-              Ready to Try the Future?
-            </GlitchText>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6" style={{ color: 'var(--foreground)' }}>
+            Experience{' '}
+            <span className="text-gradient-blue">AI-Native</span>
+            {' '}Crypto
           </h2>
         </FadeIn>
 
@@ -128,7 +124,7 @@ export function CTA() {
                     transition={{ delay: 0.5 }}
                   >
                     <h3 className="text-2xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>
-                      Welcome to the Future!
+                      You're In!
                     </h3>
                     <p className="mb-4" style={{ color: 'var(--foreground-muted)' }}>
                       You've secured your spot on the waitlist.
@@ -154,7 +150,7 @@ export function CTA() {
                     </div>
                     <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
                       We'll notify you when early access is available. <br />
-                      <span className="font-medium" style={{ color: 'var(--foreground)' }}>Be the first to experience Eternity.</span>
+                      <span className="font-medium" style={{ color: 'var(--foreground)' }}>Be the first to experience AI-native crypto.</span>
                     </p>
                   </motion.div>
 
@@ -299,7 +295,7 @@ export function CTA() {
         {/* Tagline */}
         <FadeIn delay={0.6}>
           <p className="text-center mt-12" style={{ color: 'var(--foreground-muted)' }}>
-            "The wallet that finally makes sense"
+            "The wallet that thinks with you"
           </p>
         </FadeIn>
       </div>

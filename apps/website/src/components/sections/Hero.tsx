@@ -46,15 +46,11 @@ export function Hero() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
-            <GlitchText
-              delay={0.3}
-              glitchDuration={1.5}
-              glitchIntensity="medium"
-              style={{ color: 'var(--foreground)' }}
-            >
-              The Wallet for Everyone
-            </GlitchText>
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight" style={{ color: 'var(--foreground)' }}>
+            The{' '}
+            <span className="text-gradient-blue">AI-Native</span>
+            <br />
+            Crypto Wallet
           </h1>
         </motion.div>
 

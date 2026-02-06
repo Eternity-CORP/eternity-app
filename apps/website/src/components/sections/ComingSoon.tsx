@@ -26,7 +26,7 @@ const comingSoonFeatures = [
   {
     id: 'ai',
     title: 'AI Agent',
-    description: 'Proactive alerts. Natural conversations. Understands your financial goals.',
+    description: 'The brain behind your wallet. Natural conversations, proactive alerts, and full context awareness.',
     status: 'Q3 2026',
   },
   {

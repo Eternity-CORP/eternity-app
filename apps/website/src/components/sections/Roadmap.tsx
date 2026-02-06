@@ -39,12 +39,12 @@ const milestones = [
   },
   {
     quarter: 'Q4 2026',
-    title: 'Intelligence',
+    title: 'AI-Native',
     status: 'future',
     items: [
       { text: 'AI Financial Agent', done: false },
       { text: 'Smart notifications', done: false },
-      { text: 'Portfolio insights', done: false },
+      { text: 'AI portfolio insights', done: false },
     ],
   },
 ]

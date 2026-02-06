@@ -42,11 +42,13 @@ export default function Home() {
             <span className="text-sm font-medium text-white/60">Sepolia Testnet</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gradient mb-6">
-            Your Web3 Wallet
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
+            <span className="text-gradient">Your </span>
+            <span className="text-gradient-accent">AI-Native</span>
+            <span className="text-gradient"> Wallet</span>
           </h1>
           <p className="text-xl text-white/40 max-w-lg mx-auto mb-12">
-            Self-custody crypto wallet with instant BLIK payments. Your keys, your coins.
+            AI-powered self-custody wallet with BLIK payments. Your keys, your AI companion.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -96,13 +98,15 @@ export default function Home() {
           <div className="glass-card-glow rounded-2xl p-8 group">
             <div className="w-14 h-14 rounded-xl bg-white/5 flex items-center justify-center mb-6 group-hover:bg-[#22c55e]/10 transition-colors">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/80 group-hover:text-[#22c55e] transition-colors">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 6v6l4 2"/>
+                <path d="M12 2a4 4 0 0 1 4 4v1a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V6a4 4 0 0 1 4-4z"/>
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87M4 21v-2a4 4 0 0 1 3-3.87"/>
+                <circle cx="12" cy="17" r="4"/>
+                <path d="M12 15v4M10 17h4"/>
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-white mb-3">Instant</h3>
+            <h3 className="text-xl font-semibold text-white mb-3">AI-Powered</h3>
             <p className="text-white/40">
-              Fast transactions on Ethereum. Check balances and send in seconds.
+              Your personal AI manages complexity. Just speak naturally, transact instantly.
             </p>
           </div>
         </div>
@@ -112,10 +116,10 @@ export default function Home() {
       <footer className="border-t border-white/5 py-8">
         <div className="max-w-[1200px] mx-auto px-8 flex items-center justify-between">
           <p className="text-white/20 text-sm">
-            © 2024 Eternity. All rights reserved.
+            © 2026 Eternity. All rights reserved.
           </p>
           <p className="text-white/20 text-sm">
-            We never see your keys.
+            AI-native. Self-custody. Yours.
           </p>
         </div>
       </footer>

@@ -12,17 +12,17 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Eternity | The Wallet for Everyone',
-  description: 'Send crypto like you send a text. The first wallet with BLIK-style codes, network abstraction, and zero fear.',
-  keywords: ['crypto wallet', 'BLIK', 'cryptocurrency', 'ethereum', 'web3', 'defi'],
+  title: 'Eternity | AI-Native Crypto Wallet',
+  description: 'The first AI-native crypto wallet. Send crypto with 6-digit BLIK codes. No addresses, no fear.',
+  keywords: ['crypto wallet', 'AI wallet', 'BLIK', 'cryptocurrency', 'ethereum', 'web3', 'AI-native'],
   authors: [{ name: 'Eternity Team' }],
   icons: {
     icon: { url: '/favicon.svg', type: 'image/svg+xml' },
     apple: '/images/loho_purple.svg',
   },
   openGraph: {
-    title: 'Eternity | The Wallet for Everyone',
-    description: 'Send crypto like you send a text. The first wallet with BLIK-style codes.',
+    title: 'Eternity | AI-Native Crypto Wallet',
+    description: 'The first AI-native crypto wallet. BLIK codes, network abstraction, and zero fear.',
     url: 'https://eternity-wallet.vercel.app',
     siteName: 'Eternity',
     images: [
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Eternity | The Wallet for Everyone',
-    description: 'Send crypto like you send a text.',
+    title: 'Eternity | AI-Native Crypto Wallet',
+    description: 'The first AI-native crypto wallet.',
     images: ['/images/og-image.png'],
   },
   robots: {

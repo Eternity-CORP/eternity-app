@@ -71,7 +71,7 @@ export function Problem() {
 
         <FadeIn delay={0.2}>
           <p className="text-center text-lg md:text-xl max-w-2xl mx-auto mb-20" style={{ color: 'var(--foreground-muted)' }}>
-            It was built for machines. We're changing that.
+            It was built for machines. We rebuilt it with AI.
           </p>
         </FadeIn>
 
