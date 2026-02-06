@@ -41,14 +41,14 @@ export default function CreateWallet() {
           </div>
 
           {/* Seed phrase grid */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-6">
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="bg-white/3 border border-white/8 rounded-xl p-3 hover:border-white/12 transition-colors"
+                className="bg-white/3 border border-white/8 rounded-xl px-2 py-3 hover:border-white/12 transition-colors flex items-center min-w-0"
               >
-                <span className="text-white/30 text-xs">{i + 1}.</span>
-                <span className="ml-2 font-medium text-white">{word}</span>
+                <span className="text-white/30 text-[10px] shrink-0">{i + 1}.</span>
+                <span className="ml-1 font-medium text-white text-sm truncate">{word}</span>
               </div>
             ))}
           </div>
