@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import {
   AIToolHandler,
   ToolDefinition,
@@ -25,14 +24,14 @@ export class HistoryTool implements AIToolHandler {
     description:
       'Get transaction history for the user wallet. Can filter by type and limit results.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         limit: {
-          type: SchemaType.NUMBER,
+          type: 'number',
           description: 'Maximum number of transactions to return (default: 10)',
         },
         type: {
-          type: SchemaType.STRING,
+          type: 'string',
           description:
             'Filter by transaction type: "all", "sent", or "received" (default: "all")',
           enum: ['all', 'sent', 'received'],

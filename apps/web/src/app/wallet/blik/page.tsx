@@ -135,7 +135,7 @@ export default function BlikPage() {
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={true} />
+      <Navigation />
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">

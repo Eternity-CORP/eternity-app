@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import ChatContainer from '@/components/chat/ChatContainer'
 import { useAccount } from '@/contexts/account-context'
 
 export default function WalletDashboard() {
   const router = useRouter()
-  const { isLoggedIn, address, network, currentAccount } = useAccount()
+  const { isLoggedIn, address, network, currentAccount, uiMode } = useAccount()
   const [balance, setBalance] = useState('0')
   const [loading, setLoading] = useState(true)
   const [balanceUsd, setBalanceUsd] = useState('0.00')
@@ -37,12 +38,23 @@ export default function WalletDashboard() {
     }
   }
 
+  // AI Mode
+  if (uiMode === 'ai') {
+    return (
+      <div className="min-h-screen relative z-[2]">
+        <Navigation />
+        <ChatContainer />
+      </div>
+    )
+  }
+
+  // Classic Mode
   const formattedBalance = parseFloat(balance).toFixed(4)
   const networkColor = currentAccount?.type === 'real' ? '#22c55e' : '#F59E0B'
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={true} />
+      <Navigation />
 
       <main className="w-full flex justify-center px-6 pt-20 pb-12">
         <div className="w-full max-w-[420px]">

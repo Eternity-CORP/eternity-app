@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import { UsernameService } from '../../username/username.service';
 import {
   AIToolHandler,
@@ -20,14 +19,14 @@ export class ContactsTool implements AIToolHandler {
     description:
       'Get user profile information including their username. Also can lookup username by address or address by username.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         lookupAddress: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Optional: Address to lookup username for',
         },
         lookupUsername: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Optional: Username to lookup address for (without @)',
         },
       },

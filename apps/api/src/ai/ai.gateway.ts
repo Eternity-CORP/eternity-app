@@ -16,6 +16,7 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
+import { IntentParser } from './intent-parser';
 import { ChatMessage } from './providers';
 import {
   AI_EVENTS,
@@ -43,46 +44,40 @@ export interface SubscribePayload {
 export type ErrorPayload = AiErrorPayload;
 export type SuggestionPayload = AiSuggestion;
 
-const SYSTEM_PROMPT = `Ты — AI-ассистент кошелька E-Y. Твоё имя — E (произносится "И").
+const SYSTEM_PROMPT = `You are E (pronounced "EE"), the AI financial assistant inside the Eternity (E-Y) crypto wallet.
 
-## Твой характер
-- Дружелюбный и позитивный, но не навязчивый
-- Говоришь просто, избегаешь технического жаргона
-- Используешь эмодзи умеренно (1-2 на сообщение максимум)
-- Отвечаешь кратко — 1-3 предложения обычно достаточно
-- Если не уверен — лучше переспросить, чем ошибиться
+<personality>
+- Friendly, concise, helpful
+- 1-3 sentences per response unless user asks for details
+- Detect user's language from their message and always respond in that language
+</personality>
 
-## Что ты умеешь
-- Показывать балансы токенов (используй get_balance)
-- Помогать отправлять крипту (используй prepare_send, пользователь подтверждает)
-- BLIK-переводы: получатель генерирует код (blik_generate), отправитель оплачивает по коду (blik_lookup)
-- Обмен токенов/swap (используй prepare_swap)
-- Показывать историю транзакций (используй get_history)
-- Работать с контактами (используй get_contacts)
-- Показывать scheduled payments (используй get_scheduled)
-- Отвечать на вопросы о крипте простым языком
+<rules>
+- NEVER ask for seed phrases, private keys, or passwords
+- NEVER simulate transactions — always use tools
+- ALWAYS show amounts in both crypto and USD equivalent
+- For financial operations, provide clear previews before execution
+- If unsure about user intent, ask for clarification
+</rules>
 
-## Важные правила
-1. НИКОГДА не проси seed phrase или private key — это мошенничество
-2. Для любых транзакций ВСЕГДА используй соответствующий инструмент — пользователь должен подтвердить
-3. Если спрашивают про другие кошельки/приложения — вежливо говори что не знаешь
-4. Если что-то не можешь сделать — честно скажи об этом
-5. Суммы всегда показывай и в крипте, и в USD
+<tools>
+You have access to these tools:
+- get_balance: Check wallet balance (ETH and tokens)
+- prepare_send: Prepare a send transaction (supports @username and addresses)
+- get_history: Get transaction history
+- blik_generate: Generate a BLIK code for receiving crypto
+- blik_lookup: Look up a BLIK code to pay it
+- get_contacts: List saved contacts
+- get_scheduled: Show scheduled payments
+- prepare_swap: Prepare a token swap
+</tools>
 
-## BLIK
-- Если пользователь хочет ПОЛУЧИТЬ деньги через BLIK — используй blik_generate
-- Если пользователь хочет ОТПРАВИТЬ/оплатить BLIK код — используй blik_lookup
-- BLIK код действует 2 минуты
-
-## Swap
-- Если пользователь хочет обменять токены (ETH на USDC и т.д.) — используй prepare_swap
-- Swap выполняется через DEX агрегатор
-
-## Язык
-- Определяй язык пользователя по первому сообщению
-- Отвечай на том же языке
-- Поддерживаемые: русский, украинский, английский
-`;
+<blik>
+BLIK is a 6-digit code system for instant crypto transfers:
+- Receiver generates a code (valid 2 minutes)
+- Sender enters the code to pay
+- No addresses needed
+</blik>`;
 
 @WebSocketGateway({
   namespace: '/ai',
@@ -105,6 +100,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly aiService: AiService,
     private readonly securityService: AiSecurityService,
+    private readonly intentParser: IntentParser,
   ) {}
 
   handleConnection(client: Socket) {
@@ -235,24 +231,65 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Sanitize message
     const validated = this.securityService.validateMessage(data.content);
 
-    this.logger.log(`Chat from ${userAddress}: ${validated.content.substring(0, 50)}...`);
+    const sanitizedContent = validated.content;
+
+    this.logger.log(`Chat from ${userAddress}: ${sanitizedContent.substring(0, 50)}...`);
+
+    // Build history messages (shared between intent parser and LLM paths)
+    const historyMessages: ChatMessage[] = [];
+    if (data.history) {
+      for (const msg of data.history) {
+        historyMessages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    // Try local intent parser first (saves LLM tokens)
+    const parsedIntent = this.intentParser.parse(sanitizedContent);
+    if (parsedIntent) {
+      try {
+        const toolResult = await this.aiService.executeTool(
+          parsedIntent.tool,
+          { ...parsedIntent.args, userAddress },
+          userAddress,
+        );
+
+        client.emit(AI_EVENTS.TOOL_CALL, { name: parsedIntent.tool, arguments: parsedIntent.args });
+        client.emit(AI_EVENTS.TOOL_RESULT, { name: parsedIntent.tool, result: toolResult });
+
+        const followUpMessages: ChatMessage[] = [
+          ...historyMessages,
+          { role: 'user' as const, content: sanitizedContent },
+          { role: 'user' as const, content: `[SYSTEM: Tool "${parsedIntent.tool}" executed. Result: ${JSON.stringify(toolResult)}. Briefly summarize for the user.]` },
+        ];
+
+        const followUp = await this.aiService.chat({
+          messages: followUpMessages,
+          systemPrompt: SYSTEM_PROMPT,
+        });
+
+        const pendingTransaction = (toolResult.data as Record<string, unknown>)?.requiresConfirmation ? toolResult.data : undefined;
+        const pendingBlik = (toolResult.data as Record<string, unknown>)?.pendingBlik || undefined;
+
+        client.emit(AI_EVENTS.DONE, {
+          content: followUp.content,
+          toolCalls: [{ name: parsedIntent.tool, arguments: parsedIntent.args }],
+          toolResults: [{ name: parsedIntent.tool, result: toolResult }],
+          pendingTransaction,
+          pendingBlik,
+        } as DonePayload);
+        return;
+      } catch (error) {
+        this.logger.warn(`Intent parser tool execution failed: ${(error as Error).message}`);
+      }
+    }
 
     try {
       // Build messages array
-      const messages: ChatMessage[] = [];
-
-      if (data.history) {
-        for (const msg of data.history) {
-          messages.push({
-            role: msg.role,
-            content: msg.content,
-          });
-        }
-      }
+      const messages: ChatMessage[] = [...historyMessages];
 
       messages.push({
         role: 'user',
-        content: validated.content,
+        content: sanitizedContent,
       });
 
       // Record the request for rate limiting

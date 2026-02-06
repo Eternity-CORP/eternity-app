@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 import {
   AIToolHandler,
@@ -51,18 +50,18 @@ export class SwapTool implements AIToolHandler {
     description:
       'Prepare a token swap. Returns a preview that the user must confirm. The swap will be executed on-chain via DEX aggregator.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         fromToken: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Token symbol to swap from (e.g., "ETH", "USDC")',
         },
         toToken: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Token symbol to swap to (e.g., "USDC", "ETH")',
         },
         amount: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Amount of fromToken to swap (e.g., "0.5", "100")',
         },
       },

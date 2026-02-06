@@ -64,7 +64,7 @@ export default function PayPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
-        <Navigation isLoggedIn={false} />
+        <Navigation />
         <main className="flex items-center justify-center py-32">
           <div className="text-center">
             <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
@@ -78,7 +78,7 @@ export default function PayPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-black">
-        <Navigation isLoggedIn={false} />
+        <Navigation />
         <main className="max-w-[500px] mx-auto px-6 py-16">
           <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 text-center">
             <div className="w-16 h-16 mx-auto rounded-2xl bg-white/5 flex items-center justify-center mb-6">
@@ -100,7 +100,7 @@ export default function PayPage() {
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={false} />
+      <Navigation />
 
       <main className="max-w-[480px] mx-auto px-6 py-16">
         <div className="glass-card gradient-border rounded-2xl p-8">

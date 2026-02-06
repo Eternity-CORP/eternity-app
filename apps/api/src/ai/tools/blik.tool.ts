@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 import {
   AIToolHandler,
@@ -62,14 +61,14 @@ export class BlikGenerateTool implements AIToolHandler {
     description:
       'Generate a BLIK code to receive payment. The user wants to receive money - they will share this code with someone who will pay them.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         amount: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Amount to receive (e.g., "50", "100.5")',
         },
         token: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Token symbol to receive (e.g., "USDC", "ETH")',
         },
       },
@@ -181,10 +180,10 @@ export class BlikLookupTool implements AIToolHandler {
     description:
       'Look up a BLIK code to pay someone. The user wants to send money - they enter a code they received from the recipient.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         code: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'The 6-digit BLIK code received from the recipient',
         },
       },

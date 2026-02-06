@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import {
   AIToolHandler,
   ToolDefinition,
@@ -24,10 +23,10 @@ export class BalanceTool implements AIToolHandler {
     description:
       'Get token balances for the user wallet. Returns all tokens if no specific token is requested.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         token: {
-          type: SchemaType.STRING,
+          type: 'string',
           description:
             'Optional token symbol to get balance for (e.g., "USDC", "ETH"). If not provided, returns all token balances.',
         },

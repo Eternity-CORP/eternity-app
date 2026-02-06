@@ -4,12 +4,8 @@ import Link from 'next/link'
 import { useAccount } from '@/contexts/account-context'
 import AccountSelector from '@/components/AccountSelector'
 
-interface NavigationProps {
-  isLoggedIn?: boolean
-}
-
-export default function Navigation({ isLoggedIn }: NavigationProps) {
-  const { logout } = useAccount()
+export default function Navigation() {
+  const { isLoggedIn, logout, uiMode, setUiMode } = useAccount()
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
@@ -27,6 +23,22 @@ export default function Navigation({ isLoggedIn }: NavigationProps) {
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
+                {/* Mode Toggle */}
+                <div className="mode-toggle flex">
+                  <button
+                    onClick={() => setUiMode('ai')}
+                    className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
+                  >
+                    AI
+                  </button>
+                  <button
+                    onClick={() => setUiMode('classic')}
+                    className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
+                  >
+                    Classic
+                  </button>
+                </div>
+
                 <AccountSelector />
 
                 {/* Lock */}

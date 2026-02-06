@@ -1,5 +1,3 @@
-import { SchemaType } from '@google/generative-ai';
-
 /**
  * Base interface for AI tool parameters
  */
@@ -24,7 +22,7 @@ export interface ToolDefinition {
   name: string;
   description: string;
   parameters: {
-    type: typeof SchemaType.OBJECT;
+    type: 'object';
     properties: Record<string, ToolPropertyDefinition>;
     required: string[];
   };
@@ -34,7 +32,7 @@ export interface ToolDefinition {
  * Property definition for tool parameters
  */
 export interface ToolPropertyDefinition {
-  type: typeof SchemaType.STRING | typeof SchemaType.NUMBER | typeof SchemaType.BOOLEAN;
+  type: 'string' | 'number' | 'boolean';
   description: string;
   enum?: string[];
 }

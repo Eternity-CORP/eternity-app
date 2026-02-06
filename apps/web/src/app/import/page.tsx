@@ -67,7 +67,7 @@ export default function ImportWallet() {
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={false} />
+      <Navigation />
 
       <main className="max-w-[600px] mx-auto px-6 py-12">
         <div className="glass-card gradient-border rounded-2xl p-8">

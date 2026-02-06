@@ -250,6 +250,74 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* Chat styles */
+.chat-bubble-user {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.chat-bubble-assistant {
+  background: rgba(19, 19, 19, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chat-input-container {
+  background: rgba(19, 19, 19, 0.6);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.2s ease;
+}
+
+.chat-input-container:focus-within {
+  border-color: rgba(51, 136, 255, 0.3);
+}
+
+.suggestion-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease;
+}
+
+.suggestion-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(51, 136, 255, 0.3);
+}
+
+.editable-field {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease;
+}
+
+.editable-field:focus-within {
+  border-color: rgba(51, 136, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.mode-toggle-option {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.mode-toggle-option.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   * {

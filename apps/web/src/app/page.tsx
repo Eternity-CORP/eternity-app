@@ -32,7 +32,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={false} />
+      <Navigation />
 
       <main className="max-w-[1200px] mx-auto px-8 py-20">
         {/* Hero */}

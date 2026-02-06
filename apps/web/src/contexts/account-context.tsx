@@ -16,6 +16,8 @@ import {
 } from '@/lib/account-storage'
 import { getNetwork, type NetworkConfig } from '@/lib/network'
 
+type UiMode = 'ai' | 'classic'
+
 interface AccountContextValue {
   isLoggedIn: boolean
   wallet: ethers.HDNodeWallet | null
@@ -23,12 +25,16 @@ interface AccountContextValue {
   network: NetworkConfig
   accounts: Account[]
   currentAccount: Account | null
+  uiMode: UiMode
   switchAccount: (accountId: string) => void
   addAccount: (type: AccountType, label?: string) => void
+  setUiMode: (mode: UiMode) => void
   logout: () => void
 }
 
 const defaultNetwork = getNetwork('test')
+
+const UI_MODE_KEY = 'ey_ui_mode'
 
 const AccountContext = createContext<AccountContextValue>({
   isLoggedIn: false,
@@ -37,8 +43,10 @@ const AccountContext = createContext<AccountContextValue>({
   network: defaultNetwork,
   accounts: [],
   currentAccount: null,
+  uiMode: 'ai',
   switchAccount: () => {},
   addAccount: () => {},
+  setUiMode: () => {},
   logout: () => {},
 })
 
@@ -51,6 +59,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | null>(null)
   const [accounts, setAccounts] = useState<Account[]>([])
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null)
+  const [uiMode, setUiModeState] = useState<UiMode>('ai')
 
   useEffect(() => {
     const mnemonic = sessionStorage.getItem('session_mnemonic')
@@ -65,6 +74,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     const w = deriveWalletFromMnemonic(mnemonic, account.accountIndex)
     setWallet(w)
+  }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem(UI_MODE_KEY)
+    if (saved === 'ai' || saved === 'classic') {
+      setUiModeState(saved)
+    }
+  }, [])
+
+  const setUiMode = useCallback((mode: UiMode) => {
+    setUiModeState(mode)
+    localStorage.setItem(UI_MODE_KEY, mode)
   }, [])
 
   const switchAccount = useCallback((accountId: string) => {
@@ -135,8 +156,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         network,
         accounts,
         currentAccount,
+        uiMode,
         switchAccount,
         addAccount,
+        setUiMode,
         logout,
       }}
     >

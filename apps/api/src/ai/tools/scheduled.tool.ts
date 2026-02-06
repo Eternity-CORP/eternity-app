@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import { ScheduledService } from '../../scheduled/scheduled.service';
 import {
   AIToolHandler,
@@ -32,7 +31,7 @@ export class ScheduledTool implements AIToolHandler {
     description:
       'Get scheduled/recurring payments for the user. Shows upcoming and active scheduled transactions.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {},
       required: [],
     },

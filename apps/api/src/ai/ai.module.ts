@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiGateway } from './ai.gateway';
-import { GeminiProvider, GroqProvider } from './providers';
+import { ClaudeProvider } from './providers';
 import {
   BalanceTool,
   SendTool,
@@ -19,6 +19,7 @@ import {
   AiRateLimiter,
   AiAuditLogger,
 } from './security';
+import { IntentParser } from './intent-parser';
 import { ProactiveService } from './proactive';
 import { BalanceServiceAi, HistoryServiceAi } from './services';
 import { ScheduledModule } from '../scheduled/scheduled.module';
@@ -36,8 +37,8 @@ import { BlikModule } from '../blik/blik.module';
   providers: [
     AiService,
     AiGateway,
-    GeminiProvider,
-    GroqProvider,
+    IntentParser,
+    ClaudeProvider,
     BalanceServiceAi,
     HistoryServiceAi,
     BalanceTool,

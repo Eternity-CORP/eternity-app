@@ -37,7 +37,7 @@ function UnlockContent() {
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={false} />
+      <Navigation />
 
       <main className="max-w-[440px] mx-auto px-6 py-16">
         <div className="glass-card gradient-border rounded-2xl p-8">

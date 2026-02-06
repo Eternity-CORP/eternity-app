@@ -37,7 +37,7 @@ export default function HistoryPage() {
 
   return (
     <div className="min-h-screen relative z-[2]">
-      <Navigation isLoggedIn={true} />
+      <Navigation />
 
       <main className="max-w-[800px] mx-auto px-8 py-8">
         {/* Header */}

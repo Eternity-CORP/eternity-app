@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 import {
   AIToolHandler,
@@ -47,19 +46,19 @@ export class SendTool implements AIToolHandler {
     description:
       'Prepare a transaction to send tokens to a recipient. Returns a preview that the user must confirm. Does NOT execute the transaction.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         recipient: {
-          type: SchemaType.STRING,
+          type: 'string',
           description:
             'Recipient address or username (e.g., "0x123..." or "@username")',
         },
         amount: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Amount to send (e.g., "50", "100.5")',
         },
         token: {
-          type: SchemaType.STRING,
+          type: 'string',
           description: 'Token symbol to send (e.g., "USDC", "ETH")',
         },
       },

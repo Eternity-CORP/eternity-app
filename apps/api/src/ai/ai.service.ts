@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GeminiProvider } from './providers/gemini.provider';
-import { GroqProvider } from './providers/groq.provider';
+import { ClaudeProvider } from './providers/claude.provider';
 import {
   AIProvider,
   ChatMessage,
@@ -45,8 +44,7 @@ export class AiService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly geminiProvider: GeminiProvider,
-    private readonly groqProvider: GroqProvider,
+    private readonly claudeProvider: ClaudeProvider,
     private readonly balanceTool: BalanceTool,
     private readonly sendTool: SendTool,
     private readonly historyTool: HistoryTool,
@@ -56,25 +54,17 @@ export class AiService {
     private readonly blikLookupTool: BlikLookupTool,
     private readonly swapTool: SwapTool,
   ) {
-    // Register providers
-    if (geminiProvider.isConfigured) {
-      this.providers.set('gemini', geminiProvider);
-      this.providerHealth.set('gemini', {
-        consecutiveErrors: 0,
-        isHealthy: true,
-      });
-    }
-
-    if (groqProvider.isConfigured) {
-      this.providers.set('groq', groqProvider);
-      this.providerHealth.set('groq', {
+    // Register Claude provider
+    if (claudeProvider.isConfigured) {
+      this.providers.set('claude', claudeProvider);
+      this.providerHealth.set('claude', {
         consecutiveErrors: 0,
         isHealthy: true,
       });
     }
 
     // Set primary provider
-    this.currentProvider = geminiProvider.isConfigured ? 'gemini' : 'groq';
+    this.currentProvider = 'claude';
 
     // Fallback configuration
     this.fallbackConfig = {
