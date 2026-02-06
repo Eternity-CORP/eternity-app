@@ -69,9 +69,14 @@ export default function ConfirmModal({ title, summary, details, onConfirm, onCan
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Modal */}
-      <div className="glass-card gradient-border rounded-2xl p-5 max-w-[380px] w-full relative z-10">
+      <div className="glass-card gradient-border-live rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'visible' }}>
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <img src="/logo.svg" alt="Eternity" className="w-10 h-10" />
+        </div>
+
         {/* Title */}
-        <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
+        <h3 className="text-base font-semibold text-white mb-1 text-center">{title}</h3>
 
         {/* Summary */}
         <p className="text-lg font-bold text-white mb-4">{summary}</p>
