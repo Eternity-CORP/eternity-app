@@ -14,7 +14,7 @@ export default function Navigation() {
           {/* Logo */}
           <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2.5 group">
             <img src="/logo.svg" alt="Eternity" className="w-7 h-7" />
-            <span className="text-lg font-semibold text-white group-hover:text-white/60 transition-colors">
+            <span className="hidden sm:inline text-lg font-semibold text-white group-hover:text-white/60 transition-colors">
               Eternity
             </span>
           </Link>

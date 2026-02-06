@@ -102,17 +102,17 @@ export default function ImportWallet() {
 
           {/* Word inputs */}
           <div
-            className="grid grid-cols-3 gap-2 mb-4"
+            className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4"
             onPaste={handlePaste}
           >
             {words.map((word, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                <span className="text-white/30 text-xs w-5">{i + 1}.</span>
+              <div key={i} className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs pointer-events-none">{i + 1}.</span>
                 <input
                   type="text"
                   value={word}
                   onChange={(e) => handleWordChange(i, e.target.value)}
-                  className="flex-1 bg-white/3 border border-white/8 rounded-lg px-3 py-2.5 text-sm text-white focus:border-white/20 focus:outline-none focus:shadow-[0_0_10px_rgba(51,136,255,0.03)] transition-all"
+                  className="w-full bg-white/3 border border-white/8 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white focus:border-white/20 focus:outline-none focus:shadow-[0_0_10px_rgba(51,136,255,0.03)] transition-all"
                   autoComplete="off"
                   autoCapitalize="off"
                 />

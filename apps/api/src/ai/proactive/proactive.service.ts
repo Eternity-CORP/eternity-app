@@ -281,9 +281,12 @@ export class ProactiveService {
     if (!data) return;
 
     // Get unique addresses
-    const uniqueAddresses = [...new Set(data.map((row) => row.creator_address))];
+    const addressSet = new Set<string>();
+    for (const row of data) {
+      addressSet.add(String((row as any).creator_address));
+    }
 
-    for (const address of uniqueAddresses) {
+    for (const address of addressSet) {
       await this.checkUserPaymentReminders(address);
     }
   }

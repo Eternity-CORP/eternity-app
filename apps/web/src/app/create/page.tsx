@@ -6,11 +6,24 @@ import { generateMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 
+function pickRandomIndices(count: number, max: number): number[] {
+  const indices: number[] = []
+  while (indices.length < count) {
+    const idx = Math.floor(Math.random() * max)
+    if (!indices.includes(idx)) indices.push(idx)
+  }
+  return indices.sort((a, b) => a - b)
+}
+
 export default function CreateWallet() {
   const router = useRouter()
   const [mnemonic, setMnemonic] = useState<string[]>([])
   const [copied, setCopied] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+  const [step, setStep] = useState<1 | 2>(1)
+  const [verifyIndices, setVerifyIndices] = useState<number[]>([])
+  const [verifyInputs, setVerifyInputs] = useState<string[]>(['', '', ''])
+  const [verifyError, setVerifyError] = useState(false)
 
   useEffect(() => {
     const words = generateMnemonic(12)
@@ -25,10 +38,98 @@ export default function CreateWallet() {
 
   const handleContinue = () => {
     if (!confirmed) return
-    sessionStorage.setItem('temp_mnemonic', mnemonic.join(' '))
-    router.push('/create/password')
+    const indices = pickRandomIndices(3, mnemonic.length)
+    setVerifyIndices(indices)
+    setVerifyInputs(['', '', ''])
+    setVerifyError(false)
+    setStep(2)
   }
 
+  const handleVerify = () => {
+    const correct = verifyIndices.every(
+      (wordIdx, i) => verifyInputs[i].trim().toLowerCase() === mnemonic[wordIdx].toLowerCase()
+    )
+    if (correct) {
+      sessionStorage.setItem('temp_mnemonic', mnemonic.join(' '))
+      router.push('/create/password')
+    } else {
+      setVerifyError(true)
+    }
+  }
+
+  const handleBack = () => {
+    setStep(1)
+    setVerifyError(false)
+  }
+
+  const allFilled = verifyInputs.every((v) => v.trim().length > 0)
+
+  // Step 2: Verification
+  if (step === 2) {
+    return (
+      <div className="min-h-screen relative z-[2]">
+        <Navigation />
+
+        <main className="max-w-[600px] mx-auto px-6 py-12">
+          <div className="glass-card gradient-border rounded-2xl p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-gradient mb-2">Verify Recovery Phrase</h1>
+              <p className="text-white/50">Enter the requested words to confirm you saved your phrase</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {verifyIndices.map((wordIdx, i) => (
+                <div key={wordIdx}>
+                  <label className="block text-sm text-white/40 mb-1.5">
+                    Word #{wordIdx + 1}
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    value={verifyInputs[i]}
+                    onChange={(e) => {
+                      const next = [...verifyInputs]
+                      next[i] = e.target.value
+                      setVerifyInputs(next)
+                      setVerifyError(false)
+                    }}
+                    className="w-full py-3 px-4 bg-white/3 border border-white/8 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-white/20 transition-colors"
+                    placeholder={`Enter word #${wordIdx + 1}`}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {verifyError && (
+              <div className="bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl p-4 mb-6">
+                <p className="text-[#f87171] text-sm font-medium">
+                  Incorrect words. Please check and try again.
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={handleBack}
+                className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleVerify}
+                disabled={!allFilled}
+                className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Verify
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // Step 1: Show seed phrase
   return (
     <div className="min-h-screen relative z-[2]">
       <Navigation />

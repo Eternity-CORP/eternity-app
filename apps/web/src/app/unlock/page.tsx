@@ -43,9 +43,7 @@ function UnlockContent() {
         <div className="glass-card gradient-border rounded-2xl p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)]">
-              <span className="text-black font-bold text-2xl">E</span>
-            </div>
+            <img src="/logo.svg" alt="Eternity" className="w-16 h-16" />
           </div>
 
           <div className="text-center mb-8">

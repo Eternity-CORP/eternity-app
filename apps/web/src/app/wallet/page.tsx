@@ -56,7 +56,7 @@ export default function WalletDashboard() {
     <div className="min-h-screen relative z-[2]">
       <Navigation />
 
-      <main className="w-full flex justify-center px-6 pt-20 pb-12">
+      <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
           {/* Main Card */}
           <div className="glass-card gradient-border rounded-2xl p-6">

@@ -1,0 +1,62 @@
+# Dependencies (will be installed in Docker)
+node_modules/
+.pnpm-store/
+
+# Build outputs (will be built in Docker)
+dist/
+build/
+.next/
+.expo/
+
+# Environment files (set via Railway env vars)
+.env
+.env.*
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Mobile app (not needed for API)
+apps/mobile/
+apps/website/
+apps/web/
+apps/telegram-bot/
+
+# Packages not needed for API
+packages/ui/
+packages/crypto/
+packages/storage/
+
+# Tests
+coverage/
+**/*.spec.ts
+**/*.test.ts
+**/test/
+**/__tests__/
+
+# Turbo cache
+.turbo/
+
+# Other
+images/
+_bmad/
+_bmad-output/
+scripts/
+supabase/
+.claude/
+.auto-claude/
+.vercel/
+.worktrees/
+logs/

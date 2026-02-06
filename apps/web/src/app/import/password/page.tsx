@@ -62,6 +62,7 @@ export default function ImportPassword() {
       <main className="max-w-[440px] mx-auto px-6 py-12">
         <div className="glass-card gradient-border rounded-2xl p-8">
           <div className="text-center mb-8">
+            <img src="/logo.svg" alt="Eternity" className="w-12 h-12 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gradient mb-2">Set Password</h1>
             <p className="text-white/50">Create a password to encrypt your wallet</p>
           </div>

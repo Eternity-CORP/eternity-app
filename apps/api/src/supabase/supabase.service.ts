@@ -21,7 +21,8 @@ export class SupabaseService {
   /**
    * Access a table for queries
    */
-  from(table: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  from(table: string): any {
     return this.client.from(table);
   }
 
