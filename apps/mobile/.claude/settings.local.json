@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install:*)",
+      "Bash(timeout 10 pnpm start:*)",
+      "Bash(cd:*)",
+      "Bash(timeout 30 claude:*)",
+      "Bash(claude -p \"Say hello\")",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm start)",
+      "Bash(pkill:*)",
+      "WebFetch(domain:medium.com)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(xargs kill -9 echo \"Killed old processes\" sleep 2 ps aux)",
+      "Bash(pnpm add:*)",
+      "Bash(ls:*)",
+      "Bash(vercel --prod:*)",
+      "Bash(npx vercel --prod)",
+      "Bash(curl -X POST \"https://api.telegram.org/bot8589145161:AAFDEMauTyKMZf5RrtN0YHzuPjKkou8mNzk/setWebhook?url=https://eternity-wallet.vercel.app/api/telegram\")",
+      "Bash(curl -s \"https://api.telegram.org/bot8589145161:AAFDEMauTyKMZf5RrtN0YHzuPjKkou8mNzk/getWebhookInfo\")",
+      "Bash(python3:*)",
+      "Bash(curl:*)",
+      "Bash(fly launch:*)",
+      "Bash(npm install:*)",
+      "Bash(fly secrets set:*)",
+      "Bash(fly deploy:*)",
+      "Bash(fly logs:*)",
+      "Bash(fly scale:*)",
+      "Bash(ps:*)",
+      "Bash(sort:*)",
+      "Bash(npx vercel:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat\\(website\\): add Telegram Growth Bot with 3 AI agents\n\n- Growth Lead agent for planning and task generation\n- Content Agent for Twitter/Telegram posts \\(2-3 variants\\)\n- Opportunity Hunter for grants and accelerators\n- Linear integration: create tasks, change statuses, view details\n- /roadmap N command to generate N-day plan with due dates\n- Text commands: \"план на 10 дней\", \"выполнено E-XX\", etc.\n- Markdown to HTML conversion for Telegram formatting\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(fly status:*)",
+      "mcp__linear__get_issue",
+      "mcp__linear__update_issue",
+      "mcp__linear__create_issue"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "linear"
+  ]
+}

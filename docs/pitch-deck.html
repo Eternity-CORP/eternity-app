@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eternity - Pitch Deck</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: 1280px 720px;
+            margin: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+        }
+
+        .slide {
+            width: 1280px;
+            height: 720px;
+            padding: 60px 80px;
+            page-break-after: always;
+            position: relative;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slide:last-child {
+            page-break-after: avoid;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: #8b5cf6;
+            position: absolute;
+            top: 40px;
+            left: 80px;
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 40px;
+            right: 80px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        h1 {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #fff;
+        }
+
+        h3 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #8b5cf6;
+        }
+
+        p {
+            font-size: 24px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .subtitle {
+            font-size: 28px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .hero-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero-slide h1 {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .hero-slide .tagline {
+            font-size: 36px;
+            color: #888;
+            margin-bottom: 40px;
+        }
+
+        .hero-slide .subtitle {
+            font-size: 24px;
+            color: #666;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            flex: 1;
+            align-items: center;
+        }
+
+        .three-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 40px;
+            flex: 1;
+            align-items: start;
+            padding-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-size: 48px;
+            font-weight: 700;
+            color: #8b5cf6;
+            margin-bottom: 10px;
+        }
+
+        .stat-box .label {
+            font-size: 18px;
+            color: #888;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            height: 100%;
+        }
+
+        .feature-card .icon {
+            font-size: 40px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .feature-card p {
+            font-size: 18px;
+            color: #999;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            font-size: 24px;
+            color: #ccc;
+            padding: 15px 0;
+            padding-left: 40px;
+            position: relative;
+        }
+
+        ul li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #8b5cf6;
+        }
+
+        .problem-item {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .problem-item p {
+            font-size: 22px;
+            color: #fff;
+        }
+
+        .solution-item {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid #22c55e;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .solution-item p {
+            font-size: 22px;
+            color: #fff;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .comparison-table th {
+            text-align: left;
+            padding: 15px 20px;
+            background: rgba(139, 92, 246, 0.2);
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .comparison-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .check {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #ef4444;
+        }
+
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            position: relative;
+        }
+
+        .timeline:before {
+            content: "";
+            position: absolute;
+            top: 30px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(139, 92, 246, 0.3);
+        }
+
+        .timeline-item {
+            text-align: center;
+            position: relative;
+            flex: 1;
+        }
+
+        .timeline-item .dot {
+            width: 20px;
+            height: 20px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .timeline-item .date {
+            font-size: 16px;
+            color: #8b5cf6;
+            margin-bottom: 10px;
+        }
+
+        .timeline-item .title {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .timeline-item .desc {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .cta-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .cta-slide h1 {
+            font-size: 64px;
+            margin-bottom: 30px;
+        }
+
+        .contact-info {
+            margin-top: 40px;
+        }
+
+        .contact-info p {
+            font-size: 24px;
+            color: #888;
+            margin: 10px 0;
+        }
+
+        .contact-info a {
+            color: #8b5cf6;
+            text-decoration: none;
+        }
+
+        .highlight {
+            color: #8b5cf6;
+            font-weight: 600;
+        }
+
+        .big-number {
+            font-size: 72px;
+            font-weight: 700;
+            color: #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Slide 1: Title -->
+<div class="slide hero-slide">
+    <h1>Eternity</h1>
+    <p class="tagline">Crypto for Humans</p>
+    <p class="subtitle">The wallet that makes crypto as simple as Venmo</p>
+</div>
+
+<!-- Slide 2: Problem -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>The Problem</h2>
+    <div class="content">
+        <div class="problem-item">
+            <p><strong>Scary addresses</strong> — 42 characters that look like someone smashed a keyboard</p>
+        </div>
+        <div class="problem-item">
+            <p><strong>Network confusion</strong> — "Is this Polygon or Arbitrum? Will I lose my money?"</p>
+        </div>
+        <div class="problem-item">
+            <p><strong>Fear of mistakes</strong> — One wrong character = funds lost forever</p>
+        </div>
+        <div class="problem-item">
+            <p><strong>Result:</strong> Mass adoption blocked not by technology, but by UX</p>
+        </div>
+    </div>
+    <span class="slide-number">2</span>
+</div>
+
+<!-- Slide 3: Solution -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>The Solution</h2>
+    <div class="content">
+        <div class="solution-item">
+            <p><strong>6-digit BLIK codes</strong> — Share a code, receive money. That's it.</p>
+        </div>
+        <div class="solution-item">
+            <p><strong>Global usernames</strong> — Send to @danylo, not 0x7a3b...</p>
+        </div>
+        <div class="solution-item">
+            <p><strong>Network abstraction</strong> — Users see "USDC", never "USDC on Polygon"</p>
+        </div>
+        <div class="solution-item">
+            <p><strong>AI assistant</strong> — Handles complexity, finds cheapest routes</p>
+        </div>
+    </div>
+    <span class="slide-number">3</span>
+</div>
+
+<!-- Slide 4: How BLIK Works -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>How BLIK Codes Work</h2>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>Traditional Way</h3>
+                <ul>
+                    <li>Ask for wallet address</li>
+                    <li>Copy 42-character string</li>
+                    <li>Select correct network</li>
+                    <li>Pray you didn't make a mistake</li>
+                    <li>Wait and hope</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Eternity Way</h3>
+                <ul>
+                    <li>Generate 6-digit code</li>
+                    <li>Share code: "847291"</li>
+                    <li>Friend enters code</li>
+                    <li>Done. Money received.</li>
+                    <li style="color: #22c55e;">< 2 minutes end-to-end</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <span class="slide-number">4</span>
+</div>
+
+<!-- Slide 5: Features -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>Core Features</h2>
+    <div class="three-column">
+        <div class="feature-card">
+            <div class="icon">💸</div>
+            <h3>BLIK Codes</h3>
+            <p>6-digit codes valid for 2 minutes. Voice-shareable. No addresses ever.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">👥</div>
+            <h3>Split Bills</h3>
+            <p>Dinner with friends? Split the bill instantly. Request from multiple people.</p>
+        </div>
+        <div class="feature-card">
+            <div class="icon">🔄</div>
+            <h3>Scheduled Payments</h3>
+            <p>Rent, subscriptions, allowances. Set it and forget it.</p>
+        </div>
+    </div>
+    <span class="slide-number">5</span>
+</div>
+
+<!-- Slide 6: SHARD Vision -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>The Bigger Vision: SHARD</h2>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>Universal Crypto Identity</h3>
+                <ul>
+                    <li>Tap your NFC passport</li>
+                    <li>Prove you're a unique human</li>
+                    <li>Get one identity across every chain</li>
+                    <li>Zero-knowledge proofs</li>
+                    <li>You own your identity</li>
+                </ul>
+            </div>
+            <div>
+                <div class="stat-box" style="margin-bottom: 20px;">
+                    <div class="number">1.4B+</div>
+                    <div class="label">NFC passports already exist</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">0</div>
+                    <div class="label">Special hardware needed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-number">6</span>
+</div>
+
+<!-- Slide 7: Market -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>Market Opportunity</h2>
+    <div class="content">
+        <div class="three-column">
+            <div class="stat-box">
+                <div class="number">$15B</div>
+                <div class="label">Crypto wallet market 2025</div>
+            </div>
+            <div class="stat-box">
+                <div class="number">820M+</div>
+                <div class="label">Active wallets globally</div>
+            </div>
+            <div class="stat-box">
+                <div class="number">25-30%</div>
+                <div class="label">CAGR growth rate</div>
+            </div>
+        </div>
+        <p style="margin-top: 40px; text-align: center; font-size: 28px;">
+            <span class="highlight">Key gap:</span> No wallet combines BLIK + chain abstraction + NFC identity + AI agent
+        </p>
+    </div>
+    <span class="slide-number">7</span>
+</div>
+
+<!-- Slide 8: Competition -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>Why We Win</h2>
+    <div class="content">
+        <table class="comparison-table">
+            <tr>
+                <th>Feature</th>
+                <th>MetaMask</th>
+                <th>Coinbase</th>
+                <th>Venmo</th>
+                <th>Eternity</th>
+            </tr>
+            <tr>
+                <td>Simple UX</td>
+                <td class="cross">✗</td>
+                <td>~</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+            </tr>
+            <tr>
+                <td>Self-custody</td>
+                <td class="check">✓</td>
+                <td class="check">✓</td>
+                <td class="cross">✗</td>
+                <td class="check">✓</td>
+            </tr>
+            <tr>
+                <td>BLIK codes</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+                <td class="check">✓</td>
+            </tr>
+            <tr>
+                <td>Chain abstraction</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+                <td>N/A</td>
+                <td class="check">✓</td>
+            </tr>
+            <tr>
+                <td>NFC identity</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+                <td class="cross">✗</td>
+                <td class="check">✓</td>
+            </tr>
+        </table>
+    </div>
+    <span class="slide-number">8</span>
+</div>
+
+<!-- Slide 9: Roadmap -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>Roadmap</h2>
+    <div class="content">
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="date">Q1 2026</div>
+                <div class="dot"></div>
+                <div class="title">MVP</div>
+                <div class="desc">BLIK, usernames, testnet</div>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Apr 2026</div>
+                <div class="dot"></div>
+                <div class="title">EthCC Demo</div>
+                <div class="desc">Live demo, user validation</div>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Q2 2026</div>
+                <div class="dot"></div>
+                <div class="title">Beta Launch</div>
+                <div class="desc">Base mainnet, 100 users</div>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Q3 2026</div>
+                <div class="dot"></div>
+                <div class="title">AI Agent</div>
+                <div class="desc">Proactive assistant</div>
+            </div>
+            <div class="timeline-item">
+                <div class="date">Q4 2026</div>
+                <div class="dot"></div>
+                <div class="title">SHARD</div>
+                <div class="desc">NFC passport identity</div>
+            </div>
+        </div>
+    </div>
+    <span class="slide-number">9</span>
+</div>
+
+<!-- Slide 10: Ask -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>The Ask</h2>
+    <div class="content">
+        <div class="two-column">
+            <div>
+                <h3>Looking For</h3>
+                <ul>
+                    <li>Pre-seed funding</li>
+                    <li>Accelerator mentorship</li>
+                    <li>Crypto-native network</li>
+                    <li>Go-to-market guidance</li>
+                </ul>
+            </div>
+            <div>
+                <h3>Use of Funds</h3>
+                <ul>
+                    <li>Go full-time on Eternity</li>
+                    <li>Security audit before mainnet</li>
+                    <li>Marketing & community building</li>
+                    <li>Backend infrastructure</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <span class="slide-number">10</span>
+</div>
+
+<!-- Slide 11: Team -->
+<div class="slide">
+    <span class="logo">Eternity</span>
+    <h2>Team</h2>
+    <div class="content" style="justify-content: center; align-items: center;">
+        <div style="text-align: center; max-width: 600px;">
+            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #8b5cf6, #06b6d4); border-radius: 50%; margin: 0 auto 30px;"></div>
+            <h3 style="font-size: 32px; color: #fff; margin-bottom: 10px;">Danylo</h3>
+            <p style="color: #8b5cf6; font-size: 20px; margin-bottom: 20px;">Founder & Developer</p>
+            <p style="font-size: 20px; color: #888; line-height: 1.6;">
+                CS student at Gdańsk University of Technology<br>
+                Former Captain, Amazon Cloud Club<br>
+                Full-Stack Developer at AI startup (Lisbon)<br>
+                In crypto since 2020
+            </p>
+        </div>
+    </div>
+    <span class="slide-number">11</span>
+</div>
+
+<!-- Slide 12: CTA -->
+<div class="slide cta-slide">
+    <h1>Crypto for Humans</h1>
+    <p style="font-size: 32px; color: #888; margin-bottom: 40px;">Let's make crypto accessible to the next billion users</p>
+    <div class="contact-info">
+        <p><a href="https://eternity-wallet.vercel.app">eternity-wallet.vercel.app</a></p>
+        <p>EthCC Cannes — March 30 - April 5, 2026</p>
+    </div>
+    <span class="logo" style="position: static; margin-top: 60px; font-size: 32px;">Eternity</span>
+</div>
+
+</body>
+</html>

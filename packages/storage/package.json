@@ -1,0 +1,21 @@
+{
+  "name": "@e-y/storage",
+  "version": "0.1.0",
+  "description": "Secure storage abstraction for E-Y (Web Crypto + IndexedDB)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./web": "./src/web.ts"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "idb": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
