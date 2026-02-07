@@ -6,7 +6,6 @@ import type {
   ToolResult,
   AiSuggestion,
   AiErrorPayload,
-  ChatMessage,
 } from '@e-y/shared'
 import { AI_EVENTS } from '@e-y/shared'
 
@@ -104,16 +103,8 @@ class AiSocketService {
     })
   }
 
-  addAiResponseMessage(content: string): void {
-    this.addToHistory('assistant', content)
-  }
-
   clearHistory(): void {
     this.messageHistory = []
-  }
-
-  isConnected(): boolean {
-    return this.socket?.connected ?? false
   }
 
   on<K extends CallbackKey>(event: K, callback: AiSocketCallbacks[K]): void {

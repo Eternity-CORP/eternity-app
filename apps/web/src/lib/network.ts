@@ -12,7 +12,7 @@ export interface NetworkConfig {
   symbol: string
 }
 
-export const NETWORKS: Record<AccountType, NetworkConfig> = {
+const NETWORKS: Record<AccountType, NetworkConfig> = {
   test: {
     name: 'Sepolia',
     chainId: 11155111,

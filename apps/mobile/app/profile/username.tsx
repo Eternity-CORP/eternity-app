@@ -442,9 +442,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: theme.spacing.xl,
   },
-  submitButtonDisabled: {
-    backgroundColor: theme.colors.textTertiary,
-  },
   submitButtonText: {
     color: theme.colors.buttonPrimaryText,
   },

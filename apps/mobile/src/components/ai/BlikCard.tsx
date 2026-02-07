@@ -3,7 +3,7 @@
  * Displays BLIK code generation or payment confirmation in AI chat
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
+import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingBlikGenerate {
@@ -121,11 +122,6 @@ export function BlikCard({
     }
   };
 
-  const formatAddress = (address: string) => {
-    if (address.length <= 12) return address;
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -192,7 +188,7 @@ export function BlikCard({
   // Pay mode - show payment confirmation
   const recipient = blik.receiverUsername
     ? `@${blik.receiverUsername}`
-    : formatAddress(blik.receiverAddress);
+    : truncateAddress(blik.receiverAddress);
 
   // Success state
   if (status === 'success') {
@@ -211,7 +207,7 @@ export function BlikCard({
               {blik.amount} {blik.token} → {recipient}
             </Text>
             {txHash && (
-              <Text style={styles.txHash}>{formatAddress(txHash)}</Text>
+              <Text style={styles.txHash}>{truncateAddress(txHash)}</Text>
             )}
           </LinearGradient>
 

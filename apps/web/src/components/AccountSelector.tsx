@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useAccount } from '@/contexts/account-context'
+import { truncateAddress } from '@/lib/format'
 import type { AccountType } from '@/lib/account-storage'
 
 function TypeBadge({ type }: { type: AccountType }) {
@@ -14,11 +15,6 @@ function TypeBadge({ type }: { type: AccountType }) {
       Real
     </span>
   )
-}
-
-function shortenAddress(addr: string) {
-  if (!addr) return ''
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
 export default function AccountSelector() {
@@ -62,7 +58,7 @@ export default function AccountSelector() {
         className="flex items-center gap-2 px-3 py-2 rounded-xl glass-card hover:border-white/15 transition-all"
       >
         <TypeBadge type={currentAccount.type} />
-        <span className="text-sm font-mono text-white/70">{shortenAddress(address)}</span>
+        <span className="text-sm font-mono text-white/70">{truncateAddress(address)}</span>
         <svg
           width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
           className={`text-white/40 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -91,7 +87,7 @@ export default function AccountSelector() {
                   <p className="text-sm font-medium text-white truncate">
                     {acc.label || `Wallet ${acc.accountIndex}`}
                   </p>
-                  <p className="text-xs font-mono text-white/40 truncate">{shortenAddress(acc.address)}</p>
+                  <p className="text-xs font-mono text-white/40 truncate">{truncateAddress(acc.address)}</p>
                 </div>
                 {acc.id === currentAccount.id && (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/60 flex-shrink-0">

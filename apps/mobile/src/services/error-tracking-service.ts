@@ -166,13 +166,6 @@ export const ErrorBoundary = Sentry?.ErrorBoundary ?? null;
  */
 export const withSentry = Sentry?.wrap ?? (<T>(component: T) => component);
 
-/**
- * Native crash handling (for production builds)
- */
-export function enableNativeCrashHandling(): void {
-  Sentry?.nativeCrash;
-}
-
 // Pre-defined breadcrumb categories
 export const BreadcrumbCategory = {
   NAVIGATION: 'navigation',
@@ -184,5 +177,3 @@ export const BreadcrumbCategory = {
   API: 'api',
 } as const;
 
-// Export Sentry for direct access if needed (may be null in Expo Go)
-export { Sentry };

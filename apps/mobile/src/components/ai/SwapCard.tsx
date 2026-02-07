@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
+import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingSwap {
@@ -93,11 +94,6 @@ export function SwapCard({
     }
   };
 
-  const formatAddress = (address: string) => {
-    if (address.length <= 12) return address;
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
   // Success state
   if (status === 'success') {
     return (
@@ -115,7 +111,7 @@ export function SwapCard({
               {swap.fromToken.amount} {swap.fromToken.symbol} → {swap.toToken.amount} {swap.toToken.symbol}
             </Text>
             {txHash && (
-              <Text style={styles.txHash}>{formatAddress(txHash)}</Text>
+              <Text style={styles.txHash}>{truncateAddress(txHash)}</Text>
             )}
           </LinearGradient>
 

@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 import { AppModule } from './app.module';
 import { SentryInterceptor } from './common/sentry.interceptor';
+
+const logger = new Logger('Bootstrap');
 
 // Initialize Sentry before app creation
 const SENTRY_DSN = process.env.SENTRY_DSN;
@@ -13,7 +15,7 @@ if (SENTRY_DSN) {
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
     debug: process.env.NODE_ENV !== 'production',
   });
-  console.log('✅ Sentry initialized');
+  logger.log('Sentry initialized');
 }
 
 async function bootstrap() {
@@ -42,9 +44,9 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   
-  console.log(`🚀 E-Y API is running on: http://localhost:${port}`);
-  console.log(`📡 BLIK WebSocket: ws://localhost:${port}/blik`);
-  console.log(`📡 Transactions WebSocket: ws://localhost:${port}/transactions`);
+  logger.log(`E-Y API is running on: http://localhost:${port}`);
+  logger.log(`BLIK WebSocket: ws://localhost:${port}/blik`);
+  logger.log(`Transactions WebSocket: ws://localhost:${port}/transactions`);
 }
 
 bootstrap();

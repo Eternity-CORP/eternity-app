@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { truncateAddress } from '@/lib/format'
 
 interface TransactionPreview {
   id: string
@@ -19,11 +20,6 @@ interface SendPreviewCardProps {
   transaction: TransactionPreview
   onConfirm: (updated: TransactionPreview) => void
   onCancel: () => void
-}
-
-function truncateAddress(addr: string): string {
-  if (addr.length <= 12) return addr
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
 function PencilIcon() {

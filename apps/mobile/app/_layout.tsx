@@ -20,7 +20,7 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-slice';
 import { clearLegacyContactsThunk } from '@/src/store/slices/contacts-slice';
 import { hasWallet } from '@/src/services/wallet-service';
-import { initErrorTracking, setUserContext, clearUserContext } from '@/src/services/error-tracking-service';
+import { initErrorTracking, setUserContext } from '@/src/services/error-tracking-service';
 import {
   hasMigrationModalBeenShown,
   markMigrationModalAsShown,

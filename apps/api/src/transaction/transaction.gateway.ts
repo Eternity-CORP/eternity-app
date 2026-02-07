@@ -140,7 +140,7 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
 
     const alchemyUrl = getAlchemyUrl();
     if (!alchemyUrl) {
-      console.warn('ALCHEMY_API_KEY not set, cannot check transaction status');
+      this.logger.warn('ALCHEMY_API_KEY not set, cannot check transaction status');
       return;
     }
 
@@ -197,7 +197,7 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
         this.stopPollingIfNotNeeded();
       }
     } catch (error) {
-      console.error(`Error checking transaction ${txHash}:`, error);
+      this.logger.error(`Error checking transaction ${txHash}:`, error);
     }
   }
 }

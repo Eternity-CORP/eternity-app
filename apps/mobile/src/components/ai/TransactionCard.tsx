@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
+import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingTransaction {
@@ -89,14 +90,9 @@ export function TransactionCard({
     }
   };
 
-  const formatAddress = (address: string) => {
-    if (address.length <= 12) return address;
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-  };
-
   const recipient = transaction.toUsername
     ? `@${transaction.toUsername}`
-    : formatAddress(transaction.to);
+    : truncateAddress(transaction.to);
 
   // Success state with save contact option
   if (status === 'success') {
@@ -116,7 +112,7 @@ export function TransactionCard({
             </Text>
             {txHash && (
               <Text style={styles.txHash}>
-                {formatAddress(txHash)}
+                {truncateAddress(txHash)}
               </Text>
             )}
           </LinearGradient>

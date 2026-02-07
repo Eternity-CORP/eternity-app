@@ -45,5 +45,3 @@ export interface AIProvider {
 
   isAvailable(): Promise<boolean>;
 }
-
-export const AI_PROVIDER = Symbol('AI_PROVIDER');

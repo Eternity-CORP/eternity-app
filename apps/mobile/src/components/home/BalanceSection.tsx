@@ -6,7 +6,7 @@ import { theme } from '@/src/constants/theme';
 interface BalanceSectionProps {
   totalBalance: string;
   isLoading: boolean;
-  lastUpdated: string | null;
+  lastUpdated: number | null;
 }
 
 export function BalanceSection({ totalBalance, isLoading, lastUpdated }: BalanceSectionProps) {

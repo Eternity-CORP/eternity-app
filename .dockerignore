@@ -32,7 +32,6 @@ LICENSE
 apps/mobile/
 apps/website/
 apps/web/
-apps/telegram-bot/
 
 # Packages not needed for API
 packages/ui/

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { truncateAddress } from '@/lib/format'
 
 type BlikPreview =
   | {
@@ -46,11 +47,6 @@ function formatCountdown(ms: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
-}
-
-function truncateAddress(addr: string): string {
-  if (addr.length <= 12) return addr
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
 function BlikGenerateView({ blik, onCancel }: { blik: Extract<BlikPreview, { type: 'generate' }>; onCancel: () => void }) {

@@ -12,7 +12,7 @@ function SendContent() {
   const searchParams = useSearchParams()
   const prefillTo = searchParams.get('to')
 
-  const { wallet, address, network, isLoggedIn, logout } = useAccount()
+  const { wallet, address, network, isLoggedIn } = useAccount()
 
   const [recipient, setRecipient] = useState(prefillTo || '')
   const [amount, setAmount] = useState('')

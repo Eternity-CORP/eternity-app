@@ -55,7 +55,6 @@ Virtual team of 3 AI agents to help with E-Y launch, marketing, and fundraising.
 
 **Commands:**
 - `/ey-content twitter [topic]`
-- `/ey-content telegram [topic]`
 - `/ey-content pitch`
 - `/ey-content email <type>`
 - `/ey-content grant <name>`
@@ -120,7 +119,6 @@ docs/growth/
 ├── calendar.md         # NEW
 └── templates/          # NEW
     ├── twitter-post.md
-    ├── telegram-post.md
     ├── grant-application.md
     └── pitch-email.md
 ```
@@ -137,20 +135,6 @@ After Growth agent actions:
 2. Log content in `docs/growth/content-log.md`
 3. Update `docs/growth/opportunities.md`
 4. Check `docs/growth/calendar.md`
-
-## Future: Telegram Bot
-
-```
-apps/telegram-bot/
-├── src/
-│   ├── bot.service.ts
-│   ├── claude.service.ts
-│   ├── agents/
-│   └── context/
-└── package.json
-```
-
-Bot will use same agent prompts, accessible via Telegram.
 
 ## Implementation Plan
 

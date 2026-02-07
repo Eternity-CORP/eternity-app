@@ -13,7 +13,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { BlikService } from './blik.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import {
@@ -27,7 +27,6 @@ import {
   type CodeNotFoundPayload,
   type PaymentConfirmedPayload,
   type PaymentAcceptedPayload,
-  type CodeExpiredPayload,
   type CodeLookupPayload,
 } from '@e-y/shared';
 
@@ -37,9 +36,8 @@ import {
     origin: '*',
   },
 })
-export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy {
+export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(BlikGateway.name);
-  private cleanupInterval: NodeJS.Timeout;
 
   @WebSocketServer()
   server: Server;
@@ -48,26 +46,6 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     private readonly blikService: BlikService,
     private readonly notificationsService: NotificationsService,
   ) {}
-
-  onModuleInit() {
-    // Set up periodic expiration check that notifies receivers
-    this.cleanupInterval = setInterval(async () => {
-      const expiredCodes = await this.blikService.cleanup();
-      for (const code of expiredCodes) {
-        // Notify receiver about expiration
-        if (code.receiverSocketId) {
-          const expiredPayload: CodeExpiredPayload = { code: code.code };
-          this.server.to(code.receiverSocketId).emit(BLIK_EVENTS.CODE_EXPIRED, expiredPayload);
-        }
-      }
-    }, 30000);
-  }
-
-  onModuleDestroy() {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-    }
-  }
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected to BLIK gateway: ${client.id}`);

@@ -1,4 +1,4 @@
-import { IsString, Matches, IsEthereumAddress, IsNumber, Min } from 'class-validator';
+import { IsString, Matches, IsNumber, Min } from 'class-validator';
 
 export class RegisterUsernameDto {
   @IsString()

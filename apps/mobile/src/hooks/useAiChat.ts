@@ -27,9 +27,7 @@ import {
   addSuggestion,
   dismissSuggestion as dismissSuggestionAction,
   setError,
-  clearError,
   clearMessages,
-  resetAi,
   type AiState,
 } from '@/src/store/slices/ai-slice';
 

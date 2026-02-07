@@ -131,7 +131,6 @@ e-y/
 │   │   ├── public/
 │   │   └── package.json
 │   ├── website/             # Marketing landing
-│   └── telegram-bot/        # Growth bot
 ├── packages/
 │   ├── crypto/              # Wallet, signing (существует)
 │   ├── shared/              # Types, constants (существует)

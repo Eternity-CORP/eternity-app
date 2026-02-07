@@ -304,7 +304,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <HomeHeader
-        currentAccount={currentAccount}
+        currentAccount={currentAccount ?? undefined}
         onOpenAccountSelector={openAccountSelector}
       />
 

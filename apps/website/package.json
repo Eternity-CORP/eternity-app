@@ -9,13 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.72.1",
     "@gsap/react": "^2.1.0",
     "@react-three/drei": "^9.97.0",
     "@react-three/fiber": "^8.15.19",
     "clsx": "^2.1.0",
     "framer-motion": "^11.0.8",
-    "grammy": "^1.21.1",
     "gsap": "^3.12.5",
     "next": "^14.2.21",
     "react": "^18.3.1",

@@ -205,7 +205,6 @@ export {
   ErrorBoundary,
   withSentry,
   BreadcrumbCategory,
-  Sentry,
 } from './error-tracking-service';
 
 // Swap Service (DEX Aggregator)

@@ -56,7 +56,6 @@
 
 2. **Бета-тестеры** — 50 человек за 2-3 недели
    - Twitter build-in-public
-   - Telegram outreach (UA + international)
    - Personal contacts
 
 3. **Акселераторы** — после 50+ тестеров
@@ -69,7 +68,6 @@
 
 ### Для контента:
 - **Twitter (EN):** Confident but humble, build-in-public, no hype
-- **Telegram (UA/RU):** Friendly, informal, honest about being early stage
 - **Grants/Investors:** Professional, data-driven, specific about ask
 
 ### Ключевые сообщения:

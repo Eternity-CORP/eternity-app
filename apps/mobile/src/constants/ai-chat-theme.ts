@@ -39,13 +39,11 @@ export const aiChat = {
   input: {
     bg: 'rgba(19,19,19,0.6)',
     border: 'rgba(255,255,255,0.08)',
-    focusBorder: 'rgba(51,136,255,0.3)',
     placeholder: 'rgba(255,255,255,0.3)',
   },
 
   // Accent colors
   accentBlue: '#3388FF',
-  accentCyan: '#00E5FF',
   accentGreen: '#22C55E',
   accentRed: '#EF4444',
   accentAmber: '#F59E0B',
@@ -58,12 +56,5 @@ export const aiChat = {
   grid: {
     stroke: 'rgba(255,255,255,0.06)',
     cellSize: 60,
-  },
-
-  // Glow orbs
-  orbs: {
-    blue: 'rgba(51,136,255,0.15)',
-    cyan: 'rgba(0,229,255,0.10)',
-    green: 'rgba(34,197,94,0.08)',
   },
 } as const;
