@@ -10,3 +10,4 @@ export { SuggestionBanner, SuggestionBannerList } from './SuggestionBanner';
 export { TransactionCard, type PendingTransaction } from './TransactionCard';
 export { BlikCard, type PendingBlik, type PendingBlikGenerate, type PendingBlikPay } from './BlikCard';
 export { SwapCard, type PendingSwap } from './SwapCard';
+export { ChatBackground } from './ChatBackground';

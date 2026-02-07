@@ -7,6 +7,7 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
 import { useAiChat } from '@/hooks/useAiChat'
 import { saveTransaction } from '@/lib/supabase'
+import AccountSelector from '@/components/AccountSelector'
 import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 import SuggestionChips from './SuggestionChips'
@@ -35,7 +36,7 @@ type ConfirmTarget =
   | { type: 'swap'; swap: Parameters<typeof SwapCard>[0]['swap'] }
 
 export default function ChatContainer() {
-  const { address, network, currentAccount } = useAccount()
+  const { address, network, currentAccount, logout, uiMode, setUiMode } = useAccount()
   const {
     messages,
     status,
@@ -223,24 +224,52 @@ export default function ChatContainer() {
     : null
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
-      {/* Balance Panel */}
-      <div className="flex-shrink-0 px-4 pt-4 pb-2">
-        <div className="glass-card rounded-xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {balanceLoading ? (
-              <div className="h-6 w-24 bg-white/5 rounded-lg animate-pulse" />
-            ) : (
-              <span className="text-lg font-bold text-white">
-                {formattedBalance} <span className="text-sm font-medium text-white/40">{network.symbol}</span>
-              </span>
-            )}
+    <div className="flex flex-col h-screen">
+      {/* Minimal Top Bar */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/5">
+        {/* Left: balance */}
+        <div className="flex items-center gap-3">
+          {balanceLoading ? (
+            <div className="h-5 w-20 bg-white/5 rounded-lg animate-pulse" />
+          ) : (
+            <span className="text-base font-bold text-white">
+              {formattedBalance} <span className="text-sm font-medium text-white/40">{network.symbol}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Right: toggle + account + lock + network */}
+        <div className="flex items-center gap-3">
+          <div className="mode-toggle flex">
+            <button
+              onClick={() => setUiMode('ai')}
+              className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
+            >
+              AI
+            </button>
+            <button
+              onClick={() => setUiMode('classic')}
+              className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
+            >
+              Classic
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: networkColor }}
-            />
+
+          <AccountSelector />
+
+          <button
+            onClick={logout}
+            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+            title="Lock wallet"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: networkColor }} />
             <span className="text-xs text-white/40">
               {network.name}{currentAccount?.type === 'test' ? ' Testnet' : ''}
             </span>
@@ -250,6 +279,21 @@ export default function ChatContainer() {
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
+        {/* Hero text when empty */}
+        {!hasMessages && !isStreaming && (
+          <div className="flex-1 flex flex-col items-center justify-center h-full select-none pointer-events-none">
+            <h1 className="text-5xl font-extrabold tracking-tight leading-tight text-center hero-gradient-text">
+              Your wallet.
+            </h1>
+            <h1 className="text-5xl font-extrabold tracking-tight leading-tight text-center hero-gradient-text">
+              Your rules.
+            </h1>
+            <p className="mt-3 text-xl font-semibold tracking-[0.2em] uppercase text-[#3388FF]/40">
+              Just ask.
+            </p>
+          </div>
+        )}
+
         {messages.map((msg) => {
           const bubbleMsg: BubbleChatMessage = {
             id: msg.id,

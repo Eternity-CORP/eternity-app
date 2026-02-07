@@ -16,6 +16,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
+import { aiChat } from '@/src/constants/ai-chat-theme';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingTransaction {
@@ -128,7 +129,7 @@ export function TransactionCard({
                   style={styles.saveContactPrompt}
                   onPress={() => setShowSaveContact(true)}
                 >
-                  <FontAwesome name="user-plus" size={16} color={theme.colors.accent} />
+                  <FontAwesome name="user-plus" size={16} color={aiChat.accentBlue} />
                   <Text style={styles.saveContactPromptText}>
                     Save to contacts?
                   </Text>
@@ -138,7 +139,7 @@ export function TransactionCard({
                   <TextInput
                     style={styles.contactNameInput}
                     placeholder="Contact name"
-                    placeholderTextColor={theme.colors.textTertiary}
+                    placeholderTextColor={aiChat.text.tertiary}
                     value={contactName}
                     onChangeText={setContactName}
                     autoFocus
@@ -170,7 +171,7 @@ export function TransactionCard({
           {/* Contact Saved Confirmation */}
           {contactSaved && (
             <View style={styles.contactSavedBanner}>
-              <FontAwesome name="check" size={14} color={theme.colors.success} />
+              <FontAwesome name="check" size={14} color={aiChat.accentGreen} />
               <Text style={styles.contactSavedText}>Contact saved!</Text>
             </View>
           )}
@@ -190,7 +191,7 @@ export function TransactionCard({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerIcon}>
-            <FontAwesome name="paper-plane" size={16} color={theme.colors.accent} />
+            <FontAwesome name="paper-plane" size={16} color={aiChat.accentBlue} />
           </View>
           <Text style={styles.headerTitle}>Confirm Transaction</Text>
         </View>
@@ -224,7 +225,7 @@ export function TransactionCard({
         {/* Error */}
         {error && (
           <View style={styles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={theme.colors.error} />
+            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -252,7 +253,7 @@ export function TransactionCard({
             disabled={status === 'confirming'}
           >
             <LinearGradient
-              colors={theme.colors.gradientBlue as unknown as [string, string]}
+              colors={['#3388FF', '#2266CC']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.confirmButtonGradient}
@@ -279,10 +280,10 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
   },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
+    backgroundColor: aiChat.glassCard.bg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.colors.accent + '40',
+    borderColor: 'rgba(51,136,255,0.2)',
     overflow: 'hidden',
   },
   header: {
@@ -290,36 +291,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: aiChat.divider,
   },
   headerIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: theme.colors.accent + '20',
+    backgroundColor: 'rgba(51,136,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing.sm,
   },
   headerTitle: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '600',
   },
   amountSection: {
     alignItems: 'center',
     paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: aiChat.divider,
   },
   amountValue: {
     ...theme.typography.title,
-    color: theme.colors.textPrimary,
+    fontSize: 28,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
   amountUsd: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: aiChat.text.secondary,
     marginTop: theme.spacing.xs,
   },
   details: {
@@ -333,11 +335,11 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     ...theme.typography.caption,
-    color: theme.colors.textTertiary,
+    color: aiChat.text.tertiary,
   },
   detailValue: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '500',
   },
   errorBanner: {
@@ -347,12 +349,12 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
     padding: theme.spacing.sm,
-    backgroundColor: theme.colors.error + '15',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     borderRadius: theme.borderRadius.sm,
   },
   errorText: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: aiChat.accentRed,
     flex: 1,
   },
   actions: {
@@ -360,19 +362,19 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: aiChat.divider,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.border,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: aiChat.text.secondary,
     fontWeight: '600',
   },
   confirmButton: {
@@ -422,7 +424,7 @@ const styles = StyleSheet.create({
   },
   // Save contact styles
   saveContactSection: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: aiChat.glassCard.bg,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
   },
@@ -435,17 +437,19 @@ const styles = StyleSheet.create({
   },
   saveContactPromptText: {
     ...theme.typography.body,
-    color: theme.colors.accent,
+    color: aiChat.accentBlue,
     fontWeight: '500',
   },
   saveContactForm: {
     gap: theme.spacing.sm,
   },
   contactNameInput: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     padding: theme.spacing.md,
-    color: theme.colors.textPrimary,
+    color: '#FFFFFF',
     ...theme.typography.body,
   },
   saveContactActions: {
@@ -460,11 +464,11 @@ const styles = StyleSheet.create({
   },
   saveContactCancelText: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: aiChat.text.secondary,
   },
   saveContactSave: {
     flex: 2,
-    backgroundColor: theme.colors.accent,
+    backgroundColor: aiChat.accentBlue,
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.sm,
     alignItems: 'center',
@@ -480,24 +484,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
-    backgroundColor: theme.colors.success + '15',
+    backgroundColor: 'rgba(34,197,94,0.15)',
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
   },
   contactSavedText: {
     ...theme.typography.body,
-    color: theme.colors.success,
+    color: aiChat.accentGreen,
     fontWeight: '500',
   },
   doneButton: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
   },
   doneButtonText: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '600',
   },
 });

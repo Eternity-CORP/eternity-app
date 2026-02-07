@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
+import { aiChat } from '@/src/constants/ai-chat-theme';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 
 export interface PendingSwap {
@@ -159,7 +160,7 @@ export function SwapCard({
 
           {/* Arrow */}
           <View style={styles.arrowContainer}>
-            <FontAwesome name="arrow-down" size={20} color={theme.colors.textSecondary} />
+            <FontAwesome name="arrow-down" size={20} color={aiChat.text.tertiary} />
           </View>
 
           {/* To Token */}
@@ -225,7 +226,7 @@ export function SwapCard({
         {/* Error */}
         {error && (
           <View style={styles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={theme.colors.error} />
+            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -304,10 +305,10 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
   },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
+    backgroundColor: aiChat.glassCard.bg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F59E0B' + '40',
+    borderColor: 'rgba(51,136,255,0.2)',
     overflow: 'hidden',
   },
   header: {
@@ -315,35 +316,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: aiChat.divider,
   },
   headerIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F59E0B' + '20',
+    backgroundColor: 'rgba(245,158,11,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing.sm,
   },
   headerTitle: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '600',
   },
   swapSection: {
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: aiChat.divider,
   },
   tokenBox: {
-    backgroundColor: theme.colors.background,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
   tokenLabel: {
     ...theme.typography.caption,
-    color: theme.colors.textTertiary,
+    color: aiChat.text.tertiary,
     marginBottom: theme.spacing.sm,
   },
   tokenRow: {
@@ -354,17 +357,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: theme.colors.accent + '20',
+    backgroundColor: 'rgba(51,136,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: theme.spacing.md,
   },
   tokenIconGreen: {
-    backgroundColor: '#10B981' + '20',
+    backgroundColor: 'rgba(16,185,129,0.2)',
   },
   tokenIconText: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '600',
   },
   tokenInfo: {
@@ -372,12 +375,12 @@ const styles = StyleSheet.create({
   },
   tokenAmount: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '600',
   },
   tokenUsd: {
     ...theme.typography.caption,
-    color: theme.colors.textSecondary,
+    color: aiChat.text.secondary,
     marginTop: 2,
   },
   arrowContainer: {
@@ -395,15 +398,15 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     ...theme.typography.caption,
-    color: theme.colors.textTertiary,
+    color: aiChat.text.tertiary,
   },
   detailValue: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '500',
   },
   detailValueWarning: {
-    color: '#F59E0B',
+    color: aiChat.accentAmber,
   },
   approvalBanner: {
     flexDirection: 'row',
@@ -412,12 +415,12 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
     padding: theme.spacing.sm,
-    backgroundColor: '#F59E0B' + '15',
+    backgroundColor: 'rgba(245,158,11,0.1)',
     borderRadius: theme.borderRadius.sm,
   },
   approvalText: {
     ...theme.typography.caption,
-    color: '#F59E0B',
+    color: aiChat.accentAmber,
     flex: 1,
   },
   errorBanner: {
@@ -427,12 +430,12 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
     padding: theme.spacing.sm,
-    backgroundColor: theme.colors.error + '15',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     borderRadius: theme.borderRadius.sm,
   },
   errorText: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: aiChat.accentRed,
     flex: 1,
   },
   actions: {
@@ -440,19 +443,19 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: aiChat.divider,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.border,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButtonText: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: aiChat.text.secondary,
     fontWeight: '600',
   },
   confirmButton: {
@@ -501,14 +504,16 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   doneButton: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: theme.borderRadius.lg,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   doneButtonText: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
     fontWeight: '600',
   },
 });

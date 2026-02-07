@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useTheme } from '@/src/contexts';
+import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 
 interface ChatInputProps {
@@ -27,7 +27,6 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Ask anything...',
 }: ChatInputProps) {
-  const { theme: dynamicTheme } = useTheme();
   const [text, setText] = useState('');
 
   const handleSend = useCallback(() => {
@@ -43,14 +42,14 @@ export function ChatInput({
   const canSend = text.trim().length > 0 && !disabled;
 
   return (
-    <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background, borderTopColor: dynamicTheme.colors.border }]}>
-      <View style={[styles.inputContainer, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+    <View style={styles.container}>
+      <View style={styles.inputContainer}>
         <TextInput
-          style={[styles.input, { color: dynamicTheme.colors.textPrimary }]}
+          style={styles.input}
           value={text}
           onChangeText={setText}
           placeholder={placeholder}
-          placeholderTextColor={dynamicTheme.colors.textTertiary}
+          placeholderTextColor={aiChat.input.placeholder}
           multiline
           maxLength={1000}
           editable={!disabled}
@@ -59,7 +58,7 @@ export function ChatInput({
           onSubmitEditing={handleSend}
         />
         <TouchableOpacity
-          style={[styles.sendButton, { backgroundColor: dynamicTheme.colors.surfaceHover }, canSend && { backgroundColor: dynamicTheme.colors.accent }]}
+          style={[styles.sendButton, canSend && styles.sendButtonActive]}
           onPress={handleSend}
           disabled={!canSend}
           activeOpacity={0.7}
@@ -67,7 +66,7 @@ export function ChatInput({
           <FontAwesome
             name="arrow-up"
             size={18}
-            color={canSend ? dynamicTheme.colors.buttonPrimaryText : dynamicTheme.colors.textTertiary}
+            color={canSend ? '#FFFFFF' : aiChat.text.muted}
           />
         </TouchableOpacity>
       </View>
@@ -79,17 +78,16 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.xl,
+    backgroundColor: aiChat.input.bg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: aiChat.input.border,
     paddingLeft: theme.spacing.lg,
     paddingRight: theme.spacing.xs,
     paddingVertical: theme.spacing.xs,
@@ -97,20 +95,20 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    fontSize: 14,
+    color: aiChat.text.primary,
     maxHeight: 100,
     paddingVertical: theme.spacing.sm,
   },
   sendButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.surfaceHover,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendButtonActive: {
-    backgroundColor: theme.colors.accent,
+    backgroundColor: aiChat.accentBlue,
   },
 });

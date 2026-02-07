@@ -108,6 +108,13 @@ body {
   background-clip: text;
 }
 
+.hero-gradient-text {
+  background: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Glass card */
 .glass-card {
   background: rgba(19, 19, 19, 0.6);

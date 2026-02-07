@@ -86,8 +86,8 @@ export default function UsernameScreen() {
             setError('Username is already taken');
           }
         } catch (err) {
-          setIsAvailable(null);
-          setError('Connection error. Try again.');
+          setIsAvailable(true);
+          setError('Could not verify availability. You can still try.');
         } finally {
           setIsChecking(false);
         }

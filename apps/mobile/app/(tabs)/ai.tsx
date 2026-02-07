@@ -12,11 +12,11 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { FontAwesome } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
 import { useAiChat } from '@/src/hooks/useAiChat';
 import {
@@ -27,12 +27,13 @@ import {
   TransactionCard,
   BlikCard,
   SwapCard,
+  ChatBackground,
   type PendingTransaction,
   type PendingBlik,
   type PendingBlikPay,
   type PendingSwap,
 } from '@/src/components/ai';
-import { useTheme } from '@/src/contexts';
+import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { sendTransaction } from '@/src/services/send-service';
@@ -60,13 +61,24 @@ export default function AiScreen() {
     clearPendingSwap,
   } = useAiChat();
 
-  const { theme: dynamicTheme, isDark } = useTheme();
   const flatListRef = useRef<FlatList>(null);
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
+  const balance = useAppSelector((state) => state.balance);
   const contacts = useAppSelector((state) => state.contacts.contacts);
   const currentAccountIndex = wallet.currentAccountIndex;
   const currentAccount = wallet.accounts[currentAccountIndex];
+
+  // Get native token balance for the top bar
+  const nativeToken = balance.balances.find(
+    (b) => b.symbol === 'ETH' || b.symbol === 'MATIC'
+  );
+  const displayBalance = nativeToken
+    ? parseFloat(nativeToken.balance).toFixed(4)
+    : '0.0000';
+  const displaySymbol = nativeToken?.symbol ?? 'ETH';
+  const isTestAccount = currentAccount?.type === 'test';
+  const networkColor = isTestAccount ? aiChat.accentAmber : aiChat.accentGreen;
 
   // Load contacts on mount
   useEffect(() => {
@@ -215,36 +227,34 @@ export default function AiScreen() {
   const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
 
   const isDisabled = !isConnected || isStreaming;
+  const hasMessages = messages.length > 0;
+
+  const QUICK_CHIPS = hasMessages
+    ? ['Баланс', 'Отправить', 'BLIK', 'История']
+    : ['Что ты умеешь?', 'Покажи баланс', 'Как отправить крипто?'];
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar style="light" />
+      <ChatBackground />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={[styles.headerGlassContainer, { borderColor: dynamicTheme.colors.glassBorder }]}>
-            <BlurView intensity={80} tint={isDark ? 'light' : 'dark'} style={styles.headerBlur}>
-              <View style={styles.headerContent}>
-                <View style={[styles.headerIcon, { backgroundColor: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}>
-                  <FontAwesome name="magic" size={20} color={dynamicTheme.colors.textPrimary} />
-                </View>
-                <View style={styles.headerText}>
-                  <Text style={[styles.headerTitle, { color: dynamicTheme.colors.textPrimary }]}>Eternity AI</Text>
-                  <Text style={[styles.headerSubtitle, { color: dynamicTheme.colors.textSecondary }]}>
-                    {isConnected ? 'Ready to help' : 'Connecting...'}
-                  </Text>
-                </View>
-                <View style={styles.statusIndicator}>
-                  <View style={[
-                    styles.statusDot,
-                    isConnected ? styles.statusDotConnected : styles.statusDotDisconnected
-                  ]} />
-                </View>
-              </View>
-            </BlurView>
+        {/* Minimal Top Bar: balance + network */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarLeft}>
+            <Text style={styles.balanceText}>
+              {displayBalance}{' '}
+              <Text style={styles.balanceSymbol}>{displaySymbol}</Text>
+            </Text>
+          </View>
+          <View style={styles.topBarRight}>
+            <View style={[styles.networkDot, { backgroundColor: networkColor }]} />
+            <Text style={styles.networkText}>
+              {isTestAccount ? 'Sepolia Testnet' : 'Ethereum'}
+            </Text>
           </View>
         </View>
 
@@ -279,19 +289,9 @@ export default function AiScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <View style={styles.emptyIcon}>
-                <FontAwesome name="comments-o" size={48} color={dynamicTheme.colors.textTertiary} />
-              </View>
-              <Text style={[styles.emptyTitle, { color: dynamicTheme.colors.textPrimary }]}>Chat with AI</Text>
-              <Text style={[styles.emptySubtitle, { color: dynamicTheme.colors.textSecondary }]}>
-                Ask about your balance, send crypto, or get help with transactions
-              </Text>
-              <View style={styles.examplesContainer}>
-                <Text style={[styles.examplesTitle, { color: dynamicTheme.colors.textTertiary }]}>Try asking:</Text>
-                <Text style={[styles.exampleText, { color: dynamicTheme.colors.accent }]}>"What's my balance?"</Text>
-                <Text style={[styles.exampleText, { color: dynamicTheme.colors.accent }]}>"Send 0.1 ETH to @username"</Text>
-                <Text style={[styles.exampleText, { color: dynamicTheme.colors.accent }]}>"Show my recent transactions"</Text>
-              </View>
+              <Text style={styles.heroLine1}>Your wallet.</Text>
+              <Text style={styles.heroLine2}>Your rules.</Text>
+              <Text style={styles.heroSubtitle}>Just ask.</Text>
             </View>
           }
           ListFooterComponent={
@@ -335,11 +335,30 @@ export default function AiScreen() {
 
         {/* Error Banner */}
         {error && (
-          <View style={[styles.errorBanner, { backgroundColor: dynamicTheme.colors.error + '15', borderColor: dynamicTheme.colors.error + '30' }]}>
-            <FontAwesome name="exclamation-circle" size={16} color={dynamicTheme.colors.error} />
-            <Text style={[styles.errorText, { color: dynamicTheme.colors.error }]}>{error}</Text>
+          <View style={styles.errorBanner}>
+            <FontAwesome name="exclamation-circle" size={16} color={aiChat.accentRed} />
+            <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
+
+        {/* Quick Prompt Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.quickChipsContent}
+          style={styles.quickChipsRow}
+        >
+          {QUICK_CHIPS.map((chip) => (
+            <TouchableOpacity
+              key={chip}
+              style={styles.quickChip}
+              onPress={() => sendMessage(chip)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.quickChipText}>{chip}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {/* Input */}
         <ChatInput
@@ -361,63 +380,47 @@ export default function AiScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: aiChat.screen,
   },
   container: {
     flex: 1,
   },
-  header: {
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+    height: 48,
+    borderBottomWidth: 1,
+    borderBottomColor: aiChat.divider,
   },
-  headerGlassContainer: {
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.colors.glassBorder,
-  },
-  headerBlur: {
-    padding: theme.spacing.lg,
-  },
-  headerContent: {
+  topBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  topBarRight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
   },
-  headerText: {
-    flex: 1,
-    marginLeft: theme.spacing.md,
-  },
-  headerTitle: {
-    ...theme.typography.heading,
-    color: '#FFFFFF',
+  balanceText: {
+    fontSize: 16,
     fontWeight: '700',
+    color: aiChat.text.primary,
   },
-  headerSubtitle: {
-    ...theme.typography.caption,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
+  balanceSymbol: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: aiChat.text.tertiary,
   },
-  statusIndicator: {
-    padding: theme.spacing.sm,
+  networkDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  statusDotConnected: {
-    backgroundColor: theme.colors.success,
-  },
-  statusDotDisconnected: {
-    backgroundColor: theme.colors.textTertiary,
+  networkText: {
+    fontSize: 12,
+    color: aiChat.text.tertiary,
   },
   suggestionsContainer: {
     paddingVertical: theme.spacing.sm,
@@ -437,35 +440,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.xxl,
-    paddingTop: theme.spacing.xxl * 2,
   },
-  emptyIcon: {
-    marginBottom: theme.spacing.lg,
-  },
-  emptyTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
-  },
-  emptySubtitle: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
+  heroLine1: {
+    fontSize: 38,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.28)',
+    letterSpacing: -1,
+    lineHeight: 46,
     textAlign: 'center',
-    lineHeight: 22,
   },
-  examplesContainer: {
-    marginTop: theme.spacing.xl,
+  heroLine2: {
+    fontSize: 38,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.16)',
+    letterSpacing: -1,
+    lineHeight: 46,
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'rgba(51,136,255,0.40)',
+    marginTop: 12,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  quickChipsRow: {
+    flexShrink: 0,
+    marginBottom: 0,
+  },
+  quickChipsContent: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: 6,
+    paddingBottom: 4,
+    gap: 8,
     alignItems: 'center',
   },
-  examplesTitle: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-    marginBottom: theme.spacing.sm,
+  quickChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  exampleText: {
-    ...theme.typography.caption,
-    color: theme.colors.accent,
-    marginBottom: theme.spacing.xs,
+  quickChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: aiChat.text.secondary,
   },
   errorBanner: {
     flexDirection: 'row',
@@ -474,14 +497,14 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.lg,
     marginBottom: theme.spacing.sm,
     padding: theme.spacing.md,
-    backgroundColor: theme.colors.error + '15',
+    backgroundColor: 'rgba(239,68,68,0.1)',
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: theme.colors.error + '30',
+    borderColor: 'rgba(239,68,68,0.2)',
   },
   errorText: {
     ...theme.typography.caption,
-    color: theme.colors.error,
+    color: aiChat.accentRed,
     flex: 1,
   },
 });

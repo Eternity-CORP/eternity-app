@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { useTheme } from '@/src/contexts';
+import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 
 interface TypingIndicatorProps {
@@ -13,7 +13,6 @@ interface TypingIndicatorProps {
 }
 
 export function TypingIndicator({ streamingContent }: TypingIndicatorProps) {
-  const { theme: dynamicTheme } = useTheme();
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -71,18 +70,18 @@ export function TypingIndicator({ streamingContent }: TypingIndicatorProps) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.bubble, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+      <View style={styles.bubble}>
         {streamingContent ? (
-          <Text style={[styles.streamingText, { color: dynamicTheme.colors.textPrimary }]}>{streamingContent}</Text>
+          <Text style={styles.streamingText}>{streamingContent}</Text>
         ) : (
           <View style={styles.dotsContainer}>
-            <Animated.View style={[styles.dot, { backgroundColor: dynamicTheme.colors.accent }, createDotStyle(dot1)]} />
-            <Animated.View style={[styles.dot, { backgroundColor: dynamicTheme.colors.accent }, createDotStyle(dot2)]} />
-            <Animated.View style={[styles.dot, { backgroundColor: dynamicTheme.colors.accent }, createDotStyle(dot3)]} />
+            <Animated.View style={[styles.dot, createDotStyle(dot1)]} />
+            <Animated.View style={[styles.dot, createDotStyle(dot2)]} />
+            <Animated.View style={[styles.dot, createDotStyle(dot3)]} />
           </View>
         )}
       </View>
-      <Text style={[styles.label, { color: dynamicTheme.colors.textTertiary }]}>
+      <Text style={styles.label}>
         {streamingContent ? 'AI is responding...' : 'AI is thinking...'}
       </Text>
     </View>
@@ -96,11 +95,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
   },
   bubble: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: aiChat.aiBubble.bg,
     borderRadius: theme.borderRadius.lg,
-    borderBottomLeftRadius: theme.spacing.xs,
+    borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: aiChat.aiBubble.border,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     minWidth: 60,
@@ -114,19 +113,19 @@ const styles = StyleSheet.create({
     height: 20,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.accent,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: aiChat.text.tertiary,
   },
   streamingText: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    lineHeight: 22,
+    fontSize: 14,
+    color: aiChat.text.primary,
+    lineHeight: 20,
   },
   label: {
-    ...theme.typography.label,
-    color: theme.colors.textTertiary,
+    fontSize: 10,
+    color: 'rgba(51,136,255,0.6)',
     marginTop: theme.spacing.xs,
   },
 });

@@ -6,8 +6,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
+import { aiChat } from '@/src/constants/ai-chat-theme';
 import type { ChatMessage } from '@/src/services/ai-service';
 
 interface ChatBubbleProps {
@@ -15,7 +15,6 @@ interface ChatBubbleProps {
 }
 
 export function ChatBubble({ message }: ChatBubbleProps) {
-  const { theme: dynamicTheme, isDark } = useTheme();
   const isUser = message.role === 'user';
 
   const formattedTime = useMemo(() => {
@@ -30,33 +29,33 @@ export function ChatBubble({ message }: ChatBubbleProps) {
     return (
       <View style={styles.userContainer}>
         <LinearGradient
-          colors={isDark ? ['#FFFFFF', '#E0E0E0'] : ['#333333', '#000000']}
+          colors={[aiChat.userBubble.gradientStart, aiChat.userBubble.gradientEnd]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.userBubble}
         >
-          <Text style={[styles.userText, { color: isDark ? '#000000' : '#FFFFFF' }]}>{message.content}</Text>
+          <Text style={styles.userText}>{message.content}</Text>
         </LinearGradient>
-        <Text style={[styles.timestamp, { color: dynamicTheme.colors.textTertiary }]}>{formattedTime}</Text>
+        <Text style={styles.timestamp}>{formattedTime}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.aiContainer}>
-      <View style={[styles.aiBubble, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
-        <Text style={[styles.aiText, { color: dynamicTheme.colors.textPrimary }]}>{message.content}</Text>
+      <View style={styles.aiBubble}>
+        <Text style={styles.aiText}>{message.content}</Text>
         {message.toolCalls && message.toolCalls.length > 0 && (
-          <View style={[styles.toolCallsContainer, { borderTopColor: dynamicTheme.colors.border }]}>
+          <View style={styles.toolCallsContainer}>
             {message.toolCalls.map((tool, index) => (
-              <View key={index} style={[styles.toolCallBadge, { backgroundColor: dynamicTheme.colors.accent + '20' }]}>
-                <Text style={[styles.toolCallText, { color: dynamicTheme.colors.accent }]}>{tool.name}</Text>
+              <View key={index} style={styles.toolCallBadge}>
+                <Text style={styles.toolCallText}>{tool.name}</Text>
               </View>
             ))}
           </View>
         )}
       </View>
-      <Text style={[styles.timestamp, { color: dynamicTheme.colors.textTertiary }]}>{formattedTime}</Text>
+      <Text style={styles.timestamp}>{formattedTime}</Text>
     </View>
   );
 }
@@ -77,30 +76,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
-    borderBottomRightRadius: theme.spacing.xs,
+    borderBottomRightRadius: 4,
+    borderWidth: 1,
+    borderColor: aiChat.userBubble.border,
   },
   aiBubble: {
     maxWidth: '85%',
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
-    borderBottomLeftRadius: theme.spacing.xs,
-    backgroundColor: theme.colors.surface,
+    borderBottomLeftRadius: 4,
+    backgroundColor: aiChat.aiBubble.bg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: aiChat.aiBubble.border,
   },
   userText: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
+    color: aiChat.text.primary,
   },
   aiText: {
     ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    lineHeight: 22,
+    color: aiChat.text.primary,
+    lineHeight: 20,
   },
   timestamp: {
     ...theme.typography.label,
-    color: theme.colors.textTertiary,
+    fontSize: 10,
+    color: aiChat.text.timestamp,
     marginTop: theme.spacing.xs,
   },
   toolCallsContainer: {
@@ -110,16 +112,18 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
     paddingTop: theme.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: aiChat.aiBubble.border,
   },
   toolCallBadge: {
-    backgroundColor: theme.colors.accent + '20',
+    backgroundColor: 'rgba(51,136,255,0.15)',
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borderRadius.sm,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(51,136,255,0.2)',
   },
   toolCallText: {
     ...theme.typography.label,
-    color: theme.colors.accent,
+    color: aiChat.accentBlue,
   },
 });

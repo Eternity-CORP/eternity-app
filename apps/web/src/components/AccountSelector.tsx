@@ -25,7 +25,15 @@ export default function AccountSelector() {
   const { accounts, currentAccount, address, switchAccount, addAccount } = useAccount()
   const [open, setOpen] = useState(false)
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [copied, setCopied] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+
+  const handleCopyAddress = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    await navigator.clipboard.writeText(address)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -93,6 +101,30 @@ export default function AccountSelector() {
               </button>
             ))}
           </div>
+
+          {/* Copy address */}
+          <div className="border-t border-white/8" />
+          <button
+            onClick={handleCopyAddress}
+            className="w-full flex items-center gap-3 px-5 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            {copied ? (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[#22c55e]">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                <span className="text-[#22c55e]">Copied!</span>
+              </>
+            ) : (
+              <>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copy Address
+              </>
+            )}
+          </button>
 
           {/* Separator */}
           <div className="border-t border-white/8" />

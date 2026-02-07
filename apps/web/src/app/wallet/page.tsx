@@ -38,11 +38,10 @@ export default function WalletDashboard() {
     }
   }
 
-  // AI Mode
+  // AI Mode — clean fullscreen, no Navigation, no glow orbs
   if (uiMode === 'ai') {
     return (
-      <div className="min-h-screen relative z-[2]">
-        <Navigation />
+      <div className="min-h-screen relative z-[2] bg-black bg-grid">
         <ChatContainer />
       </div>
     )
