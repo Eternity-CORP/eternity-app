@@ -341,37 +341,38 @@ export default function AiScreen() {
           </View>
         )}
 
-        {/* Quick Prompt Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.quickChipsContent}
-          style={styles.quickChipsRow}
-        >
-          {QUICK_CHIPS.map((chip) => (
-            <TouchableOpacity
-              key={chip}
-              style={styles.quickChip}
-              onPress={() => sendMessage(chip)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.quickChipText}>{chip}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Bottom: chips + input pinned together */}
+        <View style={styles.bottomContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickChipsContent}
+            style={styles.quickChipsRow}
+          >
+            {QUICK_CHIPS.map((chip) => (
+              <TouchableOpacity
+                key={chip}
+                style={styles.quickChip}
+                onPress={() => sendMessage(chip)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.quickChipText}>{chip}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
 
-        {/* Input */}
-        <ChatInput
-          onSend={sendMessage}
-          disabled={isDisabled}
-          placeholder={
-            !isConnected
-              ? 'Connecting...'
-              : isStreaming
-              ? 'AI is responding...'
-              : 'Ask anything...'
-          }
-        />
+          <ChatInput
+            onSend={sendMessage}
+            disabled={isDisabled}
+            placeholder={
+              !isConnected
+                ? 'Connecting...'
+                : isStreaming
+                ? 'AI is responding...'
+                : 'Ask anything...'
+            }
+          />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -466,9 +467,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     textAlign: 'center',
   },
+  bottomContainer: {
+    flexShrink: 0,
+  },
   quickChipsRow: {
     flexShrink: 0,
-    marginBottom: 0,
   },
   quickChipsContent: {
     paddingHorizontal: theme.spacing.lg,

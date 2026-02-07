@@ -1,10 +1,10 @@
 /**
  * ChatBubble Component
- * Displays a single chat message with user/AI styling
+ * Displays a single chat message with user/AI styling and inline markdown
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, type TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
@@ -12,6 +12,59 @@ import type { ChatMessage } from '@/src/services/ai-service';
 
 interface ChatBubbleProps {
   message: ChatMessage;
+}
+
+/** Parse inline markdown (**bold**, *italic*, `code`) into RN Text nodes */
+function renderMarkdown(text: string, baseStyle: TextStyle): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(
+        <Text key={`t${lastIndex}`} style={baseStyle}>
+          {text.slice(lastIndex, match.index)}
+        </Text>
+      );
+    }
+
+    if (match[2]) {
+      parts.push(
+        <Text key={`b${match.index}`} style={[baseStyle, { fontWeight: '700' }]}>
+          {match[2]}
+        </Text>
+      );
+    } else if (match[3]) {
+      parts.push(
+        <Text key={`i${match.index}`} style={[baseStyle, { fontStyle: 'italic' }]}>
+          {match[3]}
+        </Text>
+      );
+    } else if (match[4]) {
+      parts.push(
+        <Text
+          key={`c${match.index}`}
+          style={[baseStyle, { fontFamily: 'Courier', backgroundColor: 'rgba(255,255,255,0.08)', fontSize: 13 }]}
+        >
+          {match[4]}
+        </Text>
+      );
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(
+      <Text key={`t${lastIndex}`} style={baseStyle}>
+        {text.slice(lastIndex)}
+      </Text>
+    );
+  }
+
+  return parts.length > 0 ? parts : [<Text key="full" style={baseStyle}>{text}</Text>];
 }
 
 export function ChatBubble({ message }: ChatBubbleProps) {
@@ -34,7 +87,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
           end={{ x: 1, y: 1 }}
           style={styles.userBubble}
         >
-          <Text style={styles.userText}>{message.content}</Text>
+          <Text style={styles.userText}>{renderMarkdown(message.content, styles.userText)}</Text>
         </LinearGradient>
         <Text style={styles.timestamp}>{formattedTime}</Text>
       </View>
@@ -44,7 +97,7 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   return (
     <View style={styles.aiContainer}>
       <View style={styles.aiBubble}>
-        <Text style={styles.aiText}>{message.content}</Text>
+        <Text style={styles.aiText}>{renderMarkdown(message.content, styles.aiText)}</Text>
         {message.toolCalls && message.toolCalls.length > 0 && (
           <View style={styles.toolCallsContainer}>
             {message.toolCalls.map((tool, index) => (
