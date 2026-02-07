@@ -41,19 +41,19 @@ export default function TabLayout() {
         headerShown: false,
       }}>
       <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => <TabBarIcon name="home" color={color} focused={focused} activeColor={dynamicTheme.colors.textPrimary} />,
-        }}
-      />
-      <Tabs.Screen
         name="ai"
         options={{
           title: 'AI',
           headerShown: false,
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="magic" color={color} focused={focused} activeColor={dynamicTheme.colors.textPrimary} />,
+        }}
+      />
+      <Tabs.Screen
+        name="home"
+        options={{
+          title: 'Wallet',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => <TabBarIcon name="home" color={color} focused={focused} activeColor={dynamicTheme.colors.textPrimary} />,
         }}
       />
       <Tabs.Screen
@@ -99,8 +99,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-  },
-  iconContainerActive: {
-    backgroundColor: theme.colors.textPrimary + '10',
   },
 });
