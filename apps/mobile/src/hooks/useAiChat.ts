@@ -185,7 +185,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         );
 
         // Add to socket history for context
-        aiSocket.addAssistantMessage(payload.content);
+        aiSocket.addAiResponseMessage(payload.content);
 
         // Handle pending transaction
         if (payload.pendingTransaction) {

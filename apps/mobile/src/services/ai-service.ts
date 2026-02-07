@@ -285,9 +285,9 @@ class AiSocketService {
   }
 
   /**
-   * Add assistant message to history (call after receiving full response)
+   * Add AI response message to history (call after receiving full response)
    */
-  addAssistantMessage(content: string): void {
+  addAiResponseMessage(content: string): void {
     this.messageHistory.push({ role: 'assistant', content });
   }
 

@@ -27,7 +27,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           max-w-[80%] px-4 py-3 rounded-2xl
           ${isUser
             ? 'chat-bubble-user rounded-br-md'
-            : 'chat-bubble-assistant rounded-bl-md'
+            : 'chat-bubble-ai rounded-bl-md'
           }
         `}
       >

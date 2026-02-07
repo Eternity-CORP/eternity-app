@@ -104,7 +104,7 @@ class AiSocketService {
     })
   }
 
-  addAssistantMessage(content: string): void {
+  addAiResponseMessage(content: string): void {
     this.addToHistory('assistant', content)
   }
 

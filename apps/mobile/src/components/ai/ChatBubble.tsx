@@ -1,6 +1,6 @@
 /**
  * ChatBubble Component
- * Displays a single chat message with user/assistant styling
+ * Displays a single chat message with user/AI styling
  */
 
 import React, { useMemo } from 'react';
@@ -43,9 +43,9 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   }
 
   return (
-    <View style={styles.assistantContainer}>
-      <View style={[styles.assistantBubble, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
-        <Text style={[styles.assistantText, { color: dynamicTheme.colors.textPrimary }]}>{message.content}</Text>
+    <View style={styles.aiContainer}>
+      <View style={[styles.aiBubble, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
+        <Text style={[styles.aiText, { color: dynamicTheme.colors.textPrimary }]}>{message.content}</Text>
         {message.toolCalls && message.toolCalls.length > 0 && (
           <View style={[styles.toolCallsContainer, { borderTopColor: dynamicTheme.colors.border }]}>
             {message.toolCalls.map((tool, index) => (
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.lg,
   },
-  assistantContainer: {
+  aiContainer: {
     alignItems: 'flex-start',
     marginVertical: theme.spacing.xs,
     paddingHorizontal: theme.spacing.lg,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     borderBottomRightRadius: theme.spacing.xs,
   },
-  assistantBubble: {
+  aiBubble: {
     maxWidth: '85%',
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.textPrimary,
   },
-  assistantText: {
+  aiText: {
     ...theme.typography.body,
     color: theme.colors.textPrimary,
     lineHeight: 22,

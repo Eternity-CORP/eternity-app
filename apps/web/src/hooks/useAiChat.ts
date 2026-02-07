@@ -6,6 +6,7 @@ import type {
   AiSuggestion,
   TransactionPreview,
   BlikPreview,
+  SwapPreview,
   ChunkPayload,
   DonePayload,
   ToolCall,
@@ -30,6 +31,7 @@ interface UseAiChatReturn {
   streamingContent: string
   pendingTransaction: TransactionPreview | null
   pendingBlik: BlikPreview | null
+  pendingSwap: SwapPreview | null
   error: string | null
   rateLimit: RateLimit | null
   isConnected: boolean
@@ -41,6 +43,7 @@ interface UseAiChatReturn {
   clearChat: () => void
   clearPendingTransaction: () => void
   clearPendingBlik: () => void
+  clearPendingSwap: () => void
 }
 
 export function useAiChat(): UseAiChatReturn {
@@ -51,6 +54,7 @@ export function useAiChat(): UseAiChatReturn {
   const [streamingContent, setStreamingContent] = useState('')
   const [pendingTransaction, setPendingTransaction] = useState<TransactionPreview | null>(null)
   const [pendingBlik, setPendingBlik] = useState<BlikPreview | null>(null)
+  const [pendingSwap, setPendingSwap] = useState<SwapPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null)
 
@@ -102,6 +106,7 @@ export function useAiChat(): UseAiChatReturn {
     setError(null)
     setPendingTransaction(null)
     setPendingBlik(null)
+    setPendingSwap(null)
     aiSocket.clearHistory()
   }, [])
 
@@ -111,6 +116,10 @@ export function useAiChat(): UseAiChatReturn {
 
   const clearPendingBlik = useCallback(() => {
     setPendingBlik(null)
+  }, [])
+
+  const clearPendingSwap = useCallback(() => {
+    setPendingSwap(null)
   }, [])
 
   useEffect(() => {
@@ -135,7 +144,7 @@ export function useAiChat(): UseAiChatReturn {
     })
 
     aiSocket.on('onDone', (payload: DonePayload) => {
-      const assistantMessage: ChatMessage = {
+      const aiResponseMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: payload.content || streamingRef.current,
@@ -144,7 +153,7 @@ export function useAiChat(): UseAiChatReturn {
         toolResults: payload.toolResults,
       }
 
-      setMessages((prev) => [...prev, assistantMessage])
+      setMessages((prev) => [...prev, aiResponseMessage])
       setStreamingContent('')
       streamingRef.current = ''
       setStatus('connected')
@@ -154,6 +163,9 @@ export function useAiChat(): UseAiChatReturn {
       }
       if (payload.pendingBlik) {
         setPendingBlik(payload.pendingBlik)
+      }
+      if (payload.pendingSwap) {
+        setPendingSwap(payload.pendingSwap)
       }
     })
 
@@ -220,6 +232,7 @@ export function useAiChat(): UseAiChatReturn {
     streamingContent,
     pendingTransaction,
     pendingBlik,
+    pendingSwap,
     error,
     rateLimit,
     isConnected,
@@ -231,5 +244,6 @@ export function useAiChat(): UseAiChatReturn {
     clearChat,
     clearPendingTransaction,
     clearPendingBlik,
+    clearPendingSwap,
   }
 }
