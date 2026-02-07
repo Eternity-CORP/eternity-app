@@ -13,6 +13,7 @@ import SuggestionChips from './SuggestionChips'
 import InputBar from './InputBar'
 import SendPreviewCard from './cards/SendPreviewCard'
 import BlikCard from './cards/BlikCard'
+import SwapCard from './cards/SwapCard'
 import ConfirmModal from './cards/ConfirmModal'
 
 interface SendCardTransaction {
@@ -31,6 +32,7 @@ interface SendCardTransaction {
 type ConfirmTarget =
   | { type: 'send'; transaction: SendCardTransaction }
   | { type: 'blik'; blik: Parameters<typeof BlikCard>[0]['blik'] }
+  | { type: 'swap'; swap: Parameters<typeof SwapCard>[0]['swap'] }
 
 export default function ChatContainer() {
   const { address, network, currentAccount } = useAccount()
@@ -40,12 +42,14 @@ export default function ChatContainer() {
     streamingContent,
     pendingTransaction,
     pendingBlik,
+    pendingSwap,
     error,
     isConnected,
     isStreaming,
     sendMessage,
     clearPendingTransaction,
     clearPendingBlik,
+    clearPendingSwap,
   } = useAiChat()
 
   const [balance, setBalance] = useState('0')
@@ -85,7 +89,7 @@ export default function ChatContainer() {
   // Auto-scroll to bottom on new messages or streaming
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent, pendingTransaction, pendingBlik])
+  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap])
 
   const handleSendConfirm = useCallback((updated: SendCardTransaction) => {
     setConfirmTarget({ type: 'send', transaction: updated })
@@ -136,8 +140,23 @@ export default function ChatContainer() {
       clearPendingBlik()
       setConfirmTarget(null)
       sendMessage(`BLIK payment sent! Hash: ${tx.hash}`)
+    } else if (confirmTarget.type === 'swap') {
+      const swap = confirmTarget.swap
+
+      // For swaps, we send the fromToken amount as a native transaction
+      // In production this would call a DEX router contract
+      const tx = await connectedWallet.sendTransaction({
+        to: address, // Self-send placeholder for swap execution
+        value: ethers.parseEther(swap.fromToken.amount),
+      })
+
+      await tx.wait()
+
+      clearPendingSwap()
+      setConfirmTarget(null)
+      sendMessage(`Swap executed! Swapped ${swap.fromToken.amount} ${swap.fromToken.symbol} → ${swap.toToken.amount} ${swap.toToken.symbol}. Hash: ${tx.hash}`)
     }
-  }, [confirmTarget, currentAccount, network, address, clearPendingTransaction, clearPendingBlik, sendMessage])
+  }, [confirmTarget, currentAccount, network, address, clearPendingTransaction, clearPendingBlik, clearPendingSwap, sendMessage])
 
   const handleConfirmCancel = useCallback(() => {
     setConfirmTarget(null)
@@ -150,6 +169,14 @@ export default function ChatContainer() {
   const handleCancelBlik = useCallback(() => {
     clearPendingBlik()
   }, [clearPendingBlik])
+
+  const handleSwapConfirm = useCallback((swap: Parameters<typeof SwapCard>[0]['swap']) => {
+    setConfirmTarget({ type: 'swap', swap })
+  }, [])
+
+  const handleCancelSwap = useCallback(() => {
+    clearPendingSwap()
+  }, [clearPendingSwap])
 
   const formattedBalance = parseFloat(balance).toFixed(4)
   const networkColor = currentAccount?.type === 'real' ? '#22C55E' : '#F59E0B'
@@ -169,18 +196,30 @@ export default function ChatContainer() {
               : []),
           ],
         }
-      : {
-          title: 'Confirm BLIK Payment',
-          summary: `${confirmTarget.blik.amount} ${confirmTarget.blik.token}`,
-          details: [
-            ...(confirmTarget.blik.type === 'pay'
-              ? [
-                  { label: 'BLIK Code', value: confirmTarget.blik.code },
-                  { label: 'Receiver', value: confirmTarget.blik.receiverUsername || `${confirmTarget.blik.receiverAddress.slice(0, 6)}...${confirmTarget.blik.receiverAddress.slice(-4)}` },
-                ]
-              : []),
-          ],
-        }
+      : confirmTarget.type === 'blik'
+        ? {
+            title: 'Confirm BLIK Payment',
+            summary: `${confirmTarget.blik.amount} ${confirmTarget.blik.token}`,
+            details: [
+              ...(confirmTarget.blik.type === 'pay'
+                ? [
+                    { label: 'BLIK Code', value: confirmTarget.blik.code },
+                    { label: 'Receiver', value: confirmTarget.blik.receiverUsername || `${confirmTarget.blik.receiverAddress.slice(0, 6)}...${confirmTarget.blik.receiverAddress.slice(-4)}` },
+                  ]
+                : []),
+            ],
+          }
+        : {
+            title: 'Confirm Swap',
+            summary: `${confirmTarget.swap.fromToken.amount} ${confirmTarget.swap.fromToken.symbol} → ${confirmTarget.swap.toToken.amount} ${confirmTarget.swap.toToken.symbol}`,
+            details: [
+              { label: 'Rate', value: confirmTarget.swap.rate },
+              { label: 'Price Impact', value: confirmTarget.swap.priceImpact },
+              { label: 'Gas fee', value: `${confirmTarget.swap.estimatedGas} ETH` },
+              { label: 'Slippage', value: confirmTarget.swap.slippage },
+              { label: 'Network', value: confirmTarget.swap.network },
+            ],
+          }
     : null
 
   return (
@@ -237,6 +276,15 @@ export default function ChatContainer() {
             blik={pendingBlik}
             onConfirmPay={handleBlikConfirm}
             onCancel={handleCancelBlik}
+          />
+        )}
+
+        {/* Pending Swap Card */}
+        {pendingSwap && (
+          <SwapCard
+            swap={pendingSwap}
+            onConfirm={handleSwapConfirm}
+            onCancel={handleCancelSwap}
           />
         )}
 
