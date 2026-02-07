@@ -1,13 +1,9 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, TextInput, RefreshControl, Animated, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, ScrollView, Alert, RefreshControl, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, switchAccount, addAccountThunk, updateAccountLabel, importWalletThunk, reorderAccounts, selectIsTestAccount, selectCurrentAccountType, type Account, type AccountType } from '@/src/store/slices/wallet-slice';
 import { fetchMultiNetworkBalancesThunk } from '@/src/store/slices/balance-slice';
@@ -16,46 +12,32 @@ import { loadScheduledPaymentsThunk } from '@/src/store/slices/scheduled-slice';
 import { loadPendingSplitsThunk } from '@/src/store/slices/split-slice';
 import { resetContacts, loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { checkAndScanThunk, dismissTokenAlert, snoozeTokenAlert } from '@/src/store/slices/scanning-slice';
-import { TokenFoundNotification, TokenFoundBadge } from '@/src/components/TokenFoundNotification';
-import { SuggestionBannerList } from '@/src/components/ai';
-import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
-import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
-import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { dismissSuggestion } from '@/src/store/slices/ai-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
 import { formatUsdValue } from '@/src/services/balance-service';
 import { fetchAllNetworkBalances } from '@/src/services/network-service';
 import { getUsernameByAddress } from '@/src/services/username-service';
-import { TokenIcon } from '@/src/components/TokenIcon';
-import { BalanceGridBackground } from '@/src/components/ui';
+import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
 import { useTheme } from '@/src/contexts';
-import { theme } from '@/src/constants/theme'; // Static theme for StyleSheet
-import { FAUCETS, type FaucetInfo } from '@/src/constants/faucets';
-import { FontAwesome } from '@expo/vector-icons';
+import { theme } from '@/src/constants/theme';
+import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
+import type { FaucetInfo } from '@/src/constants/faucets';
+
+import {
+  HomeHeader,
+  BalanceSection,
+  ActionButtons,
+  TokensList,
+  BannerSection,
+  ActionsMenu,
+  AccountSelectorSheet,
+  FaucetSheet,
+} from '@/src/components/home';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Generate unique gradient colors from address (like web3 identicons)
-function generateAvatarColors(address: string): [string, string] {
-  // Use address bytes to generate colors
-  const hash = address.toLowerCase().replace('0x', '');
-
-  // First color from first 6 chars
-  const color1 = '#' + hash.slice(0, 6);
-
-  // Second color from chars 6-12, but rotate hue for contrast
-  const r = parseInt(hash.slice(6, 8), 16);
-  const g = parseInt(hash.slice(8, 10), 16);
-  const b = parseInt(hash.slice(10, 12), 16);
-
-  // Rotate colors for gradient effect
-  const color2 = `rgb(${(r + 128) % 256}, ${(g + 64) % 256}, ${(b + 192) % 256})`;
-
-  return [color1, color2];
-}
-
 export default function HomeScreen() {
-  const { theme: dynamicTheme, isDark } = useTheme();
+  const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
@@ -67,9 +49,7 @@ export default function HomeScreen() {
   const currentAccountType = useAppSelector(selectCurrentAccountType);
   const currentAccount = getCurrentAccount(wallet);
 
-  // Track if scanning alerts are expanded
   const [showAllScanningAlerts, setShowAllScanningAlerts] = useState(false);
-
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [showActionsMenu, setShowActionsMenu] = useState(false);
   const [showAddWalletMenu, setShowAddWalletMenu] = useState(false);
@@ -84,19 +64,13 @@ export default function HomeScreen() {
   const [accountBalances, setAccountBalances] = useState<Record<string, number>>({});
   const [accountUsernames, setAccountUsernames] = useState<Record<string, string | null>>({});
 
-  // Animation values for actions menu
+  // Animation values
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Animation values for account selector
   const accountSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const accountFadeAnim = useRef(new Animated.Value(0)).current;
-
-  // Animation values for faucet sheet
   const faucetSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const faucetFadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Auto-execute overdue scheduled payments
   useAutoScheduledPayments();
 
   // Load data when account changes
@@ -106,51 +80,38 @@ export default function HomeScreen() {
       dispatch(fetchTransactionsThunk(currentAccount.address));
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
       dispatch(loadPendingSplitsThunk(currentAccount.address));
-      // Reset and reload contacts for the new account
       dispatch(resetContacts());
       dispatch(loadContactsThunk());
-      // Check for tokens on Tier 2 networks (runs if scan is due) - only for real accounts
       if (currentAccountType === 'real') {
         dispatch(checkAndScanThunk(currentAccount.address));
       }
     }
   }, [currentAccount?.address, currentAccountType, dispatch]);
 
-  // Handle bridge action from scanning notification
+  // Handlers
   const handleBridgeToken = useCallback((tokenBalance: Tier2TokenBalance, destinationNetwork: string) => {
-    // Navigate to bridge flow (would integrate with bridge-service in production)
     Alert.alert(
       'Bridge Token',
       `Move ${tokenBalance.balanceFormatted} from ${tokenBalance.networkName} to ${destinationNetwork}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          onPress: () => {
-            // TODO: Integrate with bridge-service when ready
-            Alert.alert('Coming Soon', 'Bridge functionality will be available soon.');
-          },
-        },
+        { text: 'Continue', onPress: () => Alert.alert('Coming Soon', 'Bridge functionality will be available soon.') },
       ]
     );
   }, []);
 
-  // Handle dismiss scanning alert
   const handleDismissAlert = useCallback((networkId: string, tokenSymbol: string) => {
     dispatch(dismissTokenAlert({ networkId, tokenSymbol }));
   }, [dispatch]);
 
-  // Handle snooze scanning alert
   const handleSnoozeAlert = useCallback((networkId: string, tokenSymbol: string) => {
     dispatch(snoozeTokenAlert({ networkId, tokenSymbol }));
   }, [dispatch]);
 
-  // Handle dismiss AI suggestion
   const handleDismissSuggestion = useCallback((id: string) => {
     dispatch(dismissSuggestion(id));
   }, [dispatch]);
 
-  // Pull to refresh
   const onRefresh = useCallback(() => {
     if (currentAccount?.address && currentAccountType) {
       dispatch(fetchMultiNetworkBalancesThunk({ address: currentAccount.address, accountType: currentAccountType }));
@@ -160,39 +121,36 @@ export default function HomeScreen() {
     }
   }, [currentAccount?.address, currentAccountType, dispatch]);
 
-  const totalBalance = formatUsdValue(balance.totalUsdValue);
+  const handleCopyAddress = useCallback(async () => {
+    if (!currentAccount?.address) return;
+    try {
+      await Clipboard.setStringAsync(currentAccount.address);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('Error', 'Failed to copy');
+    }
+  }, [currentAccount?.address]);
 
-  // Actions menu animations
-  const openActionsMenu = () => {
-    slideAnim.setValue(SCREEN_HEIGHT); // Reset position
+  // Actions menu
+  const openActionsMenu = useCallback(() => {
+    slideAnim.setValue(SCREEN_HEIGHT);
     setShowActionsMenu(true);
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 11,
-    }).start();
-  };
+    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }).start();
+  }, [slideAnim]);
 
-  const closeActionsMenu = () => {
-    Animated.timing(slideAnim, {
-      toValue: SCREEN_HEIGHT,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setShowActionsMenu(false));
-  };
+  const closeActionsMenu = useCallback(() => {
+    Animated.timing(slideAnim, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }).start(() => setShowActionsMenu(false));
+  }, [slideAnim]);
 
-  // Account selector animations
-  const openAccountSelector = async () => {
+  // Account selector
+  const openAccountSelector = useCallback(async () => {
     setShowAccountSelector(true);
     setIsEditMode(false);
     setShowAddWalletMenu(false);
     setShowImportSheet(false);
 
-    // Fetch balances for all accounts in parallel (using account-type-aware fetch)
     const balancePromises = wallet.accounts.map(async (account) => {
       try {
-        // Use fetchAllNetworkBalances which respects account type (TEST vs REAL)
         const result = await fetchAllNetworkBalances(account.address, account.type);
         return { address: account.address, balance: result.totalUsdValue };
       } catch {
@@ -202,13 +160,10 @@ export default function HomeScreen() {
 
     Promise.all(balancePromises).then((results) => {
       const balances: Record<string, number> = {};
-      results.forEach(({ address, balance }) => {
-        balances[address] = balance;
-      });
+      results.forEach(({ address, balance }) => { balances[address] = balance; });
       setAccountBalances(balances);
     });
 
-    // Fetch usernames for all accounts
     const usernamePromises = wallet.accounts.map(async (account) => {
       try {
         const username = await getUsernameByAddress(account.address);
@@ -220,39 +175,20 @@ export default function HomeScreen() {
 
     Promise.all(usernamePromises).then((results) => {
       const usernames: Record<string, string | null> = {};
-      results.forEach(({ address, username }) => {
-        usernames[address] = username;
-      });
+      results.forEach(({ address, username }) => { usernames[address] = username; });
       setAccountUsernames(usernames);
     });
 
     Animated.parallel([
-      Animated.spring(accountSlideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }),
-      Animated.timing(accountFadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
+      Animated.spring(accountSlideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }),
+      Animated.timing(accountFadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
     ]).start();
-  };
+  }, [wallet.accounts, accountSlideAnim, accountFadeAnim]);
 
-  const closeAccountSelector = () => {
+  const closeAccountSelector = useCallback(() => {
     Animated.parallel([
-      Animated.timing(accountSlideAnim, {
-        toValue: SCREEN_HEIGHT,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(accountFadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
+      Animated.timing(accountSlideAnim, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }),
+      Animated.timing(accountFadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(() => {
       setShowAccountSelector(false);
       setIsEditMode(false);
@@ -263,59 +199,38 @@ export default function HomeScreen() {
       setSeedPhraseInput('');
       setNewAccountName('');
     });
-  };
+  }, [accountSlideAnim, accountFadeAnim]);
 
-  // Faucet sheet animations
-  const openFaucetSheet = () => {
+  // Faucet sheet
+  const openFaucetSheet = useCallback(() => {
     setShowFaucetSheet(true);
     Animated.parallel([
-      Animated.spring(faucetSlideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 65,
-        friction: 11,
-      }),
-      Animated.timing(faucetFadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
+      Animated.spring(faucetSlideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }),
+      Animated.timing(faucetFadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
     ]).start();
-  };
+  }, [faucetSlideAnim, faucetFadeAnim]);
 
-  const closeFaucetSheet = () => {
+  const closeFaucetSheet = useCallback(() => {
     Animated.parallel([
-      Animated.timing(faucetSlideAnim, {
-        toValue: SCREEN_HEIGHT,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(faucetFadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setShowFaucetSheet(false);
-    });
-  };
+      Animated.timing(faucetSlideAnim, { toValue: SCREEN_HEIGHT, duration: 250, useNativeDriver: true }),
+      Animated.timing(faucetFadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start(() => setShowFaucetSheet(false));
+  }, [faucetSlideAnim, faucetFadeAnim]);
 
-  // Handle faucet link press
-  const handleFaucetPress = async (faucet: FaucetInfo) => {
+  const handleFaucetPress = useCallback(async (faucet: FaucetInfo) => {
     try {
       await Linking.openURL(faucet.url);
       closeFaucetSheet();
     } catch {
       Alert.alert('Error', 'Could not open faucet link');
     }
-  };
+  }, [closeFaucetSheet]);
 
   // Account management
-  const handleAddAccount = async (accountType: AccountType) => {
+  const handleAddAccount = useCallback(async (accountType: AccountType) => {
     setIsAddingAccount(true);
     try {
-      const result = await dispatch(addAccountThunk(accountType)).unwrap();
-      // Update the new account with the name (auto-generate if empty)
+      await dispatch(addAccountThunk(accountType)).unwrap();
       const newIndex = wallet.accounts.length;
       const accountLabel = newAccountName.trim() || `Wallet ${newIndex + 1}`;
       dispatch(updateAccountLabel({ accountIndex: newIndex, label: accountLabel }));
@@ -329,9 +244,9 @@ export default function HomeScreen() {
     } finally {
       setIsAddingAccount(false);
     }
-  };
+  }, [dispatch, wallet.accounts.length, newAccountName, closeAccountSelector]);
 
-  const handleImportWallet = async () => {
+  const handleImportWallet = useCallback(async () => {
     const words = seedPhraseInput.trim().split(/\s+/);
     if (words.length !== 12 && words.length !== 24) {
       Alert.alert('Error', 'Please enter 12 or 24 words');
@@ -351,9 +266,9 @@ export default function HomeScreen() {
     } finally {
       setIsAddingAccount(false);
     }
-  };
+  }, [dispatch, seedPhraseInput, closeAccountSelector]);
 
-  const handleSwitchAccount = (address: string) => {
+  const handleSwitchAccount = useCallback((address: string) => {
     if (isEditMode) return;
     const index = wallet.accounts.findIndex(a => a.address === address);
     if (index !== -1) {
@@ -361,16 +276,14 @@ export default function HomeScreen() {
       closeAccountSelector();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-  };
+  }, [isEditMode, wallet.accounts, dispatch, closeAccountSelector]);
 
-  const handleSaveLabel = async (accountIndex: number) => {
+  const handleSaveLabel = useCallback(async (accountIndex: number) => {
     const trimmedLabel = editLabel.trim();
     dispatch(updateAccountLabel({ accountIndex, label: trimmedLabel || undefined }));
-
     const updatedAccounts = wallet.accounts.map((acc) =>
       acc.accountIndex === accountIndex ? { ...acc, label: trimmedLabel || undefined } : acc
     );
-
     try {
       await saveAccounts(updatedAccounts);
       setEditingAccountIndex(null);
@@ -378,49 +291,22 @@ export default function HomeScreen() {
     } catch {
       Alert.alert('Error', 'Failed to save');
     }
-  };
+  }, [editLabel, wallet.accounts, dispatch]);
 
-  const handleCopyAddress = async () => {
-    if (!currentAccount?.address) return;
-    try {
-      await Clipboard.setStringAsync(currentAccount.address);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert('Error', 'Failed to copy');
-    }
-  };
+  const handleReorderAccounts = useCallback((data: Account[]) => {
+    dispatch(reorderAccounts(data));
+    saveAccounts(data);
+  }, [dispatch]);
+
+  const totalBalance = formatUsdValue(balance.totalUsdValue);
+  const scheduledPendingCount = scheduled.payments.filter(p => p.status === 'pending').length;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={[styles.headerButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
-          onPress={() => router.push('/send/scan')}
-        >
-          <FontAwesome name="qrcode" size={20} color={dynamicTheme.colors.textPrimary} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.accountButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
-          onPress={openAccountSelector}
-        >
-          <Text style={[styles.accountButtonText, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
-            {currentAccount?.label || `Account ${(currentAccount?.accountIndex ?? 0) + 1}`}
-          </Text>
-          {currentAccount?.type && (
-            <AccountTypeBadge type={currentAccount.type} size="small" />
-          )}
-          <FontAwesome name="chevron-down" size={10} color={dynamicTheme.colors.textSecondary} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.headerButton, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
-          onPress={() => router.push('/(tabs)/transactions')}
-        >
-          <FontAwesome name="history" size={20} color={dynamicTheme.colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
+      <HomeHeader
+        currentAccount={currentAccount}
+        onOpenAccountSelector={openAccountSelector}
+      />
 
       <ScrollView
         style={styles.scrollView}
@@ -434,547 +320,85 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Get Test Tokens Button */}
-        {isTestAccount && (
-          <TouchableOpacity
-            style={styles.getTestTokensButton}
-            onPress={openFaucetSheet}
-          >
-            <FontAwesome name="gift" size={16} color={theme.colors.accent} />
-            <Text style={styles.getTestTokensText}>Get Test Tokens</Text>
-          </TouchableOpacity>
-        )}
+        <BannerSection
+          isTestAccount={isTestAccount}
+          pendingSplitsCount={split.pendingSplits.length}
+          firstSplitId={split.pendingSplits[0]?.id}
+          scheduledPendingCount={scheduledPendingCount}
+          visibleAlerts={scanning.visibleAlerts}
+          scanningTotalUsdValue={scanning.totalUsdValue}
+          showAllScanningAlerts={showAllScanningAlerts}
+          onShowAllScanningAlerts={() => setShowAllScanningAlerts(true)}
+          onBridgeToken={handleBridgeToken}
+          onDismissAlert={handleDismissAlert}
+          onSnoozeAlert={handleSnoozeAlert}
+          aiSuggestions={aiSuggestions}
+          onDismissSuggestion={handleDismissSuggestion}
+          onOpenFaucetSheet={openFaucetSheet}
+        />
 
-        {/* Pending Split Banner */}
-        {split.pendingSplits.length > 0 && (
-          <TouchableOpacity
-            style={styles.pendingBanner}
-            onPress={() => router.push(`/split/${split.pendingSplits[0].id}`)}
-          >
-            <FontAwesome name="exclamation-circle" size={16} color="#FFA500" />
-            <Text style={styles.pendingBannerText}>
-              {split.pendingSplits.length} pending payment request{split.pendingSplits.length > 1 ? 's' : ''}
-            </Text>
-            <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
-          </TouchableOpacity>
-        )}
+        <BalanceSection
+          totalBalance={totalBalance}
+          isLoading={balance.status === 'loading'}
+          lastUpdated={balance.lastUpdated}
+        />
 
-        {/* Scheduled Payments Banner */}
-        {scheduled.payments.filter(p => p.status === 'pending').length > 0 && (
-          <TouchableOpacity
-            style={styles.scheduledBanner}
-            onPress={() => router.push('/scheduled')}
-          >
-            <FontAwesome name="calendar" size={16} color={theme.colors.accent} />
-            <Text style={styles.scheduledBannerText}>
-              {scheduled.payments.filter(p => p.status === 'pending').length} scheduled payment{scheduled.payments.filter(p => p.status === 'pending').length > 1 ? 's' : ''} pending
-            </Text>
-            <FontAwesome name="chevron-right" size={12} color={theme.colors.textTertiary} />
-          </TouchableOpacity>
-        )}
+        <ActionButtons onOpenActionsMenu={openActionsMenu} />
 
-        {/* Tokens Found on Other Networks */}
-        {scanning.visibleAlerts.length > 0 && (
-          <View style={styles.scanningSection}>
-            {scanning.visibleAlerts.length === 1 || showAllScanningAlerts ? (
-              // Show individual notifications
-              scanning.visibleAlerts.map((alert) => (
-                <TokenFoundNotification
-                  key={`${alert.networkId}-${alert.tokenSymbol}`}
-                  balance={alert}
-                  onBridge={handleBridgeToken}
-                  onDismiss={handleDismissAlert}
-                  onSnooze={handleSnoozeAlert}
-                />
-              ))
-            ) : (
-              // Show collapsed badge
-              <TokenFoundBadge
-                count={scanning.visibleAlerts.length}
-                totalUsdValue={scanning.totalUsdValue}
-                onPress={() => setShowAllScanningAlerts(true)}
-              />
-            )}
-          </View>
-        )}
-
-        {/* AI Suggestions */}
-        {aiSuggestions.length > 0 && (
-          <View style={styles.aiSuggestionsSection}>
-            <SuggestionBannerList
-              suggestions={aiSuggestions}
-              onDismiss={handleDismissSuggestion}
-              maxVisible={2}
-            />
-          </View>
-        )}
-
-        {/* Balance with Grid Background */}
-        <BalanceGridBackground height={160}>
-          <Text style={[styles.balance, { color: dynamicTheme.colors.textPrimary }]}>
-            {balance.status === 'loading' && !balance.lastUpdated ? '...' : totalBalance}
-          </Text>
-        </BalanceGridBackground>
-
-        {/* Action Buttons */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.actionButtonPrimary, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
-            onPress={() => router.push('/send/token')}
-          >
-            <Text style={[styles.actionButtonPrimaryText, { color: dynamicTheme.colors.buttonPrimaryText }]}>Send</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButtonSecondary, { borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
-            onPress={() => router.push('/receive')}
-          >
-            <Text style={[styles.actionButtonSecondaryText, { color: dynamicTheme.colors.buttonSecondaryText }]}>Receive</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButtonMore, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
-            onPress={openActionsMenu}
-          >
-            <FontAwesome name="ellipsis-h" size={18} color={dynamicTheme.colors.textPrimary} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Tokens List */}
-        <View style={styles.tokensSection}>
-          <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textSecondary }]}>Tokens</Text>
-
-          {balance.balances.map((token) => (
-            <TouchableOpacity
-              key={token.token}
-              style={[styles.tokenItem, { backgroundColor: dynamicTheme.colors.surface, borderColor: isDark ? 'transparent' : dynamicTheme.colors.border }]}
-              onPress={() => router.push(`/token/${token.symbol}`)}
-              activeOpacity={0.7}
-            >
-              <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={44} />
-              <View style={styles.tokenInfo}>
-                <Text style={[styles.tokenName, { color: dynamicTheme.colors.textPrimary }]}>{token.name || token.symbol}</Text>
-                <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textSecondary }]}>{token.symbol}</Text>
-              </View>
-              <View style={styles.tokenBalance}>
-                <Text style={[styles.tokenBalanceValue, { color: dynamicTheme.colors.textPrimary }]}>
-                  {parseFloat(token.balance).toFixed(4)}
-                </Text>
-                <Text style={[styles.tokenBalanceUsd, { color: dynamicTheme.colors.textSecondary }]}>
-                  ${token.usdValue?.toFixed(2) || '0.00'}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-
-          {balance.balances.length === 0 && balance.status !== 'loading' && (
-            <View style={styles.emptyState}>
-              <FontAwesome name="inbox" size={32} color={dynamicTheme.colors.textTertiary} />
-              <Text style={[styles.emptyStateText, { color: dynamicTheme.colors.textTertiary }]}>No tokens yet</Text>
-            </View>
-          )}
-        </View>
+        <TokensList
+          balances={balance.balances}
+          isLoading={balance.status === 'loading'}
+        />
       </ScrollView>
 
-      {/* Actions Menu with Blur */}
-      {showActionsMenu && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            onPress={closeActionsMenu}
-            activeOpacity={1}
-          >
-            <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-          </TouchableOpacity>
+      <ActionsMenu
+        visible={showActionsMenu}
+        slideAnim={slideAnim}
+        onClose={closeActionsMenu}
+        onCopyAddress={handleCopyAddress}
+      />
 
-          <Animated.View
-            style={[
-              styles.actionsMenuContainer,
-              { transform: [{ translateY: slideAnim }] },
-            ]}
-            pointerEvents="box-none"
-          >
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); router.push('/send/token'); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="arrow-up" size={20} color={dynamicTheme.colors.textPrimary} style={{ transform: [{ rotate: '45deg' }] }} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Send</Text>
-            </TouchableOpacity>
+      <AccountSelectorSheet
+        visible={showAccountSelector}
+        accounts={wallet.accounts}
+        currentAccountIndex={wallet.currentAccountIndex}
+        accountBalances={accountBalances}
+        accountUsernames={accountUsernames}
+        isEditMode={isEditMode}
+        editingAccountIndex={editingAccountIndex}
+        editLabel={editLabel}
+        isAddingAccount={isAddingAccount}
+        showAddWalletMenu={showAddWalletMenu}
+        showImportSheet={showImportSheet}
+        seedPhraseInput={seedPhraseInput}
+        newAccountName={newAccountName}
+        slideAnim={accountSlideAnim}
+        fadeAnim={accountFadeAnim}
+        onClose={closeAccountSelector}
+        onToggleEditMode={() => setIsEditMode(!isEditMode)}
+        onSwitchAccount={handleSwitchAccount}
+        onReorderAccounts={handleReorderAccounts}
+        onStartEditing={(idx, label) => { setEditingAccountIndex(idx); setEditLabel(label); }}
+        onEditLabelChange={setEditLabel}
+        onSaveLabel={handleSaveLabel}
+        onCancelEdit={() => { setEditingAccountIndex(null); setEditLabel(''); }}
+        onShowAddWalletMenu={() => setShowAddWalletMenu(true)}
+        onHideAddWalletMenu={() => { setShowAddWalletMenu(false); setNewAccountName(''); }}
+        onNewAccountNameChange={setNewAccountName}
+        onAddAccount={handleAddAccount}
+        onShowImportSheet={() => { setShowAddWalletMenu(false); setShowImportSheet(true); }}
+        onHideImportSheet={() => { setShowImportSheet(false); setSeedPhraseInput(''); }}
+        onSeedPhraseChange={setSeedPhraseInput}
+        onImportWallet={handleImportWallet}
+      />
 
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); router.push('/receive'); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="arrow-down" size={20} color={dynamicTheme.colors.textPrimary} style={{ transform: [{ rotate: '-45deg' }] }} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Receive</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); router.push('/blik'); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="bolt" size={20} color={dynamicTheme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>BLIK</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); router.push('/scheduled/create'); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="calendar" size={20} color={dynamicTheme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Scheduled</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); router.push('/split/create'); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="users" size={20} color={dynamicTheme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Split Bill</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); router.push('/swap' as any); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="exchange" size={20} color={dynamicTheme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Swap</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionMenuItem}
-              onPress={() => { closeActionsMenu(); handleCopyAddress(); }}
-            >
-              <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
-                <FontAwesome name="copy" size={20} color={dynamicTheme.colors.textPrimary} />
-              </View>
-              <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Copy Address</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      )}
-
-      {/* Account Selector Bottom Sheet */}
-      {showAccountSelector && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <Animated.View style={[styles.blurOverlay, { opacity: accountFadeAnim }]}>
-            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeAccountSelector}>
-              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.accountSheet,
-              { backgroundColor: dynamicTheme.colors.surface, transform: [{ translateY: accountSlideAnim }] },
-            ]}
-          >
-            <View style={[styles.sheetHandle, { backgroundColor: dynamicTheme.colors.borderLight }]} />
-
-            {/* Header */}
-            <View style={[styles.accountSheetHeader, { borderBottomColor: dynamicTheme.colors.border }]}>
-              <TouchableOpacity
-                style={[styles.editModeButton, { backgroundColor: dynamicTheme.colors.background }]}
-                onPress={() => setIsEditMode(!isEditMode)}
-              >
-                <Text style={[styles.editModeText, { color: dynamicTheme.colors.textPrimary }, isEditMode && { color: dynamicTheme.colors.accent }]}>
-                  {isEditMode ? 'Done' : 'Edit'}
-                </Text>
-              </TouchableOpacity>
-
-              <Text style={[styles.accountSheetTitle, { color: dynamicTheme.colors.textPrimary }]}>Wallets list</Text>
-
-              <TouchableOpacity
-                style={[styles.closeSheetButton, { backgroundColor: dynamicTheme.colors.background }]}
-                onPress={closeAccountSelector}
-              >
-                <FontAwesome name="times" size={18} color={dynamicTheme.colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Accounts List or Add Wallet Menu or Import Sheet */}
-            {showImportSheet ? (
-              <View style={styles.importSheet}>
-                <Text style={[styles.importTitle, { color: dynamicTheme.colors.textPrimary }]}>Import Wallet</Text>
-                <Text style={[styles.importSubtitle, { color: dynamicTheme.colors.textSecondary }]}>
-                  Enter your 12 or 24 word recovery phrase
-                </Text>
-                <TextInput
-                  style={[styles.seedInput, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
-                  value={seedPhraseInput}
-                  onChangeText={setSeedPhraseInput}
-                  placeholder="Enter seed phrase..."
-                  placeholderTextColor={dynamicTheme.colors.textTertiary}
-                  multiline
-                  numberOfLines={4}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <View style={styles.importActions}>
-                  <TouchableOpacity
-                    style={[styles.importCancelButton, { backgroundColor: dynamicTheme.colors.background }]}
-                    onPress={() => { setShowImportSheet(false); setSeedPhraseInput(''); }}
-                  >
-                    <Text style={[styles.importCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.importConfirmButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }, isAddingAccount && { opacity: 0.5 }]}
-                    onPress={handleImportWallet}
-                    disabled={isAddingAccount}
-                  >
-                    <Text style={[styles.importConfirmText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
-                      {isAddingAccount ? 'Importing...' : 'Import'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : showAddWalletMenu ? (
-              <View style={styles.addWalletMenu}>
-                <Text style={[styles.addWalletTitle, { color: dynamicTheme.colors.textPrimary }]}>Add Wallet</Text>
-
-                <TextInput
-                  style={[styles.newAccountInput, { backgroundColor: dynamicTheme.colors.background, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
-                  value={newAccountName}
-                  onChangeText={setNewAccountName}
-                  placeholder="Wallet name (optional)"
-                  placeholderTextColor={dynamicTheme.colors.textTertiary}
-                />
-
-                <TouchableOpacity
-                  style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#10B981', borderWidth: 1 }]}
-                  onPress={() => handleAddAccount('real')}
-                  disabled={isAddingAccount}
-                >
-                  <View style={[styles.addWalletIcon, { backgroundColor: '#10B981' + '20' }]}>
-                    <FontAwesome name="diamond" size={18} color="#10B981" />
-                  </View>
-                  <View style={styles.addWalletOptionInfo}>
-                    <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Wallet</Text>
-                    <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Create a real mainnet wallet</Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#F59E0B', borderWidth: 1 }]}
-                  onPress={() => handleAddAccount('test')}
-                  disabled={isAddingAccount}
-                >
-                  <View style={[styles.addWalletIcon, { backgroundColor: '#F59E0B' + '20' }]}>
-                    <FontAwesome name="flask" size={18} color="#F59E0B" />
-                  </View>
-                  <View style={styles.addWalletOptionInfo}>
-                    <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Test Wallet</Text>
-                    <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>For testing with free tokens</Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
-                  onPress={() => { setShowAddWalletMenu(false); setShowImportSheet(true); }}
-                >
-                  <View style={[styles.addWalletIcon, { backgroundColor: '#8B5CF6' + '20' }]}>
-                    <FontAwesome name="download" size={18} color="#8B5CF6" />
-                  </View>
-                  <View style={styles.addWalletOptionInfo}>
-                    <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>Existing Wallet</Text>
-                    <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Import using recovery phrase</Text>
-                  </View>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.addWalletCancelButton}
-                  onPress={() => { setShowAddWalletMenu(false); setNewAccountName(''); }}
-                >
-                  <Text style={[styles.addWalletCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <>
-                <View style={styles.accountsListContainer}>
-                  <DraggableFlatList
-                    data={wallet.accounts}
-                    keyExtractor={(item) => item.id}
-                    onDragEnd={({ data }) => {
-                      dispatch(reorderAccounts(data));
-                      saveAccounts(data);
-                    }}
-                    contentContainerStyle={styles.accountsScrollContent}
-                    renderItem={({ item: account, drag, isActive }: RenderItemParams<Account>) => {
-                      const [color1, color2] = generateAvatarColors(account.address);
-                      const accountIndex = wallet.accounts.findIndex(a => a.address === account.address);
-                      const isSelected = accountIndex === wallet.currentAccountIndex;
-                      const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
-
-                      if (editingAccountIndex === account.accountIndex) {
-                        return (
-                          <View style={[styles.editAccountContainer, { backgroundColor: dynamicTheme.colors.background }]}>
-                            <TextInput
-                              style={[styles.editAccountInput, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary, borderColor: dynamicTheme.colors.border }]}
-                              value={editLabel}
-                              onChangeText={setEditLabel}
-                              placeholder="Account name"
-                              placeholderTextColor={dynamicTheme.colors.textTertiary}
-                              autoFocus
-                            />
-                            <View style={styles.editAccountActions}>
-                              <TouchableOpacity
-                                style={styles.editAccountCancel}
-                                onPress={() => { setEditingAccountIndex(null); setEditLabel(''); }}
-                              >
-                                <Text style={[styles.editAccountCancelText, { color: dynamicTheme.colors.textSecondary }]}>Cancel</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.editAccountSave, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
-                                onPress={() => handleSaveLabel(account.accountIndex)}
-                              >
-                                <Text style={[styles.editAccountSaveText, { color: dynamicTheme.colors.buttonPrimaryText }]}>Save</Text>
-                              </TouchableOpacity>
-                            </View>
-                          </View>
-                        );
-                      }
-
-                      return (
-                        <ScaleDecorator>
-                          <TouchableOpacity
-                            style={[
-                              styles.accountListItem,
-                              { backgroundColor: dynamicTheme.colors.background },
-                              isActive && [styles.accountListItemDragging, { backgroundColor: dynamicTheme.colors.surfaceElevated }],
-                            ]}
-                            onPress={() => isEditMode
-                              ? (setEditingAccountIndex(account.accountIndex), setEditLabel(account.label || ''))
-                              : handleSwitchAccount(account.address)
-                            }
-                            activeOpacity={0.7}
-                            disabled={isActive}
-                          >
-                            {/* Drag handle - only in edit mode */}
-                            {isEditMode && (
-                              <TouchableOpacity
-                                onLongPress={drag}
-                                delayLongPress={100}
-                                style={styles.dragHandle}
-                              >
-                                <FontAwesome name="bars" size={16} color={dynamicTheme.colors.textTertiary} />
-                              </TouchableOpacity>
-                            )}
-
-                            {/* Gradient avatar based on address */}
-                            <LinearGradient
-                              colors={[color1, color2]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={styles.accountAvatar}
-                            />
-
-                            <View style={styles.accountListInfo}>
-                              <View style={styles.accountNameRow}>
-                                <Text style={[styles.accountListName, { color: dynamicTheme.colors.textPrimary }]}>
-                                  {account.label || `Account ${account.accountIndex + 1}`}
-                                </Text>
-                                <AccountTypeBadge type={account.type} size="small" />
-                              </View>
-                              {accountUsernames[account.address] && (
-                                <Text style={[theme.typography.caption, { color: dynamicTheme.colors.success, marginTop: 2 }]}>
-                                  @{accountUsernames[account.address]}
-                                </Text>
-                              )}
-                              <Text style={[styles.accountListBalance, { color: dynamicTheme.colors.textTertiary }]}>{accountBalance}</Text>
-                            </View>
-
-                            {isEditMode ? (
-                              <FontAwesome name="pencil" size={16} color={dynamicTheme.colors.textTertiary} />
-                            ) : isSelected ? (
-                              <FontAwesome name="check" size={18} color={dynamicTheme.colors.accent} />
-                            ) : null}
-                          </TouchableOpacity>
-                        </ScaleDecorator>
-                      );
-                    }}
-                  />
-                </View>
-
-                {/* Add Wallet Button - always visible at bottom */}
-                <TouchableOpacity
-                  style={[styles.addWalletButton, { backgroundColor: dynamicTheme.colors.background, borderColor: dynamicTheme.colors.borderLight }]}
-                  onPress={() => setShowAddWalletMenu(true)}
-                >
-                  <Text style={[styles.addWalletButtonText, { color: dynamicTheme.colors.textPrimary }]}>Add Wallet</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
-        </View>
-      )}
-
-      {/* Faucet Bottom Sheet */}
-      {showFaucetSheet && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <Animated.View style={[styles.blurOverlay, { opacity: faucetFadeAnim }]}>
-            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeFaucetSheet}>
-              <BlurView intensity={20} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View
-            style={[
-              styles.faucetSheet,
-              { backgroundColor: dynamicTheme.colors.surface, transform: [{ translateY: faucetSlideAnim }] },
-            ]}
-          >
-            <View style={[styles.sheetHandle, { backgroundColor: dynamicTheme.colors.borderLight }]} />
-
-            {/* Header */}
-            <View style={[styles.faucetSheetHeader, { borderBottomColor: dynamicTheme.colors.border }]}>
-              <Text style={[styles.faucetSheetTitle, { color: dynamicTheme.colors.textPrimary }]}>Get Test Tokens</Text>
-              <TouchableOpacity
-                style={[styles.closeSheetButton, { backgroundColor: dynamicTheme.colors.background }]}
-                onPress={closeFaucetSheet}
-              >
-                <FontAwesome name="times" size={18} color={dynamicTheme.colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.faucetSheetSubtitle, { color: dynamicTheme.colors.textSecondary }]}>
-              Visit these faucets to get free test tokens for development
-            </Text>
-
-            {/* Faucet List */}
-            <ScrollView style={styles.faucetList} showsVerticalScrollIndicator={false}>
-              {FAUCETS.map((faucet) => (
-                <TouchableOpacity
-                  key={faucet.networkId}
-                  style={styles.faucetItem}
-                  onPress={() => handleFaucetPress(faucet)}
-                >
-                  <View style={styles.faucetItemIcon}>
-                    <FontAwesome name="tint" size={20} color={theme.colors.accent} />
-                  </View>
-                  <View style={styles.faucetItemInfo}>
-                    <Text style={styles.faucetItemName}>{faucet.name}</Text>
-                    <Text style={styles.faucetItemDesc}>{faucet.description}</Text>
-                  </View>
-                  <FontAwesome name="external-link" size={14} color={theme.colors.textTertiary} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Animated.View>
-        </View>
-      )}
+      <FaucetSheet
+        visible={showFaucetSheet}
+        slideAnim={faucetSlideAnim}
+        fadeAnim={faucetFadeAnim}
+        onClose={closeFaucetSheet}
+        onFaucetPress={handleFaucetPress}
+      />
     </SafeAreaView>
   );
 }
@@ -984,600 +408,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  accountButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    gap: theme.spacing.xs,
-    maxWidth: 180,
-  },
-  accountButtonText: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '500',
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xxl,
-  },
-  // Get Test Tokens Button
-  getTestTokensButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.accent + '15',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.sm,
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.accent + '30',
-  },
-  getTestTokensText: {
-    ...theme.typography.body,
-    color: theme.colors.accent,
-    fontWeight: '600',
-  },
-  pendingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFA50015',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.md,
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: '#FFA50030',
-  },
-  pendingBannerText: {
-    ...theme.typography.caption,
-    color: '#FFA500',
-    flex: 1,
-  },
-  scheduledBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.accent + '15',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.md,
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.accent + '30',
-  },
-  scheduledBannerText: {
-    ...theme.typography.caption,
-    color: theme.colors.accent,
-    flex: 1,
-  },
-  scanningSection: {
-    marginTop: theme.spacing.md,
-  },
-  aiSuggestionsSection: {
-    marginTop: theme.spacing.md,
-  },
-  balanceSection: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.xxl,
-  },
-  balance: {
-    fontSize: 52,
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-    letterSpacing: -1,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.xxl,
-  },
-  actionButtonPrimary: {
-    flex: 1,
-    backgroundColor: theme.colors.accent,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.full,
-    alignItems: 'center',
-  },
-  actionButtonPrimaryText: {
-    ...theme.typography.body,
-    color: theme.colors.buttonPrimaryText,
-    fontWeight: '600',
-  },
-  actionButtonSecondary: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.full,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-  },
-  actionButtonSecondaryText: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-  },
-  actionButtonMore: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  tokensSection: {
-    gap: theme.spacing.sm,
-  },
-  sectionTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
-  },
-  tokenItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    gap: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  tokenInfo: {
-    flex: 1,
-  },
-  tokenName: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  tokenSymbol: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-  },
-  tokenBalance: {
-    alignItems: 'flex-end',
-  },
-  tokenBalanceValue: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  tokenBalanceUsd: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.xxl * 2,
-    gap: theme.spacing.md,
-  },
-  emptyStateText: {
-    ...theme.typography.body,
-    color: theme.colors.textTertiary,
-  },
-  // Actions Menu overlay
-  darkOverlay: {
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  actionsMenuContainer: {
-    position: 'absolute',
-    left: theme.spacing.xl,
-    bottom: theme.spacing.xl,
-    gap: theme.spacing.md,
-  },
-  actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.lg,
-  },
-  actionMenuIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...theme.shadows.medium,
-  },
-  actionMenuText: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
-  },
-  // Legacy sheet styles for account selector
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    backgroundColor: theme.colors.borderLight,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  // Blur overlay for account selector
-  blurOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  // Account Selector Sheet
-  accountSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: theme.borderRadius.xl,
-    borderTopRightRadius: theme.borderRadius.xl,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl + 20,
-    maxHeight: SCREEN_HEIGHT * 0.7,
-  },
-  accountSheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  editModeButton: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-  },
-  editModeText: {
-    ...theme.typography.caption,
-    color: theme.colors.textPrimary,
-    fontWeight: '500',
-  },
-  editModeTextActive: {
-    color: theme.colors.accent,
-  },
-  accountSheetTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.textPrimary,
-    fontSize: 18,
-  },
-  closeSheetButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountsContainer: {
-    flex: 1,
-    maxHeight: SCREEN_HEIGHT * 0.5,
-  },
-  accountsList: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    flex: 1,
-  },
-  accountsListContainer: {
-    maxHeight: SCREEN_HEIGHT * 0.4,
-  },
-  accountsScrollContent: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-  },
-  accountListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-    gap: theme.spacing.md,
-  },
-  accountListItemDragging: {
-    backgroundColor: theme.colors.surface,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  dragHandle: {
-    padding: theme.spacing.sm,
-    marginLeft: -theme.spacing.xs,
-  },
-  accountAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountListInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  accountNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-  },
-  accountListName: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-  },
-  accountListBalance: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-  },
-  // Edit account inline
-  editAccountContainer: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-  },
-  editAccountInput: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  editAccountActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: theme.spacing.md,
-  },
-  editAccountCancel: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-  },
-  editAccountCancelText: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-  },
-  editAccountSave: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.borderRadius.md,
-  },
-  editAccountSaveText: {
-    ...theme.typography.body,
-    color: theme.colors.buttonPrimaryText,
-    fontWeight: '600',
-  },
-  // Add Wallet Button - fixed at bottom
-  addWalletButton: {
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.full,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.borderLight,
-  },
-  addWalletButtonText: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-  },
-  // Add Wallet Menu
-  addWalletMenu: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-  },
-  addWalletTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  },
-  newAccountInput: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  addWalletOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-    gap: theme.spacing.md,
-  },
-  addWalletIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addWalletOptionInfo: {
-    flex: 1,
-  },
-  addWalletOptionTitle: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  addWalletOptionDesc: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
-  },
-  addWalletCancelButton: {
-    marginTop: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
-    alignItems: 'center',
-  },
-  addWalletCancelText: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-  },
-  // Import Sheet
-  importSheet: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-  },
-  importTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  importSubtitle: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  },
-  seedInput: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    color: theme.colors.textPrimary,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  importActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    marginTop: theme.spacing.lg,
-  },
-  importCancelButton: {
-    flex: 1,
-    paddingVertical: theme.spacing.lg,
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-  },
-  importCancelText: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
-  },
-  importConfirmButton: {
-    flex: 1,
-    paddingVertical: theme.spacing.lg,
-    alignItems: 'center',
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.borderRadius.md,
-  },
-  importConfirmText: {
-    ...theme.typography.body,
-    color: theme.colors.buttonPrimaryText,
-    fontWeight: '600',
-  },
-  // Faucet Sheet
-  faucetSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: theme.borderRadius.xl,
-    borderTopRightRadius: theme.borderRadius.xl,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.xxl + 20,
-    maxHeight: SCREEN_HEIGHT * 0.6,
-  },
-  faucetSheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  faucetSheetTitle: {
-    ...theme.typography.heading,
-    color: theme.colors.textPrimary,
-    fontSize: 18,
-    flex: 1,
-    textAlign: 'center',
-    marginLeft: 36, // Balance out the close button
-  },
-  faucetSheetSubtitle: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-  },
-  faucetList: {
-    paddingHorizontal: theme.spacing.lg,
-  },
-  faucetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-    gap: theme.spacing.md,
-  },
-  faucetItemIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.accent + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  faucetItemInfo: {
-    flex: 1,
-  },
-  faucetItemName: {
-    ...theme.typography.body,
-    color: theme.colors.textPrimary,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  faucetItemDesc: {
-    ...theme.typography.caption,
-    color: theme.colors.textTertiary,
   },
 });
