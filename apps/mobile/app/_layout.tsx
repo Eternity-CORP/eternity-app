@@ -14,7 +14,6 @@ import { Provider } from 'react-redux';
 
 import { NotificationProvider } from '@/src/components/NotificationProvider';
 import { MigrationModal } from '@/src/components/MigrationModal';
-import { AiFab } from '@/src/components/ai';
 import { AppThemeProvider, useTheme } from '@/src/contexts';
 import { store } from '@/src/store';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
@@ -152,20 +151,17 @@ function RootLayoutNav() {
       // No wallet - go to onboarding
       router.replace('/(onboarding)/welcome');
     } else if (hasWalletData && inOnboarding) {
-      // Has wallet but in onboarding - go to home
-      router.replace('/(tabs)/home');
+      // Has wallet but in onboarding - go to AI (default tab)
+      router.replace('/(tabs)/ai');
     } else if (hasWalletData && !inTabs && !inOnboarding && !segments[0]) {
-      // Has wallet but on unknown/root route - go to home
-      router.replace('/(tabs)/home');
+      // Has wallet but on unknown/root route - go to AI (default tab)
+      router.replace('/(tabs)/ai');
     }
   }, [isCheckingWallet, wallet.isInitialized, segments, router]);
 
   if (isCheckingWallet) {
     return null; // Show splash screen while checking
   }
-
-  // Show FAB only when wallet is initialized and not in onboarding
-  const showFab = wallet.isInitialized && segments[0] !== '(onboarding)';
 
   const handleMigrationDismiss = async () => {
     await markMigrationModalAsShown();
@@ -198,7 +194,6 @@ function RootLayoutNav() {
           <Stack.Screen name="split" options={{ headerShown: false }} />
           <Stack.Screen name="swap" options={{ headerShown: false }} />
         </Stack>
-        {showFab && <AiFab />}
       </ThemeProvider>
     </NotificationProvider>
   );
