@@ -64,19 +64,43 @@
 
 ## Core Rules
 
-### 1. Documentation First
+### 1. Shared-First Architecture
+```
+ALWAYS: New business logic goes to packages/shared/ FIRST
+NEVER:  Write logic directly in apps/web/ or apps/mobile/ without checking shared
+```
+
+When adding ANY new function, type, constant, or service — **ask where it belongs**:
+
+| Goes to `packages/shared/` | Stays in app (`apps/web/` or `apps/mobile/`) |
+|---|---|
+| API calls (REST, external APIs) | UI components (React / React Native) |
+| Socket event handling (factories) | Socket creation (`io()` + reconnection) |
+| Types, interfaces, enums | Platform storage (SecureStore, localStorage) |
+| Validation, formatting, calculations | Transaction signing (ethers + wallet) |
+| Constants, configs, error codes | Biometrics, notifications, camera |
+| Business rules (split math, fee calc) | Caching layer (SecureStore wrappers) |
+
+**Rule**: if both web AND mobile could use it — it MUST be in `packages/shared/`.
+
+**Shared package constraints**:
+- ZERO runtime dependencies (only `fetch()`, `AbortController`, plain JS)
+- No `ethers`, `react`, `expo-*`, `socket.io-client` imports
+- Use dependency injection: accept `ApiClient`, `SocketLike` as parameters
+
+### 2. Documentation First
 ```
 ALWAYS: Code follows documentation
 NEVER:  Invent features not in PRD
 ```
 
-### 2. No Duplication
+### 3. No Duplication
 ```
-ALWAYS: Check if function/component exists before creating
-NEVER:  Copy-paste code between files
+ALWAYS: Check if function/component exists in packages/shared/ before creating
+NEVER:  Copy-paste code between apps — extract to shared instead
 ```
 
-### 3. Architecture Compliance
+### 4. Architecture Compliance
 ```
 ALWAYS: Put files where architecture.md says
 NEVER:  Create new directories without checking architecture
@@ -87,6 +111,7 @@ NEVER:  Create new directories without checking architecture
 - [ ] Feature exists in `docs/v1.0/prd.md`
 - [ ] Technical approach in `docs/v1.0/architecture.md`
 - [ ] No duplicate code exists
+- [ ] **New logic checked: does it belong in `packages/shared/`?**
 - [ ] File location matches project structure
 
 ## Technology Stack (DO NOT CHANGE)
