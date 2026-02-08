@@ -82,15 +82,21 @@ export function aggregateBalances(
         contractAddress: balance.contractAddress,
       });
 
-      const currentTotal = parseFloat(aggregated[key].totalBalance);
-      const additional = parseFloat(balance.balance);
-      aggregated[key].totalBalance = (currentTotal + additional).toFixed(6);
       aggregated[key].totalUsdValue += balance.usdValue;
 
       if (!aggregated[key].iconUrl && balance.iconUrl) {
         aggregated[key].iconUrl = balance.iconUrl;
       }
     }
+  }
+
+  // Accumulate totalBalance as numbers first, then format once to reduce precision loss
+  for (const token of Object.values(aggregated)) {
+    let total = 0;
+    for (const network of token.networks) {
+      total += parseFloat(network.balance);
+    }
+    token.totalBalance = total.toFixed(6);
   }
 
   return Object.values(aggregated).sort((a, b) => b.totalUsdValue - a.totalUsdValue);

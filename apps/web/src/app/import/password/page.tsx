@@ -7,22 +7,25 @@ import { getAddressFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { ensureDefaultAccount } from '@/lib/account-storage'
+import { decryptTempFromSession, clearTempSession, encryptToSession } from '@/lib/session-crypto'
 
 export default function ImportPassword() {
   const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [mnemonic, setMnemonic] = useState('')
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('temp_mnemonic')
-    if (!stored) {
-      router.push('/import')
-      return
-    }
-    setMnemonic(stored)
+    (async () => {
+      const stored = await decryptTempFromSession()
+      if (!stored) {
+        router.push('/import')
+        return
+      }
+      setMnemonic(stored)
+    })()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,19 +42,19 @@ export default function ImportPassword() {
       return
     }
 
-    setLoading(true)
+    setStatus('loading')
 
     try {
       await encryptAndSave(mnemonic, password)
       ensureDefaultAccount(mnemonic, 'real', getAddressFromMnemonic)
-      sessionStorage.removeItem('temp_mnemonic')
-      sessionStorage.setItem('session_mnemonic', mnemonic)
+      clearTempSession()
+      await encryptToSession(mnemonic)
+      setStatus('succeeded')
       router.push('/wallet')
     } catch (err) {
       setError('Failed to import wallet')
       console.error(err)
-    } finally {
-      setLoading(false)
+      setStatus('failed')
     }
   }
 
@@ -104,10 +107,10 @@ export default function ImportPassword() {
               </Link>
               <button
                 type="submit"
-                disabled={loading || !password || !confirmPassword}
+                disabled={status === 'loading' || !password || !confirmPassword}
                 className="py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {loading ? 'Importing...' : 'Import Wallet'}
+                {status === 'loading' ? 'Importing...' : 'Import Wallet'}
               </button>
             </div>
           </form>

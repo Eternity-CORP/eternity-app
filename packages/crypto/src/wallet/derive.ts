@@ -3,9 +3,7 @@
  */
 
 import { HDNodeWallet, Mnemonic } from 'ethers';
-
-// Constants (will be imported from @e-y/shared once monorepo is configured)
-const HD_WALLET_DERIVATION_PATH = "m/44'/60'/0'/0";
+import { HD_WALLET_DERIVATION_PATH } from '@e-y/shared';
 
 /**
  * Derive wallet address from mnemonic at specific account index

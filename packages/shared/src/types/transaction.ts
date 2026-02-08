@@ -21,6 +21,13 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface GasEstimate {
+  gasLimit: string;
+  gasPrice: string;
+  totalGasCost: string;
+  totalGasCostUsd: number;
+}
+
 export interface TransactionDetails extends Transaction {
   nonce: number;
   confirmations: number;

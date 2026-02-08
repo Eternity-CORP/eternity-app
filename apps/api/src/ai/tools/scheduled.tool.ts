@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { fetchTokenPricesBySymbol } from '@e-y/shared';
 import { ScheduledService } from '../../scheduled/scheduled.service';
 import {
   AIToolHandler,
@@ -55,24 +56,35 @@ export class ScheduledTool implements AIToolHandler {
         await this.scheduledService.findByCreator(userAddress);
 
       if (realPayments && realPayments.length > 0) {
-        const formattedPayments: ScheduledPayment[] = realPayments.map((p) => ({
-          id: p.id,
-          recipient: p.recipient,
-          recipientUsername: p.recipientUsername || undefined,
-          amount: p.amount,
-          token: p.tokenSymbol,
-          amountUsd: p.amount, // TODO: Calculate USD value
-          frequency: (p.recurringInterval || 'once') as
-            | 'once'
-            | 'daily'
-            | 'weekly'
-            | 'monthly',
-          nextExecutionAt: p.scheduledAt.toISOString(),
-          status:
-            p.status === 'pending'
-              ? 'active'
-              : (p.status as 'active' | 'paused' | 'completed'),
-        }));
+        // Fetch prices for all unique token symbols
+        const uniqueSymbols = [...new Set(realPayments.map((p) => p.tokenSymbol.toUpperCase()))];
+        const prices = await fetchTokenPricesBySymbol(uniqueSymbols);
+
+        const formattedPayments: ScheduledPayment[] = realPayments.map((p) => {
+          const price = prices[p.tokenSymbol.toUpperCase()] || 0;
+          const numericAmount = parseFloat(p.amount);
+          const usd = price > 0 && !isNaN(numericAmount)
+            ? (numericAmount * price).toFixed(2)
+            : '—';
+          return {
+            id: p.id,
+            recipient: p.recipient,
+            recipientUsername: p.recipientUsername || undefined,
+            amount: p.amount,
+            token: p.tokenSymbol,
+            amountUsd: usd,
+            frequency: (p.recurringInterval || 'once') as
+              | 'once'
+              | 'daily'
+              | 'weekly'
+              | 'monthly',
+            nextExecutionAt: p.scheduledAt.toISOString(),
+            status:
+              p.status === 'pending'
+                ? 'active'
+                : (p.status as 'active' | 'paused' | 'completed'),
+          };
+        });
 
         return {
           success: true,

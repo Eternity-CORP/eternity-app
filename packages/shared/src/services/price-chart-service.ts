@@ -4,19 +4,10 @@
  * Pure fetch — no caching, no platform dependencies.
  */
 
-export const TOKEN_COIN_IDS: Record<string, string> = {
-  ETH: 'ethereum',
-  USDC: 'usd-coin',
-  USDT: 'tether',
-  DAI: 'dai',
-  WETH: 'weth',
-  WBTC: 'wrapped-bitcoin',
-  UNI: 'uniswap',
-  LINK: 'chainlink',
-  AAVE: 'aave',
-  MKR: 'maker',
-  MATIC: 'matic-network',
-};
+import { COINGECKO_IDS } from '../constants/coingecko';
+
+// Re-export for backward compatibility
+export const TOKEN_COIN_IDS = COINGECKO_IDS;
 
 export interface PricePoint {
   timestamp: number;
@@ -91,6 +82,63 @@ export async function fetchPriceChartData(
     const prices: PricePoint[] = (chartData.prices || []).map(
       ([timestamp, price]: [number, number]) => ({ timestamp, price }),
     );
+
+    return {
+      prices,
+      currentPrice,
+      priceChange24h,
+      priceChangePercentage24h,
+      high24h,
+      low24h,
+    };
+  } catch {
+    clearTimeout(timeoutId);
+    return null;
+  }
+}
+
+/**
+ * Fetch historical price data for a token by contract address (ERC-20 tokens).
+ * Pure fetch — no caching, no platform dependencies.
+ */
+export async function fetchPriceChartByContract(
+  contractAddress: string,
+  days: 1 | 7 | 30 = 1,
+): Promise<PriceChartData | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const chartResponse = await fetch(
+      `https://api.coingecko.com/api/v3/coins/ethereum/contract/${contractAddress}/market_chart/?vs_currency=usd&days=${days}`,
+      { headers: { Accept: 'application/json' }, signal: controller.signal },
+    );
+
+    if (!chartResponse.ok) {
+      clearTimeout(timeoutId);
+      return null;
+    }
+
+    const chartData = (await chartResponse.json()) as { prices?: [number, number][] };
+    clearTimeout(timeoutId);
+
+    const prices: PricePoint[] = (chartData.prices || []).map(
+      ([timestamp, price]: [number, number]) => ({ timestamp, price }),
+    );
+
+    const currentPrice = prices.length > 0 ? prices[prices.length - 1].price : 0;
+    const startPrice = prices.length > 0 ? prices[0].price : 0;
+    const priceChange24h = currentPrice - startPrice;
+    const priceChangePercentage24h =
+      startPrice > 0 ? (priceChange24h / startPrice) * 100 : 0;
+
+    let high24h = 0;
+    let low24h = Infinity;
+    for (const point of prices) {
+      if (point.price > high24h) high24h = point.price;
+      if (point.price < low24h) low24h = point.price;
+    }
+    if (low24h === Infinity) low24h = 0;
 
     return {
       prices,

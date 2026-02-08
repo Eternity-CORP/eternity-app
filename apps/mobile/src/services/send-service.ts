@@ -6,26 +6,17 @@
 import { isAddress, parseEther, formatEther, Contract, parseUnits } from 'ethers';
 import { getProvider, fetchEthUsdPrice, fetchTokenMetadata } from './balance-service';
 import type { HDNodeWallet } from 'ethers';
+import { ERC20_TRANSFER_ABI, type GasEstimate } from '@e-y/shared';
 
-// Minimal ERC-20 ABI for transfer function
-const ERC20_ABI = [
-  'function transfer(address to, uint256 amount) returns (bool)',
-  'function balanceOf(address account) view returns (uint256)',
-  'function decimals() view returns (uint8)',
-];
+const ERC20_ABI = ERC20_TRANSFER_ABI as unknown as string[];
+
+export type { GasEstimate };
 
 export interface SendTransactionParams {
   wallet: HDNodeWallet;
   to: string;
-  amount: string; // Human-readable amount (e.g., "0.1")
-  token: string; // 'ETH' or token contract address
-}
-
-export interface GasEstimate {
-  gasLimit: string; // BigInt as string for Redux serialization
-  gasPrice: string; // BigInt as string for Redux serialization
-  totalGasCost: string; // In ETH
-  totalGasCostUsd: number; // In USD
+  amount: string;
+  token: string;
 }
 
 /**

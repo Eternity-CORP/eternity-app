@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { generateMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { encryptTempToSession } from '@/lib/session-crypto'
 
 function pickRandomIndices(count: number, max: number): number[] {
   const indices: number[] = []
@@ -45,12 +46,12 @@ export default function CreateWallet() {
     setStep(2)
   }
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const correct = verifyIndices.every(
       (wordIdx, i) => verifyInputs[i].trim().toLowerCase() === mnemonic[wordIdx].toLowerCase()
     )
     if (correct) {
-      sessionStorage.setItem('temp_mnemonic', mnemonic.join(' '))
+      await encryptTempToSession(mnemonic.join(' '))
       router.push('/create/password')
     } else {
       setVerifyError(true)

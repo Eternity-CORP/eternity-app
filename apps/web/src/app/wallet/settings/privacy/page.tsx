@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 type PrivacyLevel = 'anyone' | 'contacts' | 'nobody'
 
@@ -23,15 +24,13 @@ const STORAGE_KEY_PREFIX = 'e-y_privacy_'
 
 export default function PrivacySettingsPage() {
   const router = useRouter()
-  const { isLoggedIn, address } = useAccount()
+  const { isReady } = useAuthGuard()
+  const { address } = useAccount()
 
   const [splitBillPrivacy, setSplitBillPrivacy] = useState<PrivacyLevel>('anyone')
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/unlock')
-      return
-    }
+    if (!isReady) return
     try {
       const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${address.toLowerCase()}`)
       if (stored) {
@@ -41,7 +40,7 @@ export default function PrivacySettingsPage() {
         }
       }
     } catch {}
-  }, [isLoggedIn, address, router])
+  }, [isReady, address])
 
   const handleChange = useCallback((value: PrivacyLevel) => {
     setSplitBillPrivacy(value)

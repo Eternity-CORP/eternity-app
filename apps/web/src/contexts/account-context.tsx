@@ -16,6 +16,7 @@ import {
   clearAccountData,
 } from '@/lib/account-storage'
 import { getNetwork, type NetworkConfig } from '@/lib/network'
+import { encryptToSession, decryptFromSession, clearSession } from '@/lib/session-crypto'
 
 type UiMode = 'ai' | 'classic'
 
@@ -27,11 +28,11 @@ interface AccountContextValue {
   accounts: Account[]
   currentAccount: Account | null
   uiMode: UiMode
-  switchAccount: (accountId: string) => void
-  addAccount: (type: AccountType, label?: string) => void
+  switchAccount: (accountId: string) => Promise<void>
+  addAccount: (type: AccountType, label?: string) => Promise<void>
   renameAccount: (accountId: string, label: string) => void
-  removeAccount: (accountId: string) => void
-  importWallet: (mnemonic: string) => boolean
+  removeAccount: (accountId: string) => Promise<void>
+  importWallet: (mnemonic: string) => Promise<boolean>
   setUiMode: (mode: UiMode) => void
   logout: () => void
 }
@@ -48,11 +49,11 @@ const AccountContext = createContext<AccountContextValue>({
   accounts: [],
   currentAccount: null,
   uiMode: 'ai',
-  switchAccount: () => {},
-  addAccount: () => {},
+  switchAccount: async () => {},
+  addAccount: async () => {},
   renameAccount: () => {},
-  removeAccount: () => {},
-  importWallet: () => false,
+  removeAccount: async () => {},
+  importWallet: async () => false,
   setUiMode: () => {},
   logout: () => {},
 })
@@ -69,34 +70,36 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [uiMode, setUiModeState] = useState<UiMode>('ai')
 
   useEffect(() => {
-    const mnemonic = sessionStorage.getItem('session_mnemonic')
-    if (!mnemonic) return
+    (async () => {
+      const mnemonic = await decryptFromSession()
+      if (!mnemonic) return
 
-    const accs = ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
+      const accs = ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
 
-    // Migration: re-derive addresses to fix any stored with the old derivation bug
-    let needsSave = false
-    const migrated = accs.map((acc) => {
-      const correctAddress = getAddressFromMnemonic(mnemonic, acc.accountIndex)
-      if (acc.address !== correctAddress) {
-        needsSave = true
-        return { ...acc, address: correctAddress }
+      // Migration: re-derive addresses to fix any stored with the old derivation bug
+      let needsSave = false
+      const migrated = accs.map((acc) => {
+        const correctAddress = getAddressFromMnemonic(mnemonic, acc.accountIndex)
+        if (acc.address !== correctAddress) {
+          needsSave = true
+          return { ...acc, address: correctAddress }
+        }
+        return acc
+      })
+
+      if (needsSave) {
+        saveAccounts(migrated)
       }
-      return acc
-    })
 
-    if (needsSave) {
-      saveAccounts(migrated)
-    }
+      setAccounts(migrated)
 
-    setAccounts(migrated)
+      const savedIndex = loadCurrentAccountIndex()
+      const account = migrated[savedIndex] || migrated[0]
+      setCurrentAccount(account)
 
-    const savedIndex = loadCurrentAccountIndex()
-    const account = migrated[savedIndex] || migrated[0]
-    setCurrentAccount(account)
-
-    const w = deriveWalletFromMnemonic(mnemonic, account.accountIndex)
-    setWallet(w)
+      const w = deriveWalletFromMnemonic(mnemonic, account.accountIndex)
+      setWallet(w)
+    })()
   }, [])
 
   useEffect(() => {
@@ -111,8 +114,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(UI_MODE_KEY, mode)
   }, [])
 
-  const switchAccount = useCallback((accountId: string) => {
-    const mnemonic = sessionStorage.getItem('session_mnemonic')
+  const switchAccount = useCallback(async (accountId: string) => {
+    const mnemonic = await decryptFromSession()
     if (!mnemonic) return
 
     const accs = loadAccounts()
@@ -127,8 +130,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     setWallet(w)
   }, [])
 
-  const addAccount = useCallback((type: AccountType, label?: string) => {
-    const mnemonic = sessionStorage.getItem('session_mnemonic')
+  const addAccount = useCallback(async (type: AccountType, label?: string) => {
+    const mnemonic = await decryptFromSession()
     if (!mnemonic) return
 
     const accs = loadAccounts()
@@ -164,8 +167,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
-  const removeAccount = useCallback((accountId: string) => {
-    const mnemonic = sessionStorage.getItem('session_mnemonic')
+  const removeAccount = useCallback(async (accountId: string) => {
+    const mnemonic = await decryptFromSession()
     if (!mnemonic) return
 
     const accs = loadAccounts()
@@ -188,11 +191,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  const importWallet = useCallback((mnemonic: string): boolean => {
+  const importWallet = useCallback(async (mnemonic: string): Promise<boolean> => {
     const normalized = mnemonic.trim().toLowerCase().replace(/\s+/g, ' ')
     if (!isValidMnemonic(normalized)) return false
 
-    sessionStorage.setItem('session_mnemonic', normalized)
+    await encryptToSession(normalized)
     clearAccountData()
 
     const address = getAddressFromMnemonic(normalized, 0)
@@ -209,7 +212,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
-    sessionStorage.removeItem('session_mnemonic')
+    clearSession()
     setWallet(null)
     setCurrentAccount(null)
     setAccounts([])

@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { encryptTempToSession } from '@/lib/session-crypto'
 
 export default function ImportWallet() {
   const router = useRouter()
   const [words, setWords] = useState<string[]>(Array(12).fill(''))
   const [wordCount, setWordCount] = useState<12 | 24>(12)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
 
   const handleWordChange = (index: number, value: string) => {
     const newWords = [...words]
@@ -50,18 +51,18 @@ export default function ImportWallet() {
       return
     }
 
-    setLoading(true)
+    setStatus('loading')
     setError('')
 
     try {
       deriveWalletFromMnemonic(mnemonic, 0)
-      sessionStorage.setItem('temp_mnemonic', mnemonic)
+      await encryptTempToSession(mnemonic)
+      setStatus('succeeded')
       router.push('/import/password')
     } catch (err) {
       setError('Invalid recovery phrase. Please check your words.')
       console.error(err)
-    } finally {
-      setLoading(false)
+      setStatus('failed')
     }
   }
 
@@ -139,10 +140,10 @@ export default function ImportWallet() {
             </Link>
             <button
               onClick={handleContinue}
-              disabled={loading}
+              disabled={status === 'loading'}
               className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? 'Validating...' : 'Continue'}
+              {status === 'loading' ? 'Validating...' : 'Continue'}
             </button>
           </div>
         </div>

@@ -4,19 +4,11 @@
  */
 
 import { ethers, Contract, parseEther, parseUnits, formatEther } from 'ethers'
+import { ERC20_TRANSFER_ABI, type GasEstimate } from '@e-y/shared'
 
-const ERC20_ABI = [
-  'function transfer(address to, uint256 amount) returns (bool)',
-  'function balanceOf(address account) view returns (uint256)',
-  'function decimals() view returns (uint8)',
-]
+const ERC20_ABI = ERC20_TRANSFER_ABI as unknown as string[]
 
-export interface GasEstimate {
-  gasLimit: string
-  gasPrice: string
-  totalGasCost: string
-  totalGasCostUsd: number
-}
+export type { GasEstimate }
 
 /**
  * Send native token (ETH/MATIC)

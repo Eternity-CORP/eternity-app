@@ -9,3 +9,4 @@ export * from './debounce';
 export * from './username';
 export * from './split';
 export * from './send';
+export * from './async';

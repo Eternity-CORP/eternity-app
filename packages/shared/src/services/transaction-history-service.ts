@@ -41,7 +41,7 @@ export async function fetchTransactionHistory(
             fromBlock: '0x0',
             toBlock: 'latest',
             toAddress: address,
-            category: ['external'],
+            category: ['external', 'erc20'],
             withMetadata: true,
             excludeZeroValue: false,
             maxCount,
@@ -59,7 +59,7 @@ export async function fetchTransactionHistory(
             fromBlock: '0x0',
             toBlock: 'latest',
             fromAddress: address,
-            category: ['external'],
+            category: ['external', 'erc20'],
             withMetadata: true,
             excludeZeroValue: false,
             maxCount,
@@ -91,13 +91,13 @@ export async function fetchTransactionHistory(
 
     if (receivedData.result?.transfers) {
       for (const t of receivedData.result.transfers) {
-        if (t.asset === 'ETH' && t.value) {
+        if (t.value) {
           transactions.push({
             hash: t.hash,
             from: t.from,
             to: t.to,
             amount: Number(t.value).toFixed(6),
-            token: 'ETH',
+            token: t.asset || 'ETH',
             direction: 'received',
             status: 'confirmed',
             blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
@@ -112,13 +112,13 @@ export async function fetchTransactionHistory(
 
     if (sentData.result?.transfers) {
       for (const t of sentData.result.transfers) {
-        if (t.asset === 'ETH' && t.value) {
+        if (t.value) {
           transactions.push({
             hash: t.hash,
             from: t.from,
             to: t.to,
             amount: Number(t.value).toFixed(6),
-            token: 'ETH',
+            token: t.asset || 'ETH',
             direction: 'sent',
             status: 'confirmed',
             blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,

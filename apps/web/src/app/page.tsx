@@ -8,7 +8,7 @@ import Navigation from '@/components/Navigation'
 
 export default function Home() {
   const router = useRouter()
-  const [checking, setChecking] = useState(true)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
 
   useEffect(() => {
     const check = async () => {
@@ -16,13 +16,13 @@ export default function Home() {
       if (walletExists) {
         router.replace('/unlock')
       } else {
-        setChecking(false)
+        setStatus('succeeded')
       }
     }
     check()
   }, [router])
 
-  if (checking) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />

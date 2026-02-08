@@ -7,6 +7,7 @@ import {
   ToolResult,
 } from './tool.interface';
 import { BlikService } from '../../blik/blik.service';
+import { fetchTokenPricesBySymbol } from '@e-y/shared';
 
 interface BlikGenerateParams extends ToolParams {
   amount: string;
@@ -116,14 +117,9 @@ export class BlikGenerateTool implements AIToolHandler {
       );
 
       // Get token price for USD conversion
-      const tokenPrices: Record<string, number> = {
-        USDC: 1.0,
-        ETH: 2500.0,
-        MATIC: 0.9,
-      };
-
-      const price = tokenPrices[token.toUpperCase()] || 1.0;
-      const amountUsd = (numericAmount * price).toFixed(2);
+      const prices = await fetchTokenPricesBySymbol([token.toUpperCase()]);
+      const price = prices[token.toUpperCase()] || 0;
+      const amountUsd = price > 0 ? (numericAmount * price).toFixed(2) : '—';
 
       const preview: BlikGeneratePreview = {
         type: 'generate',
@@ -240,19 +236,14 @@ export class BlikLookupTool implements AIToolHandler {
       }
 
       // Get token price for USD conversion
-      const tokenPrices: Record<string, number> = {
-        USDC: 1.0,
-        ETH: 2500.0,
-        MATIC: 0.9,
-      };
-
+      const prices = await fetchTokenPricesBySymbol([blikCode.tokenSymbol.toUpperCase()]);
       const numericAmount = parseFloat(blikCode.amount);
-      const price = tokenPrices[blikCode.tokenSymbol.toUpperCase()] || 1.0;
-      const amountUsd = (numericAmount * price).toFixed(2);
+      const price = prices[blikCode.tokenSymbol.toUpperCase()] || 0;
+      const amountUsd = price > 0 ? (numericAmount * price).toFixed(2) : '—';
 
       // Estimate gas
-      const estimatedGas = '0.001';
-      const estimatedGasUsd = '2.50';
+      const estimatedGas = '~0.001';
+      const estimatedGasUsd = '(estimate)';
 
       const preview: BlikPayPreview = {
         type: 'pay',
@@ -276,7 +267,7 @@ export class BlikLookupTool implements AIToolHandler {
         success: true,
         data: {
           preview,
-          message: `Found BLIK request from ${blikCode.receiverUsername ? '@' + blikCode.receiverUsername : blikCode.receiverAddress.slice(0, 6) + '...' + blikCode.receiverAddress.slice(-4)} for ${blikCode.amount} ${blikCode.tokenSymbol} (~$${amountUsd}). Gas: ~$${estimatedGasUsd}. Please confirm payment.`,
+          message: `Found BLIK request from ${blikCode.receiverUsername ? '@' + blikCode.receiverUsername : blikCode.receiverAddress.slice(0, 6) + '...' + blikCode.receiverAddress.slice(-4)} for ${blikCode.amount} ${blikCode.tokenSymbol}${amountUsd !== '—' ? ` (~$${amountUsd})` : ''}. Gas: ${estimatedGas} ETH ${estimatedGasUsd}. Please confirm payment.`,
           requiresConfirmation: true,
           pendingBlik: preview,
         },

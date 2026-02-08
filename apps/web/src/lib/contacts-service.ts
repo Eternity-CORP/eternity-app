@@ -1,27 +1,31 @@
 /**
  * Contacts Service (Web)
- * localStorage-based contact book, per-account isolation.
+ * Thin wrapper around shared contacts-service with localStorage adapter.
  */
 
-const CONTACTS_STORAGE_PREFIX = 'e-y_contacts_'
+import {
+  type Contact,
+  type StorageAdapter,
+  loadContacts as sharedLoad,
+  saveContact as sharedSave,
+  deleteContact as sharedDelete,
+  searchContacts as sharedSearch,
+  touchContact as sharedTouch,
+} from '@e-y/shared'
 
-function getStorageKey(accountAddress: string): string {
-  return `${CONTACTS_STORAGE_PREFIX}${accountAddress.toLowerCase()}`
-}
+export type { Contact }
 
-export interface Contact {
-  id: string
-  name: string
-  address: string
-  username?: string
-  createdAt: number
-  lastUsedAt: number
+const localStorageAdapter: StorageAdapter = {
+  getItem: async (key: string) => localStorage.getItem(key),
+  setItem: async (key: string, value: string) => {
+    localStorage.setItem(key, value)
+  },
 }
 
 export function loadContacts(accountAddress: string): Contact[] {
   if (!accountAddress) return []
   try {
-    const data = localStorage.getItem(getStorageKey(accountAddress))
+    const data = localStorage.getItem(`e-y_contacts_${accountAddress.toLowerCase()}`)
     if (!data) return []
     const contacts: Contact[] = JSON.parse(data)
     return contacts.sort((a, b) => b.lastUsedAt - a.lastUsedAt)
@@ -30,70 +34,21 @@ export function loadContacts(accountAddress: string): Contact[] {
   }
 }
 
-export function saveContact(
+export async function saveContact(
   accountAddress: string,
   contact: Omit<Contact, 'id' | 'createdAt' | 'lastUsedAt'>,
-): Contact {
-  const contacts = loadContacts(accountAddress)
-  const key = getStorageKey(accountAddress)
-  const now = Date.now()
-
-  const existingIndex = contacts.findIndex(
-    (c) => c.address.toLowerCase() === contact.address.toLowerCase(),
-  )
-
-  if (existingIndex >= 0) {
-    const updated: Contact = {
-      ...contacts[existingIndex],
-      name: contact.name,
-      username: contact.username || contacts[existingIndex].username,
-      lastUsedAt: now,
-    }
-    contacts[existingIndex] = updated
-    localStorage.setItem(key, JSON.stringify(contacts))
-    return updated
-  }
-
-  const newContact: Contact = {
-    id: `contact_${now}_${Math.random().toString(36).slice(2, 9)}`,
-    name: contact.name,
-    address: contact.address,
-    username: contact.username,
-    createdAt: now,
-    lastUsedAt: now,
-  }
-
-  contacts.unshift(newContact)
-  localStorage.setItem(key, JSON.stringify(contacts))
-  return newContact
+): Promise<Contact> {
+  return sharedSave(localStorageAdapter, accountAddress, contact)
 }
 
-export function deleteContact(accountAddress: string, id: string): boolean {
-  const contacts = loadContacts(accountAddress)
-  const filtered = contacts.filter((c) => c.id !== id)
-  if (filtered.length === contacts.length) return false
-  localStorage.setItem(getStorageKey(accountAddress), JSON.stringify(filtered))
-  return true
+export async function deleteContact(accountAddress: string, id: string): Promise<boolean> {
+  return sharedDelete(localStorageAdapter, accountAddress, id)
 }
 
-export function searchContacts(accountAddress: string, query: string): Contact[] {
-  const contacts = loadContacts(accountAddress)
-  const lowerQuery = query.toLowerCase()
-  return contacts.filter(
-    (c) =>
-      c.name.toLowerCase().includes(lowerQuery) ||
-      c.address.toLowerCase().includes(lowerQuery) ||
-      (c.username && c.username.toLowerCase().includes(lowerQuery)),
-  )
+export async function searchContacts(accountAddress: string, query: string): Promise<Contact[]> {
+  return sharedSearch(localStorageAdapter, accountAddress, query)
 }
 
-export function touchContact(accountAddress: string, contactAddress: string): void {
-  const contacts = loadContacts(accountAddress)
-  const index = contacts.findIndex(
-    (c) => c.address.toLowerCase() === contactAddress.toLowerCase(),
-  )
-  if (index >= 0) {
-    contacts[index].lastUsedAt = Date.now()
-    localStorage.setItem(getStorageKey(accountAddress), JSON.stringify(contacts))
-  }
+export async function touchContact(accountAddress: string, contactAddress: string): Promise<void> {
+  return sharedTouch(localStorageAdapter, accountAddress, contactAddress)
 }

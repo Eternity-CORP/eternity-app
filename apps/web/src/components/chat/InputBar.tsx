@@ -8,7 +8,7 @@ interface InputBarProps {
   placeholder?: string
 }
 
-export default function InputBar({ onSend, disabled = false, placeholder = 'Напишите сообщение...' }: InputBarProps) {
+export default function InputBar({ onSend, disabled = false, placeholder = 'Type a message...' }: InputBarProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 

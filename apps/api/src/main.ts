@@ -37,7 +37,7 @@ async function bootstrap() {
 
   // Enable CORS for mobile app
   app.enableCors({
-    origin: true,
+    origin: [process.env.WEB_APP_URL || 'https://e-y-app.vercel.app', 'http://localhost:3001'],
     credentials: true,
   });
 

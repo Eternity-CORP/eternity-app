@@ -14,12 +14,14 @@ import {
 } from '@e-y/shared'
 import { API_BASE_URL } from '@/lib/api'
 import Navigation from '@/components/Navigation'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 type Mode = 'select' | 'request' | 'send'
 
 export default function BlikPage() {
   const router = useRouter()
-  const { wallet, address, network, isLoggedIn } = useAccount()
+  useAuthGuard()
+  const { wallet, address, network } = useAccount()
 
   const [mode, setMode] = useState<Mode>('select')
 
@@ -29,17 +31,12 @@ export default function BlikPage() {
 
   const [inputCode, setInputCode] = useState('')
   const [foundCode, setFoundCode] = useState<CodeInfoPayload | null>(null)
-  const [sending, setSending] = useState(false)
+  const [sendStatus, setSendStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [error, setError] = useState('')
   const [codeCopied, setCodeCopied] = useState(false)
 
   const socketRef = useRef<Socket | null>(null)
   const blikServiceRef = useRef<BlikSocketService | null>(null)
-
-  useEffect(() => {
-    if (!isLoggedIn && address === '') return
-    if (!isLoggedIn) router.push('/unlock')
-  }, [isLoggedIn, address])
 
   // Connect socket on mount, disconnect on unmount
   useEffect(() => {
@@ -143,7 +140,7 @@ export default function BlikPage() {
   const handleSend = useCallback(async () => {
     if (!wallet || !foundCode) return
 
-    setSending(true)
+    setSendStatus('loading')
     setError('')
 
     try {
@@ -164,12 +161,12 @@ export default function BlikPage() {
         network: network.name,
       })
 
+      setSendStatus('succeeded')
       router.push(`/wallet/send/success?hash=${tx.hash}`)
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
       setError(errorMessage.includes('insufficient') ? 'Insufficient balance' : errorMessage)
-    } finally {
-      setSending(false)
+      setSendStatus('failed')
     }
   }, [wallet, foundCode, network, address, router])
 
@@ -378,10 +375,10 @@ export default function BlikPage() {
                   </button>
                   <button
                     onClick={handleSend}
-                    disabled={sending}
+                    disabled={sendStatus === 'loading'}
                     className="flex-1 py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                   >
-                    {sending ? 'Sending...' : 'Send'}
+                    {sendStatus === 'loading' ? 'Sending...' : 'Send'}
                   </button>
                 </div>
               </>

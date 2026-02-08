@@ -7,6 +7,7 @@ import { getAddressFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { ensureDefaultAccount } from '@/lib/account-storage'
+import { encryptToSession } from '@/lib/session-crypto'
 
 function UnlockContent() {
   const router = useRouter()
@@ -15,23 +16,23 @@ function UnlockContent() {
 
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+    setStatus('loading')
 
     try {
       const mnemonic = await loadAndDecrypt(password)
       ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
-      sessionStorage.setItem('session_mnemonic', mnemonic)
+      await encryptToSession(mnemonic)
+      setStatus('succeeded')
       router.push(redirect || '/wallet')
     } catch (err) {
       setError('Invalid password')
       console.error(err)
-    } finally {
-      setLoading(false)
+      setStatus('failed')
     }
   }
 
@@ -71,10 +72,10 @@ function UnlockContent() {
 
             <button
               type="submit"
-              disabled={loading || !password}
+              disabled={status === 'loading' || !password}
               className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {status === 'loading' ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                   Unlocking...

@@ -124,9 +124,9 @@ export default function AccountSelector() {
     removeAccount(accId)
   }
 
-  const handleImport = () => {
+  const handleImport = async () => {
     setImportError('')
-    const ok = importWallet(importPhrase)
+    const ok = await importWallet(importPhrase)
     if (ok) {
       closeDropdown()
     } else {

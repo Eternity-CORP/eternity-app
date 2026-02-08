@@ -13,6 +13,7 @@
   "author": "E-Y Team",
   "license": "UNLICENSED",
   "dependencies": {
+    "@e-y/shared": "workspace:*",
     "ethers": "^6.9.0"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@
  * Debounce utility — delays invoking `func` until `wait` ms have elapsed
  * since the last invocation.
  */
-export function debounce<T extends (...args: string[]) => void>(
+export function debounce<T extends (...args: any[]) => void>(
   func: T,
   wait: number,
 ): (...args: Parameters<T>) => void {

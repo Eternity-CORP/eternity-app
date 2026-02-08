@@ -11,7 +11,7 @@ export const BLIK_CODE_MAX = 999999;
 // Username constants
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 20;
-export const USERNAME_PATTERN = /^[a-z][a-z0-9_]{2,19}$/;
+// USERNAME_PATTERN removed — use USERNAME_REGEX from utils/username.ts
 
 // Wallet constants
 export const MNEMONIC_WORD_COUNT_12 = 12;

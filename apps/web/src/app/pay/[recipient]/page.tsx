@@ -18,21 +18,22 @@ export default function PayPage() {
   const [resolvedAddress, setResolvedAddress] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
 
   useEffect(() => {
     const resolve = async () => {
-      setLoading(true)
+      setStatus('loading')
       setError('')
 
       if (recipient.startsWith('0x') && recipient.length === 42) {
         if (ethers.isAddress(recipient)) {
           setResolvedAddress(recipient)
           setDisplayName(`${recipient.slice(0, 8)}...${recipient.slice(-6)}`)
+          setStatus('succeeded')
         } else {
           setError('Invalid address')
+          setStatus('failed')
         }
-        setLoading(false)
         return
       }
 
@@ -42,27 +43,29 @@ export default function PayPage() {
       if (result) {
         setResolvedAddress(result.address)
         setDisplayName(`@${username}`)
+        setStatus('succeeded')
       } else {
         setError(`User @${username} not found`)
+        setStatus('failed')
       }
-      setLoading(false)
     }
 
     resolve()
   }, [recipient])
 
   const handleConnect = () => {
-    const hasWallet = localStorage.getItem('e-y-wallet-exists')
+    const hasWallet = !!localStorage.getItem('e-y_accounts')
+    const redirect = encodeURIComponent(`/wallet/send?to=${resolvedAddress}`)
     if (hasWallet) {
-      router.push(`/unlock?redirect=/wallet/send?to=${resolvedAddress}`)
+      router.push(`/unlock?redirect=${redirect}`)
     } else {
-      router.push(`/create?redirect=/wallet/send?to=${resolvedAddress}`)
+      router.push(`/create?redirect=${redirect}`)
     }
   }
 
   const networkLabel = currentAccount?.type === 'real' ? network.name : `${network.name} Testnet`
 
-  if (loading) {
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-black">
         <Navigation />

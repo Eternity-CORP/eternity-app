@@ -6,8 +6,9 @@ import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
-import { fetchTransactionHistory, type TransactionHistoryItem, SUPPORTED_NETWORKS, type NetworkId } from '@e-y/shared'
+import { fetchTransactionHistory, type TransactionHistoryItem, SUPPORTED_NETWORKS, type NetworkId, formatUsd } from '@e-y/shared'
 import PriceChart from '@/components/PriceChart'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 const TOKEN_META: Record<string, { name: string; color: string; icon: string }> = {
   ETH: { name: 'Ethereum', color: '#627EEA', icon: 'E' },
@@ -28,37 +29,24 @@ function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function formatUsd(value: number): string {
-  if (value >= 1000) return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  if (value >= 1) return `$${value.toFixed(2)}`
-  if (value > 0) return `$${value.toFixed(4)}`
-  return '$0.00'
-}
-
 export default function TokenDetailPage() {
   const router = useRouter()
   const params = useParams()
   const symbol = (params.symbol as string || '').toUpperCase()
 
-  const { isLoggedIn, address, currentAccount } = useAccount()
+  useAuthGuard()
+  const { address, currentAccount } = useAccount()
   const { aggregatedBalances, loading: balanceLoading } = useBalance()
 
   const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([])
-  const [txLoading, setTxLoading] = useState(true)
+  const [txStatus, setTxStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
 
   const meta = TOKEN_META[symbol] || { name: symbol, color: '#888888', icon: symbol.charAt(0) }
-
-  useEffect(() => {
-    if (!isLoggedIn && address === '') return
-    if (!isLoggedIn) {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
 
   // Fetch transaction history
   useEffect(() => {
     if (!address || !ALCHEMY_KEY) {
-      setTxLoading(false)
+      setTxStatus('idle')
       return
     }
 
@@ -66,9 +54,8 @@ export default function TokenDetailPage() {
     const alchemyUrl = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_KEY}`
 
     fetchTransactionHistory(alchemyUrl, address, 10)
-      .then(setTransactions)
-      .catch(() => setTransactions([]))
-      .finally(() => setTxLoading(false))
+      .then((txs) => { setTransactions(txs); setTxStatus('succeeded') })
+      .catch(() => { setTransactions([]); setTxStatus('failed') })
   }, [address, currentAccount?.type])
 
   // Get token data from balance context
@@ -203,7 +190,7 @@ export default function TokenDetailPage() {
               </Link>
             </div>
 
-            {txLoading ? (
+            {txStatus === 'loading' ? (
               <div className="p-8 flex justify-center">
                 <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               </div>

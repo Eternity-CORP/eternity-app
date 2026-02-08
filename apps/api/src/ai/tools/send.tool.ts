@@ -7,6 +7,7 @@ import {
   ToolResult,
 } from './tool.interface';
 import { UsernameService } from '../../username/username.service';
+import { fetchTokenPricesBySymbol } from '@e-y/shared';
 
 interface SendParams extends ToolParams {
   recipient: string;
@@ -118,18 +119,13 @@ export class SendTool implements AIToolHandler {
       }
 
       // Get token price for USD conversion
-      const tokenPrices: Record<string, number> = {
-        USDC: 1.0,
-        ETH: 2500.0,
-        MATIC: 0.9,
-      };
-
-      const price = tokenPrices[token.toUpperCase()] || 1.0;
-      const amountUsd = (numericAmount * price).toFixed(2);
+      const prices = await fetchTokenPricesBySymbol([token.toUpperCase()]);
+      const price = prices[token.toUpperCase()] || 0;
+      const amountUsd = price > 0 ? (numericAmount * price).toFixed(2) : '—';
 
       // Estimate gas (simplified)
-      const estimatedGas = '0.001';
-      const estimatedGasUsd = '2.50';
+      const estimatedGas = '~0.001';
+      const estimatedGasUsd = '(estimate)';
 
       // Generate preview ID
       const previewId = `tx_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -152,7 +148,7 @@ export class SendTool implements AIToolHandler {
         success: true,
         data: {
           preview,
-          message: `Ready to send ${amount} ${token.toUpperCase()} (~$${amountUsd}) to ${recipientUsername ? '@' + recipientUsername : resolvedAddress}. Gas: ~$${estimatedGasUsd}. Please confirm.`,
+          message: `Ready to send ${amount} ${token.toUpperCase()}${amountUsd !== '—' ? ` (~$${amountUsd})` : ''} to ${recipientUsername ? '@' + recipientUsername : resolvedAddress}. Gas: ${estimatedGas} ETH ${estimatedGasUsd}. Please confirm.`,
           requiresConfirmation: true,
         },
       };

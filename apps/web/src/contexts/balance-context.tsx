@@ -5,10 +5,13 @@ import { useAccount } from '@/contexts/account-context'
 import { fetchAllNetworkBalances } from '@/lib/multi-network'
 import type { AggregatedTokenBalance, NetworkTokenBalance } from '@e-y/shared'
 
+type BalanceStatus = 'idle' | 'loading' | 'succeeded' | 'failed'
+
 interface BalanceContextValue {
   aggregatedBalances: AggregatedTokenBalance[]
   networkBalances: Record<string, NetworkTokenBalance[]>
   totalUsdValue: number
+  status: BalanceStatus
   loading: boolean
   lastUpdated: number
   refresh: () => Promise<void>
@@ -18,6 +21,7 @@ const BalanceContext = createContext<BalanceContextValue>({
   aggregatedBalances: [],
   networkBalances: {},
   totalUsdValue: 0,
+  status: 'loading',
   loading: true,
   lastUpdated: 0,
   refresh: async () => {},
@@ -33,7 +37,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const [aggregatedBalances, setAggregatedBalances] = useState<AggregatedTokenBalance[]>([])
   const [networkBalances, setNetworkBalances] = useState<Record<string, NetworkTokenBalance[]>>({})
   const [totalUsdValue, setTotalUsdValue] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState<BalanceStatus>('loading')
   const [lastUpdated, setLastUpdated] = useState(0)
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -47,21 +51,21 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       setNetworkBalances(result.networkBalances)
       setTotalUsdValue(result.totalUsdValue)
       setLastUpdated(result.lastUpdated)
+      setStatus('succeeded')
     } catch (err) {
       console.error('Failed to fetch balances:', err)
-    } finally {
-      setLoading(false)
+      setStatus('failed')
     }
   }, [address, currentAccount])
 
   // Fetch on mount + address/account change
   useEffect(() => {
     if (!isLoggedIn || !address) {
-      setLoading(false)
+      setStatus('idle')
       return
     }
 
-    setLoading(true)
+    setStatus('loading')
     fetchBalances()
 
     // Refresh every 60s
@@ -73,7 +77,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   }, [isLoggedIn, address, currentAccount?.id, fetchBalances])
 
   const refresh = useCallback(async () => {
-    setLoading(true)
+    setStatus('loading')
     await fetchBalances()
   }, [fetchBalances])
 
@@ -83,7 +87,8 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         aggregatedBalances,
         networkBalances,
         totalUsdValue,
-        loading,
+        status,
+        loading: status === 'loading',
         lastUpdated,
         refresh,
       }}

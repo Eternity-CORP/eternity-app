@@ -3,18 +3,7 @@
 import { useState } from 'react'
 import { useBalance } from '@/contexts/balance-context'
 import type { AggregatedTokenBalance } from '@e-y/shared'
-
-const TOKEN_COLORS: Record<string, string> = {
-  ETH: '#627EEA',
-  USDC: '#2775CA',
-  USDT: '#26A17B',
-  DAI: '#F5AC37',
-  WETH: '#EC1C79',
-  LINK: '#2A5ADA',
-  UNI: '#FF007A',
-  MATIC: '#8247E5',
-  WBTC: '#F7931A',
-}
+import { TOKEN_COLORS } from '@/constants/tokens'
 
 interface TokenSelectorProps {
   selectedSymbol: string

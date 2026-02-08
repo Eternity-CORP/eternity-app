@@ -135,6 +135,7 @@ export async function fetchEthUsdPrice(): Promise<number> {
  */
 export async function fetchTokenPrices(
   contractAddresses: string[],
+  platform = 'ethereum',
 ): Promise<{ ethPrice: number; tokenPrices: Record<string, number> }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -159,7 +160,7 @@ export async function fetchTokenPrices(
     if (contractAddresses.length > 0) {
       const addressList = contractAddresses.slice(0, 100).join(',');
       const tokenResponse = await fetch(
-        `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${addressList}&vs_currencies=usd`,
+        `https://api.coingecko.com/api/v3/simple/token_price/${platform}?contract_addresses=${addressList}&vs_currencies=usd`,
         {
           headers: { Accept: 'application/json' },
           signal: controller.signal,
@@ -190,22 +191,7 @@ export async function fetchTokenPrices(
 // CoinGecko Price by Symbol
 // ============================================
 
-/**
- * Symbol → CoinGecko ID mapping for price lookups
- */
-export const COINGECKO_IDS: Record<string, string> = {
-  ETH: 'ethereum',
-  MATIC: 'matic-network',
-  POL: 'matic-network',
-  USDC: 'usd-coin',
-  USDT: 'tether',
-  DAI: 'dai',
-  WETH: 'weth',
-  WBTC: 'wrapped-bitcoin',
-  LINK: 'chainlink',
-  UNI: 'uniswap',
-  AAVE: 'aave',
-};
+import { COINGECKO_IDS } from '../constants/coingecko';
 
 /**
  * Fetch USD prices for tokens by symbol via CoinGecko.

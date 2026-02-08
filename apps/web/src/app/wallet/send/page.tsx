@@ -15,6 +15,7 @@ import BridgeProgress from '@/components/BridgeProgress'
 import { sendNativeToken, sendErc20Token, estimateGas as estimateGasFn } from '@/lib/send-service'
 import { calculateTransferRoute, type RoutingResult } from '@/lib/routing-service'
 import { executeBridgeWithRetry } from '@/lib/bridge-service'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 function SendContent() {
   const router = useRouter()
@@ -22,7 +23,8 @@ function SendContent() {
   const prefillTo = searchParams.get('to')
   const prefillToken = searchParams.get('token')
 
-  const { wallet, address, network, isLoggedIn } = useAccount()
+  useAuthGuard()
+  const { wallet, address, network } = useAccount()
   const { aggregatedBalances } = useBalance()
 
   const [recipient, setRecipient] = useState(prefillTo || '')
@@ -30,7 +32,7 @@ function SendContent() {
   const [selectedToken, setSelectedToken] = useState(prefillToken?.toUpperCase() || 'ETH')
   const [resolvedAddress, setResolvedAddress] = useState('')
   const [gasEstimate, setGasEstimate] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [resolving, setResolving] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,13 +43,6 @@ function SendContent() {
   const [bridgeStep, setBridgeStep] = useState('')
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatusResult | null>(null)
   const [bridgeTxHash, setBridgeTxHash] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isLoggedIn && address === '') return
-    if (!isLoggedIn) {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
 
   // Get balance for selected token
   const tokenData = aggregatedBalances.find(
@@ -169,7 +164,7 @@ function SendContent() {
   const handleSend = async () => {
     if (!wallet || !resolvedAddress || !amount) return
 
-    setLoading(true)
+    setStatus('loading')
     setError('')
 
     try {
@@ -193,12 +188,12 @@ function SendContent() {
         throw new Error('Token not found in your balances')
       }
 
+      setStatus('succeeded')
       router.push(`/wallet/send/success?hash=${txHash}`)
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
       setError(errorMessage.includes('insufficient') ? 'Insufficient balance' : errorMessage)
-    } finally {
-      setLoading(false)
+      setStatus('failed')
     }
   }
 
@@ -257,6 +252,7 @@ function SendContent() {
     setRoute(null)
   }
 
+  const loading = status === 'loading'
   const isValid = resolvedAddress && amount && parseFloat(amount) > 0 && parseFloat(amount) <= parseFloat(balance)
   const showBridgeBanner = route && route.type === 'bridge' && !bridging
   const showBridgeProgress = bridging

@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
   getScheduledPayments,
   createScheduledPayment,
@@ -13,24 +13,17 @@ import { apiClient } from '@/lib/api'
 import Navigation from '@/components/Navigation'
 
 export default function ScheduledPage() {
-  const router = useRouter()
-  const { address, network, isLoggedIn } = useAccount()
+  useAuthGuard()
+  const { address, network } = useAccount()
   const [payments, setPayments] = useState<ScheduledPayment[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [recipient, setRecipient] = useState('')
   const [amount, setAmount] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [error, setError] = useState('')
-
-  // Auth guard: redirect to /unlock when not logged in (skip while context is loading)
-  useEffect(() => {
-    if (!isLoggedIn && address !== '') {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
 
   // Load scheduled payments from API when address is available
   useEffect(() => {
@@ -45,7 +38,7 @@ export default function ScheduledPage() {
       } catch {
         // ignore — empty list on error
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setStatus('succeeded')
       }
     }
 
@@ -56,7 +49,7 @@ export default function ScheduledPage() {
   const handleCreate = async () => {
     if (!recipient || !amount || !scheduledDate || !scheduledTime) return
 
-    setSubmitting(true)
+    setSubmitStatus('loading')
     setError('')
 
     try {
@@ -75,11 +68,11 @@ export default function ScheduledPage() {
       setAmount('')
       setScheduledDate('')
       setScheduledTime('')
+      setSubmitStatus('succeeded')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to create scheduled payment'
       setError(msg)
-    } finally {
-      setSubmitting(false)
+      setSubmitStatus('failed')
     }
   }
 
@@ -173,23 +166,23 @@ export default function ScheduledPage() {
 
                 <button
                   onClick={handleCreate}
-                  disabled={!recipient || !amount || !scheduledDate || !scheduledTime || submitting}
+                  disabled={!recipient || !amount || !scheduledDate || !scheduledTime || submitStatus === 'loading'}
                   className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
-                  {submitting ? 'Creating...' : 'Schedule Payment'}
+                  {submitStatus === 'loading' ? 'Creating...' : 'Schedule Payment'}
                 </button>
               </div>
             )}
 
             {/* Loading state */}
-            {loading && (
+            {status === 'loading' && (
               <div className="flex justify-center py-8">
                 <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               </div>
             )}
 
             {/* Pending Payments */}
-            {!loading && pendingPayments.length > 0 && (
+            {status !== 'loading' && pendingPayments.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Upcoming</p>
                 <div className="space-y-2">
@@ -223,7 +216,7 @@ export default function ScheduledPage() {
             )}
 
             {/* Past Payments */}
-            {!loading && pastPayments.length > 0 && (
+            {status !== 'loading' && pastPayments.length > 0 && (
               <div>
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">History</p>
                 <div className="space-y-2">
@@ -252,7 +245,7 @@ export default function ScheduledPage() {
             )}
 
             {/* Empty State */}
-            {!loading && payments.length === 0 && !showCreate && (
+            {status !== 'loading' && payments.length === 0 && !showCreate && (
               <div className="text-center py-8">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
                   <circle cx="12" cy="12" r="10"/>

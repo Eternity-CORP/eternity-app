@@ -2,27 +2,8 @@
 
 import Link from 'next/link'
 import { useBalance } from '@/contexts/balance-context'
-import { SUPPORTED_NETWORKS, type NetworkId } from '@e-y/shared'
-
-const TOKEN_COLORS: Record<string, string> = {
-  ETH: '#627EEA',
-  USDC: '#2775CA',
-  USDT: '#26A17B',
-  DAI: '#F5AC37',
-  WETH: '#EC1C79',
-  LINK: '#2A5ADA',
-  UNI: '#FF007A',
-  MATIC: '#8247E5',
-  WBTC: '#F7931A',
-  AAVE: '#B6509E',
-}
-
-function formatUsd(value: number): string {
-  if (value >= 1000) return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  if (value >= 1) return `$${value.toFixed(2)}`
-  if (value > 0) return `$${value.toFixed(4)}`
-  return '$0.00'
-}
+import { SUPPORTED_NETWORKS, type NetworkId, formatUsd } from '@e-y/shared'
+import { TOKEN_COLORS } from '@/constants/tokens'
 
 function formatBalance(balance: string): string {
   const num = parseFloat(balance)

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import {
@@ -28,12 +29,13 @@ type ModalAction = 'register' | 'update' | 'delete'
 
 export default function UsernamePage() {
   const router = useRouter()
-  const { address, currentAccount, isLoggedIn } = useAccount()
+  useAuthGuard()
+  const { address, currentAccount } = useAccount()
 
   // Page state
   const [currentUsername, setCurrentUsername] = useState<string | null>(null)
   const [input, setInput] = useState('')
-  const [pageLoading, setPageLoading] = useState(true)
+  const [pageStatus, setPageStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [isChecking, setIsChecking] = useState(false)
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null)
   const [formatError, setFormatError] = useState<string | null>(null)
@@ -44,14 +46,6 @@ export default function UsernamePage() {
   const [modalAction, setModalAction] = useState<ModalAction | null>(null)
 
   const inputRef = useRef<HTMLInputElement>(null)
-
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!address) return
-    if (!isLoggedIn) {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
 
   // Load current username on mount
   useEffect(() => {
@@ -70,7 +64,7 @@ export default function UsernamePage() {
       } catch {
         // ignore
       } finally {
-        if (!cancelled) setPageLoading(false)
+        if (!cancelled) setPageStatus('succeeded')
       }
     }
 
@@ -196,9 +190,9 @@ export default function UsernamePage() {
     setModalAction('delete')
   }
 
-  const handleModalCancel = () => {
+  const handleModalCancel = useCallback(() => {
     setModalAction(null)
-  }
+  }, [])
 
   // Derived state
   const isNewUsername = !currentUsername || input !== currentUsername
@@ -239,7 +233,7 @@ export default function UsernamePage() {
     : null
 
   // Loading state
-  if (pageLoading) {
+  if (pageStatus === 'loading') {
     return (
       <div className="min-h-screen relative z-[2]">
         <Navigation />

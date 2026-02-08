@@ -11,3 +11,4 @@ export * from './swap';
 export * from './scheduled';
 export * from './split';
 export * from './network-balance';
+export * from './bridge-errors';

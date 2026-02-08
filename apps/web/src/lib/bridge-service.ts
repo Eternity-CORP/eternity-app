@@ -8,23 +8,16 @@ import { ethers } from 'ethers'
 import {
   type BridgeQuoteResult,
   type BridgeStatusResult,
+  type BridgeErrorCode,
+  type BridgeError,
   fetchBridgeStatus,
   ERC20_ALLOWANCE_ABI,
   ERC20_APPROVE_ABI,
   LIFI_CONTRACT_ADDRESSES,
+  sleep,
 } from '@e-y/shared'
 
-export type BridgeErrorCode =
-  | 'APPROVAL_FAILED'
-  | 'EXECUTION_FAILED'
-  | 'TIMEOUT'
-  | 'USER_REJECTED'
-  | 'INSUFFICIENT_GAS'
-
-export interface BridgeError {
-  code: BridgeErrorCode
-  message: string
-}
+export type { BridgeErrorCode, BridgeError }
 
 const MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 const STATUS_POLL_INTERVAL = 5000
@@ -187,10 +180,6 @@ export async function executeBridgeWithRetry(
   )
 
   return { txHash, result }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 function createBridgeError(code: BridgeErrorCode, message: string): BridgeError {

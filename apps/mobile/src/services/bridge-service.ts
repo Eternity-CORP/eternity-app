@@ -18,8 +18,10 @@ import {
   fetchBridgeStatus as sharedFetchStatus,
   checkBridgeCostLevel as sharedCheckCostLevel,
   formatBridgeTime as sharedFormatBridgeTime,
+  sleep,
   type BridgeQuoteResult,
   type BridgeCostLevel,
+  type BridgeErrorCode as SharedBridgeErrorCode,
 } from '@e-y/shared';
 import {
   NETWORK_TO_CHAIN_ID,
@@ -419,7 +421,7 @@ export async function executeBridgeWithRetry(
       }
 
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        await sleep(1000 * (attempt + 1));
       }
     }
   }
@@ -457,7 +459,7 @@ export async function waitForBridgeCompletion(
     }
 
     logger.debug('Bridge status', { status: statusResult.status });
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    await sleep(pollInterval);
   }
 
   const err = new Error('Bridge completion timeout') as BridgeError;

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { apiClient } from '@/lib/api'
 import {
   SUPPORTED_NETWORKS,
@@ -34,20 +35,18 @@ const NETWORK_OPTIONS: NetworkOption[] = [
 
 export default function NetworkPreferencesPage() {
   const router = useRouter()
-  const { isLoggedIn, address, wallet } = useAccount()
+  const { isReady } = useAuthGuard()
+  const { address, wallet } = useAccount()
 
   const [defaultNetwork, setDefaultNetwork] = useState<NetworkId | null>(null)
   const [tokenOverrides, setTokenOverrides] = useState<Record<string, string>>({})
-  const [saving, setSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [showTokenModal, setShowTokenModal] = useState(false)
   const [selectedToken, setSelectedToken] = useState<string | null>(null)
   const [showNetworkModal, setShowNetworkModal] = useState(false)
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/unlock')
-      return
-    }
+    if (!isReady) return
     // Load existing preferences
     getAddressPreferences(apiClient, address).then((prefs) => {
       if (prefs) {
@@ -55,14 +54,14 @@ export default function NetworkPreferencesPage() {
         setTokenOverrides(prefs.tokenOverrides || {})
       }
     }).catch(() => {})
-  }, [isLoggedIn, address, router])
+  }, [isReady, address])
 
   const handleSave = useCallback(async (
     newDefault: NetworkId | null,
     newOverrides: Record<string, string>,
   ) => {
     if (!wallet || !address) return
-    setSaving(true)
+    setSaveStatus('loading')
 
     try {
       const preferences: NetworkPreferences = {
@@ -80,10 +79,10 @@ export default function NetworkPreferencesPage() {
         signature,
         timestamp,
       })
+      setSaveStatus('succeeded')
     } catch (err) {
       console.error('Failed to save preferences:', err)
-    } finally {
-      setSaving(false)
+      setSaveStatus('failed')
     }
   }, [wallet, address])
 
@@ -234,7 +233,7 @@ export default function NetworkPreferencesPage() {
             )}
           </div>
 
-          {saving && (
+          {saveStatus === 'loading' && (
             <div className="mt-4 text-center">
               <p className="text-xs text-white/40">Saving...</p>
             </div>

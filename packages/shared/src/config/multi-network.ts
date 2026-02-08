@@ -147,7 +147,7 @@ export const COMMON_TOKENS: Record<string, Partial<Record<NetworkId, string>>> =
     optimism: '0x94b008aA00579c1307B0EF2c499aD98a8ce58e58',
   },
   DAI: {
-    ethereum: '0x6B175474E89094C44Da98b954EesdeCD5d1d3B4A',
+    ethereum: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
     polygon: '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063',
     arbitrum: '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
     base: '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',

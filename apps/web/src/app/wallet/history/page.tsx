@@ -1,21 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
 import { fetchTransactionHistory, truncateAddress, type TransactionHistoryItem } from '@e-y/shared'
 import Navigation from '@/components/Navigation'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function HistoryPage() {
-  const router = useRouter()
-  const { address, network, isLoggedIn } = useAccount()
+  useAuthGuard()
+  const { address, network } = useAccount()
   const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (!isLoggedIn && address === '') return
-    if (!isLoggedIn) router.push('/unlock')
-  }, [isLoggedIn, address])
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
 
   useEffect(() => {
     if (!address) return
@@ -23,15 +18,16 @@ export default function HistoryPage() {
   }, [address])
 
   const loadTransactions = async (addr: string) => {
-    setLoading(true)
+    setStatus('loading')
     try {
       const alchemyUrl = network.rpcUrl
       const txs = await fetchTransactionHistory(alchemyUrl, addr)
       setTransactions(txs)
+      setStatus('succeeded')
     } catch {
       setTransactions([])
+      setStatus('failed')
     }
-    setLoading(false)
   }
 
   const formatAddress = truncateAddress
@@ -61,7 +57,7 @@ export default function HistoryPage() {
 
         {/* Content */}
         <div className="glass-card gradient-border rounded-2xl overflow-hidden">
-          {loading ? (
+          {status === 'loading' ? (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
             </div>

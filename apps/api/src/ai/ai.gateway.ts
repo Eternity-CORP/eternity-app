@@ -49,7 +49,7 @@ export type SuggestionPayload = AiSuggestion;
 @WebSocketGateway({
   namespace: '/ai',
   cors: {
-    origin: '*',
+    origin: [process.env.WEB_APP_URL || 'https://e-y-app.vercel.app', 'http://localhost:3001'],
   },
 })
 export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {

@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 const SETTINGS_LINKS = [
   {
@@ -58,13 +58,8 @@ const SETTINGS_LINKS = [
 
 export default function SettingsPage() {
   const router = useRouter()
-  const { isLoggedIn, uiMode, setUiMode } = useAccount()
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, router])
+  useAuthGuard()
+  const { uiMode, setUiMode } = useAccount()
 
   return (
     <div className="min-h-screen relative z-[2]">

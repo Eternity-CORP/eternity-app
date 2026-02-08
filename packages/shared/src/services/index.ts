@@ -12,3 +12,4 @@ export * from './blik-socket';
 export * from './transaction-socket';
 export * from './price-chart-service';
 export * from './routing-helpers';
+export * from './contacts-service';

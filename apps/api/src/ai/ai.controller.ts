@@ -216,15 +216,15 @@ export class AiController {
   }
 
   @Get('rate-limit')
-  getRateLimit(@Body() dto: { userAddress: string }) {
-    if (!dto.userAddress) {
+  getRateLimit(@Query('address') userAddress: string) {
+    if (!userAddress) {
       throw new HttpException(
         { code: 'MISSING_ADDRESS', message: 'User address is required' },
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    return this.securityService.getRateLimitUsage(dto.userAddress);
+    return this.securityService.getRateLimitUsage(userAddress);
   }
 
   // ========================================

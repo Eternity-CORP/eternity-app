@@ -40,11 +40,15 @@ export const SUPPORTED_NETWORKS: Record<NetworkId, NetworkConfig> = Object.fromE
 ) as Record<NetworkId, NetworkConfig>;
 
 /**
- * Tier 2 Networks — mobile-only, for smart scanning
+ * Tier 2 network keys (not yet part of shared NetworkId).
+ * These networks use `id` set to their closest Tier 1 equivalent
+ * because MultiNetworkConfig.id requires a NetworkId.
  */
-export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
+export type Tier2NetworkKey = 'bsc' | 'avalanche' | 'zksync';
+
+export const TIER2_NETWORKS: Record<Tier2NetworkKey, NetworkConfig> = {
   bsc: {
-    id: 'ethereum' as NetworkId,
+    id: 'ethereum' as NetworkId, // Tier 2: not a real NetworkId, mapped to closest equivalent
     name: 'BNB Smart Chain',
     shortName: 'BSC',
     chainId: 56,
@@ -60,7 +64,7 @@ export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
     environment: 'mainnet',
   },
   avalanche: {
-    id: 'ethereum' as NetworkId,
+    id: 'ethereum' as NetworkId, // Tier 2: not a real NetworkId, mapped to closest equivalent
     name: 'Avalanche',
     shortName: 'AVAX',
     chainId: 43114,
@@ -76,7 +80,7 @@ export const TIER2_NETWORKS: Record<string, NetworkConfig> = {
     environment: 'mainnet',
   },
   zksync: {
-    id: 'ethereum' as NetworkId,
+    id: 'ethereum' as NetworkId, // Tier 2: not a real NetworkId, mapped to closest equivalent
     name: 'zkSync Era',
     shortName: 'zkSync',
     chainId: 324,

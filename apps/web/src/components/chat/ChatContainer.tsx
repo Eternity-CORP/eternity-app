@@ -146,20 +146,9 @@ export default function ChatContainer() {
       setConfirmTarget(null)
       sendMessage(`BLIK payment sent! Hash: ${tx.hash}`)
     } else if (confirmTarget.type === 'swap') {
-      const swap = confirmTarget.swap
-
-      // For swaps, we send the fromToken amount as a native transaction
-      // In production this would call a DEX router contract
-      const tx = await connectedWallet.sendTransaction({
-        to: address, // Self-send placeholder for swap execution
-        value: ethers.parseEther(swap.fromToken.amount),
-      })
-
-      await tx.wait()
-
       clearPendingSwap()
       setConfirmTarget(null)
-      sendMessage(`Swap executed! Swapped ${swap.fromToken.amount} ${swap.fromToken.symbol} → ${swap.toToken.amount} ${swap.toToken.symbol}. Hash: ${tx.hash}`)
+      sendMessage('Swap execution is not yet available via AI chat. Please use the Swap page.')
     }
   }, [confirmTarget, currentAccount, network, address, aggregatedBalances, clearPendingTransaction, clearPendingBlik, clearPendingSwap, sendMessage])
 

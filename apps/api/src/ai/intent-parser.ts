@@ -34,19 +34,23 @@ export class IntentParser {
     }
 
     if (this.matchesAny(text, ['blik', 'блик', 'создай код', 'create code', 'generate blik', 'сгенерируй код', 'создай блик'])) {
-      const amountMatch = text.match(/(\d+\.?\d*)\s*(eth|эфир)?/);
+      const amountMatch = text.match(/(\d+\.?\d*)\s*(eth|usdc|usdt|dai|matic|эфир)?/i);
       if (amountMatch) {
-        return { tool: 'blik_generate', args: { amount: amountMatch[1], token: 'ETH' } };
+        const token = amountMatch[2] ? amountMatch[2].toUpperCase().replace('ЭФИР', 'ETH') : 'ETH';
+        return { tool: 'blik_generate', args: { amount: amountMatch[1], token } };
       }
       return null;
     }
 
     const sendMatch = text.match(
-      /(?:отправь|отправить|send|переведи)\s+(\d+\.?\d*)\s*(eth|эфир|ether)?\s*(?:на|to|к|@)?\s*(@?\w+)/,
+      /(?:отправь|отправить|send|переведи)\s+(\d+\.?\d*)\s*(eth|usdc|usdt|dai|matic|эфир|ether)?\s*(?:на|to|к|@)?\s*(@?\w+)/i,
     );
     if (sendMatch) {
-      const recipient = sendMatch[3].startsWith('@') ? sendMatch[3] : `@${sendMatch[3]}`;
-      return { tool: 'prepare_send', args: { amount: sendMatch[1], token: 'ETH', recipient } };
+      const recipientRaw = sendMatch[3];
+      const isAddress = /^0x[a-fA-F0-9]{40}$/.test(recipientRaw);
+      const recipient = isAddress || recipientRaw.startsWith('@') ? recipientRaw : `@${recipientRaw}`;
+      const token = sendMatch[2] ? sendMatch[2].toUpperCase().replace('ЭФИР', 'ETH') : 'ETH';
+      return { tool: 'prepare_send', args: { amount: sendMatch[1], token, recipient } };
     }
 
     return null;

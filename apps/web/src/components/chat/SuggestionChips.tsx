@@ -5,18 +5,9 @@ interface SuggestionChipsProps {
   hasMessages: boolean
 }
 
-const NEW_USER_CHIPS = [
-  'Что ты умеешь?',
-  'Покажи баланс',
-  'Как отправить крипто?',
-]
+const NEW_USER_CHIPS = ['What can you do?', 'Show balance', 'How to send crypto?']
 
-const RETURNING_USER_CHIPS = [
-  'Баланс',
-  'Отправить',
-  'BLIK',
-  'История',
-]
+const RETURNING_USER_CHIPS = ['Balance', 'Send', 'BLIK', 'History']
 
 export default function SuggestionChips({ onSelect, hasMessages }: SuggestionChipsProps) {
   const chips = hasMessages ? RETURNING_USER_CHIPS : NEW_USER_CHIPS

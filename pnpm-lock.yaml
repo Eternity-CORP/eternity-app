@@ -409,6 +409,9 @@ importers:
 
   packages/crypto:
     dependencies:
+      '@e-y/shared':
+        specifier: workspace:*
+        version: link:../shared
       ethers:
         specifier: ^6.9.0
         version: 6.16.0

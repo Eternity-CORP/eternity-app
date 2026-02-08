@@ -1,22 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function ReceivePage() {
-  const router = useRouter()
-  const { address, isLoggedIn, network } = useAccount()
+  useAuthGuard()
+  const { address, network } = useAccount()
   const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!address) return
-    if (!isLoggedIn) {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(address)

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
   SwapToken,
   SwapQuote,
@@ -20,8 +20,8 @@ import {
 const CHAIN_ID = 1 // Mainnet for swap (LI.FI doesn't support Sepolia)
 
 export default function SwapPage() {
-  const router = useRouter()
-  const { wallet, address, network, isLoggedIn } = useAccount()
+  const { isReady } = useAuthGuard()
+  const { wallet, address, network } = useAccount()
 
   const [tokens, setTokens] = useState<SwapToken[]>([])
   const [fromToken, setFromToken] = useState<SwapToken | null>(null)
@@ -29,7 +29,7 @@ export default function SwapPage() {
   const [fromAmount, setFromAmount] = useState('')
   const [quote, setQuote] = useState<SwapQuote | null>(null)
 
-  const [loading, setLoading] = useState(false)
+  const [swapStatus, setSwapStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -37,18 +37,11 @@ export default function SwapPage() {
   const [showFromTokens, setShowFromTokens] = useState(false)
   const [showToTokens, setShowToTokens] = useState(false)
 
-  // Auth guard: redirect to /unlock when not logged in (skip while context is loading)
-  useEffect(() => {
-    if (!isLoggedIn && address !== '') {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
-
   // Load tokens when logged in
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!isReady) return
     loadTokens()
-  }, [isLoggedIn])
+  }, [isReady])
 
   const loadTokens = async () => {
     const popular = await getPopularTokens(CHAIN_ID)
@@ -112,7 +105,7 @@ export default function SwapPage() {
   const handleSwap = async () => {
     if (!wallet || !quote) return
 
-    setLoading(true)
+    setSwapStatus('loading')
     setError('')
     setSuccess('')
 
@@ -126,11 +119,11 @@ export default function SwapPage() {
       setSuccess(`Swap successful! Hash: ${tx.hash.slice(0, 10)}...`)
       setFromAmount('')
       setQuote(null)
+      setSwapStatus('succeeded')
     } catch (err) {
       console.error('Swap error:', err)
       setError(err instanceof Error ? err.message : 'Swap failed')
-    } finally {
-      setLoading(false)
+      setSwapStatus('failed')
     }
   }
 
@@ -327,10 +320,10 @@ export default function SwapPage() {
             {/* Swap Button */}
             <button
               onClick={handleSwap}
-              disabled={!quote || loading || quoteLoading}
+              disabled={!quote || swapStatus === 'loading' || quoteLoading}
               className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
-              {loading ? 'Swapping...' : quoteLoading ? 'Getting quote...' : 'Swap'}
+              {swapStatus === 'loading' ? 'Swapping...' : quoteLoading ? 'Getting quote...' : 'Swap'}
             </button>
           </div>
         </div>

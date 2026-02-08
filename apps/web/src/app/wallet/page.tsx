@@ -1,31 +1,18 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import ChatContainer from '@/components/chat/ChatContainer'
 import TokenList from '@/components/TokenList'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
-
-function formatUsd(value: number): string {
-  if (value >= 1000) return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  if (value >= 1) return `$${value.toFixed(2)}`
-  if (value > 0) return `$${value.toFixed(4)}`
-  return '$0.00'
-}
+import { formatUsd } from '@e-y/shared'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function WalletDashboard() {
-  const router = useRouter()
-  const { isLoggedIn, currentAccount, uiMode } = useAccount()
+  useAuthGuard()
+  const { currentAccount, uiMode } = useAccount()
   const { totalUsdValue, loading } = useBalance()
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, router])
 
   // AI Mode — clean fullscreen, no Navigation, no glow orbs
   if (uiMode === 'ai') {

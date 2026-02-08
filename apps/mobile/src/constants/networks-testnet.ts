@@ -3,6 +3,7 @@
  * Supported EVM testnet networks for E-Y wallet development and testing
  */
 
+import { type NetworkId } from '@e-y/shared';
 import { NetworkConfig, NetworkEnvironment } from './networks';
 
 export type TestnetNetworkId =
@@ -19,7 +20,7 @@ const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY || '';
  */
 export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
   sepolia: {
-    id: 'ethereum' as any, // Maps to mainnet equivalent
+    id: 'ethereum' as NetworkId, // Maps to mainnet equivalent
     name: 'Sepolia',
     shortName: 'SEP',
     chainId: 11155111,
@@ -39,7 +40,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     environment: 'testnet',
   },
   'polygon-amoy': {
-    id: 'polygon' as any, // Maps to mainnet equivalent
+    id: 'polygon' as NetworkId, // Maps to mainnet equivalent
     name: 'Polygon Amoy',
     shortName: 'AMOY',
     chainId: 80002,
@@ -59,7 +60,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     environment: 'testnet',
   },
   'arbitrum-sepolia': {
-    id: 'arbitrum' as any, // Maps to mainnet equivalent
+    id: 'arbitrum' as NetworkId, // Maps to mainnet equivalent
     name: 'Arbitrum Sepolia',
     shortName: 'ARB-SEP',
     chainId: 421614,
@@ -79,7 +80,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     environment: 'testnet',
   },
   'base-sepolia': {
-    id: 'base' as any, // Maps to mainnet equivalent
+    id: 'base' as NetworkId, // Maps to mainnet equivalent
     name: 'Base Sepolia',
     shortName: 'BASE-SEP',
     chainId: 84532,
@@ -99,7 +100,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     environment: 'testnet',
   },
   'optimism-sepolia': {
-    id: 'optimism' as any, // Maps to mainnet equivalent
+    id: 'optimism' as NetworkId, // Maps to mainnet equivalent
     name: 'Optimism Sepolia',
     shortName: 'OP-SEP',
     chainId: 11155420,

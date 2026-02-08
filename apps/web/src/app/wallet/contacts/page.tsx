@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { loadContacts, saveContact, deleteContact, searchContacts, type Contact } from '@/lib/contacts-service'
 
 export default function ContactsPage() {
   const router = useRouter()
-  const { isLoggedIn, address } = useAccount()
+  const { isReady } = useAuthGuard()
+  const { address } = useAccount()
 
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [filtered, setFiltered] = useState<Contact[]>([])
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState('')
@@ -18,20 +21,21 @@ export default function ContactsPage() {
   const [newUsername, setNewUsername] = useState('')
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      router.push('/unlock')
-      return
-    }
+    if (!isReady) return
     setContacts(loadContacts(address))
-  }, [isLoggedIn, address, router])
+  }, [isReady, address])
 
-  const filtered = search
-    ? searchContacts(address, search)
-    : contacts
+  useEffect(() => {
+    if (search) {
+      searchContacts(address, search).then(setFiltered)
+    } else {
+      setFiltered(contacts)
+    }
+  }, [search, contacts, address])
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newName.trim() || !newAddress.trim()) return
-    saveContact(address, {
+    await saveContact(address, {
       name: newName.trim(),
       address: newAddress.trim(),
       username: newUsername.trim() || undefined,
@@ -43,8 +47,8 @@ export default function ContactsPage() {
     setNewUsername('')
   }
 
-  const handleDelete = (id: string) => {
-    deleteContact(address, id)
+  const handleDelete = async (id: string) => {
+    await deleteContact(address, id)
     setContacts(loadContacts(address))
   }
 

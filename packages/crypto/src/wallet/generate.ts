@@ -44,20 +44,17 @@ function getRandomBytes(length: number): Uint8Array {
       if (hasNonZero) {
         return entropy;
       }
-      // If all zeros, something went wrong, use fallback
-      console.warn('crypto.getRandomValues returned all zeros, using fallback');
+      // If all zeros, something went wrong — abort
+      throw new Error('crypto.getRandomValues returned all zeros — cannot generate secure wallet');
     } catch (error) {
-      console.warn('crypto.getRandomValues failed, using fallback:', error);
+      if (error instanceof Error && error.message.includes('cannot generate secure wallet')) {
+        throw error;
+      }
+      throw new Error('crypto.getRandomValues failed — cannot generate secure wallet');
     }
   }
-  
-  // Fallback: use Math.random (less secure, but works)
-  // This is a safety fallback for development/testing
-  console.warn('crypto.getRandomValues not available, using Math.random fallback (less secure)');
-  for (let i = 0; i < entropy.length; i++) {
-    entropy[i] = Math.floor(Math.random() * 256);
-  }
-  return entropy;
+
+  throw new Error('crypto.getRandomValues is not available — cannot generate secure wallet');
 }
 
 /**

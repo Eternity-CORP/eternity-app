@@ -2,7 +2,7 @@
  * Validation utilities
  */
 
-import { USERNAME_PATTERN, USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } from '../constants/limits';
+import { USERNAME_REGEX } from './username';
 
 /**
  * Validate Ethereum address format
@@ -13,10 +13,10 @@ export function isValidEthereumAddress(address: string): boolean {
 
 /**
  * Validate username format
- * USERNAME_PATTERN already encodes length (3-20 chars), so no separate check needed.
+ * USERNAME_REGEX already encodes length (3-20 chars), so no separate check needed.
  */
 export function isValidUsername(username: string): boolean {
-  return USERNAME_PATTERN.test(username);
+  return USERNAME_REGEX.test(username);
 }
 
 /**

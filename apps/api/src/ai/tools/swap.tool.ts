@@ -6,6 +6,7 @@ import {
   ToolParams,
   ToolResult,
 } from './tool.interface';
+import { fetchTokenPricesBySymbol } from '@e-y/shared';
 
 interface SwapParams extends ToolParams {
   fromToken: string;
@@ -109,19 +110,8 @@ export class SwapTool implements AIToolHandler {
         };
       }
 
-      // Get token prices (simplified mock data)
-      // In production, this would call a price oracle or DEX API
-      const tokenPrices: Record<string, number> = {
-        ETH: 2500.0,
-        USDC: 1.0,
-        USDT: 1.0,
-        DAI: 1.0,
-        WETH: 2500.0,
-        WBTC: 45000.0,
-        MATIC: 0.9,
-        LINK: 15.0,
-        UNI: 8.0,
-      };
+      // Get live token prices from CoinGecko
+      const tokenPrices = await fetchTokenPricesBySymbol([from, to]);
 
       const fromPrice = tokenPrices[from];
       const toPrice = tokenPrices[to];
@@ -155,8 +145,8 @@ export class SwapTool implements AIToolHandler {
       const priceImpact = numericAmount > 1000 ? '0.15%' : '0.05%';
 
       // Gas estimate
-      const estimatedGas = '0.003';
-      const estimatedGasUsd = '7.50';
+      const estimatedGas = '~0.003';
+      const estimatedGasUsd = '(estimate)';
 
       // Check if approval is needed (not needed for ETH)
       const requiresApproval = from !== 'ETH';

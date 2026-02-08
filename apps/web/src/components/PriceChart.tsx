@@ -25,17 +25,17 @@ function formatChartDate(ts: number, range: TimeRange): string {
 export default function PriceChart({ symbol }: PriceChartProps) {
   const [range, setRange] = useState<TimeRange>(1)
   const [data, setData] = useState<PriceChartData | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
+    setStatus('loading')
 
     fetchPriceChartData(symbol, range).then((result) => {
       if (!cancelled) {
         setData(result)
-        setLoading(false)
+        setStatus('succeeded')
       }
     })
 
@@ -132,7 +132,7 @@ export default function PriceChart({ symbol }: PriceChartProps) {
       </div>
 
       {/* Current Price / Hovered Price */}
-      {loading ? (
+      {status === 'loading' ? (
         <div className="h-8 w-32 bg-white/5 rounded-lg animate-pulse mb-4" />
       ) : data ? (
         <div className="mb-4">
@@ -160,7 +160,7 @@ export default function PriceChart({ symbol }: PriceChartProps) {
       )}
 
       {/* Chart */}
-      {loading ? (
+      {status === 'loading' ? (
         <div className="h-40 rounded-xl bg-white/3 animate-pulse" />
       ) : pathD ? (
         <svg

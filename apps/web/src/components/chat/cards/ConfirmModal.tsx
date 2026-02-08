@@ -15,7 +15,7 @@ const AUTO_CANCEL_SECONDS = 60
 export default function ConfirmModal({ title, summary, details, onConfirm, onCancel }: ConfirmModalProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [secondsLeft, setSecondsLeft] = useState(AUTO_CANCEL_SECONDS)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -38,16 +38,17 @@ export default function ConfirmModal({ title, summary, details, onConfirm, onCan
   }, [onCancel])
 
   const handleConfirm = useCallback(async () => {
-    if (!password.trim() || loading) return
+    if (!password.trim() || status === 'loading') return
     setError(null)
-    setLoading(true)
+    setStatus('loading')
     try {
       await onConfirm(password)
+      setStatus('succeeded')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Confirmation failed')
-      setLoading(false)
+      setStatus('failed')
     }
-  }, [password, loading, onConfirm])
+  }, [password, status, onConfirm])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -126,17 +127,17 @@ export default function ConfirmModal({ title, summary, details, onConfirm, onCan
         <div className="flex gap-2">
           <button
             onClick={onCancel}
-            disabled={loading}
+            disabled={status === 'loading'}
             className="flex-1 px-3 py-2.5 rounded-xl text-xs font-medium text-white/60 glass-card hover:text-white/80 transition-colors cursor-pointer disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!password.trim() || loading}
+            disabled={!password.trim() || status === 'loading'}
             className="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-white text-black shimmer cursor-pointer hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
           >
-            {loading ? (
+            {status === 'loading' ? (
               <>
                 <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />

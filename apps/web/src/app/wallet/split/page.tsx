@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
   getSplitsByCreator,
   getPendingSplits,
@@ -16,7 +17,8 @@ import Navigation from '@/components/Navigation'
 
 export default function SplitPage() {
   const router = useRouter()
-  const { address, network, isLoggedIn } = useAccount()
+  useAuthGuard()
+  const { address, network } = useAccount()
   const [splits, setSplits] = useState<SplitBill[]>([])
   const [pendingSplitsList, setPendingSplitsList] = useState<SplitBill[]>([])
   const [showCreate, setShowCreate] = useState(false)
@@ -24,16 +26,9 @@ export default function SplitPage() {
   const [description, setDescription] = useState('')
   const [participantAddresses, setParticipantAddresses] = useState('')
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal')
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [error, setError] = useState('')
-
-  // Auth guard: redirect to /unlock when not logged in (skip while context is loading)
-  useEffect(() => {
-    if (!isLoggedIn && address !== '') {
-      router.push('/unlock')
-    }
-  }, [isLoggedIn, address, router])
 
   // Load splits from API when address is available
   useEffect(() => {
@@ -54,7 +49,7 @@ export default function SplitPage() {
       } catch {
         // ignore
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) setStatus('succeeded')
       }
     }
 
@@ -72,7 +67,7 @@ export default function SplitPage() {
 
     if (addresses.length === 0) return
 
-    setSubmitting(true)
+    setSubmitStatus('loading')
     setError('')
 
     const perPerson = calculateEqualSplit(totalAmount, addresses.length + 1)
@@ -95,11 +90,11 @@ export default function SplitPage() {
       setTotalAmount('')
       setDescription('')
       setParticipantAddresses('')
+      setSubmitStatus('succeeded')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to create split'
       setError(msg)
-    } finally {
-      setSubmitting(false)
+      setSubmitStatus('failed')
     }
   }
 
@@ -215,23 +210,23 @@ export default function SplitPage() {
 
                 <button
                   onClick={handleCreate}
-                  disabled={!totalAmount || !participantAddresses || submitting}
+                  disabled={!totalAmount || !participantAddresses || submitStatus === 'loading'}
                   className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
-                  {submitting ? 'Creating...' : 'Create Split'}
+                  {submitStatus === 'loading' ? 'Creating...' : 'Create Split'}
                 </button>
               </div>
             )}
 
             {/* Loading state */}
-            {loading && (
+            {status === 'loading' && (
               <div className="flex justify-center py-8">
                 <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               </div>
             )}
 
             {/* Pending Payments (you owe) */}
-            {!loading && pendingSplitsFiltered.length > 0 && (
+            {status !== 'loading' && pendingSplitsFiltered.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">You Owe</p>
                 <div className="space-y-2">
@@ -265,7 +260,7 @@ export default function SplitPage() {
             )}
 
             {/* Created Splits */}
-            {!loading && createdSplits.length > 0 && (
+            {status !== 'loading' && createdSplits.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Your Splits</p>
                 <div className="space-y-2">
@@ -308,7 +303,7 @@ export default function SplitPage() {
             )}
 
             {/* Empty State */}
-            {!loading && splits.length === 0 && pendingSplitsList.length === 0 && !showCreate && (
+            {status !== 'loading' && splits.length === 0 && pendingSplitsList.length === 0 && !showCreate && (
               <div className="text-center py-8">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
