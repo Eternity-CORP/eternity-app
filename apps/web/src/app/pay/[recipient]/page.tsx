@@ -8,8 +8,10 @@ import { apiClient } from '@/lib/api'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
+import { useInviteGuard } from '@/hooks/useInviteGuard'
 
 export default function PayPage() {
+  useInviteGuard()
   const params = useParams()
   const router = useRouter()
   const recipient = decodeURIComponent(params.recipient as string)

@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import ChatContainer from '@/components/chat/ChatContainer'
 import TokenList from '@/components/TokenList'
+import FaucetCard from '@/components/FaucetCard'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
 import { formatUsd } from '@e-y/shared'
@@ -11,8 +13,10 @@ import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function WalletDashboard() {
   useAuthGuard()
-  const { currentAccount, uiMode } = useAccount()
-  const { totalUsdValue, loading } = useBalance()
+  const { currentAccount, address, uiMode } = useAccount()
+  const { totalUsdValue, loading, refresh } = useBalance()
+  const [showFaucet, setShowFaucet] = useState(false)
+  const isTestAccount = currentAccount?.type === 'test'
 
   // AI Mode — clean fullscreen, no Navigation, no glow orbs
   if (uiMode === 'ai') {
@@ -133,6 +137,33 @@ export default function WalletDashboard() {
               <span className="text-xs font-medium">Swap</span>
             </Link>
           </div>
+
+          {/* Faucet (test accounts only) */}
+          {isTestAccount && (
+            <div className="mt-4">
+              {showFaucet ? (
+                <FaucetCard address={address} onClose={() => setShowFaucet(false)} onClaimed={refresh} />
+              ) : (
+                <button
+                  onClick={() => setShowFaucet(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.01] active:scale-[0.99] group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
+                      <path d="M12 2v6M12 22v-6M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M22 12h-6M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium">Get Test ETH</p>
+                    <p className="text-[11px] text-white/40">Sepolia faucets</p>
+                  </div>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 group-hover:text-white/50 transition-colors">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Token List */}
           <div className="mt-4">

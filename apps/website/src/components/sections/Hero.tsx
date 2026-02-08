@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { FadeIn } from '@/components/animations/FadeIn'
 import { GlitchText } from '@/components/animations/GlitchText'
+import { useWarp } from '@/components/animations/WarpTransition'
 
 // Dynamic import for 3D scene to avoid SSR issues
 const ShardScene = dynamic(
@@ -13,6 +14,7 @@ const ShardScene = dynamic(
 )
 
 export function Hero() {
+  const { startWarp } = useWarp()
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
     element?.scrollIntoView({ behavior: 'smooth' })
@@ -70,31 +72,9 @@ export function Hero() {
             <Button
               variant="primary"
               size="lg"
-              onClick={() => scrollToSection('cta')}
+              onClick={startWarp}
             >
-              Get Early Access
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => scrollToSection('features')}
-            >
-              <span className="flex items-center gap-2">
-                See Features
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </span>
+              Launch App
             </Button>
           </div>
         </FadeIn>

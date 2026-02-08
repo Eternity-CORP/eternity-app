@@ -11,26 +11,29 @@ import { Roadmap } from '@/components/sections/Roadmap'
 import { CTA } from '@/components/sections/CTA'
 import { Footer } from '@/components/sections/Footer'
 import { PageWrapper } from '@/components/PageWrapper'
+import { WarpProvider } from '@/components/animations/WarpTransition'
 
 export default function Home() {
   return (
     <PageWrapper>
-      <main className="relative">
-        <Header />
-        <TimelineIndicator />
+      <WarpProvider>
+        <main className="relative">
+          <Header />
+          <TimelineIndicator />
 
-        <div id="hero">
-          <Hero />
-        </div>
+          <div id="hero">
+            <Hero />
+          </div>
 
-        <Problem />
-        <Solution />
-        <Features />
-        <ComingSoon />
-        <Roadmap />
-        <CTA />
-        <Footer />
-      </main>
+          <Problem />
+          <Solution />
+          <Features />
+          <ComingSoon />
+          <Roadmap />
+          <CTA />
+          <Footer />
+        </main>
+      </WarpProvider>
     </PageWrapper>
   )
 }

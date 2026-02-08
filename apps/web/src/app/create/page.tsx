@@ -6,6 +6,7 @@ import { generateMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { encryptTempToSession } from '@/lib/session-crypto'
+import { useInviteGuard } from '@/hooks/useInviteGuard'
 
 function pickRandomIndices(count: number, max: number): number[] {
   const indices: number[] = []
@@ -17,6 +18,7 @@ function pickRandomIndices(count: number, max: number): number[] {
 }
 
 export default function CreateWallet() {
+  useInviteGuard()
   const router = useRouter()
   const [mnemonic, setMnemonic] = useState<string[]>([])
   const [copied, setCopied] = useState(false)

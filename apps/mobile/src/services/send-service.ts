@@ -82,6 +82,15 @@ export async function estimateGas(
       totalGasCostUsd,
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (message.includes('insufficient funds')) {
+      throw new Error('Insufficient balance to cover amount + gas fees');
+    }
+    if (message.includes('execution reverted')) {
+      throw new Error('Insufficient token balance');
+    }
+
     console.error('Error estimating gas:', error);
     throw new Error('Failed to estimate gas');
   }

@@ -3,16 +3,17 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loadAndDecrypt } from '@e-y/storage'
-import { getAddressFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
-import { ensureDefaultAccount } from '@/lib/account-storage'
-import { encryptToSession } from '@/lib/session-crypto'
+import { useAccount } from '@/contexts/account-context'
+import { useInviteGuard } from '@/hooks/useInviteGuard'
 
 function UnlockContent() {
+  const { isInviteValid } = useInviteGuard()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect')
+  const { login } = useAccount()
 
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -25,8 +26,7 @@ function UnlockContent() {
 
     try {
       const mnemonic = await loadAndDecrypt(password)
-      ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
-      await encryptToSession(mnemonic)
+      await login(mnemonic)
       setStatus('succeeded')
       router.push(redirect || '/wallet')
     } catch (err) {

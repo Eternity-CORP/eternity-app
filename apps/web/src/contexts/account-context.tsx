@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { useRouter } from 'next/navigation'
 import { deriveWalletFromMnemonic, getAddressFromMnemonic, isValidMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
-import { createAccount, getNextAccountIndex } from '@e-y/shared'
+import { createAccount, getNextAccountIndex, migrateAccountAddresses } from '@e-y/shared'
 import {
   type Account,
   type AccountType,
@@ -22,12 +22,14 @@ type UiMode = 'ai' | 'classic'
 
 interface AccountContextValue {
   isLoggedIn: boolean
+  ready: boolean
   wallet: ethers.HDNodeWallet | null
   address: string
   network: NetworkConfig
   accounts: Account[]
   currentAccount: Account | null
   uiMode: UiMode
+  login: (mnemonic: string) => Promise<void>
   switchAccount: (accountId: string) => Promise<void>
   addAccount: (type: AccountType, label?: string) => Promise<void>
   renameAccount: (accountId: string, label: string) => void
@@ -43,12 +45,14 @@ const UI_MODE_KEY = 'ey_ui_mode'
 
 const AccountContext = createContext<AccountContextValue>({
   isLoggedIn: false,
+  ready: false,
   wallet: null,
   address: '',
   network: defaultNetwork,
   accounts: [],
   currentAccount: null,
   uiMode: 'ai',
+  login: async () => {},
   switchAccount: async () => {},
   addAccount: async () => {},
   renameAccount: () => {},
@@ -68,37 +72,32 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [currentAccount, setCurrentAccount] = useState<Account | null>(null)
   const [uiMode, setUiModeState] = useState<UiMode>('ai')
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     (async () => {
       const mnemonic = await decryptFromSession()
-      if (!mnemonic) return
+      if (!mnemonic) {
+        setReady(true)
+        return
+      }
 
       const accs = ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
 
-      // Migration: re-derive addresses to fix any stored with the old derivation bug
-      let needsSave = false
-      const migrated = accs.map((acc) => {
-        const correctAddress = getAddressFromMnemonic(mnemonic, acc.accountIndex)
-        if (acc.address !== correctAddress) {
-          needsSave = true
-          return { ...acc, address: correctAddress }
-        }
-        return acc
-      })
-
-      if (needsSave) {
-        saveAccounts(migrated)
+      const migration = migrateAccountAddresses(accs, mnemonic, getAddressFromMnemonic)
+      if (migration.needsSave) {
+        saveAccounts(migration.accounts)
       }
 
-      setAccounts(migrated)
+      setAccounts(migration.accounts)
 
       const savedIndex = loadCurrentAccountIndex()
-      const account = migrated[savedIndex] || migrated[0]
+      const account = migration.accounts[savedIndex] || migration.accounts[0]
       setCurrentAccount(account)
 
       const w = deriveWalletFromMnemonic(mnemonic, account.accountIndex)
       setWallet(w)
+      setReady(true)
     })()
   }, [])
 
@@ -112,6 +111,27 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const setUiMode = useCallback((mode: UiMode) => {
     setUiModeState(mode)
     localStorage.setItem(UI_MODE_KEY, mode)
+  }, [])
+
+  const login = useCallback(async (mnemonic: string) => {
+    await encryptToSession(mnemonic)
+
+    const accs = ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
+
+    const migration = migrateAccountAddresses(accs, mnemonic, getAddressFromMnemonic)
+    if (migration.needsSave) {
+      saveAccounts(migration.accounts)
+    }
+
+    setAccounts(migration.accounts)
+
+    const savedIndex = loadCurrentAccountIndex()
+    const account = migration.accounts[savedIndex] || migration.accounts[0]
+    setCurrentAccount(account)
+
+    const w = deriveWalletFromMnemonic(mnemonic, account.accountIndex)
+    setWallet(w)
+    setReady(true)
   }, [])
 
   const switchAccount = useCallback(async (accountId: string) => {
@@ -228,12 +248,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     <AccountContext.Provider
       value={{
         isLoggedIn,
+        ready,
         wallet,
         address,
         network,
         accounts,
         currentAccount,
         uiMode,
+        login,
         switchAccount,
         addAccount,
         renameAccount,

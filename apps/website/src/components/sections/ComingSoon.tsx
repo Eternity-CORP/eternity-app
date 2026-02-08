@@ -24,16 +24,10 @@ const comingSoonFeatures = [
     status: 'Q3 2026',
   },
   {
-    id: 'ai',
-    title: 'AI Agent',
-    description: 'The brain behind your wallet. Natural conversations, proactive alerts, and full context awareness.',
-    status: 'Q3 2026',
-  },
-  {
     id: 'fiat',
     title: 'Fiat Ramp',
     description: 'Buy and sell crypto directly in the app. No external exchanges needed.',
-    status: 'Q4 2026',
+    status: 'Q3 2026',
   },
 ]
 
@@ -122,15 +116,9 @@ export function ComingSoon() {
         </FadeIn>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {comingSoonFeatures.slice(0, 3).map((feature, index) => (
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {comingSoonFeatures.map((feature, index) => (
             <FeatureCard key={feature.id} feature={feature} index={index} />
-          ))}
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-6">
-          {comingSoonFeatures.slice(3).map((feature, index) => (
-            <FeatureCard key={feature.id} feature={feature} index={index + 3} />
           ))}
         </div>
 

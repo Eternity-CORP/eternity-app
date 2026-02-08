@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation'
 import { hasWallet } from '@e-y/storage'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import { useInviteGuard } from '@/hooks/useInviteGuard'
 
 export default function Home() {
   const router = useRouter()
+  const { isInviteValid } = useInviteGuard()
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
 
   useEffect(() => {
+    if (!isInviteValid) return
     const check = async () => {
       const walletExists = await hasWallet()
       if (walletExists) {
@@ -20,7 +23,7 @@ export default function Home() {
       }
     }
     check()
-  }, [router])
+  }, [router, isInviteValid])
 
   if (status === 'loading') {
     return (

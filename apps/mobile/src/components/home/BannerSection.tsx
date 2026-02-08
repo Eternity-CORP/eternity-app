@@ -1,6 +1,7 @@
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
+
 import { TokenFoundNotification, TokenFoundBadge } from '@/src/components/TokenFoundNotification';
 import { SuggestionBannerList } from '@/src/components/ai';
 import type { Tier2TokenBalance } from '@/src/services/smart-scanning-service';
@@ -8,7 +9,6 @@ import type { AiSuggestion } from '@/src/services/ai-service';
 import { theme } from '@/src/constants/theme';
 
 interface BannerSectionProps {
-  isTestAccount: boolean;
   pendingSplitsCount: number;
   firstSplitId: string | undefined;
   scheduledPendingCount: number;
@@ -21,11 +21,9 @@ interface BannerSectionProps {
   onSnoozeAlert: (networkId: string, tokenSymbol: string) => void;
   aiSuggestions: AiSuggestion[];
   onDismissSuggestion: (id: string) => void;
-  onOpenFaucetSheet: () => void;
 }
 
 export function BannerSection({
-  isTestAccount,
   pendingSplitsCount,
   firstSplitId,
   scheduledPendingCount,
@@ -38,21 +36,9 @@ export function BannerSection({
   onSnoozeAlert,
   aiSuggestions,
   onDismissSuggestion,
-  onOpenFaucetSheet,
 }: BannerSectionProps) {
   return (
     <>
-      {/* Get Test Tokens Button */}
-      {isTestAccount && (
-        <TouchableOpacity
-          style={styles.getTestTokensButton}
-          onPress={onOpenFaucetSheet}
-        >
-          <FontAwesome name="gift" size={16} color={theme.colors.accent} />
-          <Text style={styles.getTestTokensText}>Get Test Tokens</Text>
-        </TouchableOpacity>
-      )}
-
       {/* Pending Split Banner */}
       {pendingSplitsCount > 0 && firstSplitId && (
         <TouchableOpacity
@@ -119,23 +105,6 @@ export function BannerSection({
 }
 
 const styles = StyleSheet.create({
-  getTestTokensButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.accent + '15',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
-    marginTop: theme.spacing.sm,
-    gap: theme.spacing.sm,
-    borderWidth: 1,
-    borderColor: theme.colors.accent + '30',
-  },
-  getTestTokensText: {
-    ...theme.typography.body,
-    color: theme.colors.accent,
-    fontWeight: '600',
-  },
   pendingBanner: {
     flexDirection: 'row',
     alignItems: 'center',

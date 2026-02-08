@@ -19,6 +19,39 @@ export function getNextAccountIndex(accounts: WalletAccount[]): number {
 }
 
 /**
+ * Address derivation function signature.
+ * Accepts mnemonic and account index, returns the correct address.
+ * Use dependency injection to avoid importing @e-y/crypto in shared.
+ */
+export type DeriveAddressFn = (mnemonic: string, accountIndex: number) => string;
+
+/**
+ * Re-derive account addresses from mnemonic to fix stale/mismatched addresses.
+ * Returns migrated accounts and whether any changes were made.
+ *
+ * @param accounts - Existing accounts from storage
+ * @param mnemonic - The wallet mnemonic phrase
+ * @param deriveAddress - Function to derive address from mnemonic + index
+ * @returns { accounts: WalletAccount[], needsSave: boolean }
+ */
+export function migrateAccountAddresses(
+  accounts: WalletAccount[],
+  mnemonic: string,
+  deriveAddress: DeriveAddressFn,
+): { accounts: WalletAccount[]; needsSave: boolean } {
+  let needsSave = false;
+  const migrated = accounts.map((acc) => {
+    const correctAddress = deriveAddress(mnemonic, acc.accountIndex);
+    if (acc.address !== correctAddress) {
+      needsSave = true;
+      return { ...acc, address: correctAddress };
+    }
+    return acc;
+  });
+  return { accounts: migrated, needsSave };
+}
+
+/**
  * Create a new WalletAccount object
  */
 export function createAccount(params: {

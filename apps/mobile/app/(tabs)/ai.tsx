@@ -3,7 +3,7 @@
  * Main AI interface with chat, suggestions, and streaming
  */
 
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,14 @@ import {
   Platform,
   TouchableOpacity,
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  interpolate,
+  runOnJS,
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { FontAwesome } from '@expo/vector-icons';
@@ -63,6 +71,11 @@ export default function AiScreen() {
 
   const flatListRef = useRef<FlatList>(null);
   const dispatch = useAppDispatch();
+
+  // Empty state animation
+  const emptyStateProgress = useSharedValue(1); // 1 = empty state visible, 0 = hidden
+  const [overlayRemoved, setOverlayRemoved] = useState(false);
+  const prevHasMessagesRef = useRef(false);
   const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
   const contacts = useAppSelector((state) => state.contacts.contacts);
@@ -233,6 +246,42 @@ export default function AiScreen() {
     ? ['Баланс', 'Отправить', 'BLIK', 'История']
     : ['Что ты умеешь?', 'Покажи баланс', 'Как отправить крипто?'];
 
+  // Animate empty state → active when first message is sent
+  useEffect(() => {
+    if (hasMessages && !prevHasMessagesRef.current) {
+      // First message sent — animate empty state out
+      emptyStateProgress.value = withTiming(0, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+      }, (finished) => {
+        if (finished) {
+          runOnJS(setOverlayRemoved)(true);
+        }
+      });
+    } else if (!hasMessages && prevHasMessagesRef.current) {
+      // Chat cleared — restore empty state
+      setOverlayRemoved(false);
+      emptyStateProgress.value = withTiming(1, {
+        duration: 400,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+    prevHasMessagesRef.current = hasMessages;
+  }, [hasMessages, emptyStateProgress]);
+
+  const emptyOverlayStyle = useAnimatedStyle(() => ({
+    opacity: emptyStateProgress.value,
+    transform: [
+      { translateY: interpolate(emptyStateProgress.value, [0, 1], [20, 0]) },
+    ],
+  }));
+
+  const activeContentStyle = useAnimatedStyle(() => ({
+    opacity: 1 - emptyStateProgress.value,
+  }));
+
+  const showEmptyState = !hasMessages && !isStreaming;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar style="light" />
@@ -258,121 +307,158 @@ export default function AiScreen() {
           </View>
         </View>
 
-        {/* Suggestions */}
-        {suggestions.length > 0 && (
-          <View style={styles.suggestionsContainer}>
+        {/* Active chat content */}
+        <Animated.View style={[styles.activeContent, activeContentStyle]}>
+          {/* Suggestions */}
+          {suggestions.length > 0 && (
+            <View style={styles.suggestionsContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.suggestionsContent}
+              >
+                {suggestions.map((suggestion) => (
+                  <SuggestionCard
+                    key={suggestion.id}
+                    suggestion={suggestion}
+                    onPress={handleSuggestionPress}
+                    onDismiss={dismissSuggestion}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Messages */}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={keyExtractor}
+            style={styles.messagesList}
+            contentContainerStyle={styles.messagesContent}
+            showsVerticalScrollIndicator={false}
+            ListFooterComponent={
+              <>
+                {isStreaming && <TypingIndicator streamingContent={streamingContent} />}
+                {pendingTransaction && (
+                  <TransactionCard
+                    transaction={pendingTransaction as PendingTransaction}
+                    onConfirm={handleConfirmTransaction}
+                    onCancel={handleCancelTransaction}
+                    onComplete={handleTransactionComplete}
+                    onSaveContact={handleSaveContact}
+                    isInContacts={isInContacts(pendingTransaction.to)}
+                    isTestAccount={currentAccount?.type === 'test'}
+                  />
+                )}
+                {pendingBlik && (
+                  <BlikCard
+                    blik={pendingBlik as PendingBlik}
+                    onConfirmPay={handleConfirmBlikPay}
+                    onCancel={handleCancelBlik}
+                    onComplete={handleBlikComplete}
+                    onSaveContact={handleSaveContact}
+                    isInContacts={pendingBlik.type === 'pay' ? isInContacts(pendingBlik.receiverAddress) : false}
+                    isTestAccount={currentAccount?.type === 'test'}
+                  />
+                )}
+                {pendingSwap && (
+                  <SwapCard
+                    swap={pendingSwap as PendingSwap}
+                    onApprove={pendingSwap.requiresApproval ? handleApproveSwap : undefined}
+                    onConfirm={handleConfirmSwap}
+                    onCancel={handleCancelSwap}
+                    onComplete={handleSwapComplete}
+                    isTestAccount={currentAccount?.type === 'test'}
+                  />
+                )}
+              </>
+            }
+          />
+
+          {/* Error Banner */}
+          {error && (
+            <View style={styles.errorBanner}>
+              <FontAwesome name="exclamation-circle" size={16} color={aiChat.accentRed} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
+
+          {/* Bottom: chips + input pinned together */}
+          <View style={styles.bottomContainer}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.suggestionsContent}
+              contentContainerStyle={styles.quickChipsContent}
+              style={styles.quickChipsRow}
             >
-              {suggestions.map((suggestion) => (
-                <SuggestionCard
-                  key={suggestion.id}
-                  suggestion={suggestion}
-                  onPress={handleSuggestionPress}
-                  onDismiss={dismissSuggestion}
-                />
+              {QUICK_CHIPS.map((chip) => (
+                <TouchableOpacity
+                  key={chip}
+                  style={styles.quickChip}
+                  onPress={() => sendMessage(chip)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.quickChipText}>{chip}</Text>
+                </TouchableOpacity>
               ))}
             </ScrollView>
+
+            <ChatInput
+              onSend={sendMessage}
+              disabled={isDisabled}
+              placeholder={
+                !isConnected
+                  ? 'Connecting...'
+                  : isStreaming
+                  ? 'AI is responding...'
+                  : 'Ask anything...'
+              }
+            />
           </View>
-        )}
+        </Animated.View>
 
-        {/* Messages */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={keyExtractor}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.heroLine1}>Your wallet.</Text>
-              <Text style={styles.heroLine2}>Your rules.</Text>
-              <Text style={styles.heroSubtitle}>Just ask.</Text>
-            </View>
-          }
-          ListFooterComponent={
-            <>
-              {isStreaming && <TypingIndicator streamingContent={streamingContent} />}
-              {pendingTransaction && (
-                <TransactionCard
-                  transaction={pendingTransaction as PendingTransaction}
-                  onConfirm={handleConfirmTransaction}
-                  onCancel={handleCancelTransaction}
-                  onComplete={handleTransactionComplete}
-                  onSaveContact={handleSaveContact}
-                  isInContacts={isInContacts(pendingTransaction.to)}
-                  isTestAccount={currentAccount?.type === 'test'}
-                />
-              )}
-              {pendingBlik && (
-                <BlikCard
-                  blik={pendingBlik as PendingBlik}
-                  onConfirmPay={handleConfirmBlikPay}
-                  onCancel={handleCancelBlik}
-                  onComplete={handleBlikComplete}
-                  onSaveContact={handleSaveContact}
-                  isInContacts={pendingBlik.type === 'pay' ? isInContacts(pendingBlik.receiverAddress) : false}
-                  isTestAccount={currentAccount?.type === 'test'}
-                />
-              )}
-              {pendingSwap && (
-                <SwapCard
-                  swap={pendingSwap as PendingSwap}
-                  onApprove={pendingSwap.requiresApproval ? handleApproveSwap : undefined}
-                  onConfirm={handleConfirmSwap}
-                  onCancel={handleCancelSwap}
-                  onComplete={handleSwapComplete}
-                  isTestAccount={currentAccount?.type === 'test'}
-                />
-              )}
-            </>
-          }
-        />
-
-        {/* Error Banner */}
-        {error && (
-          <View style={styles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={16} color={aiChat.accentRed} />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        {/* Bottom: chips + input pinned together */}
-        <View style={styles.bottomContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickChipsContent}
-            style={styles.quickChipsRow}
+        {/* Empty state overlay — Gemini-style centered welcome */}
+        {!overlayRemoved && (
+          <Animated.View
+            style={[styles.emptyOverlay, emptyOverlayStyle]}
+            pointerEvents={showEmptyState ? 'auto' : 'none'}
           >
-            {QUICK_CHIPS.map((chip) => (
-              <TouchableOpacity
-                key={chip}
-                style={styles.quickChip}
-                onPress={() => sendMessage(chip)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.quickChipText}>{chip}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            {/* Greeting */}
+            <View style={styles.greetingContainer}>
+              <Text style={styles.greetingSubtle}>Welcome to </Text>
+              <Text style={styles.greetingAccent}>Eternity</Text>
+            </View>
 
-          <ChatInput
-            onSend={sendMessage}
-            disabled={isDisabled}
-            placeholder={
-              !isConnected
-                ? 'Connecting...'
-                : isStreaming
-                ? 'AI is responding...'
-                : 'Ask anything...'
-            }
-          />
-        </View>
+            {/* Centered Input */}
+            <View style={styles.centeredInputContainer}>
+              <ChatInput
+                onSend={sendMessage}
+                disabled={isDisabled}
+                placeholder={
+                  !isConnected
+                    ? 'Connecting...'
+                    : 'Ask anything...'
+                }
+              />
+            </View>
+
+            {/* Centered Chips (wrapped, not horizontal scroll) */}
+            <View style={styles.centeredChipsContainer}>
+              {QUICK_CHIPS.map((chip) => (
+                <TouchableOpacity
+                  key={chip}
+                  style={styles.quickChip}
+                  onPress={() => sendMessage(chip)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.quickChipText}>{chip}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -423,6 +509,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: aiChat.text.tertiary,
   },
+  activeContent: {
+    flex: 1,
+  },
   suggestionsContainer: {
     paddingVertical: theme.spacing.sm,
   },
@@ -436,36 +525,42 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingVertical: theme.spacing.md,
   },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
+  // Empty state overlay
+  emptyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    top: 48, // below top bar
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xxl,
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
-  heroLine1: {
-    fontSize: 38,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.28)',
-    letterSpacing: -1,
-    lineHeight: 46,
-    textAlign: 'center',
+  greetingContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 32,
   },
-  heroLine2: {
-    fontSize: 38,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.16)',
-    letterSpacing: -1,
-    lineHeight: 46,
-    textAlign: 'center',
+  greetingSubtle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.60)',
+    letterSpacing: -0.5,
   },
-  heroSubtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'rgba(51,136,255,0.40)',
-    marginTop: 12,
-    letterSpacing: 4,
-    textTransform: 'uppercase',
-    textAlign: 'center',
+  greetingAccent: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#3388FF',
+    letterSpacing: -0.5,
+  },
+  centeredInputContainer: {
+    width: '100%',
+    maxWidth: 480,
+    marginBottom: 16,
+  },
+  centeredChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+    maxWidth: 480,
   },
   bottomContainer: {
     flexShrink: 0,

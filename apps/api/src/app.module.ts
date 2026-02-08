@@ -11,6 +11,8 @@ import { WaitlistModule } from './waitlist/waitlist.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AiModule } from './ai/ai.module';
 import { PreferencesModule } from './preferences/preferences.module';
+import { FaucetModule } from './faucet/faucet.module';
+import { InviteModule } from './invite/invite.module';
 import { SupabaseModule } from './supabase';
 
 @Module({
@@ -30,6 +32,8 @@ import { SupabaseModule } from './supabase';
     NotificationsModule,
     AiModule,
     PreferencesModule,
+    FaucetModule,
+    InviteModule,
   ],
 })
 export class AppModule {}

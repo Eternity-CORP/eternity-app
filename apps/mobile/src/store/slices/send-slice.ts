@@ -7,6 +7,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { ethers, isAddress } from 'ethers';
 import { NATIVE_TOKEN_ADDRESS } from '@e-y/shared';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
+import { switchAccount } from './wallet-slice';
 import { SUPPORTED_NETWORKS, getRpcUrl, type NetworkId } from '@/src/constants/networks';
 import { getAddressPreferencesWithRetry } from '@/src/services/preferences-service';
 import { lookupUsername } from '@/src/services/username-service';
@@ -73,6 +74,7 @@ export interface SendState {
   // Gas estimation
   gasEstimate: GasEstimate | null;
   gasEstimateStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
+  gasEstimateError: string | null;
 
   // Transaction sending
   txHash: string | null;
@@ -102,6 +104,7 @@ const initialState: SendState = {
   amount: '',
   gasEstimate: null,
   gasEstimateStatus: 'idle',
+  gasEstimateError: null,
   txHash: null,
   sendStatus: 'idle',
   sendError: null,
@@ -490,13 +493,16 @@ const sendSlice = createSlice({
     builder
       .addCase(estimateGasThunk.pending, (state) => {
         state.gasEstimateStatus = 'loading';
+        state.gasEstimateError = null;
       })
       .addCase(estimateGasThunk.fulfilled, (state, action) => {
         state.gasEstimateStatus = 'succeeded';
         state.gasEstimate = action.payload;
+        state.gasEstimateError = null;
       })
-      .addCase(estimateGasThunk.rejected, (state) => {
+      .addCase(estimateGasThunk.rejected, (state, action) => {
         state.gasEstimateStatus = 'failed';
+        state.gasEstimateError = action.error.message || 'Failed to estimate gas';
       });
     
     // Send transaction
@@ -530,7 +536,10 @@ const sendSlice = createSlice({
         state.recipientPreferences = null;
         state.recipientPreferencesStatus = 'failed';
         state.recipientPreferencesError = action.error.message || 'Failed to fetch preferences';
-      });
+      })
+
+      // Reset send state when account switches
+      .addCase(switchAccount, () => initialState);
   },
 });
 

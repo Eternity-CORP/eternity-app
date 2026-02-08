@@ -407,10 +407,10 @@ export default function ConfirmScreen() {
           </View>
         )}
 
-        {send.sendError && (
+        {(send.gasEstimateError || send.sendError) && (
           <View style={[styles.errorCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
             <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
-              {send.sendError}
+              {send.gasEstimateError || send.sendError}
             </Text>
           </View>
         )}

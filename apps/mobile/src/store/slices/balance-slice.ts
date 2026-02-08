@@ -18,7 +18,7 @@ import {
 } from '@/src/services/network-service';
 import { NetworkId, TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS, TestnetNetworkId } from '@/src/constants/networks-testnet';
-import { type AccountType, getCurrentAccount } from './wallet-slice';
+import { type AccountType, getCurrentAccount, switchAccount } from './wallet-slice';
 
 interface BalanceState {
   // Legacy: single-network balances (for backwards compatibility)
@@ -182,6 +182,18 @@ const balanceSlice = createSlice({
       .addCase(fetchMultiNetworkBalancesThunk.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.error.message || 'Failed to fetch multi-network balances';
+      })
+
+      // Clear stale balances immediately on account switch
+      .addCase(switchAccount, (state) => {
+        state.balances = [];
+        state.aggregatedBalances = [];
+        state.networkBalances = {} as Record<string, NetworkTokenBalance[]>;
+        state.failedNetworks = [];
+        state.totalUsdValue = 0;
+        state.status = 'loading';
+        state.error = null;
+        state.currentAccountType = null;
       });
   },
 });

@@ -8,13 +8,15 @@ import { GlitchText } from '@/components/animations/GlitchText'
 const milestones = [
   {
     quarter: 'Q1 2026',
-    title: 'MVP Launch',
+    title: 'MVP + AI Agent',
     status: 'completed',
     items: [
       { text: 'Core wallet functionality', done: true },
       { text: 'BLIK codes system', done: true },
       { text: '@username registry', done: true },
       { text: 'Contacts & scheduled payments', done: true },
+      { text: 'AI Financial Agent', done: true },
+      { text: 'Multi-chain balances', done: true },
     ],
   },
   {
@@ -23,7 +25,7 @@ const milestones = [
     status: 'next',
     items: [
       { text: 'Network abstraction', done: false },
-      { text: 'Multi-chain support', done: false },
+      { text: 'Cross-chain swaps', done: false },
       { text: 'Fiat on-ramp', done: false },
     ],
   },
@@ -39,12 +41,12 @@ const milestones = [
   },
   {
     quarter: 'Q4 2026',
-    title: 'AI-Native',
+    title: 'Scale',
     status: 'future',
     items: [
-      { text: 'AI Financial Agent', done: false },
-      { text: 'Smart notifications', done: false },
-      { text: 'AI portfolio insights', done: false },
+      { text: 'Mobile app launch', done: false },
+      { text: 'Advanced AI insights', done: false },
+      { text: 'Institutional features', done: false },
     ],
   },
 ]

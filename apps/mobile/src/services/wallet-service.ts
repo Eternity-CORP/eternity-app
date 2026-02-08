@@ -15,6 +15,7 @@ const WALLET_MNEMONIC_KEY = 'wallet_mnemonic';
 const WALLET_ADDRESS_KEY = 'wallet_address';
 const ACCOUNTS_KEY = 'wallet_accounts'; // Legacy SecureStore key (for migration)
 const ACCOUNTS_FILE = `${FileSystem.documentDirectory}accounts.json`;
+const CURRENT_ACCOUNT_INDEX_KEY = 'current_account_index';
 
 export interface WalletData {
   mnemonic: string;
@@ -185,6 +186,33 @@ export async function createNewAccount(mnemonic: string, existingAccounts: Accou
 }
 
 /**
+ * Save current account index to storage
+ */
+export async function saveCurrentAccountIndex(index: number): Promise<void> {
+  try {
+    await SecureStore.setItemAsync(CURRENT_ACCOUNT_INDEX_KEY, String(index));
+  } catch (error) {
+    console.error('Error saving current account index:', error);
+  }
+}
+
+/**
+ * Load current account index from storage
+ * Returns 0 if not set or on error
+ */
+export async function loadCurrentAccountIndex(): Promise<number> {
+  try {
+    const value = await SecureStore.getItemAsync(CURRENT_ACCOUNT_INDEX_KEY);
+    if (value === null) return 0;
+    const index = parseInt(value, 10);
+    return isNaN(index) ? 0 : index;
+  } catch (error) {
+    console.error('Error loading current account index:', error);
+    return 0;
+  }
+}
+
+/**
  * Check if wallet exists
  */
 export async function hasWallet(): Promise<boolean> {
@@ -252,6 +280,7 @@ export function getWalletFromMnemonic(mnemonic: string, accountIndex: number = 0
 export async function clearWallet(): Promise<void> {
   await SecureStore.deleteItemAsync(WALLET_MNEMONIC_KEY);
   await SecureStore.deleteItemAsync(WALLET_ADDRESS_KEY);
+  await SecureStore.deleteItemAsync(CURRENT_ACCOUNT_INDEX_KEY);
   // Delete accounts file
   const fileInfo = await FileSystem.getInfoAsync(ACCOUNTS_FILE);
   if (fileInfo.exists) {

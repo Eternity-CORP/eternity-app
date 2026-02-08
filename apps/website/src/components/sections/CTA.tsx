@@ -282,7 +282,7 @@ export function CTA() {
                         transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                       />
                     ) : (
-                      'Get Early Access'
+                      'Join Waitlist'
                     )}
                   </Button>
                 </motion.form>

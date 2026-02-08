@@ -6,8 +6,10 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { encryptTempToSession } from '@/lib/session-crypto'
+import { useInviteGuard } from '@/hooks/useInviteGuard'
 
 export default function ImportWallet() {
+  useInviteGuard()
   const router = useRouter()
   const [words, setWords] = useState<string[]>(Array(12).fill(''))
   const [wordCount, setWordCount] = useState<12 | 24>(12)

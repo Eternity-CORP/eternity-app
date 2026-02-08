@@ -1,14 +1,19 @@
 import { useAccount } from '@/contexts/account-context'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { isInviteValidated } from '@/lib/invite'
 
 export function useAuthGuard() {
-  const { isLoggedIn, address } = useAccount()
+  const { isLoggedIn, ready } = useAccount()
   const router = useRouter()
   useEffect(() => {
-    if (!isLoggedIn && address !== '') {
+    if (!isInviteValidated()) {
+      router.replace('/gate')
+      return
+    }
+    if (ready && !isLoggedIn) {
       router.push('/unlock')
     }
-  }, [isLoggedIn, address, router])
-  return { isReady: isLoggedIn && address !== '' }
+  }, [ready, isLoggedIn, router])
+  return { isReady: ready && isLoggedIn }
 }

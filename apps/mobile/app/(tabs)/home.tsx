@@ -321,7 +321,6 @@ export default function HomeScreen() {
         }
       >
         <BannerSection
-          isTestAccount={isTestAccount}
           pendingSplitsCount={split.pendingSplits.length}
           firstSplitId={split.pendingSplits[0]?.id}
           scheduledPendingCount={scheduledPendingCount}
@@ -334,7 +333,6 @@ export default function HomeScreen() {
           onSnoozeAlert={handleSnoozeAlert}
           aiSuggestions={aiSuggestions}
           onDismissSuggestion={handleDismissSuggestion}
-          onOpenFaucetSheet={openFaucetSheet}
         />
 
         <BalanceSection
@@ -356,6 +354,8 @@ export default function HomeScreen() {
         slideAnim={slideAnim}
         onClose={closeActionsMenu}
         onCopyAddress={handleCopyAddress}
+        isTestAccount={isTestAccount}
+        onOpenFaucet={openFaucetSheet}
       />
 
       <AccountSelectorSheet
@@ -396,8 +396,14 @@ export default function HomeScreen() {
         visible={showFaucetSheet}
         slideAnim={faucetSlideAnim}
         fadeAnim={faucetFadeAnim}
+        address={currentAccount?.address ?? ''}
         onClose={closeFaucetSheet}
         onFaucetPress={handleFaucetPress}
+        onClaimed={() => {
+          if (currentAccount?.address && currentAccountType) {
+            dispatch(fetchMultiNetworkBalancesThunk({ address: currentAccount.address, accountType: currentAccountType }));
+          }
+        }}
       />
     </SafeAreaView>
   );

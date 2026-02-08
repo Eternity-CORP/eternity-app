@@ -3,14 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { encryptAndSave } from '@e-y/storage'
-import { getAddressFromMnemonic } from '@e-y/crypto'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
-import { ensureDefaultAccount } from '@/lib/account-storage'
-import { decryptTempFromSession, clearTempSession, encryptToSession } from '@/lib/session-crypto'
+import { useAccount } from '@/contexts/account-context'
+import { decryptTempFromSession, clearTempSession } from '@/lib/session-crypto'
+import { useInviteGuard } from '@/hooks/useInviteGuard'
 
 export default function SetPassword() {
+  useInviteGuard()
   const router = useRouter()
+  const { login } = useAccount()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
@@ -46,9 +48,8 @@ export default function SetPassword() {
 
     try {
       await encryptAndSave(mnemonic, password)
-      ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
       clearTempSession()
-      await encryptToSession(mnemonic)
+      await login(mnemonic)
       setStatus('succeeded')
       router.push('/wallet')
     } catch (err) {

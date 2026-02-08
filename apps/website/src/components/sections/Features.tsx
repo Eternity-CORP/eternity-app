@@ -47,16 +47,6 @@ const features = [
     },
   },
   {
-    id: 'history',
-    title: 'Transaction History',
-    description: 'Every transaction. Full details.',
-    screen: {
-      title: 'Transactions',
-      content: '24 transactions',
-      details: ['Status tracking', 'Explorer links', 'Filter by type'],
-    },
-  },
-  {
     id: 'contacts',
     title: 'Contacts Book',
     description: 'Save frequent recipients.',
@@ -74,6 +64,16 @@ const features = [
       title: 'Scheduled',
       content: '3 active',
       details: ['Daily, weekly, monthly', 'Auto-execute', 'Notifications'],
+    },
+  },
+  {
+    id: 'ai',
+    title: 'AI Agent',
+    description: 'Your wallet that thinks with you.',
+    screen: {
+      title: 'AI Chat',
+      content: '"Send 0.01 ETH to @alex"',
+      details: ['Natural language', 'Proactive suggestions', 'Full context awareness'],
     },
   },
   {

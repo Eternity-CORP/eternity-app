@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from './Button'
 import { ThemeToggle } from './ThemeToggle'
+import { useWarp } from '@/components/animations/WarpTransition'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/context/ThemeContext'
 
@@ -18,6 +19,7 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { isDark } = useTheme()
+  const { startWarp } = useWarp()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -73,8 +75,8 @@ export function Header() {
             </Link>
           ))}
           <ThemeToggle />
-          <Button variant="primary" size="sm" onClick={() => scrollToSection('cta')}>
-            Get Early Access
+          <Button variant="primary" size="sm" onClick={startWarp}>
+            Launch App
           </Button>
         </div>
 
@@ -135,8 +137,8 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              <Button variant="primary" size="sm" className="w-full" onClick={() => scrollToSection('cta')}>
-                Get Early Access
+              <Button variant="primary" size="sm" className="w-full" onClick={() => { setIsMobileMenuOpen(false); startWarp() }}>
+                Launch App
               </Button>
             </div>
           </motion.div>

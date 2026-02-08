@@ -3,9 +3,9 @@
  */
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, type WalletData } from '@/src/services/wallet-service';
+import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, saveCurrentAccountIndex, loadCurrentAccountIndex, type WalletData } from '@/src/services/wallet-service';
 import { getAddressFromMnemonic } from '@e-y/crypto';
-import type { AccountType, WalletAccount } from '@e-y/shared';
+import { migrateAccountAddresses, type AccountType, type WalletAccount } from '@e-y/shared';
 
 export type { AccountType };
 
@@ -89,13 +89,16 @@ export const importWalletThunk = createAsyncThunk(
 );
 
 /**
- * Load accounts from storage
+ * Load accounts from storage (including persisted account index)
  */
 export const loadAccountsThunk = createAsyncThunk(
   'wallet/loadAccounts',
   async () => {
-    const accounts = await loadAccounts();
-    return accounts;
+    const [accounts, savedIndex] = await Promise.all([
+      loadAccounts(),
+      loadCurrentAccountIndex(),
+    ]);
+    return { accounts, savedIndex };
   }
 );
 
@@ -143,6 +146,8 @@ const walletSlice = createSlice({
       const index = action.payload;
       if (index >= 0 && index < state.accounts.length) {
         state.currentAccountIndex = index;
+        // Persist asynchronously (fire-and-forget from reducer)
+        saveCurrentAccountIndex(index);
       }
     },
     updateAccountLabel: (state, action: PayloadAction<{ accountIndex: number; label: string | undefined }>) => {
@@ -152,12 +157,13 @@ const walletSlice = createSlice({
       }
     },
     reorderAccounts: (state, action: PayloadAction<Account[]>) => {
+      const currentAddress = state.accounts[state.currentAccountIndex]?.address;
       state.accounts = action.payload;
       // Update currentAccountIndex to point to the same account after reorder
-      const currentAddress = state.accounts[state.currentAccountIndex]?.address;
       const newIndex = action.payload.findIndex((acc) => acc.address === currentAddress);
       if (newIndex !== -1) {
         state.currentAccountIndex = newIndex;
+        saveCurrentAccountIndex(newIndex);
       }
     },
     clearWallet: (state) => {
@@ -199,12 +205,21 @@ const walletSlice = createSlice({
       })
       // Load accounts
       .addCase(loadAccountsThunk.fulfilled, (state, action) => {
+        const { accounts, savedIndex } = action.payload;
         // Replace temporary accounts with loaded ones
-        if (action.payload.length > 0) {
-          state.accounts = action.payload;
-          // Ensure currentAccountIndex is valid
-          if (state.currentAccountIndex >= state.accounts.length) {
-            state.currentAccountIndex = 0;
+        if (accounts.length > 0) {
+          // Re-derive addresses from mnemonic to fix any stale/mismatched addresses
+          const migration = state.mnemonic
+            ? migrateAccountAddresses(accounts, state.mnemonic, getAddressFromMnemonic)
+            : { accounts, needsSave: false };
+
+          state.accounts = migration.accounts;
+          // Restore persisted account index (with bounds check)
+          state.currentAccountIndex = savedIndex < migration.accounts.length ? savedIndex : 0;
+
+          // Persist corrected addresses
+          if (migration.needsSave) {
+            saveAccounts(migration.accounts);
           }
         } else if (state.accounts.length === 0 && state.mnemonic) {
           // If no accounts stored but wallet exists, create default account
@@ -227,6 +242,8 @@ const walletSlice = createSlice({
         state.accounts.push(action.payload);
         state.currentAccountIndex = state.accounts.length - 1;
         state.status = 'succeeded';
+        // Persist the new account index
+        saveCurrentAccountIndex(state.currentAccountIndex);
       })
       .addCase(addAccountThunk.rejected, (state, action) => {
         state.status = 'failed';
@@ -307,9 +324,11 @@ const walletSlice = createSlice({
           // Update first account address and set to 'real' type
           state.accounts[0].address = action.payload.address;
           state.accounts[0].type = 'real';
+          state.currentAccountIndex = 0;
         }
         state.status = 'succeeded';
         state.isInitialized = true;
+        saveCurrentAccountIndex(0);
       })
       .addCase(importWalletThunk.rejected, (state, action) => {
         state.status = 'failed';

@@ -12,9 +12,11 @@ interface ActionsMenuProps {
   slideAnim: Animated.Value;
   onClose: () => void;
   onCopyAddress: () => void;
+  isTestAccount?: boolean;
+  onOpenFaucet?: () => void;
 }
 
-export function ActionsMenu({ visible, slideAnim, onClose, onCopyAddress }: ActionsMenuProps) {
+export function ActionsMenu({ visible, slideAnim, onClose, onCopyAddress, isTestAccount, onOpenFaucet }: ActionsMenuProps) {
   const { theme: dynamicTheme, isDark } = useTheme();
 
   if (!visible) return null;
@@ -72,6 +74,18 @@ export function ActionsMenu({ visible, slideAnim, onClose, onCopyAddress }: Acti
           </View>
           <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Copy Address</Text>
         </TouchableOpacity>
+
+        {isTestAccount && onOpenFaucet && (
+          <TouchableOpacity
+            style={styles.actionMenuItem}
+            onPress={() => { onClose(); onOpenFaucet(); }}
+          >
+            <View style={[styles.actionMenuIcon, { backgroundColor: dynamicTheme.colors.background }]}>
+              <FontAwesome name="gift" size={20} color={dynamicTheme.colors.textPrimary} />
+            </View>
+            <Text style={[styles.actionMenuText, { color: dynamicTheme.colors.textPrimary }]}>Get Test Tokens</Text>
+          </TouchableOpacity>
+        )}
       </Animated.View>
     </View>
   );
