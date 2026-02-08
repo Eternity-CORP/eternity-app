@@ -5,7 +5,9 @@ import { ethers } from 'ethers'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
+import { useBalance } from '@/contexts/balance-context'
 import { useAiChat } from '@/hooks/useAiChat'
+import { sendNativeToken, sendErc20Token } from '@/lib/send-service'
 import AccountSelector from '@/components/AccountSelector'
 import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
@@ -14,7 +16,9 @@ import InputBar from './InputBar'
 import SendPreviewCard from './cards/SendPreviewCard'
 import BlikCard from './cards/BlikCard'
 import SwapCard from './cards/SwapCard'
+import ContactSaveCard from './cards/ContactSaveCard'
 import ConfirmModal from './cards/ConfirmModal'
+import { loadContacts, saveContact } from '@/lib/contacts-service'
 
 interface SendCardTransaction {
   id: string
@@ -29,6 +33,11 @@ interface SendCardTransaction {
   network?: string
 }
 
+interface PendingContactSave {
+  address: string
+  username?: string
+}
+
 type ConfirmTarget =
   | { type: 'send'; transaction: SendCardTransaction }
   | { type: 'blik'; blik: Parameters<typeof BlikCard>[0]['blik'] }
@@ -36,6 +45,7 @@ type ConfirmTarget =
 
 export default function ChatContainer() {
   const { address, network, currentAccount, logout, uiMode, setUiMode } = useAccount()
+  const { aggregatedBalances } = useBalance()
   const {
     messages,
     status,
@@ -53,13 +63,14 @@ export default function ChatContainer() {
   } = useAiChat()
 
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null)
+  const [pendingContactSave, setPendingContactSave] = useState<PendingContactSave | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom on new messages or streaming
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap])
+  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap, pendingContactSave])
 
   const handleSendConfirm = useCallback((updated: SendCardTransaction) => {
     setConfirmTarget({ type: 'send', transaction: updated })
@@ -78,16 +89,50 @@ export default function ChatContainer() {
     const connectedWallet = wallet.connect(provider)
 
     if (confirmTarget.type === 'send') {
-      const tx = await connectedWallet.sendTransaction({
-        to: confirmTarget.transaction.to,
-        value: ethers.parseEther(confirmTarget.transaction.amount),
-      })
+      const txn = confirmTarget.transaction
+      const token = txn.token.toUpperCase()
+      const isNative = token === 'ETH' || token === network.symbol
 
-      await tx.wait()
+      let txHash: string
+      if (isNative) {
+        txHash = await sendNativeToken(connectedWallet, provider, txn.to, txn.amount)
+      } else {
+        // Find token contract from aggregated balances
+        const tokenData = aggregatedBalances.find(
+          (t) => t.symbol.toUpperCase() === token,
+        )
+        const primaryNet = tokenData?.networks?.[0]
+
+        if (primaryNet && primaryNet.contractAddress !== 'native') {
+          txHash = await sendErc20Token(
+            connectedWallet,
+            provider,
+            txn.to,
+            txn.amount,
+            primaryNet.contractAddress,
+            tokenData?.decimals || 18,
+          )
+        } else {
+          // Fallback to native send
+          txHash = await sendNativeToken(connectedWallet, provider, txn.to, txn.amount)
+        }
+      }
 
       clearPendingTransaction()
       setConfirmTarget(null)
-      sendMessage(`Transaction sent! Hash: ${tx.hash}`)
+      sendMessage(`Transaction sent! Hash: ${txHash}`)
+
+      // Offer to save recipient as contact if not already saved
+      const existingContacts = loadContacts(address)
+      const alreadySaved = existingContacts.some(
+        (c) => c.address.toLowerCase() === txn.to.toLowerCase(),
+      )
+      if (!alreadySaved) {
+        setPendingContactSave({
+          address: txn.to,
+          username: txn.toUsername,
+        })
+      }
     } else if (confirmTarget.type === 'blik' && confirmTarget.blik.type === 'pay') {
       const blik = confirmTarget.blik
       const tx = await connectedWallet.sendTransaction({
@@ -116,7 +161,7 @@ export default function ChatContainer() {
       setConfirmTarget(null)
       sendMessage(`Swap executed! Swapped ${swap.fromToken.amount} ${swap.fromToken.symbol} → ${swap.toToken.amount} ${swap.toToken.symbol}. Hash: ${tx.hash}`)
     }
-  }, [confirmTarget, currentAccount, network, address, clearPendingTransaction, clearPendingBlik, clearPendingSwap, sendMessage])
+  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, clearPendingTransaction, clearPendingBlik, clearPendingSwap, sendMessage])
 
   const handleConfirmCancel = useCallback(() => {
     setConfirmTarget(null)
@@ -183,9 +228,9 @@ export default function ChatContainer() {
   return (
     <div className="flex flex-col h-screen">
       {/* Minimal Top Bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/5">
+      <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 h-14 border-b border-white/5 gap-2 overflow-visible relative z-50">
         {/* Left: mode toggle */}
-        <div className="mode-toggle flex">
+        <div className="mode-toggle flex shrink-0">
           <button
             onClick={() => setUiMode('ai')}
             className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
@@ -201,7 +246,7 @@ export default function ChatContainer() {
         </div>
 
         {/* Right: account + lock */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 shrink-0">
           <AccountSelector />
 
           <button
@@ -269,6 +314,23 @@ export default function ChatContainer() {
             swap={pendingSwap}
             onConfirm={handleSwapConfirm}
             onCancel={handleCancelSwap}
+          />
+        )}
+
+        {/* Contact Save suggestion after successful send */}
+        {pendingContactSave && (
+          <ContactSaveCard
+            recipientAddress={pendingContactSave.address}
+            recipientUsername={pendingContactSave.username}
+            onSave={(name) => {
+              saveContact(address, {
+                name,
+                address: pendingContactSave.address,
+                username: pendingContactSave.username,
+              })
+              setPendingContactSave(null)
+            }}
+            onSkip={() => setPendingContactSave(null)}
           />
         )}
 
