@@ -26,14 +26,15 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`
-          max-w-[80%] px-4 py-3 rounded-2xl
+          max-w-[80%] min-w-0 px-4 py-3 rounded-2xl overflow-hidden
           ${isUser
             ? 'chat-bubble-user rounded-br-md'
             : 'chat-bubble-ai rounded-bl-md'
           }
         `}
+        style={{ overflowWrap: 'anywhere' }}
       >
-        <div className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
+        <div className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
           {renderMarkdown(message.content)}
         </div>
 

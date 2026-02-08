@@ -10,3 +10,4 @@ export * from './ai';
 export * from './swap';
 export * from './scheduled';
 export * from './split';
+export * from './network-balance';

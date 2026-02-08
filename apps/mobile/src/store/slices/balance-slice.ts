@@ -15,7 +15,6 @@ import {
   type AggregatedTokenBalance,
   type NetworkTokenBalance,
   type MultiNetworkBalanceResult,
-  type AnyNetworkId,
 } from '@/src/services/network-service';
 import { NetworkId, TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS, TestnetNetworkId } from '@/src/constants/networks-testnet';
@@ -29,10 +28,10 @@ interface BalanceState {
   aggregatedBalances: AggregatedTokenBalance[];
 
   // New: per-network breakdown
-  networkBalances: Record<AnyNetworkId, NetworkTokenBalance[]>;
+  networkBalances: Record<string, NetworkTokenBalance[]>;
 
   // Networks that failed to fetch
-  failedNetworks: AnyNetworkId[];
+  failedNetworks: string[];
 
   totalUsdValue: number;
   ethUsdPrice: number;
@@ -50,7 +49,7 @@ interface BalanceState {
 const initialState: BalanceState = {
   balances: [],
   aggregatedBalances: [],
-  networkBalances: {} as Record<AnyNetworkId, NetworkTokenBalance[]>,
+  networkBalances: {} as Record<string, NetworkTokenBalance[]>,
   failedNetworks: [],
   totalUsdValue: 0,
   ethUsdPrice: 0,
@@ -105,7 +104,7 @@ const balanceSlice = createSlice({
     clearBalances: (state) => {
       state.balances = [];
       state.aggregatedBalances = [];
-      state.networkBalances = {} as Record<AnyNetworkId, NetworkTokenBalance[]>;
+      state.networkBalances = {} as Record<string, NetworkTokenBalance[]>;
       state.failedNetworks = [];
       state.totalUsdValue = 0;
       state.status = 'idle';

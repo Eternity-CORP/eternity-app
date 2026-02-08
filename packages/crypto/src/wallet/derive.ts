@@ -16,7 +16,7 @@ export function deriveWalletFromMnemonic(
 ): HDNodeWallet {
   const mnemonicObj = Mnemonic.fromPhrase(mnemonic);
   const derivationPath = `${HD_WALLET_DERIVATION_PATH}/${accountIndex}`;
-  return HDNodeWallet.fromPhrase(mnemonicObj.phrase, derivationPath);
+  return HDNodeWallet.fromMnemonic(mnemonicObj, derivationPath);
 }
 
 /**

@@ -202,7 +202,7 @@ export default function ScheduledPaymentDetailsScreen() {
 
       if (!isNativeToken && aggregatedToken && aggregatedToken.networks.length > 0) {
         const networkData = aggregatedToken.networks[0];
-        networkId = networkData.networkId;
+        networkId = networkData.networkId as AnyNetworkId;
         tokenAddress = networkData.contractAddress;
         decimals = aggregatedToken.decimals;
       }

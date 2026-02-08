@@ -35,6 +35,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     color: '#627EEA',
     alchemyNetwork: 'eth-sepolia',
     coingeckoPlatform: '', // Testnets don't have CoinGecko prices
+    coinGeckoId: 'ethereum',
     environment: 'testnet',
   },
   'polygon-amoy': {
@@ -54,6 +55,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     color: '#8247E5',
     alchemyNetwork: 'polygon-amoy',
     coingeckoPlatform: '', // Testnets don't have CoinGecko prices
+    coinGeckoId: 'matic-network',
     environment: 'testnet',
   },
   'arbitrum-sepolia': {
@@ -73,6 +75,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     color: '#28A0F0',
     alchemyNetwork: 'arb-sepolia',
     coingeckoPlatform: '', // Testnets don't have CoinGecko prices
+    coinGeckoId: 'ethereum',
     environment: 'testnet',
   },
   'base-sepolia': {
@@ -92,6 +95,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     color: '#0052FF',
     alchemyNetwork: 'base-sepolia',
     coingeckoPlatform: '', // Testnets don't have CoinGecko prices
+    coinGeckoId: 'ethereum',
     environment: 'testnet',
   },
   'optimism-sepolia': {
@@ -111,6 +115,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     color: '#FF0420',
     alchemyNetwork: 'opt-sepolia',
     coingeckoPlatform: '', // Testnets don't have CoinGecko prices
+    coinGeckoId: 'ethereum',
     environment: 'testnet',
   },
 };

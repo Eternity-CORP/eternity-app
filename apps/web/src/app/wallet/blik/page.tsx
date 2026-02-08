@@ -31,6 +31,7 @@ export default function BlikPage() {
   const [foundCode, setFoundCode] = useState<CodeInfoPayload | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [codeCopied, setCodeCopied] = useState(false)
 
   const socketRef = useRef<Socket | null>(null)
   const blikServiceRef = useRef<BlikSocketService | null>(null)
@@ -268,9 +269,34 @@ export default function BlikPage() {
             {mode === 'request' && createdCode && (
               <div className="text-center">
                 <p className="text-sm text-white/40 mb-4">Share this code</p>
-                <p className="text-5xl font-mono font-bold tracking-[0.2em] text-white mb-2">
-                  {createdCode.code}
-                </p>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(createdCode.code)
+                    setCodeCopied(true)
+                    setTimeout(() => setCodeCopied(false), 2000)
+                  }}
+                  className="group relative inline-block mb-2"
+                  title="Copy code"
+                >
+                  <p className="text-5xl font-mono font-bold tracking-[0.2em] text-white group-hover:text-white/80 transition-colors">
+                    {createdCode.code}
+                  </p>
+                  <span className={`absolute -right-8 top-1/2 -translate-y-1/2 transition-opacity ${codeCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`}>
+                    {codeCopied ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    )}
+                  </span>
+                </button>
+                {codeCopied && (
+                  <p className="text-xs text-[#22c55e] mb-1">Copied!</p>
+                )}
                 <p className="text-xl text-white mb-6">{createdCode.amount} {network.symbol}</p>
 
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#22c55e]/8 border border-[#22c55e]/20 rounded-full mb-6">

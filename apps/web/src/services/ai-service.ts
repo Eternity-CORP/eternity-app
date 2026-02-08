@@ -32,6 +32,8 @@ class WebAiSocketService {
   private socket: Socket | null = null
   private service: AiSocketService | null = null
   private localCallbacks: Partial<Pick<AiSocketCallbacks, 'onConnect' | 'onDisconnect'>> = {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private pendingCallbacks: Record<string, any> = {}
   private userAddress = ''
 
   connect(address: string): void {
@@ -47,6 +49,12 @@ class WebAiSocketService {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.service = createAiSocketService(this.socket as any)
+
+    // Apply any callbacks that were registered before connect
+    if (Object.keys(this.pendingCallbacks).length > 0) {
+      this.service.setCallbacks(this.pendingCallbacks as Partial<SharedAiSocketCallbacks>)
+      this.pendingCallbacks = {}
+    }
 
     this.socket.on('connect', () => {
       this.service?.subscribe(this.userAddress)
@@ -100,24 +108,29 @@ class WebAiSocketService {
     }
 
     const sharedKey = mapping[event]
-    if (sharedKey && this.service) {
-      // For onDone, we need to also add response to history
-      if (event === 'onDone') {
-        const originalCallback = callback as AiSocketCallbacks['onDone']
-        const service = this.service
-        this.service.setCallbacks({
-          [sharedKey]: (payload: DonePayload) => {
-            if (payload.content) {
-              service.addResponseToHistory(payload.content)
-            }
-            originalCallback(payload)
-          },
-        } as Partial<SharedAiSocketCallbacks>)
-      } else {
-        this.service.setCallbacks({
-          [sharedKey]: callback,
-        } as Partial<SharedAiSocketCallbacks>)
+    if (!sharedKey) return
+
+    // Build the callback (with history tracking for onDone)
+    let wrappedCallback: unknown
+    if (event === 'onDone') {
+      const originalCallback = callback as AiSocketCallbacks['onDone']
+      wrappedCallback = (payload: DonePayload) => {
+        if (payload.content) {
+          this.service?.addResponseToHistory(payload.content)
+        }
+        originalCallback(payload)
       }
+    } else {
+      wrappedCallback = callback
+    }
+
+    if (this.service) {
+      this.service.setCallbacks({
+        [sharedKey]: wrappedCallback,
+      } as Partial<SharedAiSocketCallbacks>)
+    } else {
+      // Store for later — will be applied when connect() is called
+      this.pendingCallbacks[sharedKey] = wrappedCallback
     }
   }
 

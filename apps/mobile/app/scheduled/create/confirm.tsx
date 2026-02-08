@@ -66,7 +66,7 @@ export default function ScheduledConfirmScreen() {
     if (aggregatedToken && aggregatedToken.networks.length > 0) {
       const networkData = aggregatedToken.networks[0];
       return {
-        networkId: networkData.networkId,
+        networkId: networkData.networkId as AnyNetworkId,
         tokenAddress: networkData.contractAddress,
         decimals: aggregatedToken.decimals,
       };

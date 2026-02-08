@@ -21,6 +21,10 @@ import {
   type BridgeQuoteResult,
   type BridgeCostLevel,
 } from '@e-y/shared';
+import {
+  NETWORK_TO_CHAIN_ID,
+  CHAIN_ID_TO_NETWORK,
+} from '@e-y/shared';
 import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 import { createLogger } from '@/src/utils/logger';
 
@@ -29,25 +33,8 @@ const logger = createLogger('BridgeService');
 // LI.FI Diamond contract address (default to mainnet)
 const LIFI_CONTRACT_ADDRESS = LIFI_CONTRACT_ADDRESSES[1];
 
-// ============================================
-// NetworkId <-> ChainId Adapter
-// ============================================
-
-export const NETWORK_TO_CHAIN_ID: Record<NetworkId, number> = {
-  ethereum: 1,
-  polygon: 137,
-  arbitrum: 42161,
-  optimism: 10,
-  base: 8453,
-};
-
-const CHAIN_ID_TO_NETWORK: Record<number, NetworkId> = {
-  1: 'ethereum',
-  137: 'polygon',
-  42161: 'arbitrum',
-  10: 'optimism',
-  8453: 'base',
-};
+// Re-export for backward compatibility
+export { NETWORK_TO_CHAIN_ID };
 
 function getChainId(networkId: NetworkId): number {
   const chainId = NETWORK_TO_CHAIN_ID[networkId];

@@ -73,10 +73,26 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     if (!mnemonic) return
 
     const accs = ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
-    setAccounts(accs)
+
+    // Migration: re-derive addresses to fix any stored with the old derivation bug
+    let needsSave = false
+    const migrated = accs.map((acc) => {
+      const correctAddress = getAddressFromMnemonic(mnemonic, acc.accountIndex)
+      if (acc.address !== correctAddress) {
+        needsSave = true
+        return { ...acc, address: correctAddress }
+      }
+      return acc
+    })
+
+    if (needsSave) {
+      saveAccounts(migrated)
+    }
+
+    setAccounts(migrated)
 
     const savedIndex = loadCurrentAccountIndex()
-    const account = accs[savedIndex] || accs[0]
+    const account = migrated[savedIndex] || migrated[0]
     setCurrentAccount(account)
 
     const w = deriveWalletFromMnemonic(mnemonic, account.accountIndex)

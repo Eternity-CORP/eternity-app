@@ -14,7 +14,7 @@ import { AiSecurityService } from './security';
 import { ProactiveService } from './proactive';
 import { SendChatDto, AiResponseDto } from './dto';
 import { ChatMessage } from './providers';
-import { SYSTEM_PROMPT } from './constants';
+import { buildSystemPrompt } from './constants';
 
 @Controller('ai')
 export class AiController {
@@ -58,6 +58,11 @@ export class AiController {
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const systemPrompt = buildSystemPrompt({
+      userAddress: dto.userAddress,
+      network: 'sepolia',
+    });
 
     // Security check
     const securityCheck = await this.securityService.checkMessage(
@@ -106,7 +111,7 @@ export class AiController {
     const response = await this.aiService.chat({
       messages,
       tools,
-      systemPrompt: SYSTEM_PROMPT,
+      systemPrompt,
       userAddress: dto.userAddress,
     });
 

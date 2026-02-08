@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { ethers } from 'ethers'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
-import { fetchEthUsdPrice } from '@e-y/shared'
+import { useBalance } from '@/contexts/balance-context'
+import { fetchTransactionHistory, type TransactionHistoryItem, SUPPORTED_NETWORKS, type NetworkId } from '@e-y/shared'
+import PriceChart from '@/components/PriceChart'
 
 const TOKEN_META: Record<string, { name: string; color: string; icon: string }> = {
   ETH: { name: 'Ethereum', color: '#627EEA', icon: 'E' },
@@ -16,23 +17,34 @@ const TOKEN_META: Record<string, { name: string; color: string; icon: string }> 
   WETH: { name: 'Wrapped Ether', color: '#EC1C79', icon: 'W' },
   LINK: { name: 'Chainlink', color: '#2A5ADA', icon: 'L' },
   UNI: { name: 'Uniswap', color: '#FF007A', icon: 'U' },
+  MATIC: { name: 'Polygon', color: '#8247E5', icon: 'M' },
+  WBTC: { name: 'Wrapped Bitcoin', color: '#F7931A', icon: 'B' },
+  AAVE: { name: 'Aave', color: '#B6509E', icon: 'A' },
 }
 
-const PLACEHOLDER_TRANSACTIONS = [
-  { id: 1, type: 'received', from: '0x1a2b...9c0d', amount: '0.05', date: 'Jan 15, 2025' },
-  { id: 2, type: 'sent', to: '0x4e5f...1a2b', amount: '0.02', date: 'Jan 14, 2025' },
-  { id: 3, type: 'received', from: '0x7g8h...3c4d', amount: '0.10', date: 'Jan 12, 2025' },
-]
+const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
+
+function formatDate(ts: number): string {
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatUsd(value: number): string {
+  if (value >= 1000) return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (value >= 1) return `$${value.toFixed(2)}`
+  if (value > 0) return `$${value.toFixed(4)}`
+  return '$0.00'
+}
 
 export default function TokenDetailPage() {
   const router = useRouter()
   const params = useParams()
   const symbol = (params.symbol as string || '').toUpperCase()
 
-  const { isLoggedIn, address, network } = useAccount()
-  const [balance, setBalance] = useState('0')
-  const [balanceUsd, setBalanceUsd] = useState('0.00')
-  const [loading, setLoading] = useState(true)
+  const { isLoggedIn, address, currentAccount } = useAccount()
+  const { aggregatedBalances, loading: balanceLoading } = useBalance()
+
+  const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([])
+  const [txLoading, setTxLoading] = useState(true)
 
   const meta = TOKEN_META[symbol] || { name: symbol, color: '#888888', icon: symbol.charAt(0) }
 
@@ -43,39 +55,37 @@ export default function TokenDetailPage() {
     }
   }, [isLoggedIn, address, router])
 
+  // Fetch transaction history
   useEffect(() => {
-    if (!address) return
-    fetchBalance()
-  }, [address, network.rpcUrl, symbol])
-
-  const fetchBalance = async () => {
-    if (!address) return
-    setLoading(true)
-
-    try {
-      if (symbol === 'ETH') {
-        const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-        const [bal, ethPrice] = await Promise.all([
-          provider.getBalance(address),
-          fetchEthUsdPrice(),
-        ])
-        const ethBalance = ethers.formatEther(bal)
-        setBalance(ethBalance)
-        setBalanceUsd((parseFloat(ethBalance) * (ethPrice || 0)).toFixed(2))
-      } else {
-        setBalance('0.0000')
-        setBalanceUsd('0.00')
-      }
-    } catch (err) {
-      console.error('Failed to fetch token balance:', err)
-      setBalance('0')
-      setBalanceUsd('0.00')
-    } finally {
-      setLoading(false)
+    if (!address || !ALCHEMY_KEY) {
+      setTxLoading(false)
+      return
     }
-  }
+
+    const alchemyNetwork = currentAccount?.type === 'test' ? 'eth-sepolia' : 'eth-mainnet'
+    const alchemyUrl = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_KEY}`
+
+    fetchTransactionHistory(alchemyUrl, address, 10)
+      .then(setTransactions)
+      .catch(() => setTransactions([]))
+      .finally(() => setTxLoading(false))
+  }, [address, currentAccount?.type])
+
+  // Get token data from balance context
+  const tokenData = aggregatedBalances.find(
+    (t) => t.symbol.toUpperCase() === symbol,
+  )
+  const balance = tokenData?.totalBalance || '0'
+  const balanceUsd = tokenData?.totalUsdValue || 0
+  const networks = tokenData?.networks || []
+  const loading = balanceLoading
 
   const formattedBalance = parseFloat(balance).toFixed(4)
+
+  // Filter transactions for this token
+  const tokenTxs = symbol === 'ETH'
+    ? transactions
+    : transactions.filter((tx) => tx.token.toUpperCase() === symbol)
 
   return (
     <div className="min-h-screen relative z-[2]">
@@ -98,8 +108,6 @@ export default function TokenDetailPage() {
 
           {/* Token Header Card */}
           <div className="glass-card gradient-border rounded-2xl p-6 mb-4">
-
-            {/* Token Icon / Name / Symbol */}
             <div className="flex flex-col items-center mb-6">
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white mb-3"
@@ -121,7 +129,7 @@ export default function TokenDetailPage() {
                     <span className="text-4xl font-bold text-gradient">{formattedBalance}</span>
                     <span className="text-lg font-medium text-white/40">{symbol}</span>
                   </div>
-                  <p className="text-white/40">${balanceUsd} USD</p>
+                  <p className="text-white/40">{formatUsd(balanceUsd)}</p>
                 </>
               )}
             </div>
@@ -129,7 +137,7 @@ export default function TokenDetailPage() {
             {/* Send / Receive Buttons */}
             <div className="flex gap-3">
               <Link
-                href="/wallet/send"
+                href={`/wallet/send?token=${symbol}`}
                 className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -151,17 +159,36 @@ export default function TokenDetailPage() {
             </div>
           </div>
 
-          {/* Price Chart Placeholder */}
-          <div className="glass-card rounded-2xl p-6 mb-4">
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4">Price Chart</h2>
-            <div className="h-40 rounded-xl bg-white/3 border border-white/5 flex items-center justify-center">
-              <div className="text-center">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/20 mx-auto mb-2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-                <p className="text-sm text-white/30">Chart coming soon</p>
+          {/* Per-Network Breakdown */}
+          {networks.length > 1 && (
+            <div className="glass-card rounded-2xl p-5 mb-4">
+              <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Network Breakdown</h2>
+              <div className="space-y-2">
+                {networks.map((n) => {
+                  const netConfig = SUPPORTED_NETWORKS[n.networkId as NetworkId]
+                  return (
+                    <div key={n.networkId} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: netConfig?.color || '#888' }}
+                        />
+                        <span className="text-sm text-white/70">{netConfig?.name || n.networkId}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-white">{parseFloat(n.balance).toFixed(4)}</span>
+                        <span className="text-xs text-white/40 ml-2">{formatUsd(n.usdValue)}</span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
+          )}
+
+          {/* Price Chart */}
+          <div className="mb-4">
+            <PriceChart symbol={symbol} />
           </div>
 
           {/* Recent Transactions */}
@@ -176,7 +203,11 @@ export default function TokenDetailPage() {
               </Link>
             </div>
 
-            {PLACEHOLDER_TRANSACTIONS.length === 0 ? (
+            {txLoading ? (
+              <div className="p-8 flex justify-center">
+                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              </div>
+            ) : tokenTxs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-6">
                 <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-3">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/25">
@@ -188,11 +219,14 @@ export default function TokenDetailPage() {
               </div>
             ) : (
               <div className="divide-y divide-white/5">
-                {PLACEHOLDER_TRANSACTIONS.map((tx) => {
-                  const isSent = tx.type === 'sent'
+                {tokenTxs.map((tx) => {
+                  const isSent = tx.direction === 'sent'
+                  const addr = isSent ? tx.to : tx.from
+                  const shortAddr = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+
                   return (
                     <div
-                      key={tx.id}
+                      key={tx.hash}
                       className="flex items-center justify-between p-4 hover:bg-white/3 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -216,15 +250,15 @@ export default function TokenDetailPage() {
                         <div>
                           <p className="text-sm font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
                           <p className="text-xs text-white/40">
-                            {isSent ? `To ${tx.to}` : `From ${tx.from}`}
+                            {isSent ? `To ${shortAddr}` : `From ${shortAddr}`}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className={`text-sm font-semibold ${isSent ? 'text-white/50' : 'text-[#22c55e]'}`}>
-                          {isSent ? '-' : '+'}{tx.amount} {symbol}
+                          {isSent ? '-' : '+'}{parseFloat(tx.amount).toFixed(4)} {tx.token}
                         </p>
-                        <p className="text-xs text-white/40">{tx.date}</p>
+                        <p className="text-xs text-white/40">{formatDate(tx.timestamp)}</p>
                       </div>
                     </div>
                   )

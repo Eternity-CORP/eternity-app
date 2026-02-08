@@ -186,6 +186,94 @@ export async function fetchTokenPrices(
 // Utility
 // ============================================
 
+// ============================================
+// CoinGecko Price by Symbol
+// ============================================
+
+/**
+ * Symbol → CoinGecko ID mapping for price lookups
+ */
+export const COINGECKO_IDS: Record<string, string> = {
+  ETH: 'ethereum',
+  MATIC: 'matic-network',
+  POL: 'matic-network',
+  USDC: 'usd-coin',
+  USDT: 'tether',
+  DAI: 'dai',
+  WETH: 'weth',
+  WBTC: 'wrapped-bitcoin',
+  LINK: 'chainlink',
+  UNI: 'uniswap',
+  AAVE: 'aave',
+};
+
+/**
+ * Fetch USD prices for tokens by symbol via CoinGecko.
+ * Returns a map of UPPER_SYMBOL → USD price.
+ * Pure fetch — callers should cache the result themselves.
+ */
+export async function fetchTokenPricesBySymbol(
+  symbols: string[],
+): Promise<Record<string, number>> {
+  const uniqueIds = new Set<string>();
+  for (const symbol of symbols) {
+    const id = COINGECKO_IDS[symbol.toUpperCase()];
+    if (id) uniqueIds.add(id);
+  }
+
+  if (uniqueIds.size === 0) return {};
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const idsParam = Array.from(uniqueIds).join(',');
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${idsParam}&vs_currencies=usd`,
+      {
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      },
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) return {};
+
+    const data = (await response.json()) as Record<string, { usd?: number }>;
+
+    const prices: Record<string, number> = {};
+    for (const [symbol, coingeckoId] of Object.entries(COINGECKO_IDS)) {
+      if (data[coingeckoId]?.usd) {
+        prices[symbol] = data[coingeckoId].usd!;
+      }
+    }
+
+    return prices;
+  } catch {
+    clearTimeout(timeoutId);
+    return {};
+  }
+}
+
+/**
+ * Apply symbol-keyed prices to an array of token balances.
+ * Returns a new array with usdValue set for each balance.
+ */
+export function applyPricesToBalances<T extends { symbol: string; balance: string; usdValue: number }>(
+  balances: T[],
+  prices: Record<string, number>,
+): T[] {
+  return balances.map((b) => {
+    const price = prices[b.symbol.toUpperCase()] || 0;
+    return { ...b, usdValue: parseFloat(b.balance) * price };
+  });
+}
+
+// ============================================
+// Utility
+// ============================================
+
 /**
  * Get token icon URL from Trust Wallet Assets
  */

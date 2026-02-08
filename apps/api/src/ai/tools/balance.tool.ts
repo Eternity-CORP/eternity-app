@@ -21,14 +21,14 @@ export class BalanceTool implements AIToolHandler {
   readonly definition: ToolDefinition = {
     name: 'get_balance',
     description:
-      'Get token balances for the user wallet. Returns all tokens if no specific token is requested.',
+      'Get token balances for the user wallet across all supported networks (Ethereum, Polygon, Arbitrum, Base, Optimism — or Sepolia on testnet). Each balance includes the network it belongs to. Returns all tokens on all networks if no specific token is requested.',
     parameters: {
       type: 'object',
       properties: {
         token: {
           type: 'string',
           description:
-            'Optional token symbol to get balance for (e.g., "USDC", "ETH"). If not provided, returns all token balances.',
+            'Optional token symbol to get balance for (e.g., "USDC", "ETH"). If not provided, returns all token balances across all networks.',
         },
       },
       required: [],

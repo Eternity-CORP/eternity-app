@@ -13,12 +13,13 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
 import { IntentParser } from './intent-parser';
 import { ChatMessage } from './providers';
-import { SYSTEM_PROMPT } from './constants';
+import { buildSystemPrompt } from './constants';
 import {
   AI_EVENTS,
   ChunkPayload,
@@ -53,6 +54,7 @@ export type SuggestionPayload = AiSuggestion;
 })
 export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(AiGateway.name);
+  private readonly network: string;
 
   // Map of socket ID -> user address
   private socketToAddress = new Map<string, string>();
@@ -67,7 +69,20 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly aiService: AiService,
     private readonly securityService: AiSecurityService,
     private readonly intentParser: IntentParser,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.network = this.configService.get<string>('NETWORK') || 'sepolia';
+  }
+
+  /**
+   * Build system prompt with user-specific context
+   */
+  private getSystemPrompt(userAddress: string): string {
+    return buildSystemPrompt({
+      userAddress,
+      network: this.network,
+    });
+  }
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected to AI gateway: ${client.id}`);
@@ -209,9 +224,30 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     }
 
+    const systemPrompt = this.getSystemPrompt(userAddress);
+
     // Try local intent parser first (saves LLM tokens)
     const parsedIntent = this.intentParser.parse(sanitizedContent);
     if (parsedIntent) {
+      // Handle receive_address intent directly — no tool needed, we have the address
+      if (parsedIntent.tool === 'receive_address') {
+        const followUpMessages: ChatMessage[] = [
+          ...historyMessages,
+          { role: 'user' as const, content: sanitizedContent },
+          { role: 'user' as const, content: `[SYSTEM: The user's wallet address is ${userAddress} on the ${this.network} network. Provide it to them clearly.]` },
+        ];
+
+        const followUp = await this.aiService.chat({
+          messages: followUpMessages,
+          systemPrompt,
+        });
+
+        client.emit(AI_EVENTS.DONE, {
+          content: followUp.content,
+        } as DonePayload);
+        return;
+      }
+
       try {
         const toolResult = await this.aiService.executeTool(
           parsedIntent.tool,
@@ -230,7 +266,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         const followUp = await this.aiService.chat({
           messages: followUpMessages,
-          systemPrompt: SYSTEM_PROMPT,
+          systemPrompt,
         });
 
         const pendingTransaction = (toolResult.data as Record<string, unknown>)?.requiresConfirmation ? toolResult.data : undefined;
@@ -272,7 +308,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
         for await (const chunk of this.aiService.stream({
           messages,
           tools,
-          systemPrompt: SYSTEM_PROMPT,
+          systemPrompt,
           userAddress,
         })) {
           fullContent += chunk;
@@ -292,7 +328,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const response = await this.aiService.chat({
           messages,
           tools,
-          systemPrompt: SYSTEM_PROMPT,
+          systemPrompt,
           userAddress,
         });
 
@@ -364,7 +400,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
           const followUpResponse = await this.aiService.chat({
             messages: followUpMessages,
-            systemPrompt: SYSTEM_PROMPT,
+            systemPrompt,
             userAddress,
           });
 
