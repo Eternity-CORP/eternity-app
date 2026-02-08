@@ -180,6 +180,8 @@ export const fetchItems = createAsyncThunk(
 );
 ```
 
+**Note:** Redux Toolkit is used in the mobile app only. The web app uses React Context for state management.
+
 ### NestJS Backend
 
 **Module Structure:**
@@ -204,6 +206,35 @@ export class CreateUsernameDto {
   @Length(3, 20)
   username: string;
 }
+```
+
+### Next.js 16 / React 19 (Web App)
+
+**App Router (not Pages Router):**
+```typescript
+// All pages in src/app/ directory
+// Use 'use client' directive for interactive components
+'use client';
+```
+
+**State Management -- React Context (not Redux):**
+```typescript
+// Web app uses React Context, NOT Redux Toolkit
+// AccountContext — wallet, accounts, network, auth state
+// BalanceContext — balances, loading state, refresh
+```
+
+**Service Layer:**
+```typescript
+// Business logic in src/lib/ (not features/)
+// Each service is a standalone module
+// Example: src/lib/send-service.ts, src/lib/swap.ts
+```
+
+**Tailwind CSS v4:**
+```typescript
+// Use Tailwind utility classes, NOT inline styles
+// Custom classes defined in globals.css (glass-card, shimmer, etc.)
 ```
 
 ---
@@ -465,9 +496,15 @@ test(crypto): add seed phrase validation tests
 | Shared types | `packages/shared/src/types/` | `@e-y/shared` |
 | Shared utils | `packages/shared/src/utils/` | `@e-y/shared` |
 | Crypto functions | `packages/crypto/src/` | `@e-y/crypto` |
+| Storage abstraction | `packages/storage/src/` | `@e-y/storage` |
+| UI components | `packages/ui/src/` | `@e-y/ui` |
 | Mobile components | `apps/mobile/components/` | Relative import |
 | Mobile features | `apps/mobile/features/` | Relative import |
 | API modules | `apps/api/src/modules/` | Relative import |
+| Web components | `apps/web/src/components/` | Relative import |
+| Web lib services | `apps/web/src/lib/` | Relative import |
+| Web contexts | `apps/web/src/contexts/` | Relative import |
+| Website components | `apps/website/src/components/` | Relative import |
 
 ### Forbidden Imports
 
@@ -480,6 +517,15 @@ import { component } from '../../apps/mobile/...';
 
 // ❌ Packages should NEVER import from apps
 import { feature } from '../../apps/mobile/features/...';
+
+// ❌ Web should NEVER import from mobile
+import { something } from '../../apps/mobile/...';
+
+// ❌ Mobile should NEVER import from web
+import { component } from '../../apps/web/...';
+
+// ❌ Website should NEVER import from web or mobile
+import { something } from '../../apps/web/...';
 ```
 
 ---
@@ -494,6 +540,7 @@ Before writing ANY code, verify:
 - [ ] Naming follows conventions
 - [ ] File location is correct per architecture
 - [ ] Types are defined in `@e-y/shared` if shared
+- [ ] Web + mobile parity checked (feature exists in both if applicable)
 
 ---
 
@@ -503,11 +550,15 @@ Before writing ANY code, verify:
 ```
 e-y/
 ├── apps/
-│   ├── mobile/     # Expo React Native
-│   └── api/        # NestJS Backend
+│   ├── mobile/     # Expo React Native (SDK 54, React 19)
+│   ├── api/        # NestJS Backend (Supabase)
+│   ├── web/        # Next.js 16 Web App (React 19, Tailwind v4)
+│   └── website/    # Marketing Landing (Next.js 14, Three.js)
 ├── packages/
-│   ├── shared/     # @e-y/shared (types, utils)
-│   └── crypto/     # @e-y/crypto (wallet, signing)
+│   ├── shared/     # @e-y/shared (types, utils, services, API clients, configs)
+│   ├── crypto/     # @e-y/crypto (wallet, signing, validation)
+│   ├── storage/    # @e-y/storage (Web Crypto + IndexedDB)
+│   └── ui/         # @e-y/ui (Button, Card, Input, Loading, FadeIn, GlitchText)
 └── docs/v1.0/      # Documentation
 ```
 
@@ -522,7 +573,7 @@ pnpm typecheck      # TypeScript check
 ### Key Files
 - Architecture: `docs/v1.0/architecture.md`
 - PRD: `docs/v1.0/prd.md`
-- This context: `_bmad-output/planning-artifacts/project-context.md`
+- This context: `docs/v1.0/project-context.md`
 
 ---
 

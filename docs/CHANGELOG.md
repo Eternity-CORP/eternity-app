@@ -4,7 +4,59 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### 2026-01-25 - Bridge Execution (Network Abstraction Complete)
+### 2026-02-08 — Codebase Audit & Multi-Network
+- Full codebase audit: 30+ security, architecture, and code quality fixes
+- Multi-network balance support with shared balance service
+- Web app multi-network improvements
+
+### 2026-02-07 — Shared-First Architecture
+- Extract all business logic to `@e-y/shared` package, unify data layer
+- Add ContactSaveCard suggestion after successful send
+- Remove Telegram bot, deduplicate code, clean up dead code
+- Add shared-first architecture rule to CLAUDE.md
+
+### 2026-02-05–06 — AI Chat Redesign
+- Redesign AI chat — clean layout, hero text, quick prompt chips
+- Implement full AI in-card swap confirmation
+- Render inline markdown in chat bubbles (bold, italic, code)
+- AI chat tests for slice and socket service
+- Rename "assistant" references to "AI" across codebase
+
+### 2026-02-04 — Web App Feature Parity
+- Add username management, token detail, swap card to web app
+- Make AI chat the default landing screen on mobile
+- Decompose home screen into focused components
+- Seed phrase verification flow on web
+
+### 2026-02-02–03 — Web App Launch & AI-First Branding
+- Launch web app with full wallet features (Next.js 16, React 19)
+- AI-first wallet interface with Claude LLM integration
+- Rebrand to "AI-Native" messaging
+- Multi-account support with test/real network types
+- Complete Uniswap-style swap interface redesign
+- Full-width responsive web layout
+- Dark glass-morphism theme with gradient borders
+
+### 2026-01-30–31 — Supabase Migration & Website
+- Migrate API from TypeORM/PostgreSQL to Supabase
+- Website dark theme support with loading screen
+- Particle assembly animation for Hero section
+- GlitchText effect on website
+
+### 2026-01-28–29 — Expo SDK 54 & Build Fixes
+- Align mobile packages with Expo SDK 54
+- Fix Android preview builds
+- Remove deprecated expo-barcode-scanner
+- Metro config and New Architecture fixes
+- Add notification icon for Android
+
+### 2026-01-26–27 — Test Tokens & Growth
+- Show USD values for test tokens using mainnet prices
+- Add Telegram Growth Bot with 3 AI agents
+- Add comprehensive fundraising guide
+- Add user acquisition guide
+
+### 2026-01-25 — Bridge Execution (Network Abstraction Complete)
 
 #### Bridge Execution Implementation ✅
 - **executeBridge()** — Execute bridge transactions via LI.FI Diamond contract
@@ -138,29 +190,21 @@ All notable changes to this project will be documented in this file.
 ```
 e-y/
 ├── apps/
-│   ├── mobile/           # Expo React Native
+│   ├── mobile/           # Expo React Native (SDK 54)
 │   │   ├── app/          # Expo Router pages
 │   │   │   └── (tabs)/   # Tab navigation
 │   │   └── src/          # Source code
-│   └── api/              # NestJS backend
+│   ├── web/              # Next.js 16 web app (React 19)
+│   │   ├── app/          # App Router pages
+│   │   └── src/          # Source code
+│   ├── api/              # NestJS backend (Supabase)
+│   └── website/          # Marketing landing page
 ├── packages/
-│   ├── shared/           # @e-y/shared
-│   └── crypto/           # @e-y/crypto
+│   ├── shared/           # @e-y/shared (business logic, types, services)
+│   ├── crypto/           # @e-y/crypto (wallet, signing)
+│   ├── ui/               # @e-y/ui (shared UI components)
+│   └── storage/          # @e-y/storage (platform storage abstractions)
 └── docs/
     ├── v1.0/             # Documentation
     └── design/           # Design assets
 ```
-
----
-
-## Upcoming
-
-### Story 1.3: Setup NestJS Backend
-- WebSocket gateway for BLIK
-- Health check endpoint
-- Environment configuration
-
-### Story 1.4: Create Shared Packages
-- Complete types (BlikCode, etc.)
-- Validation utilities
-- Error codes

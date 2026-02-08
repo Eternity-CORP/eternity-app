@@ -171,6 +171,17 @@ No competitor combines all four pillars. Research confirms:
 | 10 beta testers | Real people using without assistance |
 | No critical bugs | Funds safe, UX doesn't break |
 
+### Web Application
+
+E-Y includes a full-featured web application providing feature parity with the mobile app:
+
+- **Technology**: Next.js 16, React 19, Tailwind CSS v4, ethers.js v6
+- **Interface**: AI-first design with dark glass-morphism theme
+- **Features**: All wallet operations (create, import, send, receive, swap, BLIK), AI chat with Claude, multi-account support, username management, token details, contacts, scheduled payments, split bills
+- **Routes**: 23 pages covering onboarding, wallet management, AI chat, and settings
+- **State Management**: React Context (AccountContext, BalanceContext) — not Redux
+- **URL**: https://e-y-app.vercel.app
+
 ### Growth Features (Post-MVP)
 
 | Feature | Rationale |
@@ -182,10 +193,11 @@ No competitor combines all four pillars. Research confirms:
 
 ### Vision (Future)
 
-| Phase | Features |
-|-------|----------|
-| **v2.0 Intelligence** | AI Agent, Proactive alerts, Voice commands, Statistics |
-| **v3.0 Identity** | SHARD (NFC), Decentralized @username, Virtual cards, Multi-ecosystem |
+| Phase | Features | Status |
+|-------|----------|--------|
+| **v1.x Current** | AI Agent (Claude), Proactive alerts, Web App, Multi-network, Swap | Implemented |
+| **v2.0 Intelligence** | Voice commands, Statistics, Advanced AI autonomy | Planned |
+| **v3.0 Identity** | SHARD (NFC), Decentralized @username, Virtual cards, Multi-ecosystem | Planned |
 
 **Evolution Philosophy:** E-Y grows with its users. Each phase adds value without breaking what works.
 
@@ -500,6 +512,8 @@ E-Y introduces **four distinct innovation patterns** that together create a uniq
 
 **Market Gap:** TOMI has voice commands, Plena has text trading — none have proactive + personality + autonomy.
 
+**Implementation Status:** LIVE — Claude-powered AI with 8 tools (balance, send, history, contacts, scheduled, BLIK generate, BLIK lookup, swap), intent parser, proactive suggestions, and security layer (rate limiter, audit logger). Available on both mobile and web.
+
 ### Validation Approach
 
 | Innovation | Validation Method | Success Signal |
@@ -526,53 +540,60 @@ E-Y introduces **four distinct innovation patterns** that together create a uniq
 
 | Layer | Technology | Rationale |
 |-------|------------|-----------|
-| **Mobile Framework** | React Native + Expo | Cross-platform, rapid development, $0 budget friendly |
+| **Mobile Framework** | React Native + Expo (SDK 54) | Cross-platform, rapid development |
+| **Web Framework** | Next.js 16 + React 19 | Full-featured web wallet, SSR support |
 | **Language** | TypeScript | Type safety, better tooling |
-| **State Management** | Redux Toolkit | Predictable state, devtools |
+| **State (Mobile)** | Redux Toolkit | Predictable state, devtools |
+| **State (Web)** | React Context | Lightweight, built-in React |
 | **Blockchain** | ethers.js v6 | Industry standard, well-documented |
-| **Backend** | NestJS (minimal) | @username mapping, BLIK coordination |
-| **Database** | PostgreSQL | @username registry |
-| **Testnet** | Ethereum Sepolia | Reliable, well-supported |
+| **Backend** | NestJS | @username, BLIK, AI, splits, scheduled |
+| **Database** | Supabase (PostgreSQL) | Managed database, real-time, auth |
+| **AI** | Claude (Anthropic SDK) | AI chat, tool calling, proactive suggestions |
+| **Testnet** | Ethereum Sepolia + Polygon, Base, Arbitrum, Optimism | Multi-network support |
 
 ### System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         E-Y MOBILE APP                          │
+│                       E-Y MOBILE APP                             │
+│                    (Expo SDK 54, React 19)                       │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
-│  │   Wallet    │  │    Send     │  │       Receive           │ │
-│  │   Module    │  │   Module    │  │       Module            │ │
-│  │             │  │             │  │                         │ │
-│  │ • Create    │  │ • Address   │  │ • Show Address          │ │
-│  │ • Import    │  │ • @username │  │ • QR Code               │ │
-│  │ • Accounts  │  │ • BLIK Code │  │ • @username             │ │
-│  │ • Balances  │  │             │  │ • BLIK Code             │ │
-│  └─────────────┘  └─────────────┘  └─────────────────────────┘ │
-│                                                                 │
-│  ┌─────────────────────────────────────────────────────────────┐│
-│  │                    Feature Overlays                         ││
-│  │  ┌───────────┐  ┌─────────────┐  ┌───────────────────────┐ ││
-│  │  │ Contacts  │  │  Scheduled  │  │     Split Bill        │ ││
-│  │  │           │  │  Payments   │  │                       │ ││
-│  │  └───────────┘  └─────────────┘  └───────────────────────┘ ││
-│  └─────────────────────────────────────────────────────────────┘│
+│  ┌───────────┐ ┌───────────┐ ┌────────────┐ ┌───────────────┐  │
+│  │  AI Chat  │ │  Wallet   │ │   Send     │ │   Receive     │  │
+│  │ (Default) │ │  Module   │ │   Module   │ │   Module      │  │
+│  └───────────┘ └───────────┘ └────────────┘ └───────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │              Feature Overlays + BLIK + Swap               │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                        E-Y WEB APP                               │
+│                  (Next.js 16, React 19)                          │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌───────────┐ ┌───────────┐ ┌────────────┐ ┌───────────────┐  │
+│  │  AI Chat  │ │  Wallet   │ │   Send     │ │   Receive     │  │
+│  │           │ │  Pages    │ │   Flow     │ │   + BLIK      │  │
+│  └───────────┘ └───────────┘ └────────────┘ └───────────────┘  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │           Swap + Contacts + Scheduled + Split             │  │
+│  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                      MINIMAL BACKEND                            │
+│                     BACKEND (NestJS)                              │
 ├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────┐     ┌─────────────────────────────────────┐│
-│  │ @username       │     │ BLIK Code Coordination              ││
-│  │ Registry        │     │ (WebSocket for real-time matching)  ││
-│  └─────────────────┘     └─────────────────────────────────────┘│
+│  ┌──────────┐ ┌──────┐ ┌─────────┐ ┌──────┐ ┌───────────────┐ │
+│  │ @username│ │ BLIK │ │ AI Chat │ │Split │ │  Scheduled    │ │
+│  │ Registry │ │ (WS) │ │(Claude) │ │(WS)  │ │  Payments     │ │
+│  └──────────┘ └──────┘ └─────────┘ └──────┘ └───────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                       BLOCKCHAIN                                │
-│                   (Ethereum Sepolia)                            │
+│              Supabase (PostgreSQL) + Blockchain                  │
+│         (Ethereum Sepolia, Polygon, Base, Arbitrum, OP)         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

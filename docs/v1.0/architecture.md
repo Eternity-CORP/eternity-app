@@ -5,6 +5,7 @@ workflowType: 'architecture'
 project_name: 'E-Y'
 user_name: 'Daniel'
 date: '2026-01-11'
+lastUpdated: '2026-02-08'
 status: 'COMPLETED'
 completedAt: '2026-01-11'
 ---
@@ -30,11 +31,16 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 **Total**: 25 functional requirements across 6 domains.
 
-**Post-MVP Features (Architecture Must Support):**
+**Implemented Post-MVP Features:**
+
+| Feature | Status | Architectural Implications |
+|---------|--------|---------------------------|
+| **AI Financial Agent** | IMPLEMENTED | Claude LLM provider, 8 AI tools, intent parser, proactive service, security layer, WebSocket + REST transport |
+
+**Future Features (Architecture Must Support):**
 
 | Feature | Architectural Implications |
 |---------|---------------------------|
-| **AI Financial Agent** | Chat interface layer, LLM integration points, transaction intent parsing, proactive notification system, personality/context storage |
 | **SHARD (NFC Passport)** | NFC module abstraction, identity attestation storage, SDK integration layer (Didit/ReadID), zero-knowledge proof handling |
 
 **Non-Functional Requirements:**
@@ -49,12 +55,13 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Scale & Complexity
 
-- **Primary domain**: Mobile App (React Native + Expo) + Blockchain/Web3
+- **Primary domain**: Mobile App (React Native + Expo) + Web App (Next.js 16) + Blockchain/Web3
 - **Complexity level**: HIGH
 - **Estimated architectural components**:
-  - Mobile: 6 core modules + 2 future modules (AI, SHARD)
-  - Backend: 2 services + future AI service
-  - External: Blockchain + future LLM API + future NFC SDK
+  - Mobile: 6 core modules + AI (implemented) + SHARD (future)
+  - Web App: 23 pages, 11 service modules, AI chat
+  - Backend: 11 feature modules including AI service
+  - External: Blockchain + Anthropic Claude API + future NFC SDK
 
 ### Technical Constraints & Dependencies
 
@@ -71,8 +78,12 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - Expo SDK: secure storage, camera (QR), haptics
 - WebSocket library: BLIK real-time matching
 
+**Current Dependencies (Implemented):**
+- @anthropic-ai/sdk: AI agent intelligence (Claude LLM)
+- @supabase/supabase-js: Database and auth
+- Next.js 16: Web application
+
 **Future Dependencies (Post-MVP):**
-- OpenAI/Anthropic API: AI agent intelligence
 - ElevenLabs/Whisper: voice interaction
 - Didit/ReadID SDK: NFC passport verification
 - react-native-nfc-manager: NFC hardware access
@@ -91,27 +102,36 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Future-Ready Architecture Considerations
 
-**AI Agent Preparation:**
+**AI Agent Architecture (IMPLEMENTED):**
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    MVP ARCHITECTURE                      │
+│                AI SYSTEM (LIVE)                           │
 │  ┌─────────────┐                                        │
-│  │  Chat UI    │ ← Interface ready for AI responses     │
-│  │  (Shell)    │                                        │
+│  │  Chat UI    │ ← Mobile + Web AI chat interfaces      │
+│  │  (Default)  │   Default tab on mobile                 │
 │  └──────┬──────┘                                        │
 │         │                                               │
 │         ▼                                               │
 │  ┌─────────────┐     ┌─────────────────────────────┐   │
-│  │  Intent     │ ──► │ Transaction Service         │   │
-│  │  Parser     │     │ (Same as manual flows)      │   │
-│  │  (Simple)   │     └─────────────────────────────┘   │
-│  └─────────────┘                                        │
+│  │  Intent     │ ──► │ 8 AI Tools                  │   │
+│  │  Parser     │     │ Balance, Send, History,      │   │
+│  │  (NLP)      │     │ Contacts, Scheduled, BLIK,  │   │
+│  └─────────────┘     │ Swap                         │   │
+│         │            └─────────────────────────────┘   │
+│         ▼                                               │
+│  ┌─────────────┐     ┌─────────────────────────────┐   │
+│  │  Claude LLM │ ──► │ Proactive Service           │   │
+│  │  Provider   │     │ Suggestions, reminders,      │   │
+│  │  (Anthropic)│     │ contact save prompts         │   │
+│  └─────────────┘     └─────────────────────────────┘   │
 │         │                                               │
-│         ▼ POST-MVP                                      │
+│         ▼                                               │
 │  ┌─────────────┐                                        │
-│  │  LLM API    │ ← Plug in GPT-4o/Claude               │
-│  │  + Context  │                                        │
+│  │  Security   │ ← Rate limiter, audit logger,         │
+│  │  Layer      │   security validation                  │
 │  └─────────────┘                                        │
+│                                                          │
+│  Transport: REST + WebSocket Gateway                     │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -241,22 +261,30 @@ npx expo start --dev-client
 - Expo CLI for development
 - EAS Build for development builds and production
 
-**Project Structure:**
+**Mobile Project Structure (apps/mobile/):**
 ```
-e-y/
+apps/mobile/
 ├── app/                 # Expo Router pages
-│   ├── (tabs)/         # Tab navigation
+│   ├── (tabs)/         # Tab navigation (ai, home, shard + hidden)
+│   ├── (onboarding)/   # First launch flow
+│   ├── blik/           # BLIK screens
+│   ├── send/           # Send flow
 │   ├── _layout.tsx     # Root layout
-│   └── index.tsx       # Entry point
-├── components/         # Reusable components
-├── features/           # Feature modules (wallet, send, receive, blik)
-├── services/           # API, blockchain, storage services
-├── store/              # Redux store, slices
-├── utils/              # Helpers, constants
-└── types/              # TypeScript types
+│   └── +not-found.tsx
+├── src/                 # Source code
+│   ├── components/     # UI components
+│   ├── services/       # API, blockchain, storage
+│   ├── store/          # Redux store (17 slices)
+│   └── hooks/          # Custom hooks
+└── app.json
 ```
 
-**Note:** Project initialization is the first implementation story.
+**Mobile Tabs (3 visible + 2 hidden):**
+- `ai` -- "AI" (default landing, icon: magic)
+- `home` -- "Wallet" (icon: home)
+- `shard` -- "Profile" (icon: user)
+- `wallet` -- hidden (wallet detail)
+- `transactions` -- hidden (transaction list)
 
 ## Core Architectural Decisions
 
@@ -264,17 +292,18 @@ e-y/
 
 **Critical Decisions (Block Implementation):**
 - Monorepo structure (Turborepo + pnpm)
-- Secure storage strategy (expo-secure-store + MMKV)
+- Secure storage strategy (expo-secure-store + AsyncStorage on mobile, Web Crypto + IndexedDB on web)
+- Database (Supabase -- migrated from TypeORM+PostgreSQL)
 - Authentication flow (user-configurable biometrics/PIN)
 - RPC provider (Alchemy primary, Infura fallback)
 
 **Important Decisions (Shape Architecture):**
-- State management patterns (Redux Toolkit)
+- State management patterns (Redux Toolkit on mobile, React Context on web)
 - API communication (REST + WebSocket)
+- AI service (Claude via @anthropic-ai/sdk, 8 tools, proactive service)
 - Development workflow (EAS + Orbit)
 
 **Deferred Decisions (Post-MVP):**
-- AI service architecture
 - NFC SDK integration
 - Mainnet RPC strategy
 
@@ -289,31 +318,54 @@ e-y/
 ```
 e-y/
 ├── apps/
-│   ├── mobile/              # Expo React Native
-│   │   ├── app/            # Expo Router pages
-│   │   ├── components/     # App-specific components
-│   │   ├── features/       # Feature modules
-│   │   ├── services/       # App services
-│   │   ├── store/          # Redux store
+│   ├── mobile/              # Expo React Native (SDK 54, React 19)
+│   │   ├── app/            # Expo Router pages (tabs, onboarding, flows)
+│   │   ├── src/            # Source (components, services, store, hooks)
 │   │   └── app.json
-│   └── api/                 # NestJS Backend
-│       ├── src/
-│       │   ├── modules/    # Feature modules
-│       │   ├── common/     # Shared utilities
-│       │   └── main.ts
-│       └── package.json
+│   ├── api/                 # NestJS Backend
+│   │   ├── src/
+│   │   │   ├── ai/         # AI module (Claude, tools, proactive, security)
+│   │   │   ├── blik/       # BLIK code lifecycle (WebSocket)
+│   │   │   ├── transaction/ # Transaction handling (WebSocket)
+│   │   │   ├── username/   # Username registry
+│   │   │   ├── split/      # Split bill (REST + WebSocket)
+│   │   │   ├── scheduled/  # Scheduled payments (REST + WebSocket)
+│   │   │   ├── waitlist/   # Waitlist management
+│   │   │   ├── notifications/ # Push notifications
+│   │   │   ├── preferences/ # User network preferences
+│   │   │   ├── health/     # Health check
+│   │   │   ├── supabase/   # Supabase client wrapper (global)
+│   │   │   ├── common/     # Shared utilities
+│   │   │   └── main.ts
+│   │   └── Dockerfile
+│   ├── web/                 # Next.js 16 Web App (React 19, Tailwind v4)
+│   │   ├── src/app/        # App Router (23 pages)
+│   │   ├── src/components/ # UI + Chat components
+│   │   ├── src/contexts/   # AccountContext, BalanceContext
+│   │   ├── src/lib/        # Service layer (11 modules)
+│   │   └── src/hooks/      # useAiChat, useAuthGuard
+│   └── website/             # Marketing Landing (Next.js 14, Three.js)
+│       ├── src/app/        # Pages (home, press-kit, privacy, terms)
+│       └── src/components/ # 3D, animations, sections
 ├── packages/
-│   ├── @e-y/shared/         # Shared code
-│   │   ├── types/          # TypeScript types
-│   │   ├── constants/      # Shared constants
-│   │   └── utils/          # Pure utilities
-│   └── @e-y/crypto/         # Crypto utilities
-│       ├── wallet/         # BIP-39, key derivation
-│       ├── signing/        # Transaction signing
-│       └── encryption/     # Data encryption
+│   ├── shared/              # @e-y/shared (zero runtime dependencies)
+│   │   ├── src/api/        # 4 API clients (username, split, scheduled, preferences)
+│   │   ├── src/config/     # Network configs (multi-network)
+│   │   ├── src/constants/  # 6 constant files (errors, limits, erc20, swap, coingecko)
+│   │   ├── src/services/   # 11 services (balance, blik-socket, ai-socket, bridge, contacts, price-chart, routing, swap, transaction-history, transaction-socket)
+│   │   ├── src/types/      # 11 type files (ai, blik, bridge-errors, network-balance, scheduled, split, swap, transaction, user, wallet)
+│   │   └── src/utils/      # 9 utils (account, async, debounce, format, send, split, username, validation)
+│   ├── crypto/              # @e-y/crypto (wallet generation, derivation, signing, mnemonic validation)
+│   ├── storage/             # @e-y/storage (Web Crypto + IndexedDB abstraction)
+│   └── ui/                  # @e-y/ui (Button, Card, Input, Loading, FadeIn, GlitchText)
+├── supabase/
+│   └── migrations/          # Database migrations
 ├── turbo.json
 ├── pnpm-workspace.yaml
-├── package.json
+├── package.json             # pnpm@9.1.0, turbo@2.0.0
+├── vercel.json
+├── railway.json
+├── docker-compose.yml
 └── .npmrc                   # node-linker=hoisted
 ```
 
@@ -352,20 +404,34 @@ node-linker=hoisted
 
 ### Data Architecture
 
+**Database: Supabase**
+
+The project uses Supabase (hosted PostgreSQL + client SDK) instead of self-hosted PostgreSQL with TypeORM. All backend services use `SupabaseService` for database operations. Migrations are managed via `supabase/migrations/`.
+
+| Layer | Technology | Notes |
+|-------|------------|-------|
+| Backend DB | Supabase (PostgreSQL) | Via `@supabase/supabase-js` |
+| Migrations | Supabase CLI | `supabase/migrations/` directory |
+| ORM | None (Supabase client) | Direct queries via `SupabaseService` |
+
 **Mobile Storage Strategy:**
 
 | Data Type | Storage | Rationale |
 |-----------|---------|-----------|
 | Seed phrase | expo-secure-store | Secure enclave, encrypted |
 | Private keys | In-memory only | Never persisted |
-| Settings, contacts | MMKV | Fast, synchronous |
-| Transaction cache | MMKV | Performance |
-| @username mapping | API + MMKV cache | Server source of truth |
+| Settings, contacts | AsyncStorage | Persistent key-value storage |
+| Transaction cache | AsyncStorage | Persistent cache |
+| @username mapping | API + AsyncStorage cache | Server source of truth |
 
-**Why MMKV over AsyncStorage:**
-- 30x faster read/write
-- Synchronous API (no await needed)
-- Battle-tested (WeChat uses it)
+**Web App Storage Strategy:**
+
+| Data Type | Storage | Rationale |
+|-----------|---------|-----------|
+| Encrypted wallet data | IndexedDB (via @e-y/storage) | Large binary data, Web Crypto encryption |
+| Session keys | Web Crypto API | In-memory, derived from password |
+| Settings, preferences | localStorage | Simple key-value |
+| Auth state | React Context | In-memory, re-derived on unlock |
 
 ### Authentication & Security
 
@@ -394,9 +460,9 @@ node-linker=hoisted
 ```
 
 **Implementation:**
-- expo-local-authentication — biometrics
-- expo-secure-store — PIN hash storage
-- User preferences stored in MMKV (encrypted)
+- expo-local-authentication -- biometrics
+- expo-secure-store -- PIN hash storage
+- User preferences stored in AsyncStorage
 
 **Security Settings Interface:**
 ```typescript
@@ -415,29 +481,82 @@ interface SecuritySettings {
 - **Fallback:** Infura
 - **Testnet:** Sepolia endpoints
 
-**Backend API:**
-- REST API (NestJS) — @username CRUD, user preferences
-- WebSocket (NestJS Gateway) — BLIK real-time matching
+**Backend API (NestJS, 11 modules):**
+- REST API -- username CRUD, split bill, scheduled payments, waitlist, notifications, preferences, AI, health
+- WebSocket Gateways -- BLIK matching, transactions, split bill, scheduled payments, AI chat
 
-**API Endpoints:**
+**API Modules:**
+
+| Module | Type | Purpose |
+|--------|------|---------|
+| SupabaseModule | Global | Supabase client wrapper |
+| HealthModule | REST | Health check endpoint |
+| UsernameModule | REST | Username registry (lookup, register, update) |
+| BlikModule | WebSocket | BLIK code lifecycle (create, redeem, match, expire) |
+| TransactionModule | WebSocket | Transaction handling and notifications |
+| SplitModule | REST + WS | Split bill creation, joining, settlement |
+| ScheduledModule | REST + WS | Scheduled/recurring payments |
+| WaitlistModule | REST | Waitlist management |
+| NotificationsModule | REST | Push notification registration and sending |
+| AiModule | REST + WS | AI chat with Claude LLM, tools, intent parser, proactive service, security |
+| PreferencesModule | REST | User network preferences |
+
+**Key REST Endpoints:**
 ```
-POST   /api/auth/register      # Device registration
-POST   /api/auth/login         # Device auth
+GET    /health                  # Health check
 
-GET    /api/username/:name     # Lookup @username → address
-POST   /api/username           # Register @username
-PUT    /api/username           # Update @username
+GET    /api/username/:name      # Lookup @username -> address
+POST   /api/username            # Register @username
+PUT    /api/username            # Update @username
 
+POST   /api/split              # Create split bill
+GET    /api/split/:id          # Get split details
+POST   /api/split/:id/join     # Join a split
+
+POST   /api/scheduled          # Create scheduled payment
+GET    /api/scheduled/:address # Get user scheduled payments
+DELETE /api/scheduled/:id      # Cancel scheduled payment
+
+POST   /api/waitlist           # Join waitlist
+
+POST   /api/notifications/register  # Register push token
+
+POST   /api/ai/chat            # AI chat (REST fallback)
+GET    /api/ai/suggestions     # Get proactive suggestions
+
+POST   /api/preferences        # Save network preferences
+GET    /api/preferences/:address # Get network preferences
+```
+
+**WebSocket Gateways:**
+```
 WS     /blik                   # BLIK code coordination
-  → emit: 'create-code'        # Generate code
-  → emit: 'redeem-code'        # Enter code
-  → on: 'code-matched'         # Both parties notified
-  → on: 'code-expired'         # 2 min timeout
+  -> emit: 'create-code'       # Generate code
+  -> emit: 'redeem-code'       # Enter code
+  -> on: 'code-matched'        # Both parties notified
+  -> on: 'code-expired'        # 2 min timeout
+
+WS     /transactions           # Transaction notifications
+  -> emit: 'subscribe'         # Subscribe to address
+  -> on: 'transaction-update'  # Real-time tx status
+
+WS     /split                  # Split bill real-time
+  -> emit: 'join-split'        # Join split room
+  -> on: 'split-updated'       # Participant updates
+
+WS     /scheduled              # Scheduled payment notifications
+  -> on: 'payment-due'         # Payment reminder
+
+WS     /ai                     # AI chat real-time
+  -> emit: 'message'           # Send message to AI
+  -> on: 'response'            # AI response stream
+  -> on: 'tool-result'         # Tool execution result
+  -> on: 'suggestion'          # Proactive suggestion
 ```
 
 ### Frontend Architecture
 
-**State Management (Redux Toolkit):**
+**Mobile State Management (Redux Toolkit, 17 slices):**
 
 ```
 store/
@@ -449,12 +568,104 @@ store/
     ├── blikSlice.ts         # Active codes, matching state
     ├── contactsSlice.ts     # Saved recipients
     ├── settingsSlice.ts     # App preferences, security settings
-    └── networkSlice.ts      # Connection status, selected network
+    ├── networkSlice.ts      # Connection status, selected network
+    ├── aiSlice.ts           # AI chat state, messages, suggestions
+    ├── splitSlice.ts        # Split bill state
+    ├── scheduledSlice.ts    # Scheduled payments
+    ├── swapSlice.ts         # Token swap state
+    └── ...                  # Additional feature slices (17 total)
 ```
 
-**API Layer:**
-- RTK Query — backend API calls with caching
-- Custom hooks — blockchain calls (ethers.js)
+**Mobile API Layer:**
+- RTK Query -- backend API calls with caching
+- Custom hooks -- blockchain calls (ethers.js)
+- @e-y/shared services -- shared business logic (balance, swap, bridge, etc.)
+
+**Web App State Management (React Context):**
+
+```
+contexts/
+├── AccountContext.tsx        # Wallet, accounts, selected network, derivation
+└── BalanceContext.tsx        # Balances per network, refresh, loading state
+```
+
+**Web App Service Layer (src/lib/, 11 modules):**
+
+```
+lib/
+├── account-storage.ts       # Encrypted wallet persistence (via @e-y/storage)
+├── api.ts                   # API client for backend calls
+├── bridge-service.ts        # Cross-chain bridge operations
+├── contacts-service.ts      # Contact management
+├── markdown.ts              # Markdown rendering for AI chat
+├── multi-network.ts         # Multi-network balance aggregation
+├── network.ts               # Network configuration and switching
+├── routing-service.ts       # Transaction routing logic
+├── send-service.ts          # Send transaction flow
+├── session-crypto.ts        # Session encryption (Web Crypto API)
+└── swap.ts                  # Token swap service
+```
+
+**Web App AI Chat:**
+- Full chat interface with Claude LLM
+- Tool calling (inline cards for BLIK, Send, Swap, ContactSave)
+- Suggestion chips for quick actions
+- WebSocket transport for real-time streaming
+
+### Web App Architecture (Next.js 16)
+
+**Technology Stack:**
+- Next.js 16 with App Router (React 19)
+- Tailwind CSS v4
+- Dark theme with glass morphism design system
+- TypeScript strict mode
+
+**Routes (23 pages):**
+
+| Route | Purpose |
+|-------|---------|
+| `/` | Landing/entry page |
+| `/create` | Wallet creation |
+| `/create/password` | Set wallet password |
+| `/import` | Wallet import |
+| `/import/password` | Set import password |
+| `/unlock` | Unlock existing wallet |
+| `/pay/:recipient` | Direct payment link |
+| `/wallet` | Main dashboard |
+| `/wallet/blik` | BLIK code generation |
+| `/wallet/blik/received` | BLIK received confirmation |
+| `/wallet/contacts` | Contact management |
+| `/wallet/history` | Transaction history |
+| `/wallet/receive` | Receive tokens (QR, address) |
+| `/wallet/scheduled` | Scheduled payments |
+| `/wallet/send` | Send flow |
+| `/wallet/send/success` | Send success confirmation |
+| `/wallet/settings` | Settings overview |
+| `/wallet/settings/networks` | Network configuration |
+| `/wallet/settings/privacy` | Privacy settings |
+| `/wallet/split` | Split bill |
+| `/wallet/swap` | Token swap |
+| `/wallet/token/:symbol` | Token detail view |
+| `/wallet/username` | Username management |
+
+**State Management:**
+- `AccountContext` -- wallet state, accounts list, selected network, account derivation
+- `BalanceContext` -- token balances per network, refresh mechanism, loading state
+- No Redux -- uses React Context for simpler architecture suited to web
+
+**Security Model:**
+- Wallet encrypted at rest using Web Crypto API (AES-GCM)
+- Stored in IndexedDB via `@e-y/storage` package
+- Session key derived from user password (PBKDF2)
+- No private keys sent to server -- all signing client-side via `@e-y/crypto`
+- Auth guard hook (`useAuthGuard`) redirects unauthenticated users
+
+**Design System:**
+- Dark theme with glass morphism effects
+- CSS classes: `glass-card`, `glass-card-glow`, `gradient-border`, `shimmer`, `text-gradient`
+- Ambient glow orbs in layout (3 floating colored orbs)
+- Grid background via `bg-grid` class
+- Color palette: black base, white/opacity surfaces, accent-blue (#3388FF), accent-cyan (#00E5FF)
 
 ### Infrastructure & Deployment
 
@@ -463,17 +674,28 @@ store/
 - Expo Orbit for simulator management
 - TestFlight (iOS) / Internal Testing (Android)
 
-**Backend:**
-- **Platform:** Railway (includes PostgreSQL)
-- **Why:** Free tier, easy deploy, built-in Postgres
+**Backend (API):**
+- **Platform:** Railway (via `railway up -d` from monorepo root)
+- **Dockerfile:** `apps/api/Dockerfile`
+- **Database:** Supabase (hosted PostgreSQL, not Railway Postgres)
+
+**Web App:**
+- **Platform:** Vercel (deployed from monorepo root)
+- **URL:** https://e-y-app.vercel.app
+- **Deploy:** `vercel --prod` from monorepo root (not from `apps/web/` due to workspace:* dependencies)
+
+**Website (Marketing Landing):**
+- **Platform:** Vercel (deployed from `apps/website/`)
+- **URL:** https://eternity-wallet.vercel.app
+- **Deploy:** `vercel --prod` from `apps/website/`
 
 **Environment Strategy:**
 
-| Environment | Blockchain | Backend | Build |
-|-------------|------------|---------|-------|
-| Local | Sepolia | localhost | Dev |
-| Staging | Sepolia | Railway | Preview |
-| Production | Mainnet | Railway | Release |
+| Environment | Blockchain | Backend | Web App | Build |
+|-------------|------------|---------|---------|-------|
+| Local | Sepolia | localhost | localhost:3000 | Dev |
+| Staging | Sepolia | Railway (preview) | Vercel (preview) | Preview |
+| Production | Mainnet | Railway | Vercel (prod) | Release |
 
 ### Development Workflow
 
@@ -491,6 +713,8 @@ pnpm dev
 # Runs via Turborepo:
 # - apps/mobile: npx expo start --dev-client
 # - apps/api: nest start --watch
+# - apps/web: next dev
+# - apps/website: next dev
 ```
 
 ### Decision Impact Analysis
@@ -505,10 +729,14 @@ pnpm dev
 7. Security settings
 
 **Cross-Component Dependencies:**
-- @e-y/shared → used by mobile + api
-- @e-y/crypto → used by mobile only (client-side signing)
-- Mobile ↔ API via REST + WebSocket
-- Mobile → Blockchain via ethers.js + Alchemy RPC
+- @e-y/shared -> used by mobile + web + api
+- @e-y/crypto -> used by mobile + web (client-side signing)
+- @e-y/storage -> used by web (IndexedDB + Web Crypto)
+- @e-y/ui -> used by web + website (shared UI components)
+- Mobile <-> API via REST + WebSocket
+- Web <-> API via REST + WebSocket
+- Mobile -> Blockchain via ethers.js + Alchemy RPC
+- Web -> Blockchain via ethers.js + Alchemy RPC
 
 ## Implementation Patterns & Consistency Rules
 
@@ -518,7 +746,7 @@ These patterns ensure consistent code regardless of who writes it (human, AI age
 
 ### Naming Patterns
 
-**Database (PostgreSQL):**
+**Database (Supabase / PostgreSQL):**
 
 | Element | Convention | Example |
 |---------|------------|---------|
@@ -564,10 +792,13 @@ features/{feature-name}/
 
 **Shared Code:**
 ```
-packages/@e-y/shared/
-├── types/           # Shared TypeScript types
-├── constants/       # Shared constants
-└── utils/           # Pure utility functions
+packages/shared/             # @e-y/shared (zero runtime dependencies)
+├── src/api/                # 4 API clients (username, split, scheduled, preferences)
+├── src/config/             # Network configs (multi-network)
+├── src/constants/          # 6 constant files (errors, limits, erc20, swap, coingecko)
+├── src/services/           # 11 services (balance, blik-socket, ai-socket, bridge, etc.)
+├── src/types/              # 11 type files (ai, blik, network-balance, swap, etc.)
+└── src/utils/              # 9 utils (account, async, debounce, format, send, etc.)
 ```
 
 ### Format Patterns
@@ -713,258 +944,342 @@ isLoading: boolean          // Should be: status: 'idle' | 'loading' | ...
 
 ```
 e-y/
-├── .github/
-│   └── workflows/
-│       ├── ci.yml                    # Lint, typecheck, test
-│       └── eas-build.yml             # EAS builds trigger
-├── .vscode/
-│   └── settings.json                 # Shared VS Code settings
 ├── apps/
-│   ├── mobile/                       # Expo React Native App
+│   ├── mobile/                       # Expo React Native (SDK 54, React 19)
 │   │   ├── app/                      # Expo Router pages
-│   │   │   ├── (tabs)/               # Tab navigation
-│   │   │   │   ├── index.tsx         # Home (balances)
-│   │   │   │   ├── send.tsx          # Send screen
-│   │   │   │   ├── receive.tsx       # Receive screen
-│   │   │   │   └── settings.tsx      # Settings
-│   │   │   ├── (auth)/               # Auth flow (if locked)
-│   │   │   │   ├── pin.tsx           # PIN entry
-│   │   │   │   └── biometric.tsx     # Biometric prompt
+│   │   │   ├── (tabs)/               # Tab navigation (3 visible + 2 hidden)
+│   │   │   │   ├── ai.tsx            # AI chat (DEFAULT tab, icon: magic)
+│   │   │   │   ├── home.tsx          # Wallet (icon: home)
+│   │   │   │   ├── shard.tsx         # Profile (icon: user)
+│   │   │   │   ├── wallet.tsx        # Hidden: wallet detail
+│   │   │   │   └── transactions.tsx  # Hidden: transaction list
 │   │   │   ├── (onboarding)/         # First launch
-│   │   │   │   ├── welcome.tsx
-│   │   │   │   ├── create-wallet.tsx
-│   │   │   │   ├── import-wallet.tsx
-│   │   │   │   └── seed-phrase.tsx
-│   │   │   ├── blik/
-│   │   │   │   ├── create.tsx        # Generate BLIK code
-│   │   │   │   ├── enter.tsx         # Enter BLIK code
-│   │   │   │   └── status.tsx        # BLIK transaction status
-│   │   │   ├── transaction/
-│   │   │   │   └── [id].tsx          # Transaction details
+│   │   │   ├── blik/                 # BLIK flow screens
+│   │   │   ├── send/                 # Send flow screens
+│   │   │   ├── transaction/          # Transaction details
 │   │   │   ├── _layout.tsx           # Root layout
 │   │   │   └── +not-found.tsx
-│   │   ├── components/               # App-specific components
-│   │   │   ├── ui/                   # Base UI components
-│   │   │   │   ├── Button.tsx
-│   │   │   │   ├── Input.tsx
-│   │   │   │   ├── Card.tsx
-│   │   │   │   └── index.ts
-│   │   │   ├── wallet/
-│   │   │   │   ├── BalanceCard.tsx
-│   │   │   │   ├── TokenList.tsx
-│   │   │   │   └── AccountSelector.tsx
-│   │   │   ├── blik/
-│   │   │   │   ├── BlikCodeDisplay.tsx
-│   │   │   │   ├── BlikCodeInput.tsx
-│   │   │   │   └── BlikTimer.tsx
-│   │   │   └── transaction/
-│   │   │       ├── TransactionItem.tsx
-│   │   │       └── TransactionList.tsx
-│   │   ├── features/                 # Feature modules
-│   │   │   ├── wallet/
-│   │   │   │   ├── hooks/
-│   │   │   │   │   ├── useWallet.ts
-│   │   │   │   │   └── useBalance.ts
-│   │   │   │   ├── services/
-│   │   │   │   │   └── wallet-service.ts
-│   │   │   │   └── index.ts
-│   │   │   ├── blik/
-│   │   │   │   ├── hooks/
-│   │   │   │   │   └── useBlik.ts
-│   │   │   │   ├── services/
-│   │   │   │   │   └── blik-service.ts
-│   │   │   │   └── index.ts
-│   │   │   ├── send/
-│   │   │   │   ├── hooks/
-│   │   │   │   │   └── useSend.ts
-│   │   │   │   ├── services/
-│   │   │   │   │   └── send-service.ts
-│   │   │   │   └── index.ts
-│   │   │   └── security/
-│   │   │       ├── hooks/
-│   │   │       │   ├── useBiometric.ts
-│   │   │       │   └── usePin.ts
-│   │   │       ├── services/
-│   │   │       │   └── auth-service.ts
-│   │   │       └── index.ts
-│   │   ├── store/                    # Redux store
-│   │   │   ├── index.ts              # Store config
-│   │   │   ├── hooks.ts              # Typed hooks
-│   │   │   └── slices/
-│   │   │       ├── wallet-slice.ts
-│   │   │       ├── blik-slice.ts
-│   │   │       ├── transaction-slice.ts
-│   │   │       ├── contacts-slice.ts
-│   │   │       └── settings-slice.ts
-│   │   ├── services/                 # Global services
-│   │   │   ├── api.ts                # RTK Query setup
-│   │   │   ├── storage.ts            # MMKV wrapper
-│   │   │   ├── secure-storage.ts     # expo-secure-store wrapper
-│   │   │   └── blockchain.ts         # ethers.js provider
-│   │   ├── constants/
-│   │   │   ├── chains.ts
-│   │   │   ├── tokens.ts
-│   │   │   └── config.ts
-│   │   ├── utils/
-│   │   │   ├── format.ts
-│   │   │   └── validation.ts
-│   │   ├── __tests__/
-│   │   │   └── e2e/
-│   │   │       ├── onboarding.test.ts
-│   │   │       └── blik-flow.test.ts
+│   │   ├── src/                      # Source code
+│   │   │   ├── components/           # UI components (wallet, blik, send, etc.)
+│   │   │   ├── services/             # App services (api, blockchain, storage)
+│   │   │   ├── store/                # Redux store (17 slices)
+│   │   │   └── hooks/                # Custom hooks
 │   │   ├── app.json
 │   │   ├── eas.json
 │   │   ├── metro.config.js
-│   │   ├── babel.config.js
+│   │   └── package.json
+│   │
+│   ├── api/                          # NestJS Backend
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── app.module.ts
+│   │   │   ├── supabase/            # Supabase client wrapper (global module)
+│   │   │   │   ├── supabase.module.ts
+│   │   │   │   └── supabase.service.ts
+│   │   │   ├── health/              # Health check
+│   │   │   ├── username/            # Username registry
+│   │   │   │   ├── username.module.ts
+│   │   │   │   ├── username.controller.ts
+│   │   │   │   └── username.service.ts
+│   │   │   ├── blik/                # BLIK code lifecycle (WebSocket)
+│   │   │   │   ├── blik.module.ts
+│   │   │   │   ├── blik.gateway.ts
+│   │   │   │   └── blik.service.ts
+│   │   │   ├── transaction/         # Transaction handling (WebSocket)
+│   │   │   ├── split/               # Split bill (REST + WebSocket)
+│   │   │   │   ├── split.module.ts
+│   │   │   │   ├── split.controller.ts
+│   │   │   │   ├── split.service.ts
+│   │   │   │   ├── split.gateway.ts
+│   │   │   │   ├── dto/
+│   │   │   │   └── entities/
+│   │   │   ├── scheduled/           # Scheduled payments (REST + WebSocket)
+│   │   │   │   ├── scheduled.module.ts
+│   │   │   │   ├── scheduled.controller.ts
+│   │   │   │   ├── scheduled.service.ts
+│   │   │   │   ├── scheduled.gateway.ts
+│   │   │   │   ├── dto/
+│   │   │   │   └── entities/
+│   │   │   ├── waitlist/            # Waitlist management
+│   │   │   │   ├── waitlist.module.ts
+│   │   │   │   ├── waitlist.controller.ts
+│   │   │   │   ├── waitlist.service.ts
+│   │   │   │   └── dto/
+│   │   │   ├── notifications/       # Push notifications
+│   │   │   │   ├── notifications.module.ts
+│   │   │   │   ├── notifications.controller.ts
+│   │   │   │   ├── notifications.service.ts
+│   │   │   │   └── dto/
+│   │   │   ├── ai/                  # AI chat with Claude LLM
+│   │   │   │   ├── ai.module.ts
+│   │   │   │   ├── ai.controller.ts
+│   │   │   │   ├── ai.gateway.ts    # WebSocket for real-time chat
+│   │   │   │   ├── services/        # AI service layer
+│   │   │   │   ├── providers/       # Claude LLM provider (@anthropic-ai/sdk)
+│   │   │   │   ├── tools/           # 8 AI tools (Balance, Send, History, Contacts, Scheduled, BlikGenerate, BlikLookup, Swap)
+│   │   │   │   ├── proactive/       # Proactive suggestions, reminders, contact save
+│   │   │   │   ├── security/        # Rate limiter, audit logger, security validation
+│   │   │   │   ├── dto/
+│   │   │   │   └── entities/
+│   │   │   ├── preferences/         # User network preferences
+│   │   │   │   ├── preferences.module.ts
+│   │   │   │   ├── preferences.controller.ts
+│   │   │   │   ├── preferences.service.ts
+│   │   │   │   ├── dto/
+│   │   │   │   └── entities/
+│   │   │   └── common/              # Shared utilities
+│   │   ├── Dockerfile
+│   │   ├── nest-cli.json
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.build.json
+│   │   └── package.json
+│   │
+│   ├── web/                          # Next.js 16 Web App (React 19, Tailwind v4)
+│   │   ├── src/
+│   │   │   ├── app/                  # App Router (23 pages)
+│   │   │   │   ├── page.tsx          # Landing/entry
+│   │   │   │   ├── create/           # Wallet creation
+│   │   │   │   ├── import/           # Wallet import
+│   │   │   │   ├── unlock/           # Unlock wallet
+│   │   │   │   ├── pay/[recipient]/  # Direct payment link
+│   │   │   │   └── wallet/           # Main dashboard
+│   │   │   │       ├── page.tsx      # Wallet overview
+│   │   │   │       ├── blik/         # BLIK (generate, received)
+│   │   │   │       ├── contacts/     # Contacts
+│   │   │   │       ├── history/      # Transaction history
+│   │   │   │       ├── receive/      # Receive
+│   │   │   │       ├── scheduled/    # Scheduled payments
+│   │   │   │       ├── send/         # Send flow (+ success)
+│   │   │   │       ├── settings/     # Settings (networks, privacy)
+│   │   │   │       ├── split/        # Split bill
+│   │   │   │       ├── swap/         # Token swap
+│   │   │   │       ├── token/[symbol]/ # Token detail
+│   │   │   │       └── username/     # Username management
+│   │   │   ├── components/           # UI + Chat components
+│   │   │   │   ├── chat/            # AI chat (messages, suggestion chips, inline cards)
+│   │   │   │   └── ui/              # Shared UI components
+│   │   │   ├── contexts/             # React Context state
+│   │   │   │   ├── AccountContext.tsx # Wallet, accounts, network
+│   │   │   │   └── BalanceContext.tsx # Balances, refresh
+│   │   │   ├── lib/                  # Service layer (11 modules)
+│   │   │   │   ├── account-storage.ts
+│   │   │   │   ├── api.ts
+│   │   │   │   ├── bridge-service.ts
+│   │   │   │   ├── contacts-service.ts
+│   │   │   │   ├── markdown.ts
+│   │   │   │   ├── multi-network.ts
+│   │   │   │   ├── network.ts
+│   │   │   │   ├── routing-service.ts
+│   │   │   │   ├── send-service.ts
+│   │   │   │   ├── session-crypto.ts
+│   │   │   │   └── swap.ts
+│   │   │   └── hooks/                # Custom hooks
+│   │   │       ├── useAiChat.ts
+│   │   │       └── useAuthGuard.ts
+│   │   ├── next.config.ts
 │   │   ├── tsconfig.json
 │   │   └── package.json
 │   │
-│   └── api/                          # NestJS Backend
+│   └── website/                      # Marketing Landing (Next.js 14, Three.js)
 │       ├── src/
-│       │   ├── main.ts
-│       │   ├── app.module.ts
-│       │   ├── config/
-│       │   │   ├── configuration.ts
-│       │   │   └── validation.ts
-│       │   ├── modules/
-│       │   │   ├── auth/
-│       │   │   │   ├── auth.module.ts
-│       │   │   │   ├── auth.controller.ts
-│       │   │   │   ├── auth.service.ts
-│       │   │   │   └── auth.service.test.ts
-│       │   │   ├── username/
-│       │   │   │   ├── username.module.ts
-│       │   │   │   ├── username.controller.ts
-│       │   │   │   ├── username.service.ts
-│       │   │   │   └── username.service.test.ts
-│       │   │   └── blik/
-│       │   │       ├── blik.module.ts
-│       │   │       ├── blik.gateway.ts     # WebSocket
-│       │   │       ├── blik.service.ts
-│       │   │       └── blik.service.test.ts
-│       │   ├── common/
-│       │   │   ├── decorators/
-│       │   │   ├── guards/
-│       │   │   ├── pipes/
-│       │   │   └── interceptors/
-│       │   └── database/
-│       │       ├── entities/
-│       │       │   ├── user.entity.ts
-│       │       │   ├── username.entity.ts
-│       │       │   └── blik-code.entity.ts
-│       │       └── migrations/
-│       ├── test/
-│       │   └── e2e/
-│       │       └── app.e2e-spec.ts
-│       ├── nest-cli.json
-│       ├── tsconfig.json
-│       ├── tsconfig.build.json
+│       │   ├── app/                  # Pages (home, press-kit, privacy, terms)
+│       │   └── components/           # 3D, animations, sections
+│       ├── next.config.ts
 │       └── package.json
 │
 ├── packages/
-│   ├── shared/                       # @e-y/shared
+│   ├── shared/                       # @e-y/shared (zero runtime dependencies)
 │   │   ├── src/
-│   │   │   ├── types/
-│   │   │   │   ├── user.ts
-│   │   │   │   ├── wallet.ts
-│   │   │   │   ├── transaction.ts
-│   │   │   │   ├── blik.ts
-│   │   │   │   └── index.ts
-│   │   │   ├── constants/
+│   │   │   ├── api/                 # 4 API clients
+│   │   │   │   ├── username-api.ts
+│   │   │   │   ├── split-api.ts
+│   │   │   │   ├── scheduled-api.ts
+│   │   │   │   └── preferences-api.ts
+│   │   │   ├── config/              # Network configs
+│   │   │   │   ├── multi-network.ts
+│   │   │   │   └── networks.ts
+│   │   │   ├── constants/           # 6 constant files
 │   │   │   │   ├── errors.ts
 │   │   │   │   ├── limits.ts
+│   │   │   │   ├── erc20.ts
+│   │   │   │   ├── swap.ts
+│   │   │   │   ├── coingecko.ts
 │   │   │   │   └── index.ts
-│   │   │   ├── utils/
+│   │   │   ├── services/            # 11 services
+│   │   │   │   ├── balance-service.ts
+│   │   │   │   ├── blik-socket.ts
+│   │   │   │   ├── ai-socket.ts
+│   │   │   │   ├── bridge-service.ts
+│   │   │   │   ├── contacts-service.ts
+│   │   │   │   ├── price-chart.ts
+│   │   │   │   ├── routing-service.ts
+│   │   │   │   ├── swap-service.ts
+│   │   │   │   ├── transaction-history.ts
+│   │   │   │   ├── transaction-socket.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── types/               # 11 type files
+│   │   │   │   ├── ai.ts
+│   │   │   │   ├── blik.ts
+│   │   │   │   ├── bridge-errors.ts
+│   │   │   │   ├── network-balance.ts
+│   │   │   │   ├── scheduled.ts
+│   │   │   │   ├── split.ts
+│   │   │   │   ├── swap.ts
+│   │   │   │   ├── transaction.ts
+│   │   │   │   ├── user.ts
+│   │   │   │   ├── wallet.ts
+│   │   │   │   └── index.ts
+│   │   │   ├── utils/               # 9 utility modules
+│   │   │   │   ├── account.ts
+│   │   │   │   ├── async.ts
+│   │   │   │   ├── debounce.ts
+│   │   │   │   ├── format.ts
+│   │   │   │   ├── send.ts
+│   │   │   │   ├── split.ts
+│   │   │   │   ├── username.ts
 │   │   │   │   ├── validation.ts
 │   │   │   │   └── index.ts
 │   │   │   └── index.ts
 │   │   ├── tsconfig.json
 │   │   └── package.json
 │   │
-│   └── crypto/                       # @e-y/crypto
+│   ├── crypto/                       # @e-y/crypto
+│   │   ├── src/
+│   │   │   ├── wallet/              # BIP-39, key derivation
+│   │   │   ├── signing/             # Transaction + message signing
+│   │   │   ├── encryption/          # Data encryption
+│   │   │   └── index.ts
+│   │   ├── tsconfig.json
+│   │   └── package.json
+│   │
+│   ├── storage/                      # @e-y/storage
+│   │   ├── src/
+│   │   │   └── index.ts             # Web Crypto + IndexedDB abstraction
+│   │   ├── tsconfig.json
+│   │   └── package.json
+│   │
+│   └── ui/                           # @e-y/ui
 │       ├── src/
-│       │   ├── wallet/
-│       │   │   ├── generate.ts       # BIP-39 generation
-│       │   │   ├── derive.ts         # Key derivation
-│       │   │   ├── generate.test.ts
-│       │   │   └── index.ts
-│       │   ├── signing/
-│       │   │   ├── transaction.ts    # TX signing
-│       │   │   ├── message.ts        # Message signing
-│       │   │   └── index.ts
-│       │   ├── encryption/
-│       │   │   ├── aes.ts            # Data encryption
-│       │   │   └── index.ts
+│       │   ├── Button.tsx
+│       │   ├── Card.tsx
+│       │   ├── Input.tsx
+│       │   ├── Loading.tsx
+│       │   ├── FadeIn.tsx
+│       │   ├── GlitchText.tsx
 │       │   └── index.ts
 │       ├── tsconfig.json
 │       └── package.json
 │
+├── supabase/
+│   └── migrations/                   # Database migrations
+│
 ├── .env.example
-├── .eslintrc.js
 ├── .gitignore
 ├── .npmrc                            # node-linker=hoisted
-├── .prettierrc
-├── package.json                      # Root package.json
+├── package.json                      # Root (pnpm@9.1.0, turbo@2.0.0)
 ├── pnpm-workspace.yaml
 ├── turbo.json
+├── vercel.json
+├── railway.json
+├── docker-compose.yml
 ├── tsconfig.base.json                # Shared TS config
 └── README.md
 ```
 
 ### Requirements to Structure Mapping
 
-| Feature | Mobile Location | API Location | Package |
-|---------|-----------------|--------------|---------|
-| Wallet Create/Import | `app/(onboarding)/` | — | `@e-y/crypto` |
-| Balances | `app/(tabs)/index.tsx` | — | — |
-| Send to Address | `features/send/` | — | `@e-y/crypto` |
-| Send to @username | `features/send/` | `modules/username/` | `@e-y/shared` |
-| BLIK Codes | `app/blik/`, `features/blik/` | `modules/blik/` | `@e-y/shared` |
-| Contacts | `store/slices/contacts-slice.ts` | — | — |
-| Security Settings | `features/security/` | — | — |
+| Feature | Mobile Location | Web Location | API Location | Package |
+|---------|-----------------|--------------|--------------|---------|
+| Wallet Create/Import | `app/(onboarding)/` | `/create`, `/import` | -- | `@e-y/crypto`, `@e-y/storage` |
+| Balances | `app/(tabs)/home.tsx` | `/wallet` | -- | `@e-y/shared` (balance-service) |
+| Send to Address | `app/send/` | `/wallet/send` | -- | `@e-y/shared`, `@e-y/crypto` |
+| Send to @username | `app/send/` | `/wallet/send` | `username/` | `@e-y/shared` |
+| BLIK Codes | `app/blik/` | `/wallet/blik` | `blik/` | `@e-y/shared` (blik-socket) |
+| Contacts | `store/slices/contacts` | `/wallet/contacts` | -- | `@e-y/shared` (contacts-service) |
+| Split Bill | `app/split/` | `/wallet/split` | `split/` | `@e-y/shared` |
+| Scheduled Payments | `app/scheduled/` | `/wallet/scheduled` | `scheduled/` | `@e-y/shared` |
+| Token Swap | `app/swap/` | `/wallet/swap` | -- | `@e-y/shared` (swap-service) |
+| AI Chat | `app/(tabs)/ai.tsx` | Chat component | `ai/` | `@e-y/shared` (ai-socket) |
+| Settings | `app/(tabs)/shard.tsx` | `/wallet/settings` | `preferences/` | `@e-y/shared` |
+| Transaction History | `store/slices/transaction` | `/wallet/history` | `transaction/` | `@e-y/shared` (transaction-history) |
 
 ### Architectural Boundaries
 
 **Mobile App Layers:**
 ```
-UI (app/) → Hooks (features/*/hooks/) → Services (features/*/services/) → Store (store/)
-                                              │
-                                              ├─▶ API (services/api.ts)
-                                              ├─▶ Blockchain (services/blockchain.ts)
-                                              └─▶ Storage (services/storage.ts)
+UI (app/) → Hooks (src/hooks/) → Services (src/services/) → Store (store/, 17 slices)
+                                       │
+                                       ├─▶ @e-y/shared services
+                                       ├─▶ API (services/api.ts)
+                                       ├─▶ Blockchain (services/blockchain.ts)
+                                       └─▶ Storage (expo-secure-store, AsyncStorage)
+```
+
+**Web App Layers:**
+```
+UI (src/app/) → Hooks (src/hooks/) → Services (src/lib/) → Context (src/contexts/)
+                                          │
+                                          ├─▶ @e-y/shared services
+                                          ├─▶ @e-y/storage (IndexedDB + Web Crypto)
+                                          ├─▶ @e-y/crypto (wallet ops)
+                                          └─▶ ethers.js (blockchain)
 ```
 
 **Backend Layers:**
 ```
-Controller → Service → Repository → Database
+Controller → Service → SupabaseService → Supabase (PostgreSQL)
      │
-     └─▶ Gateway (WebSocket for BLIK)
+     └─▶ Gateway (WebSocket for BLIK, Transactions, Split, Scheduled, AI)
 ```
 
 **Package Dependencies:**
 ```
-@e-y/shared ◀── apps/mobile
-           ◀── apps/api
+@e-y/shared  ◀── apps/mobile
+             ◀── apps/web
+             ◀── apps/api
 
-@e-y/crypto ◀── apps/mobile (only)
+@e-y/crypto  ◀── apps/mobile
+             ◀── apps/web
+
+@e-y/storage ◀── apps/web (only)
+
+@e-y/ui      ◀── apps/web
+             ◀── apps/website
 ```
 
 ### Integration Points
 
-**Mobile ↔ Backend:**
+**Mobile <-> Backend:**
 - REST API: `/api/*` endpoints via RTK Query
-- WebSocket: `/blik` namespace for real-time BLIK matching
+- WebSocket: `/blik`, `/transactions`, `/split`, `/scheduled`, `/ai` namespaces
 
-**Mobile ↔ Blockchain:**
-- ethers.js JsonRpcProvider → Alchemy/Infura RPC
+**Web App <-> Backend:**
+- REST API: `/api/*` endpoints via fetch (src/lib/api.ts)
+- WebSocket: `/blik`, `/ai` namespaces via @e-y/shared socket services
+
+**Mobile <-> Blockchain:**
+- ethers.js JsonRpcProvider -> Alchemy/Infura RPC
 - Direct contract calls for token transfers
 
-**Data Flow:**
+**Web App <-> Blockchain:**
+- ethers.js BrowserProvider (wallet) + JsonRpcProvider (reads)
+- Multi-network support via @e-y/shared config
+
+**Data Flow (Mobile):**
 ```
-User Action → Component → Hook → Service → Redux Action → State Update → UI
-                                    │
-                                    ├─▶ API Call → Backend → Database
-                                    └─▶ Blockchain Call → RPC → Chain
+User Action -> Component -> Hook -> Service -> Redux Action -> State Update -> UI
+                                       │
+                                       ├─▶ API Call -> Backend -> Supabase
+                                       └─▶ Blockchain Call -> RPC -> Chain
+```
+
+**Data Flow (Web App):**
+```
+User Action -> Component -> Hook -> Service (lib/) -> Context Update -> UI
+                                       │
+                                       ├─▶ API Call -> Backend -> Supabase
+                                       ├─▶ Blockchain Call -> RPC -> Chain
+                                       └─▶ Storage -> @e-y/storage -> IndexedDB
 ```
 
 ## Architecture Validation Results
@@ -1007,11 +1322,11 @@ All technology choices work together without conflicts:
 
 | NFR | Status | Implementation Approach |
 |-----|--------|------------------------|
-| NFR-1: Performance | ✅ | MMKV storage, optimistic UI updates |
-| NFR-2: Reliability | ✅ | Error boundaries, retry logic, status tracking |
-| NFR-3: Security | ✅ | expo-secure-store, biometrics, no server custody |
-| NFR-4: Usability | ✅ | Network abstraction, simplified flows |
-| NFR-5: Compatibility | ✅ | Expo managed workflow, iOS 14+/Android 8+ |
+| NFR-1: Performance | Done | AsyncStorage (mobile), IndexedDB (web), optimistic UI updates |
+| NFR-2: Reliability | Done | Error boundaries, retry logic, status tracking |
+| NFR-3: Security | Done | expo-secure-store (mobile), Web Crypto (web), biometrics, no server custody |
+| NFR-4: Usability | Done | Network abstraction, simplified flows, AI chat for natural language |
+| NFR-5: Compatibility | Done | Expo managed workflow (mobile), Next.js (web), iOS 14+/Android 8+ |
 
 ### Implementation Readiness ✅
 
@@ -1046,7 +1361,7 @@ All technology choices work together without conflicts:
 - [x] Critical decisions documented with versions
 - [x] Technology stack fully specified
 - [x] Integration patterns defined (REST, WebSocket, RPC)
-- [x] Performance considerations addressed (MMKV, optimistic updates)
+- [x] Performance considerations addressed (optimistic updates, caching)
 
 **✅ Implementation Patterns**
 - [x] Naming conventions established
@@ -1074,10 +1389,10 @@ All technology choices work together without conflicts:
 - Development workflow optimized (EAS Build, Expo Orbit)
 
 **Areas for Future Enhancement:**
-- Push notification service configuration
-- Price feed integration for USD equivalents
+- SHARD NFC passport verification
 - Analytics and monitoring setup
 - Mainnet deployment strategy
+- Voice interaction (ElevenLabs/Whisper)
 
 ### Implementation Handoff
 
@@ -1117,7 +1432,7 @@ eas build:configure
 **Architecture Decision Workflow:** COMPLETED ✅
 **Total Steps Completed:** 8
 **Date Completed:** 2026-01-11
-**Document Location:** `_bmad-output/planning-artifacts/architecture.md`
+**Document Location:** `docs/v1.0/architecture.md`
 
 ### Final Architecture Deliverables
 
@@ -1133,12 +1448,12 @@ eas build:configure
 
 - 15+ architectural decisions made
 - 5 implementation pattern categories defined
-- 6 feature modules specified (wallet, blik, send, receive, security, contacts)
+- 11 backend modules, 4 apps, 4 shared packages
 - 25 functional requirements fully supported
 
 **📚 AI Agent Implementation Guide**
 
-- Technology stack with verified versions (Expo SDK 54+, TypeScript, Redux Toolkit, ethers.js v6, NestJS)
+- Technology stack with verified versions (Expo SDK 54+, Next.js 16, TypeScript, Redux Toolkit, React Context, ethers.js v6, NestJS, Supabase, @anthropic-ai/sdk)
 - Consistency rules that prevent implementation conflicts
 - Project structure with clear boundaries (monorepo: apps + packages)
 - Integration patterns and communication standards (REST + WebSocket + RPC)
@@ -1151,7 +1466,7 @@ This architecture document is your complete guide for implementing E-Y. Follow a
 **First Implementation Priority:**
 Initialize monorepo structure with Turborepo + pnpm
 
-**Development Sequence:**
+**Development Sequence (completed):**
 
 1. Initialize monorepo (Turborepo + pnpm + .npmrc with node-linker=hoisted)
 2. Create Expo mobile app with Development Build setup
@@ -1160,6 +1475,12 @@ Initialize monorepo structure with Turborepo + pnpm
 5. Implement core wallet features
 6. Implement BLIK code system
 7. Add security settings layer
+8. Migrate database to Supabase
+9. Build AI system (Claude LLM, 8 tools, proactive service)
+10. Build Next.js 16 web app (23 pages, full feature parity)
+11. Add @e-y/storage and @e-y/ui packages
+12. Build marketing website (Next.js 14, Three.js)
+13. Add split bill, scheduled payments, token swap, multi-network support
 
 ### Quality Assurance Checklist
 
@@ -1200,9 +1521,9 @@ The chosen technology stack and architectural patterns provide a production-read
 
 ---
 
-**Architecture Status:** READY FOR IMPLEMENTATION ✅
+**Architecture Status:** IMPLEMENTED AND DEPLOYED
 
-**Next Phase:** Begin implementation using the architectural decisions and patterns documented herein.
+**Current Phase:** Active development -- all core features implemented across mobile, web, and API.
 
-**Document Maintenance:** Update this architecture when major technical decisions are made during implementation.
+**Document Maintenance:** Update this architecture when major technical decisions are made during development. Last updated: 2026-02-08.
 
