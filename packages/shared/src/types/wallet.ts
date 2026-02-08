@@ -17,11 +17,12 @@ export interface Wallet {
 }
 
 export interface WalletAccount {
+  id: string;
   address: string;
   accountIndex: number;
   label?: string;
   type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets
-  createdAt: string;
+  createdAt?: number;
 }
 
 export interface WalletBalance {

@@ -13,11 +13,9 @@ export function isValidEthereumAddress(address: string): boolean {
 
 /**
  * Validate username format
+ * USERNAME_PATTERN already encodes length (3-20 chars), so no separate check needed.
  */
 export function isValidUsername(username: string): boolean {
-  if (username.length < USERNAME_MIN_LENGTH || username.length > USERNAME_MAX_LENGTH) {
-    return false;
-  }
   return USERNAME_PATTERN.test(username);
 }
 

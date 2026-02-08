@@ -1,10 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
 import { ethers } from 'ethers'
-import { createBlikCode, lookupBlikCode, updateBlikStatus, subscribeToBlikCode, BlikCode } from '@/lib/blik'
+import { io, type Socket } from 'socket.io-client'
+import {
+  createBlikSocketService,
+  type BlikSocketService,
+  type CodeCreatedPayload,
+  type CodeInfoPayload,
+  type CodeNotFoundPayload,
+} from '@e-y/shared'
+import { API_BASE_URL } from '@/lib/api'
 import Navigation from '@/components/Navigation'
 
 type Mode = 'select' | 'request' | 'send'
@@ -16,24 +24,88 @@ export default function BlikPage() {
   const [mode, setMode] = useState<Mode>('select')
 
   const [amount, setAmount] = useState('')
-  const [createdCode, setCreatedCode] = useState<BlikCode | null>(null)
+  const [createdCode, setCreatedCode] = useState<CodeCreatedPayload | null>(null)
   const [timeLeft, setTimeLeft] = useState(120)
 
   const [inputCode, setInputCode] = useState('')
-  const [foundCode, setFoundCode] = useState<BlikCode | null>(null)
+  const [foundCode, setFoundCode] = useState<CodeInfoPayload | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+
+  const socketRef = useRef<Socket | null>(null)
+  const blikServiceRef = useRef<BlikSocketService | null>(null)
 
   useEffect(() => {
     if (!isLoggedIn && address === '') return
     if (!isLoggedIn) router.push('/unlock')
   }, [isLoggedIn, address])
 
+  // Connect socket on mount, disconnect on unmount
+  useEffect(() => {
+    if (!address) return
+
+    const socket = io(`${API_BASE_URL}/blik`, {
+      transports: ['websocket'],
+      autoConnect: true,
+    })
+
+    socketRef.current = socket
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const blikService = createBlikSocketService(socket as any)
+    blikServiceRef.current = blikService
+
+    socket.on('connect', () => {
+      blikService.register(address)
+    })
+
+    blikService.setCallbacks({
+      onCodeCreated: (payload: CodeCreatedPayload) => {
+        setCreatedCode(payload)
+        setTimeLeft(120)
+      },
+      onPaymentConfirmed: () => {
+        router.push('/wallet/blik/received')
+      },
+      onCodeExpired: () => {
+        setCreatedCode(null)
+        setMode('select')
+      },
+      onCodeInfo: (payload: CodeInfoPayload) => {
+        if (payload.receiverAddress.toLowerCase() === address.toLowerCase()) {
+          setError("You can't send to yourself")
+          return
+        }
+        setFoundCode(payload)
+      },
+      onCodeNotFound: (payload: CodeNotFoundPayload) => {
+        const reasons: Record<string, string> = {
+          not_found: 'Code not found',
+          expired: 'Code has expired',
+          completed: 'Code already used',
+          cancelled: 'Code was cancelled',
+        }
+        setError(reasons[payload.reason] || 'Code not found or expired')
+      },
+      onError: (err) => {
+        setError(err.message)
+      },
+    })
+
+    return () => {
+      blikService.clearCallbacks()
+      socket.removeAllListeners()
+      socket.disconnect()
+      socketRef.current = null
+      blikServiceRef.current = null
+    }
+  }, [address, router])
+
+  // Timer countdown for created code
   useEffect(() => {
     if (!createdCode) return
 
     const interval = setInterval(() => {
-      const expires = new Date(createdCode.expires_at).getTime()
+      const expires = new Date(createdCode.expiresAt).getTime()
       const now = Date.now()
       const left = Math.max(0, Math.floor((expires - now) / 1000))
       setTimeLeft(left)
@@ -47,82 +119,58 @@ export default function BlikPage() {
     return () => clearInterval(interval)
   }, [createdCode])
 
-  useEffect(() => {
-    if (!createdCode) return
-
-    let channel: Awaited<ReturnType<typeof subscribeToBlikCode>> | null = null
-
-    subscribeToBlikCode(createdCode.id, (updated) => {
-      if (updated.status === 'completed') {
-        router.push('/wallet/blik/received')
-      }
-    }).then((c) => {
-      channel = c
-    })
-
-    return () => {
-      channel?.unsubscribe()
-    }
-  }, [createdCode, router])
-
-  const handleCreateCode = async () => {
+  const handleCreateCode = useCallback(() => {
     if (!amount || parseFloat(amount) <= 0) return
 
-    const code = await createBlikCode(address, amount)
-    if (code) {
-      setCreatedCode(code)
-      setTimeLeft(120)
-    }
-  }
+    blikServiceRef.current?.createCode({
+      amount,
+      tokenSymbol: network.symbol,
+      receiverAddress: address,
+    })
+  }, [amount, network.symbol, address])
 
-  const handleLookupCode = async () => {
+  const handleLookupCode = useCallback(() => {
     if (inputCode.length !== 6) return
 
     setError('')
-    const code = await lookupBlikCode(inputCode)
+    blikServiceRef.current?.lookupCode({
+      code: inputCode,
+      senderAddress: address,
+    })
+  }, [inputCode, address])
 
-    if (!code) {
-      setError('Code not found or expired')
-      return
-    }
-
-    if (code.receiver_address.toLowerCase() === address.toLowerCase()) {
-      setError("You can't send to yourself")
-      return
-    }
-
-    setFoundCode(code)
-  }
-
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!wallet || !foundCode) return
 
     setSending(true)
     setError('')
 
     try {
-      await updateBlikStatus(foundCode.id, 'pending')
-
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
       const connectedWallet = wallet.connect(provider)
 
       const tx = await connectedWallet.sendTransaction({
-        to: foundCode.receiver_address,
+        to: foundCode.receiverAddress,
         value: ethers.parseEther(foundCode.amount),
       })
 
       await tx.wait()
-      await updateBlikStatus(foundCode.id, 'completed')
+
+      blikServiceRef.current?.confirmPayment({
+        code: foundCode.code,
+        txHash: tx.hash,
+        senderAddress: address,
+        network: network.name,
+      })
 
       router.push(`/wallet/send/success?hash=${tx.hash}`)
     } catch (err: unknown) {
-      await updateBlikStatus(foundCode.id, 'active')
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
       setError(errorMessage.includes('insufficient') ? 'Insufficient balance' : errorMessage)
     } finally {
       setSending(false)
     }
-  }
+  }, [wallet, foundCode, network, address, router])
 
   const reset = () => {
     setMode('select')
@@ -286,7 +334,7 @@ export default function BlikPage() {
               <>
                 <div className="text-center mb-6">
                   <p className="text-4xl font-bold text-white mb-1">{foundCode.amount} {network.symbol}</p>
-                  <p className="text-sm text-white/40 font-mono truncate">{foundCode.receiver_address}</p>
+                  <p className="text-sm text-white/40 font-mono truncate">{foundCode.receiverAddress}</p>
                 </div>
 
                 {error && (

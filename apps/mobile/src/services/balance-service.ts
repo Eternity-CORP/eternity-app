@@ -1,10 +1,25 @@
 /**
  * Balance Service
  * Handles fetching token balances from blockchain via RPC
+ *
+ * Delegates Alchemy/CoinGecko fetches to @e-y/shared.
+ * Keeps: ethers getBalance, SecureStore cache, provider singleton (platform-specific).
  */
 
 import { JsonRpcProvider, formatEther } from 'ethers';
 import * as SecureStore from 'expo-secure-store';
+import {
+  formatUsd,
+  fetchAlchemyTokenBalances as sharedFetchTokenBalances,
+  fetchAlchemyTokenMetadata as sharedFetchMetadata,
+  fetchEthUsdPrice as sharedFetchEthPrice,
+  fetchTokenPrices as sharedFetchTokenPrices,
+  getTokenIconUrl as sharedGetTokenIconUrl,
+  formatRawTokenBalance,
+  calculateTotalUsdValue as sharedCalcTotal,
+  type AlchemyTokenBalanceEntry,
+  type TokenMetadata,
+} from '@e-y/shared';
 import { createLogger } from '@/src/utils/logger';
 
 const log = createLogger('BalanceService');
@@ -78,33 +93,6 @@ export interface TokenBalance {
   lastUpdated: number;
 }
 
-interface AlchemyTokenBalance {
-  contractAddress: string;
-  tokenBalance: string;
-}
-
-interface AlchemyTokenBalancesResponse {
-  jsonrpc: string;
-  id: number;
-  result: {
-    address: string;
-    tokenBalances: AlchemyTokenBalance[];
-  };
-}
-
-interface AlchemyTokenMetadata {
-  name: string;
-  symbol: string;
-  decimals: number;
-  logo: string | null;
-}
-
-interface AlchemyTokenMetadataResponse {
-  jsonrpc: string;
-  id: number;
-  result: AlchemyTokenMetadata;
-}
-
 // Cache helpers
 async function getCachedPrice(): Promise<number | null> {
   try {
@@ -174,7 +162,7 @@ async function setCachedTokenPrices(prices: CachedTokenPrices): Promise<void> {
 }
 
 /**
- * Fetch ETH balance for an address
+ * Fetch ETH balance for an address (platform-specific: uses ethers RPC)
  */
 export async function fetchEthBalance(address: string): Promise<TokenBalance> {
   try {
@@ -205,45 +193,14 @@ export async function fetchEthBalance(address: string): Promise<TokenBalance> {
 }
 
 /**
- * Fetch all ERC-20 token balances using Alchemy API
+ * Fetch all ERC-20 token balances using shared Alchemy function
  */
-export async function fetchAllTokenBalances(address: string): Promise<AlchemyTokenBalance[]> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const response = await fetch(getAlchemyUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'alchemy_getTokenBalances',
-        params: [address, 'erc20'],
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      log.warn('Alchemy API error', { status: response.status });
-      return [];
-    }
-
-    const data: AlchemyTokenBalancesResponse = await response.json();
-    return data.result.tokenBalances.filter(
-      (token) => token.tokenBalance !== '0x0' && token.tokenBalance !== '0x'
-    );
-  } catch (error) {
-    clearTimeout(timeoutId);
-    log.warn('Failed to fetch token balances', error);
-    return [];
-  }
+export async function fetchAllTokenBalances(address: string): Promise<AlchemyTokenBalanceEntry[]> {
+  return sharedFetchTokenBalances(getAlchemyUrl(), address);
 }
 
 /**
- * Fetch USD price for ETH with caching
+ * Fetch USD price for ETH with SecureStore caching
  */
 export async function fetchEthUsdPrice(): Promise<number> {
   const cachedPrice = await getCachedPrice();
@@ -251,104 +208,34 @@ export async function fetchEthUsdPrice(): Promise<number> {
     return cachedPrice;
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const response = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
-      {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      }
-    );
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      log.warn('CoinGecko API error', { status: response.status });
-      if (response.status === 429) {
-        const expiredCache = await getCachedPrice();
-        if (expiredCache !== null) {
-          return expiredCache;
-        }
-      }
-      return 0;
-    }
-
-    const data = await response.json();
-    const price = data.ethereum?.usd;
-
-    if (typeof price !== 'number' || price <= 0) {
-      log.warn('Invalid ETH price from CoinGecko', data);
-      return 0;
-    }
-
+  const price = await sharedFetchEthPrice();
+  if (price > 0) {
     await setCachedPrice(price);
-    return price;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    log.warn('Failed to fetch ETH price', error);
-
-    const expiredCache = await getCachedPrice();
-    if (expiredCache !== null) {
-      return expiredCache;
-    }
-    return 0;
   }
+  return price;
 }
 
 /**
- * Fetch token metadata from Alchemy API
+ * Fetch token metadata with SecureStore caching
  */
 export async function fetchTokenMetadata(
   contractAddress: string
 ): Promise<{ name: string; symbol: string; decimals: number } | null> {
-  const cache = await getCachedMetadata();
-  if (cache[contractAddress.toLowerCase()]) {
-    return cache[contractAddress.toLowerCase()];
+  const metadataCache = await getCachedMetadata();
+  if (metadataCache[contractAddress.toLowerCase()]) {
+    return metadataCache[contractAddress.toLowerCase()];
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const response = await fetch(getAlchemyUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'alchemy_getTokenMetadata',
-        params: [contractAddress],
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      log.warn('Alchemy metadata API error', { status: response.status });
-      return null;
-    }
-
-    const data: AlchemyTokenMetadataResponse = await response.json();
-    const { name, symbol, decimals } = data.result;
-
-    const updatedCache = { ...cache, [contractAddress.toLowerCase()]: { name, symbol, decimals } };
+  const result = await sharedFetchMetadata(getAlchemyUrl(), contractAddress);
+  if (result) {
+    const updatedCache = { ...metadataCache, [contractAddress.toLowerCase()]: result };
     await setCachedMetadata(updatedCache);
-
-    return { name, symbol, decimals };
-  } catch (error) {
-    clearTimeout(timeoutId);
-    log.warn('Failed to fetch token metadata', error);
-    return null;
   }
+  return result;
 }
 
 /**
- * Fetch USD prices for ETH and multiple tokens
+ * Fetch USD prices for ETH and multiple tokens with SecureStore caching
  */
 export async function fetchTokenPrices(
   contractAddresses: string[]
@@ -358,118 +245,36 @@ export async function fetchTokenPrices(
     return { ethPrice: cached.ethPrice, tokenPrices: cached.prices };
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const result = await sharedFetchTokenPrices(contractAddresses);
 
-  try {
-    const ethResponse = await fetch(
-      'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd',
-      {
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      }
-    );
+  await setCachedTokenPrices({
+    prices: result.tokenPrices,
+    ethPrice: result.ethPrice,
+    timestamp: Date.now(),
+  });
 
-    let ethPrice = 0;
-    if (ethResponse.ok) {
-      const ethData = await ethResponse.json();
-      ethPrice = ethData.ethereum?.usd || 0;
-    }
-
-    const tokenPrices: { [address: string]: number } = {};
-
-    if (contractAddresses.length > 0) {
-      const addressList = contractAddresses.slice(0, 100).join(',');
-      const tokenResponse = await fetch(
-        `https://api.coingecko.com/api/v3/simple/token_price/ethereum?contract_addresses=${addressList}&vs_currencies=usd`,
-        {
-          headers: { 'Accept': 'application/json' },
-          signal: controller.signal,
-        }
-      );
-
-      if (tokenResponse.ok) {
-        const tokenData = await tokenResponse.json();
-        for (const [address, priceData] of Object.entries(tokenData)) {
-          tokenPrices[address.toLowerCase()] = (priceData as { usd?: number })?.usd || 0;
-        }
-      }
-    }
-
-    clearTimeout(timeoutId);
-
-    await setCachedTokenPrices({
-      prices: tokenPrices,
-      ethPrice,
-      timestamp: Date.now(),
-    });
-
-    return { ethPrice, tokenPrices };
-  } catch (error) {
-    clearTimeout(timeoutId);
-    log.warn('Failed to fetch token prices', error);
-
-    const expiredCache = await getCachedTokenPrices();
-    if (expiredCache) {
-      return { ethPrice: expiredCache.ethPrice, tokenPrices: expiredCache.prices };
-    }
-
-    return { ethPrice: 0, tokenPrices: {} };
-  }
+  return result;
 }
 
 /**
  * Get token icon URL from Trust Wallet Assets
  */
-export function getTokenIconUrl(contractAddress: string): string {
-  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${contractAddress}/logo.png`;
-}
+export const getTokenIconUrl = sharedGetTokenIconUrl;
 
 /**
  * Format raw token balance to human-readable string
  */
-export function formatTokenBalance(rawBalance: string, decimals: number): string {
-  if (!rawBalance || rawBalance === '0x0' || rawBalance === '0x') {
-    return '0';
-  }
-
-  const balance = BigInt(rawBalance);
-  const divisor = BigInt(10 ** decimals);
-  const wholePart = balance / divisor;
-  const fractionalPart = balance % divisor;
-
-  const fractionalStr = fractionalPart.toString().padStart(decimals, '0');
-  const trimmedFractional = fractionalStr.slice(0, 6).replace(/0+$/, '') || '0';
-
-  if (wholePart === BigInt(0) && balance > BigInt(0)) {
-    return `0.${fractionalStr.slice(0, 6)}`;
-  }
-
-  return `${wholePart}.${trimmedFractional}`;
-}
+export const formatTokenBalance = formatRawTokenBalance;
 
 /**
  * Calculate total USD value from token balances
  */
 export function calculateTotalUsdValue(balances: TokenBalance[]): number {
-  return balances.reduce((total, token) => total + (token.usdValue || 0), 0);
+  return sharedCalcTotal(balances);
 }
 
-/**
- * Format USD value for display
- */
-export function formatUsdValue(value: number): string {
-  if (value === 0) return '$0.00';
-  if (value < 0.01) return '<$0.01';
-  if (value < 1) return `$${value.toFixed(2)}`;
-  if (value < 1000) return `$${value.toFixed(2)}`;
-  if (value < 1000000) {
-    const kValue = value / 1000;
-    return `$${kValue.toFixed(kValue < 10 ? 2 : 1)}K`;
-  }
-  const mValue = value / 1000000;
-  return `$${mValue.toFixed(mValue < 10 ? 2 : 1)}M`;
-}
+/** @deprecated Use formatUsd from @e-y/shared */
+export const formatUsdValue = formatUsd;
 
 /**
  * Fetch all balances (ETH + ERC-20) for an address

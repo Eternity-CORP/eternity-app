@@ -1,57 +1,37 @@
 /**
  * Split Bill Service
  * Manages split bill requests with backend API and local cache
+ *
+ * Delegates API calls to @e-y/shared, keeps cache + privacy layers (platform-specific).
  */
 
-import { apiClient, ApiError } from './api-client';
+import {
+  createSplitBill as sharedCreate,
+  getSplitBill as sharedGetBill,
+  getSplitsByCreator as sharedGetByCreator,
+  getPendingSplits as sharedGetPending,
+  markSplitPaid as sharedMarkPaid,
+  cancelSplit as sharedCancel,
+  calculateEqualSplit as sharedCalcSplit,
+  validateSplitAmounts as sharedValidate,
+  createApiClient,
+  type SplitBill,
+  type SplitBillStatus,
+  type SplitParticipant,
+  type ParticipantStatus,
+  type CreateSplitBillRequest,
+} from '@e-y/shared';
+import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
 import { loadCached, cache } from '@/src/utils/cache';
 
 const log = createLogger('SplitBillService');
 
+const apiClient = createApiClient({ baseUrl: API_BASE_URL });
+
 const CACHE_KEY = 'split_bills_cache';
 
-export type SplitBillStatus = 'active' | 'completed' | 'cancelled';
-export type ParticipantStatus = 'pending' | 'paid';
-
-export interface SplitParticipant {
-  id?: string;
-  address: string;
-  username?: string;
-  name?: string;
-  amount: string;
-  status: ParticipantStatus;
-  paidTxHash?: string;
-  paidAt?: string;
-}
-
-export interface SplitBill {
-  id: string;
-  creatorAddress: string;
-  creatorUsername?: string;
-  recipientAddress?: string;
-  totalAmount: string;
-  tokenSymbol: string;
-  description?: string;
-  participants: SplitParticipant[];
-  createdAt: string;
-  updatedAt: string;
-  status: SplitBillStatus;
-}
-
-export interface CreateSplitBillRequest {
-  creatorAddress: string;
-  creatorUsername?: string;
-  totalAmount: string;
-  tokenSymbol: string;
-  description?: string;
-  participants: Array<{
-    address: string;
-    username?: string;
-    name?: string;
-    amount: string;
-  }>;
-}
+export type { SplitBillStatus, ParticipantStatus, SplitParticipant, SplitBill, CreateSplitBillRequest };
 
 /**
  * Create a new split bill
@@ -59,8 +39,7 @@ export interface CreateSplitBillRequest {
 export async function createSplitBill(
   request: CreateSplitBillRequest
 ): Promise<SplitBill> {
-  const client = apiClient.withWallet(request.creatorAddress);
-  const bill = await client.post<SplitBill>('/api/splits', request);
+  const bill = await sharedCreate(apiClient, request);
 
   // Update cache
   const cached = await loadCached<SplitBill>(CACHE_KEY, request.creatorAddress);
@@ -75,14 +54,7 @@ export async function createSplitBill(
  * Get split bill by ID
  */
 export async function getSplitBill(id: string): Promise<SplitBill> {
-  try {
-    return await apiClient.get<SplitBill>(`/api/splits/${id}`);
-  } catch (error) {
-    if (ApiError.isApiError(error) && error.statusCode === 404) {
-      throw new Error('Split bill not found');
-    }
-    throw error;
-  }
+  return sharedGetBill(apiClient, id);
 }
 
 /**
@@ -92,9 +64,7 @@ export async function getCreatedSplitBills(
   creatorAddress: string
 ): Promise<SplitBill[]> {
   try {
-    const bills = await apiClient.get<SplitBill[]>(
-      `/api/splits/creator/${encodeURIComponent(creatorAddress)}`
-    );
+    const bills = await sharedGetByCreator(apiClient, creatorAddress);
     await cache(CACHE_KEY, creatorAddress, bills);
     return bills;
   } catch (error) {
@@ -110,9 +80,7 @@ export async function getPendingSplitBills(
   address: string
 ): Promise<SplitBill[]> {
   try {
-    return await apiClient.get<SplitBill[]>(
-      `/api/splits/pending/${encodeURIComponent(address)}`
-    );
+    return await sharedGetPending(apiClient, address);
   } catch (error) {
     log.warn('Failed to fetch pending split bills', error);
     return [];
@@ -126,8 +94,7 @@ export async function cancelSplitBill(
   id: string,
   walletAddress: string
 ): Promise<SplitBill> {
-  const client = apiClient.withWallet(walletAddress);
-  const bill = await client.delete<SplitBill>(`/api/splits/${id}`);
+  const bill = await sharedCancel(apiClient, id, walletAddress);
 
   // Update cache
   const cached = await loadCached<SplitBill>(CACHE_KEY, walletAddress);
@@ -149,12 +116,7 @@ export async function markParticipantPaid(
   participantAddress: string,
   txHash: string
 ): Promise<SplitBill> {
-  const client = apiClient.withWallet(participantAddress);
-  const bill = await client.post<SplitBill>(`/api/splits/${splitId}/pay`, {
-    participantAddress,
-    txHash,
-  });
-
+  const bill = await sharedMarkPaid(apiClient, splitId, participantAddress, txHash);
   log.info('Participant marked as paid', { splitId, participantAddress });
   return bill;
 }
@@ -162,30 +124,12 @@ export async function markParticipantPaid(
 /**
  * Calculate equal split amounts
  */
-export function calculateEqualSplit(
-  totalAmount: string,
-  participantCount: number
-): string {
-  const total = parseFloat(totalAmount);
-  if (isNaN(total) || participantCount <= 0) {
-    return '0';
-  }
-  const perPerson = total / participantCount;
-  return perPerson.toFixed(6);
-}
+export const calculateEqualSplit = sharedCalcSplit;
 
 /**
  * Validate split amounts sum to total
  */
-export function validateSplitAmounts(
-  totalAmount: string,
-  amounts: string[]
-): boolean {
-  const total = parseFloat(totalAmount);
-  const sum = amounts.reduce((acc, amt) => acc + parseFloat(amt || '0'), 0);
-  // Allow small rounding error
-  return Math.abs(total - sum) < 0.000001;
-}
+export const validateSplitAmounts = sharedValidate;
 
 /**
  * Sync local cache with backend
@@ -201,7 +145,7 @@ export async function syncSplitBills(address: string): Promise<void> {
 }
 
 // ============================================================================
-// PRIVACY SETTINGS API
+// PRIVACY SETTINGS API (mobile-specific — not in shared yet)
 // ============================================================================
 
 export type SplitPrivacySetting = 'anyone' | 'contacts' | 'none';
@@ -219,7 +163,6 @@ export async function saveSplitPrivacySetting(
     log.info('Split privacy setting saved', { setting });
   } catch (error) {
     log.warn('Failed to save split privacy setting', error);
-    // Don't throw - local setting is still saved
   }
 }
 
@@ -231,7 +174,6 @@ export interface PrivacyCheckResult {
 
 /**
  * Check if participants can receive split bills from sender
- * Returns list of participants who will NOT receive the request
  */
 export async function checkSplitPrivacy(
   senderAddress: string,
@@ -239,14 +181,12 @@ export async function checkSplitPrivacy(
 ): Promise<PrivacyCheckResult[]> {
   try {
     const client = apiClient.withWallet(senderAddress);
-    const result = await client.post<PrivacyCheckResult[]>(
+    return await client.post<PrivacyCheckResult[]>(
       '/api/splits/privacy/check',
       { participantAddresses }
     );
-    return result;
   } catch (error) {
     log.warn('Failed to check split privacy', error);
-    // If check fails, assume all can receive (don't block creation)
     return participantAddresses.map((address) => ({
       address,
       canReceive: true,

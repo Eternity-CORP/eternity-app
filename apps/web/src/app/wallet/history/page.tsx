@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
-import { getTransactions, Transaction } from '@/lib/supabase'
+import { fetchTransactionHistory, truncateAddress, type TransactionHistoryItem } from '@e-y/shared'
 import Navigation from '@/components/Navigation'
 
 export default function HistoryPage() {
   const router = useRouter()
   const { address, network, isLoggedIn } = useAccount()
-  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -19,17 +19,22 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!address) return
-    fetchTransactions(address)
+    loadTransactions(address)
   }, [address])
 
-  const fetchTransactions = async (addr: string) => {
+  const loadTransactions = async (addr: string) => {
     setLoading(true)
-    const txs = await getTransactions(addr)
-    setTransactions(txs)
+    try {
+      const alchemyUrl = network.rpcUrl
+      const txs = await fetchTransactionHistory(alchemyUrl, addr)
+      setTransactions(txs)
+    } catch {
+      setTransactions([])
+    }
     setLoading(false)
   }
 
-  const formatAddress = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`
+  const formatAddress = truncateAddress
   const formatDate = (date: string) => {
     const d = new Date(date)
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -44,7 +49,7 @@ export default function HistoryPage() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gradient">Transaction History</h1>
           <button
-            onClick={() => fetchTransactions(address)}
+            onClick={() => loadTransactions(address)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl glass-card text-sm font-semibold text-white hover:border-white/15 transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -74,12 +79,12 @@ export default function HistoryPage() {
           ) : (
             <div className="divide-y divide-white/5">
               {transactions.map((tx) => {
-                const isSent = tx.from_address.toLowerCase() === address.toLowerCase()
-                const otherAddress = isSent ? tx.to_address : tx.from_address
+                const isSent = tx.from.toLowerCase() === address.toLowerCase()
+                const otherAddress = isSent ? tx.to : tx.from
 
                 return (
                   <a
-                    key={tx.id}
+                    key={tx.hash}
                     href={network.explorerTxUrl(tx.hash)}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -112,10 +117,10 @@ export default function HistoryPage() {
                     </div>
                     <div className="text-right">
                       <p className={`font-semibold ${isSent ? 'text-white/50' : 'text-[#22c55e]'}`}>
-                        {isSent ? '-' : '+'}{tx.amount} {tx.token_symbol}
+                        {isSent ? '-' : '+'}{tx.amount} {tx.token}
                       </p>
                       <p className="text-sm text-white/40">
-                        {formatDate(tx.created_at)}
+                        {formatDate(tx.createdAt)}
                       </p>
                     </div>
                   </a>

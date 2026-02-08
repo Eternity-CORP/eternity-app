@@ -1,10 +1,13 @@
 /**
  * Transaction Service
  * Handles fetching transaction history from blockchain via RPC
+ *
+ * Delegates Alchemy fetch to @e-y/shared.
+ * Keeps: ethers block-scanning fallback, fetchTransactionDetails (platform-specific).
  */
 
 import { formatEther } from 'ethers';
-import type { TransactionReceipt } from 'ethers';
+import { fetchTransactionHistory as sharedFetchHistory } from '@e-y/shared';
 import { getProvider } from './balance-service';
 
 export type TransactionDirection = 'sent' | 'received';
@@ -33,136 +36,25 @@ export interface TransactionDetails extends Transaction {
 }
 
 /**
- * Fetch transactions using Alchemy getAssetTransfers API
- */
-async function fetchViaAlchemy(address: string, limit: number): Promise<Transaction[]> {
-  const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY;
-  const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
-
-  if (!ALCHEMY_API_KEY) {
-    console.warn('ALCHEMY_API_KEY not set, skipping Alchemy API');
-    return [];
-  }
-
-  const url = `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
-
-  try {
-    const [receivedRes, sentRes] = await Promise.all([
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'alchemy_getAssetTransfers',
-          params: [{
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            toAddress: address,
-            category: ['external'],
-            withMetadata: true,
-            excludeZeroValue: false,
-            maxCount: `0x${limit.toString(16)}`,
-          }],
-        }),
-      }),
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'alchemy_getAssetTransfers',
-          params: [{
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            fromAddress: address,
-            category: ['external'],
-            withMetadata: true,
-            excludeZeroValue: false,
-            maxCount: `0x${limit.toString(16)}`,
-          }],
-        }),
-      }),
-    ]);
-
-    const [receivedData, sentData] = await Promise.all([
-      receivedRes.json(),
-      sentRes.json(),
-    ]);
-
-    const transactions: Transaction[] = [];
-
-    if (receivedData.result?.transfers) {
-      for (const t of receivedData.result.transfers) {
-        if (t.asset === 'ETH' && t.value) {
-          transactions.push({
-            hash: t.hash,
-            from: t.from,
-            to: t.to,
-            amount: parseFloat(t.value).toFixed(6),
-            token: 'ETH',
-            direction: 'received',
-            status: 'confirmed',
-            blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
-            timestamp: t.metadata?.blockTimestamp
-              ? new Date(t.metadata.blockTimestamp).getTime()
-              : Date.now(),
-            createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
-          });
-        }
-      }
-    }
-
-    if (sentData.result?.transfers) {
-      for (const t of sentData.result.transfers) {
-        if (t.asset === 'ETH' && t.value) {
-          transactions.push({
-            hash: t.hash,
-            from: t.from,
-            to: t.to,
-            amount: parseFloat(t.value).toFixed(6),
-            token: 'ETH',
-            direction: 'sent',
-            status: 'confirmed',
-            blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
-            timestamp: t.metadata?.blockTimestamp
-              ? new Date(t.metadata.blockTimestamp).getTime()
-              : Date.now(),
-            createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
-          });
-        }
-      }
-    }
-
-    const unique = new Map<string, Transaction>();
-    transactions.sort((a, b) => b.timestamp - a.timestamp);
-    for (const tx of transactions) {
-      if (!unique.has(tx.hash)) {
-        unique.set(tx.hash, tx);
-      }
-    }
-
-    return Array.from(unique.values()).slice(0, limit);
-  } catch (error) {
-    console.error('Alchemy API error:', error);
-    return [];
-  }
-}
-
-/**
  * Fetch transaction history for an address
+ * Uses shared Alchemy function, falls back to ethers block scanning
  */
 export async function fetchTransactionHistory(
   address: string,
   limit: number = 20
 ): Promise<Transaction[]> {
-  const alchemyTxs = await fetchViaAlchemy(address, limit);
-  if (alchemyTxs.length > 0) {
-    return alchemyTxs;
+  const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY;
+  const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
+
+  if (ALCHEMY_API_KEY) {
+    const alchemyUrl = `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+    const sharedTxs = await sharedFetchHistory(alchemyUrl, address, limit);
+    if (sharedTxs.length > 0) {
+      return sharedTxs;
+    }
   }
 
-  // Fallback: scan recent blocks
+  // Fallback: scan recent blocks (ethers-specific, stays local)
   try {
     const provider = getProvider();
     const addressLower = address.toLowerCase();
@@ -230,7 +122,7 @@ export async function fetchTransactionHistory(
 }
 
 /**
- * Fetch detailed transaction information
+ * Fetch detailed transaction information (platform-specific: uses ethers RPC)
  */
 export async function fetchTransactionDetails(
   txHash: string,

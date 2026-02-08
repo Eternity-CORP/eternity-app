@@ -1,12 +1,18 @@
 /**
  * AI WebSocket Service
  * Handles real-time AI chat operations via Socket.IO with streaming support
+ *
+ * Uses shared socket factory for event wiring.
+ * Keeps: socket creation, reconnection, connect/disconnect lifecycle (platform-specific).
  */
 
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
 import {
+  createAiSocketService,
+  type AiSocketService,
+  type AiSocketCallbacks,
   AI_EVENTS,
   ChatMessage,
   ToolCall,
@@ -66,21 +72,21 @@ export interface AiCallbacks {
 // Service
 // ============================================
 
-class AiSocketService {
+class AiSocketServiceWrapper {
   private socket: Socket | null = null;
+  private sharedService: AiSocketService | null = null;
   private callbacks: AiCallbacks = {};
   private isConnecting = false;
   private userAddress: string | null = null;
-  private messageHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
   /**
    * Connect to the AI WebSocket server
    */
   connect(address: string): Promise<void> {
     if (this.socket?.connected) {
-      // Already connected, just subscribe with new address if different
       if (address && address !== this.userAddress) {
-        this.subscribe(address);
+        this.userAddress = address;
+        this.sharedService?.subscribe(address);
       }
       return Promise.resolve();
     }
@@ -108,12 +114,16 @@ class AiSocketService {
         reconnectionDelayMax: 5000,
       });
 
+      // Create shared service that wires up all event listeners
+      this.sharedService = createAiSocketService(this.socket);
+      this.syncCallbacksToShared();
+
       this.socket.on('connect', () => {
         log.info('Connected to AI WebSocket');
         this.isConnecting = false;
 
         if (this.userAddress) {
-          this.subscribe(this.userAddress);
+          this.sharedService?.subscribe(this.userAddress);
         }
 
         this.callbacks.onConnect?.();
@@ -134,11 +144,9 @@ class AiSocketService {
       this.socket.on('reconnect', () => {
         log.info('Reconnected to AI WebSocket');
         if (this.userAddress) {
-          this.subscribe(this.userAddress);
+          this.sharedService?.subscribe(this.userAddress);
         }
       });
-
-      this.setupEventListeners();
 
       // Timeout fallback
       setTimeout(() => {
@@ -150,38 +158,19 @@ class AiSocketService {
     });
   }
 
-  private setupEventListeners(): void {
-    if (!this.socket) return;
+  /**
+   * Sync local callbacks to shared service
+   */
+  private syncCallbacksToShared(): void {
+    if (!this.sharedService) return;
 
-    this.socket.on(AI_EVENTS.CHUNK, (payload: ChunkPayload) => {
-      this.callbacks.onChunk?.(payload);
-    });
-
-    this.socket.on(AI_EVENTS.DONE, (payload: DonePayload) => {
-      this.callbacks.onDone?.(payload);
-    });
-
-    this.socket.on(AI_EVENTS.TOOL_CALL, (payload: ToolCall) => {
-      this.callbacks.onToolCall?.(payload);
-    });
-
-    this.socket.on(AI_EVENTS.TOOL_RESULT, (payload: ToolResult) => {
-      this.callbacks.onToolResult?.(payload);
-    });
-
-    this.socket.on(AI_EVENTS.SUGGESTION, (payload: AiSuggestion) => {
-      // Add ID and timestamp if not present
-      const suggestion = {
-        ...payload,
-        id: payload.id || `sug_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        createdAt: payload.createdAt || new Date(),
-      };
-      this.callbacks.onSuggestion?.(suggestion);
-    });
-
-    this.socket.on(AI_EVENTS.ERROR, (payload: AiErrorPayload) => {
-      log.warn('AI WebSocket error', payload);
-      this.callbacks.onError?.(payload);
+    this.sharedService.setCallbacks({
+      onChunk: (payload) => this.callbacks.onChunk?.(payload),
+      onDone: (payload) => this.callbacks.onDone?.(payload),
+      onToolCall: (payload) => this.callbacks.onToolCall?.(payload),
+      onToolResult: (payload) => this.callbacks.onToolResult?.(payload),
+      onSuggestion: (payload) => this.callbacks.onSuggestion?.(payload),
+      onError: (payload) => this.callbacks.onError?.(payload),
     });
   }
 
@@ -189,25 +178,17 @@ class AiSocketService {
    * Disconnect from the AI WebSocket server
    */
   disconnect(): void {
+    if (this.sharedService) {
+      this.sharedService.unsubscribe();
+      this.sharedService.clearCallbacks();
+      this.sharedService = null;
+    }
     if (this.socket) {
-      this.socket.emit(AI_EVENTS.UNSUBSCRIBE);
       this.socket.disconnect();
       this.socket = null;
     }
     this.callbacks = {};
     this.userAddress = null;
-    this.messageHistory = [];
-  }
-
-  /**
-   * Subscribe to AI events for a wallet address
-   */
-  private subscribe(address: string): void {
-    this.userAddress = address.toLowerCase();
-    if (this.socket?.connected) {
-      this.socket.emit(AI_EVENTS.SUBSCRIBE, { address: this.userAddress });
-      log.debug('Subscribed to AI events', { address: this.userAddress });
-    }
   }
 
   /**
@@ -215,6 +196,7 @@ class AiSocketService {
    */
   setCallbacks(callbacks: AiCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
+    this.syncCallbacksToShared();
   }
 
   /**
@@ -222,6 +204,7 @@ class AiSocketService {
    */
   clearCallbacks(): void {
     this.callbacks = {};
+    this.sharedService?.clearCallbacks();
   }
 
   /**
@@ -229,13 +212,12 @@ class AiSocketService {
    */
   sendMessage(content: string): void {
     if (!this.socket?.connected) {
-      // Try to reconnect before failing
       if (this.userAddress) {
         log.info('Attempting to reconnect before sending message');
         this.connect(this.userAddress)
           .then(() => {
             if (this.socket?.connected) {
-              this.sendMessageInternal(content);
+              this.sharedService?.sendMessage(content);
             } else {
               this.callbacks.onError?.({
                 code: 'CONNECTION_FAILED',
@@ -257,45 +239,21 @@ class AiSocketService {
       });
       return;
     }
-    this.sendMessageInternal(content);
+    this.sharedService?.sendMessage(content);
   }
 
   /**
-   * Internal method to actually send the message
-   */
-  private sendMessageInternal(content: string): void {
-    if (!this.userAddress) {
-      this.callbacks.onError?.({
-        code: 'NOT_SUBSCRIBED',
-        message: 'Please subscribe with your wallet address first',
-      });
-      return;
-    }
-
-    // Add to local history
-    this.messageHistory.push({ role: 'user', content });
-
-    // Send with history for context
-    this.socket!.emit(AI_EVENTS.CHAT, {
-      content,
-      history: this.messageHistory.slice(-10), // Last 10 messages for context
-    });
-
-    log.debug('Sent chat message', { content: content.substring(0, 50) });
-  }
-
-  /**
-   * Add AI response message to history (call after receiving full response)
+   * Add AI response message to history
    */
   addAiResponseMessage(content: string): void {
-    this.messageHistory.push({ role: 'assistant', content });
+    this.sharedService?.addResponseToHistory(content);
   }
 
   /**
    * Clear message history
    */
   clearHistory(): void {
-    this.messageHistory = [];
+    this.sharedService?.clearHistory();
   }
 
   /**
@@ -314,4 +272,4 @@ class AiSocketService {
 }
 
 // Export singleton instance
-export const aiSocket = new AiSocketService();
+export const aiSocket = new AiSocketServiceWrapper();

@@ -3,15 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
+import {
+  getScheduledPayments,
+  createScheduledPayment,
+  cancelScheduledPayment,
+  type ScheduledPayment,
+} from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 import Navigation from '@/components/Navigation'
-
-type ScheduledPayment = {
-  id: string
-  recipient: string
-  amount: string
-  scheduledAt: string
-  status: 'pending' | 'executed' | 'cancelled'
-}
 
 export default function ScheduledPage() {
   const router = useRouter()
@@ -22,6 +21,9 @@ export default function ScheduledPage() {
   const [amount, setAmount] = useState('')
   const [scheduledDate, setScheduledDate] = useState('')
   const [scheduledTime, setScheduledTime] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   // Auth guard: redirect to /unlock when not logged in (skip while context is loading)
   useEffect(() => {
@@ -30,43 +32,66 @@ export default function ScheduledPage() {
     }
   }, [isLoggedIn, address, router])
 
-  // Load scheduled payments from localStorage when address is available
+  // Load scheduled payments from API when address is available
   useEffect(() => {
     if (!address) return
-    const saved = localStorage.getItem(`scheduled_${address}`)
-    if (saved) {
-      setPayments(JSON.parse(saved))
+
+    let cancelled = false
+
+    async function load() {
+      try {
+        const data = await getScheduledPayments(apiClient, address)
+        if (!cancelled) setPayments(data)
+      } catch {
+        // ignore — empty list on error
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
+
+    load()
+    return () => { cancelled = true }
   }, [address])
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!recipient || !amount || !scheduledDate || !scheduledTime) return
 
-    const newPayment: ScheduledPayment = {
-      id: Date.now().toString(),
-      recipient,
-      amount,
-      scheduledAt: `${scheduledDate}T${scheduledTime}`,
-      status: 'pending',
+    setSubmitting(true)
+    setError('')
+
+    try {
+      const newPayment = await createScheduledPayment(apiClient, {
+        creatorAddress: address,
+        recipient,
+        amount,
+        tokenSymbol: network.symbol,
+        scheduledAt: `${scheduledDate}T${scheduledTime}`,
+      })
+
+      setPayments((prev) => [...prev, newPayment])
+
+      setShowCreate(false)
+      setRecipient('')
+      setAmount('')
+      setScheduledDate('')
+      setScheduledTime('')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create scheduled payment'
+      setError(msg)
+    } finally {
+      setSubmitting(false)
     }
-
-    const updated = [...payments, newPayment]
-    setPayments(updated)
-    localStorage.setItem(`scheduled_${address}`, JSON.stringify(updated))
-
-    setShowCreate(false)
-    setRecipient('')
-    setAmount('')
-    setScheduledDate('')
-    setScheduledTime('')
   }
 
-  const handleCancel = (id: string) => {
-    const updated = payments.map(p =>
-      p.id === id ? { ...p, status: 'cancelled' as const } : p
-    )
-    setPayments(updated)
-    localStorage.setItem(`scheduled_${address}`, JSON.stringify(updated))
+  const handleCancel = async (id: string) => {
+    try {
+      await cancelScheduledPayment(apiClient, id, address)
+      setPayments((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status: 'cancelled' as const } : p)),
+      )
+    } catch {
+      // ignore
+    }
   }
 
   const pendingPayments = payments.filter(p => p.status === 'pending')
@@ -139,18 +164,32 @@ export default function ScheduledPage() {
                     />
                   </div>
                 </div>
+
+                {error && (
+                  <div className="px-4 py-3 bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl">
+                    <p className="text-[#f87171] text-sm">{error}</p>
+                  </div>
+                )}
+
                 <button
                   onClick={handleCreate}
-                  disabled={!recipient || !amount || !scheduledDate || !scheduledTime}
+                  disabled={!recipient || !amount || !scheduledDate || !scheduledTime || submitting}
                   className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
-                  Schedule Payment
+                  {submitting ? 'Creating...' : 'Schedule Payment'}
                 </button>
               </div>
             )}
 
+            {/* Loading state */}
+            {loading && (
+              <div className="flex justify-center py-8">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
+
             {/* Pending Payments */}
-            {pendingPayments.length > 0 && (
+            {!loading && pendingPayments.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Upcoming</p>
                 <div className="space-y-2">
@@ -184,7 +223,7 @@ export default function ScheduledPage() {
             )}
 
             {/* Past Payments */}
-            {pastPayments.length > 0 && (
+            {!loading && pastPayments.length > 0 && (
               <div>
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">History</p>
                 <div className="space-y-2">
@@ -213,7 +252,7 @@ export default function ScheduledPage() {
             )}
 
             {/* Empty State */}
-            {payments.length === 0 && !showCreate && (
+            {!loading && payments.length === 0 && !showCreate && (
               <div className="text-center py-8">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
                   <circle cx="12" cy="12" r="10"/>

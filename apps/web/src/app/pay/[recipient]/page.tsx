@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
-import { lookupUsername } from '@/lib/supabase'
+import { lookupUsername } from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
@@ -36,10 +37,10 @@ export default function PayPage() {
       }
 
       const username = recipient.startsWith('@') ? recipient.slice(1) : recipient
-      const address = await lookupUsername(username)
+      const result = await lookupUsername(apiClient, username)
 
-      if (address) {
-        setResolvedAddress(address)
+      if (result) {
+        setResolvedAddress(result.address)
         setDisplayName(`@${username}`)
       } else {
         setError(`User @${username} not found`)

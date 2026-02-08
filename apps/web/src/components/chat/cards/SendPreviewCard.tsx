@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { truncateAddress } from '@/lib/format'
+import { truncateAddress } from '@e-y/shared'
 
 interface TransactionPreview {
   id: string

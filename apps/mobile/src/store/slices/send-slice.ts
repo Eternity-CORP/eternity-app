@@ -5,6 +5,7 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { ethers, isAddress } from 'ethers';
+import { NATIVE_TOKEN_ADDRESS } from '@e-y/shared';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
 import { SUPPORTED_NETWORKS, getRpcUrl, type NetworkId } from '@/src/constants/networks';
 import { getAddressPreferencesWithRetry } from '@/src/services/preferences-service';
@@ -242,7 +243,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
 
     // Check if approval needed (for ERC-20 tokens, not native ETH)
     const isNativeToken = token === 'ETH' ||
-      token === '0x0000000000000000000000000000000000000000' ||
+      token === NATIVE_TOKEN_ADDRESS ||
       token.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
     let needsApproval = false;

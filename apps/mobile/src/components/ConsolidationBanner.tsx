@@ -6,6 +6,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import { formatUsd } from '@e-y/shared';
 import { theme } from '@/src/constants/theme';
 import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 import { NetworkDot } from '@/src/components/NetworkBadge';
@@ -28,16 +29,6 @@ export interface ConsolidationBannerProps {
  */
 function getNetworkName(networkId: NetworkId): string {
   return SUPPORTED_NETWORKS[networkId]?.name || networkId;
-}
-
-/**
- * Format USD value for display
- */
-function formatUsd(value: number): string {
-  if (value < 0.01 && value > 0) {
-    return '<$0.01';
-  }
-  return `$${value.toFixed(2)}`;
 }
 
 /**

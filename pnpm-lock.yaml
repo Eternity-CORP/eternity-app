@@ -302,9 +302,6 @@ importers:
       '@e-y/storage':
         specifier: workspace:*
         version: link:../../packages/storage
-      '@supabase/supabase-js':
-        specifier: ^2.45.0
-        version: 2.93.3
       ethers:
         specifier: ^6.16.0
         version: 6.16.0

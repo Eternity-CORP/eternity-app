@@ -6,7 +6,6 @@ import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
 import { useAiChat } from '@/hooks/useAiChat'
-import { saveTransaction } from '@/lib/supabase'
 import AccountSelector from '@/components/AccountSelector'
 import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
@@ -53,39 +52,9 @@ export default function ChatContainer() {
     clearPendingSwap,
   } = useAiChat()
 
-  const [balance, setBalance] = useState('0')
-  const [balanceLoading, setBalanceLoading] = useState(true)
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
-
-  // Fetch balance
-  useEffect(() => {
-    if (!address) return
-
-    let cancelled = false
-
-    const fetchBalance = async () => {
-      try {
-        const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-        const bal = await provider.getBalance(address)
-        if (!cancelled) {
-          setBalance(ethers.formatEther(bal))
-        }
-      } catch (err) {
-        console.error('Failed to fetch balance:', err)
-      } finally {
-        if (!cancelled) {
-          setBalanceLoading(false)
-        }
-      }
-    }
-
-    setBalanceLoading(true)
-    fetchBalance()
-
-    return () => { cancelled = true }
-  }, [address, network.rpcUrl])
 
   // Auto-scroll to bottom on new messages or streaming
   useEffect(() => {
@@ -115,16 +84,6 @@ export default function ChatContainer() {
       })
 
       await tx.wait()
-
-      await saveTransaction({
-        hash: tx.hash,
-        from_address: address.toLowerCase(),
-        to_address: confirmTarget.transaction.to.toLowerCase(),
-        amount: confirmTarget.transaction.amount,
-        token_symbol: network.symbol,
-        status: 'confirmed',
-        direction: 'sent',
-      })
 
       clearPendingTransaction()
       setConfirmTarget(null)
@@ -179,8 +138,6 @@ export default function ChatContainer() {
     clearPendingSwap()
   }, [clearPendingSwap])
 
-  const formattedBalance = parseFloat(balance).toFixed(4)
-  const networkColor = currentAccount?.type === 'real' ? '#22C55E' : '#F59E0B'
   const hasMessages = messages.length > 0
 
   // Build confirm modal props
@@ -227,34 +184,24 @@ export default function ChatContainer() {
     <div className="flex flex-col h-screen">
       {/* Minimal Top Bar */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 h-14 border-b border-white/5">
-        {/* Left: balance */}
-        <div className="flex items-center gap-3">
-          {balanceLoading ? (
-            <div className="h-5 w-20 bg-white/5 rounded-lg animate-pulse" />
-          ) : (
-            <span className="text-base font-bold text-white">
-              {formattedBalance} <span className="text-sm font-medium text-white/40">{network.symbol}</span>
-            </span>
-          )}
+        {/* Left: mode toggle */}
+        <div className="mode-toggle flex">
+          <button
+            onClick={() => setUiMode('ai')}
+            className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
+          >
+            AI
+          </button>
+          <button
+            onClick={() => setUiMode('classic')}
+            className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
+          >
+            Classic
+          </button>
         </div>
 
-        {/* Right: toggle + account + lock + network */}
+        {/* Right: account + lock */}
         <div className="flex items-center gap-3">
-          <div className="mode-toggle flex">
-            <button
-              onClick={() => setUiMode('ai')}
-              className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
-            >
-              AI
-            </button>
-            <button
-              onClick={() => setUiMode('classic')}
-              className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
-            >
-              Classic
-            </button>
-          </div>
-
           <AccountSelector />
 
           <button
@@ -262,18 +209,11 @@ export default function ChatContainer() {
             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
             title="Lock wallet"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           </button>
-
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: networkColor }} />
-            <span className="text-xs text-white/40">
-              {network.name}{currentAccount?.type === 'test' ? ' Testnet' : ''}
-            </span>
-          </div>
         </div>
       </div>
 

@@ -2,21 +2,7 @@
  * Formatting utilities
  */
 
-/**
- * Truncate an Ethereum address for display
- * @param address - The full address to truncate
- * @param startChars - Number of characters to show at start (default: 6)
- * @param endChars - Number of characters to show at end (default: 4)
- */
-export function truncateAddress(
-  address: string,
-  startChars: number = 6,
-  endChars: number = 4
-): string {
-  if (!address) return '';
-  if (address.length <= startChars + endChars) return address;
-  return `${address.slice(0, startChars)}...${address.slice(-endChars)}`;
-}
+export { truncateAddress } from '@e-y/shared';
 
 /**
  * Truncate a transaction hash for display
@@ -43,16 +29,16 @@ export function truncateTxHash(
 export function sanitizeAmountInput(input: string, currentValue: string = ''): string | null {
   // Allow empty string
   if (input === '') return '';
-  
+
   // Remove any non-numeric characters except decimal point
   let sanitized = input.replace(/[^0-9.]/g, '');
-  
+
   // Handle multiple decimal points - keep only the first one
   const parts = sanitized.split('.');
   if (parts.length > 2) {
     sanitized = parts[0] + '.' + parts.slice(1).join('');
   }
-  
+
   // Handle leading zeros
   // Allow "0" and "0." but not "00", "000", etc.
   if (sanitized.length > 1 && sanitized[0] === '0' && sanitized[1] !== '.') {
@@ -62,17 +48,17 @@ export function sanitizeAmountInput(input: string, currentValue: string = ''): s
       sanitized = sanitized.slice(1);
     }
   }
-  
+
   // If starts with ".", prepend "0"
   if (sanitized.startsWith('.')) {
     sanitized = '0' + sanitized;
   }
-  
+
   // Validate the result is a valid number format
   if (sanitized !== '' && sanitized !== '0.' && !/^\d+\.?\d*$/.test(sanitized)) {
     return currentValue; // Return previous value if invalid
   }
-  
+
   return sanitized;
 }
 
@@ -84,7 +70,7 @@ export function sanitizeAmountInput(input: string, currentValue: string = ''): s
 export function formatAmount(amount: string | number, maxDecimals: number = 8): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
   if (isNaN(num)) return '0';
-  
+
   // Use toFixed then remove trailing zeros
   const fixed = num.toFixed(maxDecimals);
   return fixed.replace(/\.?0+$/, '');

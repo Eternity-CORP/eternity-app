@@ -5,21 +5,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, type WalletData } from '@/src/services/wallet-service';
 import { getAddressFromMnemonic } from '@e-y/crypto';
+import type { AccountType, WalletAccount } from '@e-y/shared';
 
-/**
- * Account type for TEST/REAL account separation
- * - 'test': Account for testnet networks only
- * - 'real': Account for mainnet networks only
- */
-export type AccountType = 'test' | 'real';
+export type { AccountType };
 
-export interface Account {
-  id: string; // accountIndex as string for easy comparison
-  address: string;
-  accountIndex: number;
-  label?: string; // Optional user-defined label
-  type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets
-}
+/** @deprecated Use WalletAccount from @e-y/shared */
+export type Account = WalletAccount;
 
 interface WalletState {
   mnemonic: string | null;

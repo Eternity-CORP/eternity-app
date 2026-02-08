@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { deriveWalletFromMnemonic, getAddressFromMnemonic } from '@e-y/crypto'
+import { deriveWalletFromMnemonic, getAddressFromMnemonic, isValidMnemonic } from '@e-y/crypto'
 import { ethers } from 'ethers'
+import { createAccount, getNextAccountIndex } from '@e-y/shared'
 import {
   type Account,
   type AccountType,
@@ -28,6 +29,9 @@ interface AccountContextValue {
   uiMode: UiMode
   switchAccount: (accountId: string) => void
   addAccount: (type: AccountType, label?: string) => void
+  renameAccount: (accountId: string, label: string) => void
+  removeAccount: (accountId: string) => void
+  importWallet: (mnemonic: string) => boolean
   setUiMode: (mode: UiMode) => void
   logout: () => void
 }
@@ -46,6 +50,9 @@ const AccountContext = createContext<AccountContextValue>({
   uiMode: 'ai',
   switchAccount: () => {},
   addAccount: () => {},
+  renameAccount: () => {},
+  removeAccount: () => {},
+  importWallet: () => false,
   setUiMode: () => {},
   logout: () => {},
 })
@@ -109,17 +116,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     if (!mnemonic) return
 
     const accs = loadAccounts()
-    const maxIndex = accs.reduce((max, a) => Math.max(max, a.accountIndex), -1)
-    const newIndex = maxIndex + 1
+    const newIndex = getNextAccountIndex(accs)
     const address = getAddressFromMnemonic(mnemonic, newIndex)
 
-    const newAccount: Account = {
-      id: String(newIndex),
-      address,
-      accountIndex: newIndex,
-      label: label || (type === 'test' ? `Test Wallet ${newIndex}` : `Wallet ${newIndex}`),
-      type,
-    }
+    const newAccount = createAccount({ index: newIndex, address, type, label })
 
     const updated = [...accs, newAccount]
     saveAccounts(updated)
@@ -132,6 +132,64 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     const w = deriveWalletFromMnemonic(mnemonic, newIndex)
     setWallet(w)
+  }, [])
+
+  const renameAccount = useCallback((accountId: string, label: string) => {
+    const accs = loadAccounts()
+    const updated = accs.map((a) =>
+      a.id === accountId ? { ...a, label: label.trim() || undefined } : a
+    )
+    saveAccounts(updated)
+    setAccounts(updated)
+
+    // Update currentAccount if it's the one being renamed
+    setCurrentAccount((prev) =>
+      prev && prev.id === accountId ? { ...prev, label: label.trim() || undefined } : prev
+    )
+  }, [])
+
+  const removeAccount = useCallback((accountId: string) => {
+    const mnemonic = sessionStorage.getItem('session_mnemonic')
+    if (!mnemonic) return
+
+    const accs = loadAccounts()
+    if (accs.length <= 1) return // can't delete last account
+
+    const updated = accs.filter((a) => a.id !== accountId)
+    saveAccounts(updated)
+    setAccounts(updated)
+
+    // If deleting current account, switch to first remaining
+    setCurrentAccount((prev) => {
+      if (prev && prev.id === accountId) {
+        const next = updated[0]
+        saveCurrentAccountIndex(0)
+        const w = deriveWalletFromMnemonic(mnemonic, next.accountIndex)
+        setWallet(w)
+        return next
+      }
+      return prev
+    })
+  }, [])
+
+  const importWallet = useCallback((mnemonic: string): boolean => {
+    const normalized = mnemonic.trim().toLowerCase().replace(/\s+/g, ' ')
+    if (!isValidMnemonic(normalized)) return false
+
+    sessionStorage.setItem('session_mnemonic', normalized)
+    clearAccountData()
+
+    const address = getAddressFromMnemonic(normalized, 0)
+    const account = createAccount({ index: 0, address, type: 'real', label: 'Main Wallet' })
+
+    saveAccounts([account])
+    saveCurrentAccountIndex(0)
+    setAccounts([account])
+    setCurrentAccount(account)
+
+    const w = deriveWalletFromMnemonic(normalized, 0)
+    setWallet(w)
+    return true
   }, [])
 
   const logout = useCallback(() => {
@@ -159,6 +217,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         uiMode,
         switchAccount,
         addAccount,
+        renameAccount,
+        removeAccount,
+        importWallet,
         setUiMode,
         logout,
       }}

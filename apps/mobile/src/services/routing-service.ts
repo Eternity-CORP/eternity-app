@@ -3,6 +3,7 @@
  * Determines optimal transfer path based on user balances and recipient preferences
  */
 
+import { NATIVE_TOKEN_ADDRESS } from '@e-y/shared';
 import { NetworkId, SUPPORTED_NETWORKS, getTokenAddress } from '@/src/constants/networks';
 import { createLogger } from '@/src/utils/logger';
 import {
@@ -172,7 +173,7 @@ function getTokenAddressForNetwork(
     upperSymbol === 'MATIC' ||
     upperSymbol === SUPPORTED_NETWORKS[networkId]?.nativeCurrency.symbol.toUpperCase()
   ) {
-    return '0x0000000000000000000000000000000000000000'; // Native token address
+    return NATIVE_TOKEN_ADDRESS; // Native token address
   }
 
   // Look up token address

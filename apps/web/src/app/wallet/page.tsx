@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import ChatContainer from '@/components/chat/ChatContainer'
 import { useAccount } from '@/contexts/account-context'
+import { fetchEthUsdPrice } from '@e-y/shared'
 
 export default function WalletDashboard() {
   const router = useRouter()
@@ -30,7 +31,9 @@ export default function WalletDashboard() {
       const bal = await provider.getBalance(address)
       const ethBalance = ethers.formatEther(bal)
       setBalance(ethBalance)
-      setBalanceUsd((parseFloat(ethBalance) * 2500).toFixed(2))
+
+      const price = await fetchEthUsdPrice()
+      setBalanceUsd((parseFloat(ethBalance) * price).toFixed(2))
     } catch (err) {
       console.error('Failed to fetch balance:', err)
     } finally {

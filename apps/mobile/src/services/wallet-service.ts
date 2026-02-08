@@ -7,7 +7,9 @@ import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
 import { generateMnemonic, deriveWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength, getAddressFromMnemonic } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
-import type { Account, AccountType } from '@/src/store/slices/wallet-slice';
+import { type AccountType, type WalletAccount, createAccount, getNextAccountIndex } from '@e-y/shared';
+
+type Account = WalletAccount;
 
 const WALLET_MNEMONIC_KEY = 'wallet_mnemonic';
 const WALLET_ADDRESS_KEY = 'wallet_address';
@@ -55,13 +57,7 @@ export async function saveWallet(mnemonic: string, type: AccountType = 'test'): 
   // Create default account if accounts don't exist
   const existingAccounts = await loadAccounts();
   if (existingAccounts.length === 0) {
-    const defaultAccount: Account = {
-      id: '0',
-      address,
-      accountIndex: 0,
-      type,
-    };
-    await saveAccounts([defaultAccount]);
+    await saveAccounts([createAccount({ index: 0, address, type })]);
   }
 
   // Don't include wallet object in return (not serializable for Redux)
@@ -172,20 +168,14 @@ export async function saveAccounts(accounts: Account[]): Promise<void> {
  * @param type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
 export async function createNewAccount(mnemonic: string, existingAccounts: Account[], type: AccountType = 'test'): Promise<Account> {
-  // Find the highest accountIndex
-  const maxIndex = existingAccounts.length > 0
-    ? Math.max(...existingAccounts.map((acc) => acc.accountIndex))
-    : -1;
-
-  const newAccountIndex = maxIndex + 1;
+  const newAccountIndex = getNextAccountIndex(existingAccounts);
   const address = getAddressFromMnemonic(mnemonic, newAccountIndex);
 
-  const newAccount: Account = {
-    id: newAccountIndex.toString(),
+  const newAccount = createAccount({
+    index: newAccountIndex,
     address,
-    accountIndex: newAccountIndex,
     type,
-  };
+  });
 
   // Save updated accounts list
   const updatedAccounts = [...existingAccounts, newAccount];
@@ -237,13 +227,7 @@ export async function importWallet(mnemonic: string): Promise<WalletData & { typ
   // Imported wallets are always 'real' accounts
   const existingAccounts = await loadAccounts();
   if (existingAccounts.length === 0) {
-    const defaultAccount: Account = {
-      id: '0',
-      address,
-      accountIndex: 0,
-      type: 'real',
-    };
-    await saveAccounts([defaultAccount]);
+    await saveAccounts([createAccount({ index: 0, address, type: 'real' })]);
   }
 
   // Don't include wallet object in return (not serializable for Redux)

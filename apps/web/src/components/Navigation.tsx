@@ -8,8 +8,8 @@ export default function Navigation() {
   const { isLoggedIn, logout, uiMode, setUiMode } = useAccount()
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-      <div className="w-full flex justify-center px-6">
+    <header className="sticky top-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl overflow-hidden">
+      <div className="w-full flex justify-center px-3 sm:px-6">
         <nav className="w-full max-w-[1200px] h-16 flex items-center justify-between">
           {/* Logo */}
           <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2.5 group">
@@ -20,7 +20,7 @@ export default function Navigation() {
           </Link>
 
           {/* Right Side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {isLoggedIn ? (
               <>
                 {/* Mode Toggle */}

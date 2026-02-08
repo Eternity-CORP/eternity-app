@@ -1,76 +1,38 @@
 /**
  * Scheduled Payment Service
  * Manages scheduled payments with backend API and local cache
+ *
+ * Delegates API calls to @e-y/shared, keeps cache layer (platform-specific).
  */
 
-import { apiClient, ApiError } from './api-client';
+import {
+  getScheduledPayments as sharedGet,
+  getScheduledPayment as sharedGetOne,
+  getPendingScheduledPayments as sharedGetPending,
+  getUpcomingScheduledPayments as sharedGetUpcoming,
+  createScheduledPayment as sharedCreate,
+  updateScheduledPayment as sharedUpdate,
+  executeScheduledPayment as sharedExecute,
+  cancelScheduledPayment as sharedCancel,
+  deleteScheduledPayment as sharedDeletePayment,
+  createApiClient,
+  type ScheduledPayment,
+  type CreateScheduledPaymentRequest,
+  type UpdateScheduledPaymentRequest,
+  type RecurringInterval,
+  type ScheduledPaymentStatus,
+} from '@e-y/shared';
+import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
 import { loadCached, cache } from '@/src/utils/cache';
 
 const log = createLogger('ScheduledPaymentService');
 
+const apiClient = createApiClient({ baseUrl: API_BASE_URL });
+
 const CACHE_KEY = 'scheduled_payments_cache';
 
-export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
-export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
-
-export interface ScheduledPayment {
-  id: string;
-  creatorAddress: string;
-  recipient: string;
-  recipientUsername?: string;
-  recipientName?: string;
-  amount: string;
-  tokenSymbol: string;
-  scheduledAt: string;
-  recurringInterval?: RecurringInterval | null;
-  recurringEndDate?: string | null;
-  description?: string;
-  status: ScheduledPaymentStatus;
-  executedTxHash?: string | null;
-  executedAt?: string | null;
-  reminderSent?: boolean;
-  signedTransaction?: string | null;
-  estimatedGasPrice?: string | null;
-  nonce?: number | null;
-  chainId?: number | null;
-  failureReason?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateScheduledPaymentRequest {
-  creatorAddress: string;
-  recipient: string;
-  recipientUsername?: string;
-  recipientName?: string;
-  amount: string;
-  tokenSymbol: string;
-  scheduledAt: string;
-  recurringInterval?: RecurringInterval;
-  recurringEndDate?: string;
-  description?: string;
-  signedTransaction?: string;
-  estimatedGasPrice?: string;
-  nonce?: number;
-  chainId?: number;
-}
-
-export interface UpdateScheduledPaymentRequest {
-  recipient?: string;
-  recipientUsername?: string;
-  recipientName?: string;
-  amount?: string;
-  tokenSymbol?: string;
-  scheduledAt?: string;
-  recurringInterval?: RecurringInterval | null;
-  recurringEndDate?: string | null;
-  description?: string;
-  signedTransaction?: string;
-  estimatedGasPrice?: string;
-  nonce?: number;
-  chainId?: number;
-}
+export type { RecurringInterval, ScheduledPaymentStatus, ScheduledPayment, CreateScheduledPaymentRequest, UpdateScheduledPaymentRequest };
 
 /**
  * Configure notifications for scheduled payments
@@ -87,8 +49,7 @@ export async function loadScheduledPayments(
   creatorAddress: string
 ): Promise<ScheduledPayment[]> {
   try {
-    const client = apiClient.withWallet(creatorAddress);
-    const payments = await client.get<ScheduledPayment[]>('/api/scheduled');
+    const payments = await sharedGet(apiClient, creatorAddress);
     await cache(CACHE_KEY, creatorAddress, payments);
     return payments;
   } catch (error) {
@@ -103,8 +64,7 @@ export async function loadScheduledPayments(
 export async function createScheduledPayment(
   request: CreateScheduledPaymentRequest
 ): Promise<ScheduledPayment> {
-  const client = apiClient.withWallet(request.creatorAddress);
-  const payment = await client.post<ScheduledPayment>('/api/scheduled', request);
+  const payment = await sharedCreate(apiClient, request);
 
   // Update cache
   const cached = await loadCached<ScheduledPayment>(CACHE_KEY, request.creatorAddress);
@@ -120,12 +80,9 @@ export async function createScheduledPayment(
  */
 export async function getScheduledPayment(id: string): Promise<ScheduledPayment | null> {
   try {
-    return await apiClient.get<ScheduledPayment>(`/api/scheduled/${id}`);
-  } catch (error) {
-    if (ApiError.isApiError(error) && error.statusCode === 404) {
-      return null;
-    }
-    log.warn('Failed to get scheduled payment', error);
+    return await sharedGetOne(apiClient, id);
+  } catch {
+    log.warn('Failed to get scheduled payment');
     return null;
   }
 }
@@ -138,8 +95,7 @@ export async function updateScheduledPayment(
   updates: UpdateScheduledPaymentRequest,
   walletAddress: string
 ): Promise<ScheduledPayment | null> {
-  const client = apiClient.withWallet(walletAddress);
-  const payment = await client.put<ScheduledPayment>(`/api/scheduled/${id}`, updates);
+  const payment = await sharedUpdate(apiClient, id, updates, walletAddress);
 
   // Update cache
   const cached = await loadCached<ScheduledPayment>(CACHE_KEY, walletAddress);
@@ -160,8 +116,7 @@ export async function cancelScheduledPayment(
   id: string,
   walletAddress: string
 ): Promise<boolean> {
-  const client = apiClient.withWallet(walletAddress);
-  const payment = await client.post<ScheduledPayment>(`/api/scheduled/${id}/cancel`);
+  const payment = await sharedCancel(apiClient, id, walletAddress);
 
   // Update cache
   const cached = await loadCached<ScheduledPayment>(CACHE_KEY, walletAddress);
@@ -182,8 +137,7 @@ export async function deleteScheduledPayment(
   id: string,
   walletAddress: string
 ): Promise<boolean> {
-  const client = apiClient.withWallet(walletAddress);
-  await client.delete(`/api/scheduled/${id}`);
+  await sharedDeletePayment(apiClient, id, walletAddress);
 
   // Update cache
   const cached = await loadCached<ScheduledPayment>(CACHE_KEY, walletAddress);
@@ -202,8 +156,7 @@ export async function markPaymentExecuted(
   txHash: string,
   walletAddress: string
 ): Promise<ScheduledPayment | null> {
-  const client = apiClient.withWallet(walletAddress);
-  const payment = await client.post<ScheduledPayment>(`/api/scheduled/${id}/execute`, { txHash });
+  const payment = await sharedExecute(apiClient, id, txHash, walletAddress);
 
   // Refresh cache to include any new recurring payment
   await syncScheduledPayments(walletAddress);
@@ -219,8 +172,7 @@ export async function getPendingPayments(
   creatorAddress: string
 ): Promise<ScheduledPayment[]> {
   try {
-    const client = apiClient.withWallet(creatorAddress);
-    return await client.get<ScheduledPayment[]>('/api/scheduled/pending');
+    return await sharedGetPending(apiClient, creatorAddress);
   } catch (error) {
     log.warn('Failed to get pending payments', error);
     const cached = await loadCached<ScheduledPayment>(CACHE_KEY, creatorAddress);
@@ -236,8 +188,7 @@ export async function getUpcomingPayments(
   days: number = 7
 ): Promise<ScheduledPayment[]> {
   try {
-    const client = apiClient.withWallet(creatorAddress);
-    return await client.get<ScheduledPayment[]>(`/api/scheduled/upcoming?days=${days}`);
+    return await sharedGetUpcoming(apiClient, creatorAddress, days);
   } catch (error) {
     log.warn('Failed to get upcoming payments', error);
     const cached = await loadCached<ScheduledPayment>(CACHE_KEY, creatorAddress);

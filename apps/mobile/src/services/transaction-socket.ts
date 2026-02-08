@@ -1,30 +1,28 @@
 /**
  * Transaction WebSocket Service
  * Handles real-time transaction status updates via Socket.IO
+ *
+ * Uses shared socket factory for event wiring.
+ * Keeps: socket creation, auto-connect, lifecycle (platform-specific).
  */
 
 import { io, Socket } from 'socket.io-client';
+import {
+  createTransactionSocketService,
+  type TransactionSocketService,
+  type TransactionStatusUpdate,
+  type StatusUpdateCallback,
+} from '@e-y/shared';
+import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
 
 const log = createLogger('TransactionSocket');
 
-// API URL - use environment variable or default to localhost
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+export type { TransactionStatusUpdate };
 
-export interface TransactionStatusUpdate {
-  txHash: string;
-  status: 'pending' | 'confirmed' | 'failed' | 'timeout';
-  blockNumber?: number;
-  gasUsed?: string;
-  confirmations?: number;
-  message?: string;
-}
-
-type StatusUpdateCallback = (update: TransactionStatusUpdate) => void;
-
-class TransactionSocketService {
+class TransactionSocketServiceWrapper {
   private socket: Socket | null = null;
-  private callbacks: Map<string, StatusUpdateCallback[]> = new Map();
+  private sharedService: TransactionSocketService | null = null;
   private isConnecting = false;
 
   /**
@@ -48,13 +46,16 @@ class TransactionSocketService {
 
     this.isConnecting = true;
 
-    return new Promise((resolve, reject) => {
-      this.socket = io(`${API_URL}/transactions`, {
+    return new Promise((resolve) => {
+      this.socket = io(`${API_BASE_URL}/transactions`, {
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
       });
+
+      // Create shared service that wires up event listeners
+      this.sharedService = createTransactionSocketService(this.socket);
 
       this.socket.on('connect', () => {
         log.info('Connected to transaction WebSocket');
@@ -65,16 +66,11 @@ class TransactionSocketService {
       this.socket.on('connect_error', (error) => {
         log.warn('Connection error', { message: error.message });
         this.isConnecting = false;
-        // Don't reject - allow offline functionality
         resolve();
       });
 
       this.socket.on('disconnect', (reason) => {
         log.info('Disconnected', { reason });
-      });
-
-      this.socket.on('status-update', (update: TransactionStatusUpdate) => {
-        this.handleStatusUpdate(update);
       });
 
       this.socket.on('error', (error: { message: string }) => {
@@ -85,7 +81,7 @@ class TransactionSocketService {
       setTimeout(() => {
         if (this.isConnecting) {
           this.isConnecting = false;
-          resolve(); // Don't reject - allow offline functionality
+          resolve();
         }
       }, 5000);
     });
@@ -95,27 +91,22 @@ class TransactionSocketService {
    * Disconnect from the WebSocket server
    */
   disconnect(): void {
+    if (this.sharedService) {
+      this.sharedService = null;
+    }
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
     }
-    this.callbacks.clear();
   }
 
   /**
    * Subscribe to updates for a specific transaction
    */
   subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback): void {
-    // Store callback
-    const existing = this.callbacks.get(txHash) || [];
-    existing.push(callback);
-    this.callbacks.set(txHash, existing);
-
-    // Connect if not connected
+    // Connect if not connected, then subscribe via shared service
     this.connect().then(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('subscribe', { txHash, userAddress });
-      }
+      this.sharedService?.subscribe(txHash, userAddress, callback);
     });
   }
 
@@ -123,26 +114,7 @@ class TransactionSocketService {
    * Unsubscribe from a specific transaction
    */
   unsubscribe(txHash: string): void {
-    this.callbacks.delete(txHash);
-
-    if (this.socket?.connected) {
-      this.socket.emit('unsubscribe', { txHash });
-    }
-  }
-
-  /**
-   * Handle incoming status updates
-   */
-  private handleStatusUpdate(update: TransactionStatusUpdate): void {
-    const callbacks = this.callbacks.get(update.txHash);
-    if (callbacks) {
-      callbacks.forEach((callback) => callback(update));
-    }
-
-    // Auto-unsubscribe on final status
-    if (update.status === 'confirmed' || update.status === 'failed' || update.status === 'timeout') {
-      this.callbacks.delete(update.txHash);
-    }
+    this.sharedService?.unsubscribe(txHash);
   }
 
   /**
@@ -154,4 +126,4 @@ class TransactionSocketService {
 }
 
 // Export singleton instance
-export const transactionSocket = new TransactionSocketService();
+export const transactionSocket = new TransactionSocketServiceWrapper();

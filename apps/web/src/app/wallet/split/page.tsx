@@ -3,33 +3,30 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
+import {
+  getSplitsByCreator,
+  getPendingSplits,
+  createSplitBill,
+  cancelSplit,
+  calculateEqualSplit,
+  type SplitBill,
+} from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 import Navigation from '@/components/Navigation'
-
-type SplitParticipant = {
-  address: string
-  amount: string
-  status: 'pending' | 'paid'
-}
-
-type SplitBill = {
-  id: string
-  creatorAddress: string
-  totalAmount: string
-  description: string
-  participants: SplitParticipant[]
-  status: 'active' | 'completed' | 'cancelled'
-  createdAt: string
-}
 
 export default function SplitPage() {
   const router = useRouter()
   const { address, network, isLoggedIn } = useAccount()
   const [splits, setSplits] = useState<SplitBill[]>([])
+  const [pendingSplitsList, setPendingSplitsList] = useState<SplitBill[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [totalAmount, setTotalAmount] = useState('')
   const [description, setDescription] = useState('')
   const [participantAddresses, setParticipantAddresses] = useState('')
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   // Auth guard: redirect to /unlock when not logged in (skip while context is loading)
   useEffect(() => {
@@ -38,16 +35,34 @@ export default function SplitPage() {
     }
   }, [isLoggedIn, address, router])
 
-  // Load splits from localStorage when address is available
+  // Load splits from API when address is available
   useEffect(() => {
     if (!address) return
-    const saved = localStorage.getItem(`splits_${address}`)
-    if (saved) {
-      setSplits(JSON.parse(saved))
+
+    let cancelled = false
+
+    async function load() {
+      try {
+        const [created, pending] = await Promise.all([
+          getSplitsByCreator(apiClient, address),
+          getPendingSplits(apiClient, address),
+        ])
+        if (!cancelled) {
+          setSplits(created)
+          setPendingSplitsList(pending)
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
+
+    load()
+    return () => { cancelled = true }
   }, [address])
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!totalAmount || !participantAddresses) return
 
     const addresses = participantAddresses
@@ -57,42 +72,50 @@ export default function SplitPage() {
 
     if (addresses.length === 0) return
 
-    const perPerson = (parseFloat(totalAmount) / (addresses.length + 1)).toFixed(6)
+    setSubmitting(true)
+    setError('')
 
-    const newSplit: SplitBill = {
-      id: Date.now().toString(),
-      creatorAddress: address,
-      totalAmount,
-      description: description || 'Split bill',
-      participants: addresses.map(addr => ({
-        address: addr,
-        amount: perPerson,
-        status: 'pending',
-      })),
-      status: 'active',
-      createdAt: new Date().toISOString(),
+    const perPerson = calculateEqualSplit(totalAmount, addresses.length + 1)
+
+    try {
+      const newSplit = await createSplitBill(apiClient, {
+        creatorAddress: address,
+        totalAmount,
+        tokenSymbol: network.symbol,
+        description: description || 'Split bill',
+        participants: addresses.map(addr => ({
+          address: addr,
+          amount: perPerson,
+        })),
+      })
+
+      setSplits((prev) => [...prev, newSplit])
+
+      setShowCreate(false)
+      setTotalAmount('')
+      setDescription('')
+      setParticipantAddresses('')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create split'
+      setError(msg)
+    } finally {
+      setSubmitting(false)
     }
-
-    const updated = [...splits, newSplit]
-    setSplits(updated)
-    localStorage.setItem(`splits_${address}`, JSON.stringify(updated))
-
-    setShowCreate(false)
-    setTotalAmount('')
-    setDescription('')
-    setParticipantAddresses('')
   }
 
-  const handleCancel = (id: string) => {
-    const updated = splits.map(s =>
-      s.id === id ? { ...s, status: 'cancelled' as const } : s
-    )
-    setSplits(updated)
-    localStorage.setItem(`splits_${address}`, JSON.stringify(updated))
+  const handleCancel = async (id: string) => {
+    try {
+      await cancelSplit(apiClient, id, address)
+      setSplits((prev) =>
+        prev.map(s => (s.id === id ? { ...s, status: 'cancelled' as const } : s)),
+      )
+    } catch {
+      // ignore
+    }
   }
 
   const createdSplits = splits.filter(s => s.creatorAddress === address && s.status === 'active')
-  const pendingSplits = splits.filter(s =>
+  const pendingSplitsFiltered = pendingSplitsList.filter(s =>
     s.status === 'active' &&
     s.participants.some(p => p.address.toLowerCase() === address.toLowerCase() && p.status === 'pending')
   )
@@ -179,26 +202,40 @@ export default function SplitPage() {
                 {totalAmount && participantAddresses && (
                   <div className="bg-[#22c55e]/8 border border-[#22c55e]/20 rounded-xl p-3">
                     <p className="text-[#22c55e] text-sm">
-                      Each person pays: {(parseFloat(totalAmount) / (participantAddresses.split(/[,\n]/).filter(a => a.trim()).length + 1)).toFixed(4)} {network.symbol}
+                      Each person pays: {calculateEqualSplit(totalAmount, participantAddresses.split(/[,\n]/).filter(a => a.trim()).length + 1).slice(0, -2)} {network.symbol}
                     </p>
                   </div>
                 )}
+
+                {error && (
+                  <div className="px-4 py-3 bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl">
+                    <p className="text-[#f87171] text-sm">{error}</p>
+                  </div>
+                )}
+
                 <button
                   onClick={handleCreate}
-                  disabled={!totalAmount || !participantAddresses}
+                  disabled={!totalAmount || !participantAddresses || submitting}
                   className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
-                  Create Split
+                  {submitting ? 'Creating...' : 'Create Split'}
                 </button>
               </div>
             )}
 
+            {/* Loading state */}
+            {loading && (
+              <div className="flex justify-center py-8">
+                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
+
             {/* Pending Payments (you owe) */}
-            {pendingSplits.length > 0 && (
+            {!loading && pendingSplitsFiltered.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">You Owe</p>
                 <div className="space-y-2">
-                  {pendingSplits.map((split) => {
+                  {pendingSplitsFiltered.map((split) => {
                     const myPart = split.participants.find(
                       p => p.address.toLowerCase() === address.toLowerCase()
                     )
@@ -228,7 +265,7 @@ export default function SplitPage() {
             )}
 
             {/* Created Splits */}
-            {createdSplits.length > 0 && (
+            {!loading && createdSplits.length > 0 && (
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Your Splits</p>
                 <div className="space-y-2">
@@ -271,7 +308,7 @@ export default function SplitPage() {
             )}
 
             {/* Empty State */}
-            {splits.length === 0 && !showCreate && (
+            {!loading && splits.length === 0 && pendingSplitsList.length === 0 && !showCreate && (
               <div className="text-center py-8">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>

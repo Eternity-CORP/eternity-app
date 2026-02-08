@@ -1,10 +1,16 @@
 /**
  * BLIK WebSocket Service
  * Handles real-time BLIK code operations via Socket.IO
+ *
+ * Uses shared socket factory for event wiring.
+ * Keeps: socket creation, reconnection lifecycle (platform-specific).
  */
 
 import { io, Socket } from 'socket.io-client';
 import {
+  createBlikSocketService,
+  type BlikSocketService,
+  type BlikSocketCallbacks,
   BLIK_EVENTS,
   type CreateCodePayload,
   type CancelCodePayload,
@@ -36,8 +42,9 @@ export interface BlikCallbacks {
   onError?: (error: { message: string }) => void;
 }
 
-class BlikSocketService {
+class BlikSocketServiceWrapper {
   private socket: Socket | null = null;
+  private sharedService: BlikSocketService | null = null;
   private callbacks: BlikCallbacks = {};
   private isConnecting = false;
   private receiverAddress: string | null = null;
@@ -49,7 +56,7 @@ class BlikSocketService {
     if (this.socket?.connected) {
       if (address) {
         this.receiverAddress = address;
-        this.register(address);
+        this.sharedService?.register(address);
       }
       return Promise.resolve();
     }
@@ -78,12 +85,16 @@ class BlikSocketService {
         reconnectionDelay: 1000,
       });
 
+      // Create shared service that wires up all event listeners
+      this.sharedService = createBlikSocketService(this.socket);
+      this.syncCallbacksToShared();
+
       this.socket.on('connect', () => {
         log.info('Connected to BLIK WebSocket');
         this.isConnecting = false;
 
         if (this.receiverAddress) {
-          this.register(this.receiverAddress);
+          this.sharedService?.register(this.receiverAddress);
         }
 
         resolve();
@@ -99,8 +110,6 @@ class BlikSocketService {
         log.debug('Disconnected from BLIK WebSocket', { reason });
       });
 
-      this.setupEventListeners();
-
       setTimeout(() => {
         if (this.isConnecting) {
           this.isConnecting = false;
@@ -110,48 +119,30 @@ class BlikSocketService {
     });
   }
 
-  private setupEventListeners(): void {
-    if (!this.socket) return;
+  /**
+   * Sync local callbacks to shared service
+   */
+  private syncCallbacksToShared(): void {
+    if (!this.sharedService) return;
 
-    this.socket.on(BLIK_EVENTS.CODE_CREATED, (payload: CodeCreatedPayload) => {
-      this.callbacks.onCodeCreated?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.CODE_LOOKUP, (payload: CodeLookupPayload) => {
-      this.callbacks.onCodeLookup?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.PAYMENT_CONFIRMED, (payload: PaymentConfirmedPayload) => {
-      this.callbacks.onPaymentConfirmed?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.CODE_EXPIRED, (payload: CodeExpiredPayload) => {
-      this.callbacks.onCodeExpired?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.CODE_CANCELLED, (payload: CodeCancelledPayload) => {
-      this.callbacks.onCodeCancelled?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.CODE_INFO, (payload: CodeInfoPayload) => {
-      this.callbacks.onCodeInfo?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.CODE_NOT_FOUND, (payload: CodeNotFoundPayload) => {
-      this.callbacks.onCodeNotFound?.(payload);
-    });
-
-    this.socket.on(BLIK_EVENTS.PAYMENT_ACCEPTED, (payload: PaymentAcceptedPayload) => {
-      this.callbacks.onPaymentAccepted?.(payload);
-    });
-
-    this.socket.on('error', (error: { message: string }) => {
-      log.warn('BLIK WebSocket error', error);
-      this.callbacks.onError?.(error);
+    this.sharedService.setCallbacks({
+      onCodeCreated: (payload) => this.callbacks.onCodeCreated?.(payload),
+      onCodeLookup: (payload) => this.callbacks.onCodeLookup?.(payload),
+      onPaymentConfirmed: (payload) => this.callbacks.onPaymentConfirmed?.(payload),
+      onCodeExpired: (payload) => this.callbacks.onCodeExpired?.(payload),
+      onCodeCancelled: (payload) => this.callbacks.onCodeCancelled?.(payload),
+      onCodeInfo: (payload) => this.callbacks.onCodeInfo?.(payload),
+      onCodeNotFound: (payload) => this.callbacks.onCodeNotFound?.(payload),
+      onPaymentAccepted: (payload) => this.callbacks.onPaymentAccepted?.(payload),
+      onError: (error) => this.callbacks.onError?.(error),
     });
   }
 
   disconnect(): void {
+    if (this.sharedService) {
+      this.sharedService.clearCallbacks();
+      this.sharedService = null;
+    }
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
@@ -162,49 +153,49 @@ class BlikSocketService {
 
   setCallbacks(callbacks: BlikCallbacks): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
+    this.syncCallbacksToShared();
   }
 
   clearCallbacks(): void {
     this.callbacks = {};
+    this.sharedService?.clearCallbacks();
   }
 
   register(receiverAddress: string): void {
     this.receiverAddress = receiverAddress;
-    if (this.socket?.connected) {
-      this.socket.emit('register', { receiverAddress });
-    }
+    this.sharedService?.register(receiverAddress);
   }
 
   createCode(payload: CreateCodePayload): void {
-    if (!this.socket?.connected) {
+    if (!this.sharedService) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
       return;
     }
-    this.socket.emit(BLIK_EVENTS.CREATE_CODE, payload);
+    this.sharedService.createCode(payload);
   }
 
   cancelCode(payload: CancelCodePayload): void {
-    if (!this.socket?.connected) {
+    if (!this.sharedService) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
       return;
     }
-    this.socket.emit(BLIK_EVENTS.CANCEL_CODE, payload);
+    this.sharedService.cancelCode(payload);
   }
 
   lookupCode(payload: LookupCodePayload): void {
-    if (!this.socket?.connected) {
+    if (!this.sharedService) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
       return;
     }
-    this.socket.emit(BLIK_EVENTS.LOOKUP_CODE, payload);
+    this.sharedService.lookupCode(payload);
   }
 
   confirmPayment(payload: ConfirmPaymentPayload): void {
-    if (!this.socket?.connected) {
+    if (!this.sharedService) {
       this.callbacks.onError?.({ message: 'Not connected to server' });
       return;
     }
-    this.socket.emit(BLIK_EVENTS.CONFIRM_PAYMENT, payload);
+    this.sharedService.confirmPayment(payload);
   }
 
   isConnected(): boolean {
@@ -212,4 +203,4 @@ class BlikSocketService {
   }
 }
 
-export const blikSocket = new BlikSocketService();
+export const blikSocket = new BlikSocketServiceWrapper();

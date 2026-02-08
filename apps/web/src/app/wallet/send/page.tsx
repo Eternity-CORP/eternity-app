@@ -3,7 +3,8 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
-import { lookupUsername, saveTransaction } from '@/lib/supabase'
+import { lookupUsername } from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 
@@ -66,12 +67,12 @@ function SendContent() {
       if (recipient.startsWith('@') || !recipient.startsWith('0x')) {
         setResolving(true)
         const username = recipient.startsWith('@') ? recipient.slice(1) : recipient
-        const addr = await lookupUsername(username)
+        const result = await lookupUsername(apiClient, username)
         setResolving(false)
 
-        if (addr) {
-          setResolvedAddress(addr)
-          estimateGas(addr)
+        if (result) {
+          setResolvedAddress(result.address)
+          estimateGas(result.address)
         } else {
           setError(`Username @${username} not found`)
         }
@@ -118,16 +119,6 @@ function SendContent() {
       })
 
       await tx.wait()
-
-      await saveTransaction({
-        hash: tx.hash,
-        from_address: wallet.address.toLowerCase(),
-        to_address: resolvedAddress.toLowerCase(),
-        amount,
-        token_symbol: network.symbol,
-        status: 'confirmed',
-        direction: 'sent',
-      })
 
       router.push(`/wallet/send/success?hash=${tx.hash}`)
     } catch (err: unknown) {

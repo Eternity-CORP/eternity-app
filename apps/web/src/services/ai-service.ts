@@ -1,4 +1,9 @@
 import { io, type Socket } from 'socket.io-client'
+import {
+  createAiSocketService,
+  type AiSocketService,
+  type AiSocketCallbacks as SharedAiSocketCallbacks,
+} from '@e-y/shared'
 import type {
   ChunkPayload,
   DonePayload,
@@ -7,10 +12,8 @@ import type {
   AiSuggestion,
   AiErrorPayload,
 } from '@e-y/shared'
-import { AI_EVENTS } from '@e-y/shared'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-const MAX_HISTORY_LENGTH = 10
 
 interface AiSocketCallbacks {
   onChunk: (payload: ChunkPayload) => void
@@ -25,10 +28,10 @@ interface AiSocketCallbacks {
 
 type CallbackKey = keyof AiSocketCallbacks
 
-class AiSocketService {
+class WebAiSocketService {
   private socket: Socket | null = null
-  private callbacks: Partial<AiSocketCallbacks> = {}
-  private messageHistory: Array<{ role: 'user' | 'assistant'; content: string }> = []
+  private service: AiSocketService | null = null
+  private localCallbacks: Partial<Pick<AiSocketCallbacks, 'onConnect' | 'onDisconnect'>> = {}
   private userAddress = ''
 
   connect(address: string): void {
@@ -42,49 +45,25 @@ class AiSocketService {
       autoConnect: true,
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.service = createAiSocketService(this.socket as any)
+
     this.socket.on('connect', () => {
-      this.socket?.emit(AI_EVENTS.SUBSCRIBE, { address: this.userAddress })
-      this.callbacks.onConnect?.()
+      this.service?.subscribe(this.userAddress)
+      this.localCallbacks.onConnect?.()
     })
 
     this.socket.on('disconnect', (reason: string) => {
-      this.callbacks.onDisconnect?.(reason)
-    })
-
-    this.socket.on(AI_EVENTS.CHUNK, (payload: ChunkPayload) => {
-      this.callbacks.onChunk?.(payload)
-    })
-
-    this.socket.on(AI_EVENTS.DONE, (payload: DonePayload) => {
-      if (payload.content) {
-        this.addToHistory('assistant', payload.content)
-      }
-      this.callbacks.onDone?.(payload)
-    })
-
-    this.socket.on(AI_EVENTS.TOOL_CALL, (toolCall: ToolCall) => {
-      this.callbacks.onToolCall?.(toolCall)
-    })
-
-    this.socket.on(AI_EVENTS.TOOL_RESULT, (toolResult: ToolResult) => {
-      this.callbacks.onToolResult?.(toolResult)
-    })
-
-    this.socket.on(AI_EVENTS.SUGGESTION, (suggestion: AiSuggestion) => {
-      this.callbacks.onSuggestion?.(suggestion)
-    })
-
-    this.socket.on(AI_EVENTS.ERROR, (payload: AiErrorPayload) => {
-      this.callbacks.onError?.(payload)
+      this.localCallbacks.onDisconnect?.(reason)
     })
   }
 
   disconnect(): void {
     if (!this.socket) return
 
-    if (this.socket.connected && this.userAddress) {
-      this.socket.emit(AI_EVENTS.UNSUBSCRIBE, { address: this.userAddress })
-    }
+    this.service?.unsubscribe()
+    this.service?.clearCallbacks()
+    this.service = null
 
     this.socket.removeAllListeners()
     this.socket.disconnect()
@@ -92,35 +71,64 @@ class AiSocketService {
   }
 
   sendMessage(content: string): void {
-    if (!this.socket?.connected) return
-
-    this.addToHistory('user', content)
-
-    this.socket.emit(AI_EVENTS.CHAT, {
-      content,
-      userAddress: this.userAddress,
-      messageHistory: [...this.messageHistory],
-    })
+    this.service?.sendMessage(content)
   }
 
   clearHistory(): void {
-    this.messageHistory = []
+    this.service?.clearHistory()
   }
 
   on<K extends CallbackKey>(event: K, callback: AiSocketCallbacks[K]): void {
-    this.callbacks[event] = callback
+    // Handle connect/disconnect on socket level
+    if (event === 'onConnect') {
+      this.localCallbacks.onConnect = callback as AiSocketCallbacks['onConnect']
+      return
+    }
+    if (event === 'onDisconnect') {
+      this.localCallbacks.onDisconnect = callback as AiSocketCallbacks['onDisconnect']
+      return
+    }
+
+    // Map to shared service callbacks
+    const mapping: Record<string, keyof SharedAiSocketCallbacks> = {
+      onChunk: 'onChunk',
+      onDone: 'onDone',
+      onToolCall: 'onToolCall',
+      onToolResult: 'onToolResult',
+      onSuggestion: 'onSuggestion',
+      onError: 'onError',
+    }
+
+    const sharedKey = mapping[event]
+    if (sharedKey && this.service) {
+      // For onDone, we need to also add response to history
+      if (event === 'onDone') {
+        const originalCallback = callback as AiSocketCallbacks['onDone']
+        const service = this.service
+        this.service.setCallbacks({
+          [sharedKey]: (payload: DonePayload) => {
+            if (payload.content) {
+              service.addResponseToHistory(payload.content)
+            }
+            originalCallback(payload)
+          },
+        } as Partial<SharedAiSocketCallbacks>)
+      } else {
+        this.service.setCallbacks({
+          [sharedKey]: callback,
+        } as Partial<SharedAiSocketCallbacks>)
+      }
+    }
   }
 
   off(event: CallbackKey): void {
-    delete this.callbacks[event]
-  }
-
-  private addToHistory(role: 'user' | 'assistant', content: string): void {
-    this.messageHistory.push({ role, content })
-    if (this.messageHistory.length > MAX_HISTORY_LENGTH) {
-      this.messageHistory = this.messageHistory.slice(-MAX_HISTORY_LENGTH)
+    if (event === 'onConnect' || event === 'onDisconnect') {
+      delete this.localCallbacks[event]
+      return
     }
+    // Shared service doesn't support removing individual callbacks,
+    // but the whole service gets replaced on disconnect anyway.
   }
 }
 
-export const aiSocket = new AiSocketService()
+export const aiSocket = new WebAiSocketService()

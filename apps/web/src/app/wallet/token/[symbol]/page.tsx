@@ -6,6 +6,7 @@ import { ethers } from 'ethers'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
+import { fetchEthUsdPrice } from '@e-y/shared'
 
 const TOKEN_META: Record<string, { name: string; color: string; icon: string }> = {
   ETH: { name: 'Ethereum', color: '#627EEA', icon: 'E' },
@@ -54,10 +55,13 @@ export default function TokenDetailPage() {
     try {
       if (symbol === 'ETH') {
         const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-        const bal = await provider.getBalance(address)
+        const [bal, ethPrice] = await Promise.all([
+          provider.getBalance(address),
+          fetchEthUsdPrice(),
+        ])
         const ethBalance = ethers.formatEther(bal)
         setBalance(ethBalance)
-        setBalanceUsd((parseFloat(ethBalance) * 2500).toFixed(2))
+        setBalanceUsd((parseFloat(ethBalance) * (ethPrice || 0)).toFixed(2))
       } else {
         setBalance('0.0000')
         setBalanceUsd('0.00')

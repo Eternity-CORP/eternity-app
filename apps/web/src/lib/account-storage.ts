@@ -1,17 +1,14 @@
-export type AccountType = 'test' | 'real'
+import type { AccountType, WalletAccount } from '@e-y/shared'
 
-export interface Account {
-  id: string
-  address: string
-  accountIndex: number
-  label?: string
-  type: AccountType
-}
+export type { AccountType, WalletAccount }
+
+/** @deprecated Use WalletAccount instead */
+export type Account = WalletAccount
 
 const ACCOUNTS_KEY = 'ey_accounts'
 const CURRENT_INDEX_KEY = 'ey_current_account_index'
 
-export function loadAccounts(): Account[] {
+export function loadAccounts(): WalletAccount[] {
   try {
     const raw = localStorage.getItem(ACCOUNTS_KEY)
     if (!raw) return []
@@ -21,7 +18,7 @@ export function loadAccounts(): Account[] {
   }
 }
 
-export function saveAccounts(accounts: Account[]): void {
+export function saveAccounts(accounts: WalletAccount[]): void {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
 }
 
@@ -43,12 +40,12 @@ export function ensureDefaultAccount(
   mnemonic: string,
   defaultType: AccountType = 'test',
   deriveAddress: (mnemonic: string, index: number) => string
-): Account[] {
+): WalletAccount[] {
   const existing = loadAccounts()
   if (existing.length > 0) return existing
 
   const address = deriveAddress(mnemonic, 0)
-  const account: Account = {
+  const account: WalletAccount = {
     id: '0',
     address,
     accountIndex: 0,

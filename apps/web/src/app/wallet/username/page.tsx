@@ -4,87 +4,21 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
+import {
+  debounce,
+  lookupAddressByUsername,
+  checkUsernameAvailability,
+  registerUsername,
+  updateUsername,
+  deleteUsername,
+  isValidUsernameFormat,
+  normalizeUsername,
+  createUsernameSignatureMessage,
+} from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 import ConfirmModal from '@/components/chat/cards/ConfirmModal'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-
-// --- Helpers ---
-
-function isValidUsernameFormat(username: string): boolean {
-  return /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/.test(username)
-}
-
-function debounce<T extends (...args: string[]) => void>(
-  func: T,
-  wait: number,
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(() => func(...args), wait)
-  }
-}
-
-// --- API calls ---
-
-async function fetchCurrentUsername(address: string): Promise<string | null> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/username/address/${address}`)
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.username ?? null
-  } catch {
-    return null
-  }
-}
-
-async function checkAvailability(username: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/username/check/${username}`)
-  if (!res.ok) throw new Error('Failed to check availability')
-  const data = await res.json()
-  return data.available
-}
-
-async function apiRegister(body: { username: string; address: string; signature: string; message: string }) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/username/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Registration failed')
-  }
-  return res.json()
-}
-
-async function apiUpdate(body: { newUsername: string; address: string; signature: string; message: string }) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/username/update`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Update failed')
-  }
-  return res.json()
-}
-
-async function apiDelete(username: string, body: { address: string; signature: string; message: string }) {
-  const res = await fetch(`${API_BASE_URL}/api/v1/username/${username}`, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err.message || 'Delete failed')
-  }
-  return res.json()
-}
 
 // --- Types ---
 
@@ -127,7 +61,7 @@ export default function UsernamePage() {
 
     async function load() {
       try {
-        const username = await fetchCurrentUsername(address)
+        const username = await lookupAddressByUsername(apiClient, address)
         if (cancelled) return
         setCurrentUsername(username)
         if (username) {
@@ -151,7 +85,7 @@ export default function UsernamePage() {
         setIsChecking(true)
         setError(null)
         try {
-          const available = await checkAvailability(username)
+          const available = await checkUsernameAvailability(apiClient, username)
           setIsAvailable(available)
           if (!available) {
             setError('Username is already taken')
@@ -169,7 +103,7 @@ export default function UsernamePage() {
   // Handle input change
   const handleInputChange = useCallback(
     (text: string) => {
-      const normalized = text.startsWith('@') ? text.slice(1).toLowerCase() : text.toLowerCase()
+      const normalized = normalizeUsername(text)
       setInput(normalized)
       setError(null)
       setFormatError(null)
@@ -203,23 +137,38 @@ export default function UsernamePage() {
 
       const mnemonic = await loadAndDecrypt(password)
       const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
+      const timestamp = Date.now()
 
       if (modalAction === 'register') {
-        const message = `Register username: ${input}`
+        const message = createUsernameSignatureMessage(input, address, timestamp, 'claim')
         const signature = await wallet.signMessage(message)
-        await apiRegister({ username: input, address, signature, message })
-        setCurrentUsername(input)
-        setSuccessMessage(`Your username is now @${input}`)
+        await registerUsername(apiClient, {
+          username: normalizeUsername(input),
+          address,
+          signature,
+          timestamp,
+        })
+        setCurrentUsername(normalizeUsername(input))
+        setSuccessMessage(`Your username is now @${normalizeUsername(input)}`)
       } else if (modalAction === 'update') {
-        const message = `Update username: ${input}`
+        const message = createUsernameSignatureMessage(input, address, timestamp, 'update')
         const signature = await wallet.signMessage(message)
-        await apiUpdate({ newUsername: input, address, signature, message })
-        setCurrentUsername(input)
-        setSuccessMessage(`Username updated to @${input}`)
+        await updateUsername(apiClient, {
+          newUsername: normalizeUsername(input),
+          address,
+          signature,
+          timestamp,
+        })
+        setCurrentUsername(normalizeUsername(input))
+        setSuccessMessage(`Username updated to @${normalizeUsername(input)}`)
       } else if (modalAction === 'delete' && currentUsername) {
-        const message = `Delete username: ${currentUsername}`
+        const message = createUsernameSignatureMessage(currentUsername, address, timestamp, 'delete')
         const signature = await wallet.signMessage(message)
-        await apiDelete(currentUsername, { address, signature, message })
+        await deleteUsername(apiClient, {
+          address,
+          signature,
+          timestamp,
+        })
         setCurrentUsername(null)
         setInput('')
         setSuccessMessage('Username deleted')

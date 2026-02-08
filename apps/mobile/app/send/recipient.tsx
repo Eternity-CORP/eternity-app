@@ -13,24 +13,13 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
+import { debounce } from '@e-y/shared';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import type { Contact } from '@/src/services/contacts-service';
-
-// Debounce helper
-function debounce<T extends (...args: string[]) => void>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  return (...args: Parameters<T>) => {
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
 
 export default function RecipientScreen() {
   const { theme: dynamicTheme } = useTheme();
