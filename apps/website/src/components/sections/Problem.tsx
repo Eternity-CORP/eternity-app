@@ -92,7 +92,7 @@ export function Problem() {
                   <h3 className="text-2xl md:text-3xl font-semibold mb-3 group-hover:text-gradient-blue transition-all duration-300" style={{ color: 'var(--foreground)' }}>
                     {barrier.title}
                   </h3>
-                  <p className="text-lg leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
+                  <p className="text-lg leading-relaxed [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
                     {barrier.description}
                   </p>
                 </div>
@@ -120,9 +120,8 @@ export function Problem() {
 
         <FadeIn delay={0.7}>
           <div className="max-w-3xl mx-auto mt-20 text-center">
-            <p className="text-2xl md:text-3xl font-light leading-relaxed" style={{ color: 'var(--foreground)' }}>
-              Mass adoption isn't blocked by technology.
-              <br />
+            <p className="text-2xl md:text-3xl font-light leading-relaxed [text-wrap:balance]" style={{ color: 'var(--foreground)' }}>
+              Mass adoption isn't blocked by technology.{' '}
               <span className="font-semibold">It's blocked by experience.</span>
             </p>
           </div>

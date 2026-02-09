@@ -19,6 +19,7 @@ import {
 import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 import ConfirmModal from '@/components/chat/cards/ConfirmModal'
 
 // --- Types ---
@@ -238,8 +239,11 @@ export default function UsernamePage() {
       <div className="min-h-screen relative z-[2]">
         <Navigation />
         <main className="w-full flex justify-center px-6 pt-12 pb-12">
-          <div className="w-full max-w-[420px] flex justify-center pt-20">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          <div className="w-full max-w-[420px]">
+            <BackButton />
+            <div className="flex justify-center pt-20">
+              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            </div>
           </div>
         </main>
       </div>
@@ -252,6 +256,7 @@ export default function UsernamePage() {
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
+          <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-8">Username</h1>
 

@@ -8,7 +8,6 @@ import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
 import { useAiChat } from '@/hooks/useAiChat'
 import { sendNativeToken, sendErc20Token } from '@/lib/send-service'
-import AccountSelector from '@/components/AccountSelector'
 import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 import SuggestionChips from './SuggestionChips'
@@ -44,7 +43,7 @@ type ConfirmTarget =
   | { type: 'swap'; swap: Parameters<typeof SwapCard>[0]['swap'] }
 
 export default function ChatContainer() {
-  const { address, network, currentAccount, logout, uiMode, setUiMode } = useAccount()
+  const { address, network, currentAccount } = useAccount()
   const { aggregatedBalances } = useBalance()
   const {
     messages,
@@ -224,42 +223,7 @@ export default function ChatContainer() {
     : null
 
   return (
-    <div className="flex flex-col h-screen relative">
-      {/* Minimal Top Bar */}
-      <div className="flex-shrink-0 flex items-center justify-between px-3 sm:px-4 h-14 border-b border-white/5 gap-2 overflow-visible relative z-50">
-        {/* Left: mode toggle */}
-        <div className="mode-toggle flex shrink-0">
-          <button
-            onClick={() => setUiMode('ai')}
-            className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
-          >
-            AI
-          </button>
-          <button
-            onClick={() => setUiMode('classic')}
-            className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
-          >
-            Classic
-          </button>
-        </div>
-
-        {/* Right: account + lock */}
-        <div className="flex items-center gap-2 shrink-0">
-          <AccountSelector />
-
-          <button
-            onClick={logout}
-            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
-            title="Lock wallet"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full relative">
       {/* Active chat layout — always in DOM, hidden during empty state */}
       <div
         className={`flex-1 flex flex-col min-h-0 transition-opacity duration-500 ease-out ${
@@ -369,7 +333,7 @@ export default function ChatContainer() {
       {/* Empty state overlay — Gemini-style centered welcome */}
       {!hasTransitioned && (
         <div
-          className={`absolute inset-0 top-14 z-10 flex flex-col items-center justify-center px-6 transition-all duration-500 ease-out ${
+          className={`absolute inset-0 z-10 flex flex-col items-center justify-center px-6 transition-all duration-500 ease-out ${
             showEmptyState
               ? 'opacity-100 translate-y-0'
               : 'opacity-0 translate-y-6 pointer-events-none'

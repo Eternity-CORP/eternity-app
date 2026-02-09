@@ -1,50 +1,49 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
 import AccountSelector from '@/components/AccountSelector'
+import ModeToggle from '@/components/ModeToggle'
 
 export default function Navigation() {
+  const router = useRouter()
+  const pathname = usePathname()
   const { isLoggedIn, logout, uiMode, setUiMode } = useAccount()
+
+  const handleModeChange = (mode: 'ai' | 'classic') => {
+    setUiMode(mode)
+    if (mode === 'ai' && pathname !== '/wallet') {
+      router.push('/wallet')
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
       <div className="w-full flex justify-center px-3 sm:px-6">
         <nav className="w-full max-w-[1200px] h-16 flex items-center justify-between">
           {/* Logo */}
-          <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2.5 group">
-            <img src="/logo.svg" alt="Eternity" className="w-7 h-7" />
-            <span className="hidden sm:inline text-lg font-semibold text-white group-hover:text-white/60 transition-colors">
-              Eternity
-            </span>
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2.5 group">
+              <img src="/logo.svg" alt="Eternity" className="w-7 h-7" />
+              <span className="hidden sm:inline text-lg font-semibold text-white group-hover:text-white/60 transition-colors">
+                Eternity
+              </span>
+            </Link>
+          </div>
 
           {/* Right Side */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {isLoggedIn ? (
               <>
-                {/* Mode Toggle */}
-                <div className="mode-toggle flex">
-                  <button
-                    onClick={() => setUiMode('ai')}
-                    className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
-                  >
-                    AI
-                  </button>
-                  <button
-                    onClick={() => setUiMode('classic')}
-                    className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
-                  >
-                    Classic
-                  </button>
-                </div>
+                <ModeToggle value={uiMode} onChange={handleModeChange} />
 
                 <AccountSelector />
 
-                {/* Contacts */}
+                {/* Contacts — desktop only */}
                 <Link
                   href="/wallet/contacts"
-                  className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                  className="hidden sm:flex p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
                   title="Contacts"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -55,10 +54,10 @@ export default function Navigation() {
                   </svg>
                 </Link>
 
-                {/* Settings */}
+                {/* Settings — desktop only */}
                 <Link
                   href="/wallet/settings"
-                  className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                  className="hidden sm:flex p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
                   title="Settings"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -67,10 +66,10 @@ export default function Navigation() {
                   </svg>
                 </Link>
 
-                {/* Lock */}
+                {/* Lock — desktop only */}
                 <button
                   onClick={logout}
-                  className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                  className="hidden sm:flex p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
                   title="Lock wallet"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

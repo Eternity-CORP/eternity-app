@@ -15,6 +15,7 @@ import BridgeProgress from '@/components/BridgeProgress'
 import { sendNativeToken, sendErc20Token, estimateGas as estimateGasFn } from '@/lib/send-service'
 import { calculateTransferRoute, type RoutingResult } from '@/lib/routing-service'
 import { executeBridgeWithRetry } from '@/lib/bridge-service'
+import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 function SendContent() {
@@ -264,6 +265,7 @@ function SendContent() {
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
+          <BackButton />
           {/* Bridge Progress (replaces form when active) */}
           {showBridgeProgress ? (
             <BridgeProgress

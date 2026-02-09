@@ -8,8 +8,8 @@ import { GlitchText } from '@/components/animations/GlitchText'
 const features = [
   {
     id: 'wallet',
-    title: 'Create & Import Wallet',
-    description: 'Your keys, your crypto. Create new or import existing.',
+    title: 'Create & Import',
+    description: 'Your keys, your crypto. Create a new wallet or import an existing one.',
     screen: {
       title: 'Create Wallet',
       content: 'Your 12-word recovery phrase',
@@ -19,7 +19,7 @@ const features = [
   {
     id: 'blik',
     title: 'BLIK Codes',
-    description: 'Share 6 digits. Money arrives in seconds.',
+    description: 'Share a 6-digit code and money arrives in seconds. No addresses needed.',
     screen: {
       title: 'BLIK Code',
       content: '847 291',
@@ -29,7 +29,7 @@ const features = [
   {
     id: 'username',
     title: '@username System',
-    description: 'Send to @alex instead of 0x7f3a...9b2c',
+    description: 'Send to @alex instead of long hex addresses like 0x7f3a...9b2c.',
     screen: {
       title: 'Send to',
       content: '@alex',
@@ -39,7 +39,7 @@ const features = [
   {
     id: 'balances',
     title: 'Token Balances',
-    description: 'All tokens. Real-time USD value.',
+    description: 'All your tokens in one place with real-time USD prices.',
     screen: {
       title: 'Portfolio',
       content: '$1,234.56',
@@ -49,7 +49,7 @@ const features = [
   {
     id: 'contacts',
     title: 'Contacts Book',
-    description: 'Save frequent recipients.',
+    description: 'Save frequent recipients and send again in one tap.',
     screen: {
       title: 'Contacts',
       content: '12 saved',
@@ -59,7 +59,7 @@ const features = [
   {
     id: 'scheduled',
     title: 'Scheduled Payments',
-    description: 'Set it and forget it.',
+    description: 'Automate recurring payments. Set it once and forget about it.',
     screen: {
       title: 'Scheduled',
       content: '3 active',
@@ -69,7 +69,7 @@ const features = [
   {
     id: 'ai',
     title: 'AI Agent',
-    description: 'Your wallet that thinks with you.',
+    description: 'Talk to your wallet in plain language. It understands context.',
     screen: {
       title: 'AI Chat',
       content: '"Send 0.01 ETH to @alex"',
@@ -79,7 +79,7 @@ const features = [
   {
     id: 'split',
     title: 'Split Bill',
-    description: 'Dinner with friends? Split it fairly.',
+    description: 'Dinner with friends? Split the bill fairly in one tap.',
     screen: {
       title: 'Split Bill',
       content: '$45.00 / 3',
@@ -237,9 +237,9 @@ export function Features() {
           <div className="order-1 lg:order-2">
             <StaggerContainer className="grid grid-cols-2 gap-3">
               {features.map((feature, index) => (
-                <StaggerItem key={feature.id}>
+                <StaggerItem key={feature.id} className="h-full">
                   <motion.button
-                    className="w-full p-4 rounded-xl text-left transition-all duration-300"
+                    className="w-full h-full p-4 rounded-xl text-left transition-all duration-300"
                     style={{
                       background: activeIndex === index ? 'var(--foreground)' : 'var(--surface-light)',
                       border: activeIndex === index ? 'none' : '1px solid var(--border-light)',
@@ -255,7 +255,7 @@ export function Features() {
                       {feature.title}
                     </span>
                     <p
-                      className="text-xs line-clamp-2"
+                      className="text-xs line-clamp-2 [text-wrap:balance]"
                       style={{
                         color: activeIndex === index ? 'var(--background)' : 'var(--foreground-muted)',
                         opacity: activeIndex === index ? 0.7 : 1

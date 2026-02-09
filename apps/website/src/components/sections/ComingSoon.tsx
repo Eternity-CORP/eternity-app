@@ -63,7 +63,7 @@ function FeatureCard({ feature, index }: { feature: typeof comingSoonFeatures[0]
         <h3 className="text-xl font-semibold mb-3 group-hover:text-gradient-blue transition-all duration-300" style={{ color: 'var(--foreground)' }}>
           {feature.title}
         </h3>
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
+        <p className="text-sm leading-relaxed [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
           {feature.description}
         </p>
 
@@ -110,7 +110,7 @@ export function ComingSoon() {
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-center text-lg md:text-xl max-w-2xl mx-auto mb-16" style={{ color: 'var(--foreground-muted)' }}>
+          <p className="text-center text-lg md:text-xl max-w-2xl mx-auto mb-16 [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
             The future we're building
           </p>
         </FadeIn>
@@ -124,8 +124,8 @@ export function ComingSoon() {
 
         {/* Bottom note */}
         <FadeIn delay={0.5}>
-          <p className="text-center text-sm mt-16" style={{ color: 'var(--foreground-light)' }}>
-            Dates are estimates and subject to change based on development progress.
+          <p className="text-center text-sm mt-16 [text-wrap:balance]" style={{ color: 'var(--foreground-light)' }}>
+            Dates are estimates and may change based on development progress.
           </p>
         </FadeIn>
       </div>

@@ -14,6 +14,7 @@ import {
 } from '@e-y/shared'
 import { API_BASE_URL } from '@/lib/api'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 type Mode = 'select' | 'request' | 'send'
@@ -185,6 +186,7 @@ export default function BlikPage() {
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
+          <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-8">BLIK</h1>
 

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
 import { fetchTransactionHistory, type TransactionHistoryItem, SUPPORTED_NETWORKS, type NetworkId, formatUsd } from '@e-y/shared'
@@ -30,7 +31,6 @@ function formatDate(ts: number): string {
 }
 
 export default function TokenDetailPage() {
-  const router = useRouter()
   const params = useParams()
   const symbol = (params.symbol as string || '').toUpperCase()
 
@@ -81,17 +81,7 @@ export default function TokenDetailPage() {
       <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
 
-          {/* Back Button */}
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 group"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:-translate-x-0.5 transition-transform">
-              <path d="M19 12H5"/>
-              <polyline points="12 19 5 12 12 5"/>
-            </svg>
-            <span className="text-sm font-medium">Back</span>
-          </button>
+          <BackButton />
 
           {/* Token Header Card */}
           <div className="glass-card gradient-border rounded-2xl p-6 mb-4">

@@ -86,7 +86,7 @@ export function Solution() {
                     {pillar.subtitle}
                   </p>
 
-                  <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
+                  <p className="leading-relaxed [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
                     {pillar.description}
                   </p>
                 </div>

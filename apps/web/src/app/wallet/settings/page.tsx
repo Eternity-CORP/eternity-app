@@ -1,8 +1,9 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
+import ModeToggle from '@/components/ModeToggle'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
@@ -57,7 +58,6 @@ const SETTINGS_LINKS = [
 ]
 
 export default function SettingsPage() {
-  const router = useRouter()
   useAuthGuard()
   const { uiMode, setUiMode } = useAccount()
 
@@ -67,17 +67,8 @@ export default function SettingsPage() {
 
       <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
-          <div className="flex items-center gap-2 mb-6">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 text-white/50 hover:text-white transition-colors group"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:-translate-x-0.5 transition-transform">
-                <path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
-              </svg>
-            </button>
-            <h1 className="text-lg font-semibold text-white">Settings</h1>
-          </div>
+          <BackButton />
+          <h1 className="text-lg font-semibold text-white mb-6">Settings</h1>
 
           {/* UI Mode */}
           <div className="glass-card rounded-2xl p-5 mb-4">
@@ -86,20 +77,7 @@ export default function SettingsPage() {
                 <p className="text-sm font-semibold text-white">UI Mode</p>
                 <p className="text-xs text-white/40">Switch between AI and Classic</p>
               </div>
-              <div className="mode-toggle flex">
-                <button
-                  onClick={() => setUiMode('ai')}
-                  className={`mode-toggle-option ${uiMode === 'ai' ? 'active' : ''}`}
-                >
-                  AI
-                </button>
-                <button
-                  onClick={() => setUiMode('classic')}
-                  className={`mode-toggle-option ${uiMode === 'classic' ? 'active' : ''}`}
-                >
-                  Classic
-                </button>
-              </div>
+              <ModeToggle value={uiMode} onChange={setUiMode} />
             </div>
           </div>
 

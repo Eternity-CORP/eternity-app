@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ethers } from 'ethers'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
   SwapToken,
@@ -151,6 +152,7 @@ export default function SwapPage() {
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[420px]">
+          <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-8">Swap</h1>
 

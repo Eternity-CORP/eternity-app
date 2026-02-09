@@ -6,17 +6,26 @@ import { apiClient } from '@/lib/api'
 import { ApiError } from '@e-y/shared'
 import { isInviteValidated, setInviteValidated } from '@/lib/invite'
 import { getDeviceFingerprint } from '@/lib/fingerprint'
+import WarpEffect from '@/components/WarpEffect'
 
 type GateState = 'checking' | 'idle' | 'loading' | 'success' | 'error' | 'rate-limited'
 
 const LANDING_URL = 'https://eternity-wallet.vercel.app'
+
+/** Strip mobile keyboard artifacts: smart dashes, invisible chars, extra spaces */
+function sanitizeCode(raw: string): string {
+  return raw
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-') // all dash variants → ASCII hyphen
+    .replace(/[^A-Z0-9-]/gi, '') // strip anything not alphanumeric or hyphen
+    .toUpperCase()
+}
 
 export default function GatePage() {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [state, setState] = useState<GateState>('checking')
   const [errorMsg, setErrorMsg] = useState('')
-  const [showFlash, setShowFlash] = useState(false)
+  const [showWarp, setShowWarp] = useState(false)
 
   // On mount: check localStorage first, then check device fingerprint
   useEffect(() => {
@@ -59,25 +68,29 @@ export default function GatePage() {
       })
       setState('success')
       setInviteValidated()
-
-      setShowFlash(true)
-      setTimeout(() => {
-        router.replace('/')
-      }, 800)
+      setShowWarp(true)
     } catch (error) {
-      if (ApiError.isApiError(error) && error.statusCode === 429) {
-        setState('rate-limited')
-        setErrorMsg('Too many attempts. Please try again later.')
-      } else if (ApiError.isApiError(error) && error.statusCode === 403) {
-        setState('error')
-        if (error.code === 'CODE_ALREADY_USED') {
-          setErrorMsg('This code has already been used on another device')
+      if (ApiError.isApiError(error)) {
+        if (error.statusCode === 429) {
+          setState('rate-limited')
+          setErrorMsg('Too many attempts. Please try again later.')
+        } else if (error.statusCode === 403) {
+          setState('error')
+          if (error.code === 'CODE_ALREADY_USED') {
+            setErrorMsg('This code has already been used on another device')
+          } else {
+            setErrorMsg('Invalid access code')
+          }
+        } else if (error.statusCode === 400) {
+          setState('error')
+          setErrorMsg('Invalid code format. Use format: EY-XXXX-XXX')
         } else {
-          setErrorMsg('Invalid access code')
+          setState('error')
+          setErrorMsg(error.message || 'Something went wrong. Please try again.')
         }
       } else {
         setState('error')
-        setErrorMsg('Connection error. Please try again.')
+        setErrorMsg('Connection error. Please check your internet and try again.')
       }
     }
   }, [code, router])
@@ -93,8 +106,8 @@ export default function GatePage() {
 
   return (
     <div className="min-h-screen relative z-[2] flex items-center justify-center px-6">
-      {showFlash && (
-        <div className="fixed inset-0 z-50 bg-white animate-pulse pointer-events-none" />
+      {showWarp && (
+        <WarpEffect onComplete={() => router.replace('/')} />
       )}
 
       <div className="w-full max-w-sm">
@@ -116,11 +129,15 @@ export default function GatePage() {
                 type="text"
                 value={code}
                 onChange={(e) => {
-                  setCode(e.target.value.toUpperCase())
+                  setCode(sanitizeCode(e.target.value))
                   if (state === 'error') setState('idle')
                 }}
                 placeholder="EY-XXXX-XXX"
                 autoFocus
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="characters"
+                spellCheck={false}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-center font-mono text-lg tracking-widest placeholder:text-white/20 outline-none focus:border-white/30 transition-colors"
                 disabled={state === 'loading' || state === 'rate-limited'}
               />

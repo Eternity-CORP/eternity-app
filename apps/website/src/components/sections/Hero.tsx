@@ -58,12 +58,12 @@ export function Hero() {
 
         <FadeIn delay={0.4}>
           <p
-            className="text-xl md:text-2xl max-w-2xl mx-auto mb-12"
+            className="text-xl md:text-2xl max-w-2xl mx-auto mb-12 [text-wrap:balance]"
             style={{ color: 'var(--foreground-muted)' }}
           >
-            Send crypto like you send a text.
+            Send crypto like a text message.
             <br className="hidden md:block" />
-            No addresses. No fear. Just 6 digits.
+            {' '}Just type a name and hit send.
           </p>
         </FadeIn>
 

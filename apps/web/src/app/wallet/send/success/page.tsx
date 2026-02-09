@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 import { useAccount } from '@/contexts/account-context'
 
 function SuccessContent() {
@@ -19,6 +20,7 @@ function SuccessContent() {
       <Navigation />
 
       <main className="max-w-[480px] mx-auto px-6 py-16">
+        <BackButton />
         <div className="glass-card gradient-border rounded-2xl p-8 text-center">
           {/* Success icon */}
           <div className="w-20 h-20 mx-auto rounded-full bg-[#22c55e]/8 border-2 border-[#22c55e]/20 flex items-center justify-center mb-8">

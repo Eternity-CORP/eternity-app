@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 
 export default function BlikReceivedPage() {
   const router = useRouter()
@@ -11,6 +12,7 @@ export default function BlikReceivedPage() {
       <Navigation />
 
       <main className="max-w-[480px] mx-auto px-6 py-16">
+        <BackButton />
         <div className="glass-card gradient-border rounded-2xl p-8 text-center">
           {/* Success icon */}
           <div className="w-20 h-20 mx-auto rounded-full bg-[#22c55e]/8 border-2 border-[#22c55e]/20 flex items-center justify-center mb-8">

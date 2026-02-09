@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAccount } from '@/contexts/account-context'
 import { fetchTransactionHistory, truncateAddress, type TransactionHistoryItem } from '@e-y/shared'
 import Navigation from '@/components/Navigation'
+import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function HistoryPage() {
@@ -41,6 +42,7 @@ export default function HistoryPage() {
       <Navigation />
 
       <main className="max-w-[800px] mx-auto px-8 py-8">
+        <BackButton />
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gradient">Transaction History</h1>

@@ -44,7 +44,7 @@ export function Footer() {
             <p className="text-xs mb-4" style={{ color: 'var(--foreground-muted)' }}>
               Intelligence meets simplicity.
               <br />
-              No addresses. No fear. Just you and AI.
+              Your AI-powered crypto companion.
             </p>
             <a
               href="mailto:eternity.shard.business@gmail.com"

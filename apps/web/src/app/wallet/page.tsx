@@ -18,18 +18,21 @@ export default function WalletDashboard() {
   const [showFaucet, setShowFaucet] = useState(false)
   const isTestAccount = currentAccount?.type === 'test'
 
-  // AI Mode — clean fullscreen, no Navigation, no glow orbs
+  const networkColor = currentAccount?.type === 'real' ? '#22c55e' : '#F59E0B'
+
+  // AI Mode — Navigation stays, chat fills remaining height
   if (uiMode === 'ai') {
     return (
-      <div className="min-h-screen relative z-[2] bg-black bg-grid">
-        <ChatContainer />
+      <div className="h-screen relative z-[2] flex flex-col">
+        <Navigation />
+        <div className="flex-1 min-h-0 bg-black bg-grid">
+          <ChatContainer />
+        </div>
       </div>
     )
   }
 
   // Classic Mode
-  const networkColor = currentAccount?.type === 'real' ? '#22c55e' : '#F59E0B'
-
   return (
     <div className="min-h-screen relative z-[2]">
       <Navigation />
