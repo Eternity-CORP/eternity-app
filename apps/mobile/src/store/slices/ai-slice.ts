@@ -13,6 +13,7 @@ import type {
   BlikPreview,
   SwapPreview,
 } from '@/src/services/ai-service';
+import type { UsernamePreview } from '@e-y/shared';
 
 // ============================================
 // Types
@@ -44,6 +45,9 @@ export interface AiState {
   // Pending swap from AI (awaiting user confirmation)
   pendingSwap: SwapPreview | null;
 
+  // Pending username registration from AI
+  pendingUsername: UsernamePreview | null;
+
   // Error state
   error: string | null;
   errorCode: string | null;
@@ -66,13 +70,14 @@ const initialState: AiState = {
   pendingTransaction: null,
   pendingBlik: null,
   pendingSwap: null,
+  pendingUsername: null,
   error: null,
   errorCode: null,
   rateLimit: null,
 };
 
 // ============================================
-// Helpers
+// Helpers (called outside reducers — in prepare callbacks)
 // ============================================
 
 function generateMessageId(): string {
@@ -124,23 +129,42 @@ const aiSlice = createSlice({
 
     /**
      * Send a user message
+     * Uses prepare callback to keep Date.now()/Math.random() out of the reducer
      */
-    sendMessage: (state, action: PayloadAction<string>) => {
-      const message: ChatMessage = {
-        id: generateMessageId(),
-        role: 'user',
-        content: action.payload,
-        timestamp: new Date().toISOString(),
-      };
+    sendMessage: {
+      reducer: (
+        state,
+        action: PayloadAction<{
+          content: string;
+          messageId: string;
+          streamingMessageId: string;
+          timestamp: string;
+        }>,
+      ) => {
+        const message: ChatMessage = {
+          id: action.payload.messageId,
+          role: 'user',
+          content: action.payload.content,
+          timestamp: action.payload.timestamp,
+        };
 
-      state.messages.push(message);
-      state.status = 'sending';
-      state.error = null;
-      state.errorCode = null;
+        state.messages.push(message);
+        state.status = 'sending';
+        state.error = null;
+        state.errorCode = null;
 
-      // Prepare for streaming response
-      state.streamingContent = '';
-      state.streamingMessageId = generateMessageId();
+        // Prepare for streaming response
+        state.streamingContent = '';
+        state.streamingMessageId = action.payload.streamingMessageId;
+      },
+      prepare: (content: string) => ({
+        payload: {
+          content,
+          messageId: generateMessageId(),
+          streamingMessageId: generateMessageId(),
+          timestamp: new Date().toISOString(),
+        },
+      }),
     },
 
     /**
@@ -153,31 +177,45 @@ const aiSlice = createSlice({
 
     /**
      * Streaming complete - finalize message
+     * Uses prepare callback to keep Date.now() out of the reducer
      */
-    streamingComplete: (
-      state,
-      action: PayloadAction<{
+    streamingComplete: {
+      reducer: (
+        state,
+        action: PayloadAction<{
+          content: string;
+          timestamp: string;
+          toolCalls?: ToolCall[];
+          toolResults?: ToolResult[];
+        }>,
+      ) => {
+        if (state.streamingMessageId) {
+          const message: ChatMessage = {
+            id: state.streamingMessageId,
+            role: 'assistant',
+            content: action.payload.content,
+            timestamp: action.payload.timestamp,
+            toolCalls: action.payload.toolCalls,
+            toolResults: action.payload.toolResults,
+          };
+
+          state.messages.push(message);
+        }
+
+        state.status = 'connected';
+        state.streamingContent = '';
+        state.streamingMessageId = null;
+      },
+      prepare: (payload: {
         content: string;
         toolCalls?: ToolCall[];
         toolResults?: ToolResult[];
-      }>,
-    ) => {
-      if (state.streamingMessageId) {
-        const message: ChatMessage = {
-          id: state.streamingMessageId,
-          role: 'assistant',
-          content: action.payload.content,
+      }) => ({
+        payload: {
+          ...payload,
           timestamp: new Date().toISOString(),
-          toolCalls: action.payload.toolCalls,
-          toolResults: action.payload.toolResults,
-        };
-
-        state.messages.push(message);
-      }
-
-      state.status = 'connected';
-      state.streamingContent = '';
-      state.streamingMessageId = null;
+        },
+      }),
     },
 
     /**
@@ -248,6 +286,24 @@ const aiSlice = createSlice({
      */
     clearPendingSwap: (state) => {
       state.pendingSwap = null;
+    },
+
+    // ========================================
+    // Username Actions
+    // ========================================
+
+    /**
+     * Set pending username registration from AI
+     */
+    setPendingUsername: (state, action: PayloadAction<UsernamePreview | null>) => {
+      state.pendingUsername = action.payload;
+    },
+
+    /**
+     * Clear pending username (after confirm/cancel)
+     */
+    clearPendingUsername: (state) => {
+      state.pendingUsername = null;
     },
 
     // ========================================
@@ -357,6 +413,10 @@ export const {
   // Swap
   setPendingSwap,
   clearPendingSwap,
+
+  // Username
+  setPendingUsername,
+  clearPendingUsername,
 
   // Suggestions
   addSuggestion,

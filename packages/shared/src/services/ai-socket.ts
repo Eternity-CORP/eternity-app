@@ -7,6 +7,7 @@
 import type { SocketLike } from './socket-types';
 import {
   AI_EVENTS,
+  type AiContact,
   type ChunkPayload,
   type DonePayload,
   type ToolCall,
@@ -27,7 +28,7 @@ export interface AiSocketCallbacks {
 }
 
 export interface AiSocketService {
-  subscribe(address: string): void;
+  subscribe(address: string, contacts?: AiContact[]): void;
   unsubscribe(): void;
   sendMessage(content: string): void;
   addResponseToHistory(content: string): void;
@@ -72,10 +73,10 @@ export function createAiSocketService(socket: SocketLike): AiSocketService {
   });
 
   return {
-    subscribe(address: string): void {
+    subscribe(address: string, contacts?: AiContact[]): void {
       userAddress = address.toLowerCase();
       if (socket.connected) {
-        socket.emit(AI_EVENTS.SUBSCRIBE, { address: userAddress });
+        socket.emit(AI_EVENTS.SUBSCRIBE, { address: userAddress, contacts });
       }
     },
 

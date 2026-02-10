@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { truncateAddress } from '@e-y/shared'
+import ChatCardShell from './ChatCardShell'
 
 interface TransactionPreview {
   id: string
@@ -64,8 +65,7 @@ export default function SendPreviewCard({ transaction, onConfirm, onCancel }: Se
   }
 
   return (
-    <div className="flex justify-start">
-      <div className="glass-card rounded-2xl p-4 max-w-[320px] w-full">
+    <ChatCardShell>
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-full bg-[#3388FF]/15 flex items-center justify-center text-[#3388FF]">
@@ -183,7 +183,6 @@ export default function SendPreviewCard({ transaction, onConfirm, onCancel }: Se
             Send
           </button>
         </div>
-      </div>
-    </div>
+    </ChatCardShell>
   )
 }

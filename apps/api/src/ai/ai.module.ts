@@ -10,9 +10,15 @@ import {
   HistoryTool,
   ContactsTool,
   ScheduledTool,
+  CreateScheduledTool,
+  CancelScheduledTool,
   BlikGenerateTool,
   BlikLookupTool,
   SwapTool,
+  CreateSplitTool,
+  GetSplitsTool,
+  CheckUsernameTool,
+  RegisterUsernameTool,
 } from './tools';
 import {
   AiSecurityService,
@@ -25,6 +31,7 @@ import { BalanceServiceAi, HistoryServiceAi } from './services';
 import { ScheduledModule } from '../scheduled/scheduled.module';
 import { UsernameModule } from '../username/username.module';
 import { BlikModule } from '../blik/blik.module';
+import { SplitModule } from '../split/split.module';
 
 @Module({
   imports: [
@@ -32,6 +39,7 @@ import { BlikModule } from '../blik/blik.module';
     forwardRef(() => ScheduledModule),
     UsernameModule,
     BlikModule,
+    SplitModule,
   ],
   controllers: [AiController],
   providers: [
@@ -46,9 +54,15 @@ import { BlikModule } from '../blik/blik.module';
     HistoryTool,
     ContactsTool,
     ScheduledTool,
+    CreateScheduledTool,
+    CancelScheduledTool,
     BlikGenerateTool,
     BlikLookupTool,
     SwapTool,
+    CreateSplitTool,
+    GetSplitsTool,
+    CheckUsernameTool,
+    RegisterUsernameTool,
     AiSecurityService,
     AiRateLimiter,
     AiAuditLogger,

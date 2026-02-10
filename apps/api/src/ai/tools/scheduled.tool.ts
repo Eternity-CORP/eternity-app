@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { fetchTokenPricesBySymbol } from '@e-y/shared';
 import { ScheduledService } from '../../scheduled/scheduled.service';
+import { UsernameService } from '../../username/username.service';
 import {
   AIToolHandler,
   ToolDefinition,
@@ -108,7 +109,198 @@ export class ScheduledTool implements AIToolHandler {
       this.logger.error('Failed to get scheduled payments', error);
       return {
         success: false,
-        error: 'Failed to fetch scheduled payments',
+        error: `Failed to fetch scheduled payments: ${(error as Error).message}`,
+      };
+    }
+  }
+}
+
+// ============================================
+// Create Scheduled Payment Tool
+// ============================================
+
+interface CreateScheduledParams extends ToolParams {
+  recipient: string;
+  amount: string;
+  token: string;
+  scheduledAt: string;
+  recurringInterval?: 'once' | 'daily' | 'weekly' | 'monthly';
+  description?: string;
+}
+
+@Injectable()
+export class CreateScheduledTool implements AIToolHandler {
+  readonly name = 'create_scheduled';
+  private readonly logger = new Logger(CreateScheduledTool.name);
+
+  constructor(
+    private readonly scheduledService: ScheduledService,
+    private readonly usernameService: UsernameService,
+  ) {}
+
+  readonly definition: ToolDefinition = {
+    name: 'create_scheduled',
+    description:
+      'Create a new scheduled or recurring payment. The payment will be executed at the specified time.',
+    parameters: {
+      type: 'object',
+      properties: {
+        recipient: {
+          type: 'string',
+          description: 'Recipient address (0x...) or username (@username)',
+        },
+        amount: {
+          type: 'string',
+          description: 'Amount to send (e.g., "0.01", "100")',
+        },
+        token: {
+          type: 'string',
+          description: 'Token symbol (e.g., "ETH", "USDC")',
+        },
+        scheduledAt: {
+          type: 'string',
+          description: 'ISO 8601 date-time for when to execute (e.g., "2025-06-01T10:00:00Z")',
+        },
+        recurringInterval: {
+          type: 'string',
+          description: 'How often to repeat: "once" (default), "daily", "weekly", "monthly"',
+        },
+        description: {
+          type: 'string',
+          description: 'Optional description or memo',
+        },
+      },
+      required: ['recipient', 'amount', 'token', 'scheduledAt'],
+    },
+  };
+
+  async execute(params: CreateScheduledParams): Promise<ToolResult> {
+    const { userAddress, recipient, amount, token, scheduledAt, recurringInterval, description } = params;
+
+    if (!userAddress) {
+      return { success: false, error: 'User address is required' };
+    }
+    if (!recipient || !amount || !token || !scheduledAt) {
+      return { success: false, error: 'Recipient, amount, token, and scheduledAt are required' };
+    }
+
+    this.logger.debug(`Creating scheduled payment: ${amount} ${token} to ${recipient} at ${scheduledAt}`);
+
+    try {
+      // Resolve recipient
+      let resolvedAddress = recipient;
+      let recipientUsername: string | undefined;
+
+      if (recipient.startsWith('@')) {
+        recipientUsername = recipient.slice(1);
+        const record = await this.usernameService.lookup(recipientUsername);
+        if (!record) {
+          return { success: false, error: `Username @${recipientUsername} not found` };
+        }
+        resolvedAddress = record.address;
+      }
+
+      // Validate scheduled time
+      const scheduledDate = new Date(scheduledAt);
+      if (isNaN(scheduledDate.getTime())) {
+        return { success: false, error: `Invalid date format: "${scheduledAt}". Use ISO 8601 format (e.g., "2025-06-01T10:00:00Z")` };
+      }
+      if (scheduledDate.getTime() <= Date.now()) {
+        return { success: false, error: 'Scheduled time must be in the future' };
+      }
+
+      const interval = recurringInterval === 'once' ? undefined : recurringInterval;
+
+      const payment = await this.scheduledService.create({
+        creatorAddress: userAddress,
+        recipient: resolvedAddress,
+        recipientUsername,
+        amount,
+        tokenSymbol: token.toUpperCase(),
+        scheduledAt: scheduledDate.toISOString(),
+        recurringInterval: interval,
+        description,
+      });
+
+      return {
+        success: true,
+        data: {
+          id: payment.id,
+          recipient: resolvedAddress,
+          recipientUsername,
+          amount,
+          token: token.toUpperCase(),
+          scheduledAt: payment.scheduledAt.toISOString(),
+          recurring: interval || 'once',
+          description,
+          message: `Scheduled payment created: ${amount} ${token.toUpperCase()} to ${recipientUsername ? '@' + recipientUsername : resolvedAddress} at ${scheduledDate.toLocaleString()}.${interval ? ` Repeats ${interval}.` : ''}`,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to create scheduled payment', error);
+      return {
+        success: false,
+        error: `Failed to create scheduled payment: ${(error as Error).message}`,
+      };
+    }
+  }
+}
+
+// ============================================
+// Cancel Scheduled Payment Tool
+// ============================================
+
+@Injectable()
+export class CancelScheduledTool implements AIToolHandler {
+  readonly name = 'cancel_scheduled';
+  private readonly logger = new Logger(CancelScheduledTool.name);
+
+  constructor(private readonly scheduledService: ScheduledService) {}
+
+  readonly definition: ToolDefinition = {
+    name: 'cancel_scheduled',
+    description:
+      'Cancel a scheduled payment by its ID. Only the creator can cancel.',
+    parameters: {
+      type: 'object',
+      properties: {
+        paymentId: {
+          type: 'string',
+          description: 'The ID of the scheduled payment to cancel',
+        },
+      },
+      required: ['paymentId'],
+    },
+  };
+
+  async execute(params: ToolParams & { paymentId: string }): Promise<ToolResult> {
+    const { userAddress, paymentId } = params;
+
+    if (!userAddress) {
+      return { success: false, error: 'User address is required' };
+    }
+    if (!paymentId) {
+      return { success: false, error: 'Payment ID is required' };
+    }
+
+    this.logger.debug(`Cancelling scheduled payment ${paymentId} for ${userAddress}`);
+
+    try {
+      const cancelled = await this.scheduledService.cancel(paymentId, userAddress);
+
+      return {
+        success: true,
+        data: {
+          id: cancelled.id,
+          status: 'cancelled',
+          message: `Scheduled payment ${cancelled.id} has been cancelled.`,
+        },
+      };
+    } catch (error) {
+      this.logger.error('Failed to cancel scheduled payment', error);
+      return {
+        success: false,
+        error: `Failed to cancel: ${(error as Error).message}`,
       };
     }
   }

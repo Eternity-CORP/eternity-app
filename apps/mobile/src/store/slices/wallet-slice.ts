@@ -2,7 +2,7 @@
  * Wallet Redux Slice
  */
 
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction, type Dispatch } from '@reduxjs/toolkit';
 import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, saveCurrentAccountIndex, loadCurrentAccountIndex, type WalletData } from '@/src/services/wallet-service';
 import { getAddressFromMnemonic } from '@e-y/crypto';
 import { migrateAccountAddresses, type AccountType, type WalletAccount } from '@e-y/shared';
@@ -84,6 +84,8 @@ export const importWalletThunk = createAsyncThunk(
   'wallet/import',
   async (mnemonic: string) => {
     const walletData = await importWallet(mnemonic);
+    // Persist account index (side effect belongs in thunk, not reducer)
+    await saveCurrentAccountIndex(0);
     return walletData;
   }
 );
@@ -93,12 +95,21 @@ export const importWalletThunk = createAsyncThunk(
  */
 export const loadAccountsThunk = createAsyncThunk(
   'wallet/loadAccounts',
-  async () => {
+  async (_, { getState }) => {
     const [accounts, savedIndex] = await Promise.all([
       loadAccounts(),
       loadCurrentAccountIndex(),
     ]);
-    return { accounts, savedIndex };
+    // Handle migration side effect here (in thunk) instead of in reducer
+    const state = getState() as { wallet: WalletState };
+    if (accounts.length > 0 && state.wallet.mnemonic) {
+      const migration = migrateAccountAddresses(accounts, state.wallet.mnemonic, getAddressFromMnemonic);
+      if (migration.needsSave) {
+        await saveAccounts(migration.accounts);
+      }
+      return { accounts: migration.accounts, savedIndex, migrated: true };
+    }
+    return { accounts, savedIndex, migrated: false };
   }
 );
 
@@ -114,6 +125,9 @@ export const addAccountThunk = createAsyncThunk(
       throw new Error('No mnemonic available. Please create or import a wallet first.');
     }
     const newAccount = await createNewAccount(state.wallet.mnemonic, state.wallet.accounts, type);
+    // Persist account index after adding (side effect belongs in thunk, not reducer)
+    const newIndex = state.wallet.accounts.length; // will be the index of the new account
+    await saveCurrentAccountIndex(newIndex);
     return newAccount;
   }
 );
@@ -142,12 +156,11 @@ const walletSlice = createSlice({
       // Switch to the new account
       state.currentAccountIndex = state.accounts.length - 1;
     },
-    switchAccount: (state, action: PayloadAction<number>) => {
+    /** Pure reducer for switching accounts (use switchAccountThunk for persistence) */
+    _switchAccount: (state, action: PayloadAction<number>) => {
       const index = action.payload;
       if (index >= 0 && index < state.accounts.length) {
         state.currentAccountIndex = index;
-        // Persist asynchronously (fire-and-forget from reducer)
-        saveCurrentAccountIndex(index);
       }
     },
     updateAccountLabel: (state, action: PayloadAction<{ accountIndex: number; label: string | undefined }>) => {
@@ -156,14 +169,11 @@ const walletSlice = createSlice({
         account.label = action.payload.label;
       }
     },
-    reorderAccounts: (state, action: PayloadAction<Account[]>) => {
-      const currentAddress = state.accounts[state.currentAccountIndex]?.address;
-      state.accounts = action.payload;
-      // Update currentAccountIndex to point to the same account after reorder
-      const newIndex = action.payload.findIndex((acc) => acc.address === currentAddress);
-      if (newIndex !== -1) {
-        state.currentAccountIndex = newIndex;
-        saveCurrentAccountIndex(newIndex);
+    /** Pure reducer for reordering accounts (use reorderAccountsThunk for persistence) */
+    _reorderAccounts: (state, action: PayloadAction<{ accounts: Account[]; newIndex: number }>) => {
+      state.accounts = action.payload.accounts;
+      if (action.payload.newIndex !== -1) {
+        state.currentAccountIndex = action.payload.newIndex;
       }
     },
     clearWallet: (state) => {
@@ -207,20 +217,11 @@ const walletSlice = createSlice({
       .addCase(loadAccountsThunk.fulfilled, (state, action) => {
         const { accounts, savedIndex } = action.payload;
         // Replace temporary accounts with loaded ones
+        // Migration (re-derive addresses) is already handled in the thunk
         if (accounts.length > 0) {
-          // Re-derive addresses from mnemonic to fix any stale/mismatched addresses
-          const migration = state.mnemonic
-            ? migrateAccountAddresses(accounts, state.mnemonic, getAddressFromMnemonic)
-            : { accounts, needsSave: false };
-
-          state.accounts = migration.accounts;
+          state.accounts = accounts;
           // Restore persisted account index (with bounds check)
-          state.currentAccountIndex = savedIndex < migration.accounts.length ? savedIndex : 0;
-
-          // Persist corrected addresses
-          if (migration.needsSave) {
-            saveAccounts(migration.accounts);
-          }
+          state.currentAccountIndex = savedIndex < accounts.length ? savedIndex : 0;
         } else if (state.accounts.length === 0 && state.mnemonic) {
           // If no accounts stored but wallet exists, create default account
           // This handles migration from old wallet format
@@ -242,8 +243,7 @@ const walletSlice = createSlice({
         state.accounts.push(action.payload);
         state.currentAccountIndex = state.accounts.length - 1;
         state.status = 'succeeded';
-        // Persist the new account index
-        saveCurrentAccountIndex(state.currentAccountIndex);
+        // Persistence is handled in the thunk body (side effects do not belong in reducers)
       })
       .addCase(addAccountThunk.rejected, (state, action) => {
         state.status = 'failed';
@@ -328,7 +328,7 @@ const walletSlice = createSlice({
         }
         state.status = 'succeeded';
         state.isInitialized = true;
-        saveCurrentAccountIndex(0);
+        // Persistence is handled in the thunk body (side effects do not belong in reducers)
       })
       .addCase(importWalletThunk.rejected, (state, action) => {
         state.status = 'failed';
@@ -337,7 +337,41 @@ const walletSlice = createSlice({
   },
 });
 
-export const { addAccount, switchAccount, updateAccountLabel, reorderAccounts, clearWallet } = walletSlice.actions;
+export const { addAccount, updateAccountLabel, clearWallet } = walletSlice.actions;
+
+// Internal pure reducers used by thunks below
+const { _switchAccount, _reorderAccounts } = walletSlice.actions;
+
+/** The raw action creator for switchAccount — use in extraReducers addCase() listeners */
+export const switchAccountAction = _switchAccount;
+
+/**
+ * Switch account and persist the index to storage.
+ * Side effects (saveCurrentAccountIndex) are kept out of reducers.
+ */
+export const switchAccount = (index: number) =>
+  (dispatch: Dispatch, getState: () => { wallet: WalletState }) => {
+    const state = getState();
+    if (index >= 0 && index < state.wallet.accounts.length) {
+      dispatch(_switchAccount(index));
+      saveCurrentAccountIndex(index);
+    }
+  };
+
+/**
+ * Reorder accounts and persist the new index to storage.
+ * Side effects (saveCurrentAccountIndex) are kept out of reducers.
+ */
+export const reorderAccounts = (newAccounts: Account[]) =>
+  (dispatch: Dispatch, getState: () => { wallet: WalletState }) => {
+    const state = getState();
+    const currentAddress = state.wallet.accounts[state.wallet.currentAccountIndex]?.address;
+    const newIndex = newAccounts.findIndex((acc) => acc.address === currentAddress);
+    dispatch(_reorderAccounts({ accounts: newAccounts, newIndex }));
+    if (newIndex !== -1) {
+      saveCurrentAccountIndex(newIndex);
+    }
+  };
 
 // Selectors
 type RootState = { wallet: WalletState };

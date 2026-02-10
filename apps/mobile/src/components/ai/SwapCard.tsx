@@ -17,6 +17,7 @@ import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
+import { cardStyles } from './card-styles';
 
 export interface PendingSwap {
   id: string;
@@ -97,26 +98,26 @@ export function SwapCard({
   // Success state
   if (status === 'success') {
     return (
-      <View style={styles.container}>
-        <View style={styles.successContainer}>
+      <View style={cardStyles.container}>
+        <View style={cardStyles.successContainer}>
           <LinearGradient
             colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.successCard}
+            style={cardStyles.successCard}
           >
             <FontAwesome name="check-circle" size={32} color="#FFFFFF" />
-            <Text style={styles.successTitle}>Swap Complete!</Text>
-            <Text style={styles.successSubtitle}>
+            <Text style={cardStyles.successTitle}>Swap Complete!</Text>
+            <Text style={cardStyles.successSubtitle}>
               {swap.fromToken.amount} {swap.fromToken.symbol} → {swap.toToken.amount} {swap.toToken.symbol}
             </Text>
             {txHash && (
-              <Text style={styles.txHash}>{truncateAddress(txHash)}</Text>
+              <Text style={cardStyles.txHash}>{truncateAddress(txHash)}</Text>
             )}
           </LinearGradient>
 
-          <TouchableOpacity style={styles.doneButton} onPress={onComplete}>
-            <Text style={styles.doneButtonText}>Done</Text>
+          <TouchableOpacity style={cardStyles.doneButton} onPress={onComplete}>
+            <Text style={cardStyles.doneButtonText}>Done</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -124,14 +125,14 @@ export function SwapCard({
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
+    <View style={cardStyles.container}>
+      <View style={cardStyles.card}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
+        <View style={cardStyles.header}>
+          <View style={[cardStyles.headerIcon, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
             <FontAwesome name="exchange" size={16} color="#F59E0B" />
           </View>
-          <Text style={styles.headerTitle}>Confirm Swap</Text>
+          <Text style={cardStyles.headerTitle}>Confirm Swap</Text>
         </View>
 
         {/* Swap Display */}
@@ -179,31 +180,31 @@ export function SwapCard({
         </View>
 
         {/* Details */}
-        <View style={styles.details}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Rate</Text>
-            <Text style={styles.detailValue}>{swap.rate}</Text>
+        <View style={cardStyles.details}>
+          <View style={cardStyles.detailRow}>
+            <Text style={cardStyles.detailLabel}>Rate</Text>
+            <Text style={cardStyles.detailValue}>{swap.rate}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Price Impact</Text>
+          <View style={cardStyles.detailRow}>
+            <Text style={cardStyles.detailLabel}>Price Impact</Text>
             <Text style={[
-              styles.detailValue,
+              cardStyles.detailValue,
               parseFloat(swap.priceImpact) > 1 && styles.detailValueWarning
             ]}>
               {swap.priceImpact}
             </Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Slippage</Text>
-            <Text style={styles.detailValue}>{swap.slippage}</Text>
+          <View style={cardStyles.detailRow}>
+            <Text style={cardStyles.detailLabel}>Slippage</Text>
+            <Text style={cardStyles.detailValue}>{swap.slippage}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Network</Text>
-            <Text style={styles.detailValue}>{swap.network}</Text>
+          <View style={cardStyles.detailRow}>
+            <Text style={cardStyles.detailLabel}>Network</Text>
+            <Text style={cardStyles.detailValue}>{swap.network}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Gas Fee</Text>
-            <Text style={styles.detailValue}>
+          <View style={cardStyles.detailRow}>
+            <Text style={cardStyles.detailLabel}>Gas Fee</Text>
+            <Text style={cardStyles.detailValue}>
               ~{swap.estimatedGas} ETH (${swap.estimatedGasUsd})
             </Text>
           </View>
@@ -221,9 +222,9 @@ export function SwapCard({
 
         {/* Error */}
         {error && (
-          <View style={styles.errorBanner}>
+          <View style={cardStyles.errorBanner}>
             <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={cardStyles.errorText}>{error}</Text>
           </View>
         )}
 
@@ -235,18 +236,18 @@ export function SwapCard({
         )}
 
         {/* Actions */}
-        <View style={styles.actions}>
+        <View style={cardStyles.actions}>
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={cardStyles.cancelButton}
             onPress={onCancel}
             disabled={status === 'approving' || status === 'confirming'}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={cardStyles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
           {!isApproved ? (
             <TouchableOpacity
-              style={[styles.confirmButton, status === 'approving' && styles.confirmButtonDisabled]}
+              style={[cardStyles.confirmButton, status === 'approving' && cardStyles.confirmButtonDisabled]}
               onPress={handleApprove}
               disabled={status === 'approving'}
             >
@@ -254,21 +255,21 @@ export function SwapCard({
                 colors={['#F59E0B', '#D97706']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.confirmButtonGradient}
+                style={cardStyles.confirmButtonGradient}
               >
                 {status === 'approving' ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
                     <FontAwesome name="unlock-alt" size={14} color="#FFFFFF" />
-                    <Text style={styles.confirmButtonText}>Approve</Text>
+                    <Text style={cardStyles.confirmButtonText}>Approve</Text>
                   </>
                 )}
               </LinearGradient>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.confirmButton, status === 'confirming' && styles.confirmButtonDisabled]}
+              style={[cardStyles.confirmButton, status === 'confirming' && cardStyles.confirmButtonDisabled]}
               onPress={handleConfirm}
               disabled={status === 'confirming'}
             >
@@ -276,14 +277,14 @@ export function SwapCard({
                 colors={['#F59E0B', '#D97706']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.confirmButtonGradient}
+                style={cardStyles.confirmButtonGradient}
               >
                 {status === 'confirming' ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
                     <FontAwesome name="exchange" size={14} color="#FFFFFF" />
-                    <Text style={styles.confirmButtonText}>Swap</Text>
+                    <Text style={cardStyles.confirmButtonText}>Swap</Text>
                   </>
                 )}
               </LinearGradient>
@@ -296,38 +297,6 @@ export function SwapCard({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-  },
-  card: {
-    backgroundColor: aiChat.glassCard.bg,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(51,136,255,0.2)',
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: aiChat.divider,
-  },
-  headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(245,158,11,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.sm,
-  },
-  headerTitle: {
-    ...theme.typography.body,
-    color: aiChat.text.primary,
-    fontWeight: '600',
-  },
   swapSection: {
     padding: theme.spacing.md,
     borderBottomWidth: 1,
@@ -383,24 +352,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: theme.spacing.sm,
   },
-  details: {
-    padding: theme.spacing.md,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-  },
-  detailLabel: {
-    ...theme.typography.caption,
-    color: aiChat.text.tertiary,
-  },
-  detailValue: {
-    ...theme.typography.body,
-    color: aiChat.text.primary,
-    fontWeight: '500',
-  },
   detailValueWarning: {
     color: aiChat.accentAmber,
   },
@@ -418,98 +369,5 @@ const styles = StyleSheet.create({
     ...theme.typography.caption,
     color: aiChat.accentAmber,
     flex: 1,
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    marginHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    padding: theme.spacing.sm,
-    backgroundColor: 'rgba(239,68,68,0.1)',
-    borderRadius: theme.borderRadius.sm,
-  },
-  errorText: {
-    ...theme.typography.caption,
-    color: aiChat.accentRed,
-    flex: 1,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: aiChat.divider,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    ...theme.typography.body,
-    color: aiChat.text.secondary,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    flex: 2,
-    borderRadius: theme.borderRadius.md,
-    overflow: 'hidden',
-  },
-  confirmButtonDisabled: {
-    opacity: 0.6,
-  },
-  confirmButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.md,
-  },
-  confirmButtonText: {
-    ...theme.typography.body,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  // Success state styles
-  successContainer: {
-    gap: theme.spacing.md,
-  },
-  successCard: {
-    alignItems: 'center',
-    padding: theme.spacing.xl,
-    borderRadius: theme.borderRadius.lg,
-  },
-  successTitle: {
-    ...theme.typography.heading,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    marginTop: theme.spacing.md,
-  },
-  successSubtitle: {
-    ...theme.typography.body,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: theme.spacing.xs,
-  },
-  txHash: {
-    ...theme.typography.caption,
-    color: 'rgba(255,255,255,0.6)',
-    marginTop: theme.spacing.sm,
-  },
-  doneButton: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  doneButtonText: {
-    ...theme.typography.body,
-    color: aiChat.text.primary,
-    fontWeight: '600',
   },
 });

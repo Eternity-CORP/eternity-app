@@ -6,3 +6,5 @@ export * from './contacts.tool';
 export * from './scheduled.tool';
 export * from './blik.tool';
 export * from './swap.tool';
+export * from './split.tool';
+export * from './username.tool';

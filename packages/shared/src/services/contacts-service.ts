@@ -4,6 +4,8 @@
  * Uses dependency injection for storage — no platform deps.
  */
 
+import type { AiContact } from '../types/ai';
+
 export interface StorageAdapter {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
@@ -157,4 +159,13 @@ export async function updateContact(
   contacts[index] = updated;
   await storage.setItem(getStorageKey(accountAddress), JSON.stringify(contacts));
   return updated;
+}
+
+/** Convert contacts to lightweight format for AI context */
+export function contactsToAiFormat(contacts: Contact[]): AiContact[] {
+  return contacts.map((c) => ({
+    name: c.name,
+    address: c.address,
+    username: c.username,
+  }));
 }

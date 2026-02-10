@@ -7,14 +7,17 @@ import type {
   TransactionPreview,
   BlikPreview,
   SwapPreview,
+  UsernamePreview,
   ChunkPayload,
   DonePayload,
   ToolCall,
   ToolResult,
   AiErrorPayload,
 } from '@e-y/shared'
+import { contactsToAiFormat } from '@e-y/shared'
 import { useAccount } from '@/contexts/account-context'
 import { aiSocket } from '@/services/ai-service'
+import { loadContacts } from '@/lib/contacts-service'
 
 type ChatStatus = 'idle' | 'connecting' | 'connected' | 'sending' | 'streaming' | 'error'
 
@@ -32,6 +35,7 @@ interface UseAiChatReturn {
   pendingTransaction: TransactionPreview | null
   pendingBlik: BlikPreview | null
   pendingSwap: SwapPreview | null
+  pendingUsername: UsernamePreview | null
   error: string | null
   rateLimit: RateLimit | null
   isConnected: boolean
@@ -44,6 +48,7 @@ interface UseAiChatReturn {
   clearPendingTransaction: () => void
   clearPendingBlik: () => void
   clearPendingSwap: () => void
+  clearPendingUsername: () => void
 }
 
 export function useAiChat(): UseAiChatReturn {
@@ -55,6 +60,7 @@ export function useAiChat(): UseAiChatReturn {
   const [pendingTransaction, setPendingTransaction] = useState<TransactionPreview | null>(null)
   const [pendingBlik, setPendingBlik] = useState<BlikPreview | null>(null)
   const [pendingSwap, setPendingSwap] = useState<SwapPreview | null>(null)
+  const [pendingUsername, setPendingUsername] = useState<UsernamePreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null)
 
@@ -67,7 +73,9 @@ export function useAiChat(): UseAiChatReturn {
     if (!address) return
 
     setStatus('connecting')
-    aiSocket.connect(address)
+    const contacts = loadContacts(address)
+    const aiContacts = contacts.length > 0 ? contactsToAiFormat(contacts) : undefined
+    aiSocket.connect(address, aiContacts)
   }, [address])
 
   const disconnect = useCallback(() => {
@@ -107,6 +115,7 @@ export function useAiChat(): UseAiChatReturn {
     setPendingTransaction(null)
     setPendingBlik(null)
     setPendingSwap(null)
+    setPendingUsername(null)
     aiSocket.clearHistory()
   }, [])
 
@@ -120,6 +129,10 @@ export function useAiChat(): UseAiChatReturn {
 
   const clearPendingSwap = useCallback(() => {
     setPendingSwap(null)
+  }, [])
+
+  const clearPendingUsername = useCallback(() => {
+    setPendingUsername(null)
   }, [])
 
   useEffect(() => {
@@ -166,6 +179,9 @@ export function useAiChat(): UseAiChatReturn {
       }
       if (payload.pendingSwap) {
         setPendingSwap(payload.pendingSwap)
+      }
+      if (payload.pendingUsername) {
+        setPendingUsername(payload.pendingUsername)
       }
     })
 
@@ -233,6 +249,7 @@ export function useAiChat(): UseAiChatReturn {
     pendingTransaction,
     pendingBlik,
     pendingSwap,
+    pendingUsername,
     error,
     rateLimit,
     isConnected,
@@ -245,5 +262,6 @@ export function useAiChat(): UseAiChatReturn {
     clearPendingTransaction,
     clearPendingBlik,
     clearPendingSwap,
+    clearPendingUsername,
   }
 }

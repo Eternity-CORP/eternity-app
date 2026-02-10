@@ -35,12 +35,14 @@ import {
   TransactionCard,
   BlikCard,
   SwapCard,
+  UsernameCard,
   ChatBackground,
   type PendingTransaction,
   type PendingBlik,
   type PendingBlikPay,
   type PendingSwap,
 } from '@/src/components/ai';
+import type { UsernamePreview } from '@e-y/shared';
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
@@ -60,6 +62,7 @@ export default function AiScreen() {
     pendingTransaction,
     pendingBlik,
     pendingSwap,
+    pendingUsername,
     error,
     sendMessage,
     dismissSuggestion,
@@ -67,6 +70,7 @@ export default function AiScreen() {
     clearPendingTransaction,
     clearPendingBlik,
     clearPendingSwap,
+    clearPendingUsername,
   } = useAiChat();
 
   const flatListRef = useRef<FlatList>(null);
@@ -213,6 +217,49 @@ export default function AiScreen() {
   const handleCancelSwap = useCallback(() => {
     clearPendingSwap();
   }, [clearPendingSwap]);
+
+  // Handle Username registration
+  const handleConfirmUsername = useCallback(async (preview: UsernamePreview): Promise<string> => {
+    if (!wallet.mnemonic || !currentAccount) {
+      throw new Error('Wallet not available');
+    }
+
+    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+
+    // Sign the EIP-191 message
+    const signature = await hdWallet.signMessage(preview.messageToSign || '');
+
+    // Call API to register
+    const { API_BASE_URL } = require('@/src/config/api');
+    const response = await fetch(`${API_BASE_URL}/api/username`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: preview.username,
+        address: preview.address,
+        signature,
+        timestamp: preview.timestamp,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Registration failed');
+    }
+
+    return `@${preview.username}`;
+  }, [wallet.mnemonic, currentAccount]);
+
+  const handleUsernameComplete = useCallback(() => {
+    clearPendingUsername();
+    if (pendingUsername) {
+      sendMessage(`Username @${pendingUsername.username} registered!`);
+    }
+  }, [clearPendingUsername, pendingUsername, sendMessage]);
+
+  const handleCancelUsername = useCallback(() => {
+    clearPendingUsername();
+  }, [clearPendingUsername]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -371,6 +418,14 @@ export default function AiScreen() {
                     onCancel={handleCancelSwap}
                     onComplete={handleSwapComplete}
                     isTestAccount={currentAccount?.type === 'test'}
+                  />
+                )}
+                {pendingUsername && (
+                  <UsernameCard
+                    preview={pendingUsername}
+                    onConfirm={handleConfirmUsername}
+                    onCancel={handleCancelUsername}
+                    onComplete={handleUsernameComplete}
                   />
                 )}
               </>

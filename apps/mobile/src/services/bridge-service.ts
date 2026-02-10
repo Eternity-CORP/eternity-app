@@ -495,16 +495,20 @@ export async function checkBridgeAllowance(
 }
 
 /**
- * Approve token for LI.FI bridge (unlimited approval)
+ * Approve token for LI.FI bridge (exact amount approval)
+ * @param tokenAddress - ERC-20 token contract address
+ * @param amount - Exact amount to approve (in wei / smallest unit)
+ * @param signer - Wallet signer
  */
 export async function approveBridgeToken(
   tokenAddress: string,
+  amount: bigint,
   signer: ethers.Signer
 ): Promise<ethers.TransactionResponse> {
   const contract = new ethers.Contract(tokenAddress, ERC20_APPROVE_ABI as unknown as string[], signer);
-  const tx = await contract.approve(LIFI_CONTRACT_ADDRESS, ethers.MaxUint256);
+  const tx = await contract.approve(LIFI_CONTRACT_ADDRESS, amount);
 
-  logger.info('Approval transaction sent', { txHash: tx.hash, token: tokenAddress });
+  logger.info('Approval transaction sent', { txHash: tx.hash, token: tokenAddress, amount: amount.toString() });
 
   return tx;
 }

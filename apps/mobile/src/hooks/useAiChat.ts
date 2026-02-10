@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useCallback, useMemo } from 'react';
+import { contactsToAiFormat } from '@e-y/shared';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import {
   aiSocket,
@@ -24,6 +25,7 @@ import {
   setPendingTransaction,
   setPendingBlik,
   setPendingSwap,
+  setPendingUsername,
   addSuggestion,
   dismissSuggestion as dismissSuggestionAction,
   setError,
@@ -46,6 +48,7 @@ interface UseAiChatReturn {
   pendingTransaction: AiState['pendingTransaction'];
   pendingBlik: AiState['pendingBlik'];
   pendingSwap: AiState['pendingSwap'];
+  pendingUsername: AiState['pendingUsername'];
   error: string | null;
   rateLimit: AiState['rateLimit'];
 
@@ -58,6 +61,7 @@ interface UseAiChatReturn {
   clearPendingTransaction: () => void;
   clearPendingBlik: () => void;
   clearPendingSwap: () => void;
+  clearPendingUsername: () => void;
 }
 
 export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
@@ -69,6 +73,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     const { accounts, currentAccountIndex } = state.wallet;
     return accounts[currentAccountIndex]?.address || null;
   });
+  const savedContacts = useAppSelector((state) => state.contacts.contacts);
   const aiState = useAppSelector((state) => state.ai);
 
   const {
@@ -81,6 +86,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     pendingTransaction,
     pendingBlik,
     pendingSwap,
+    pendingUsername,
     error,
     rateLimit,
   } = aiState;
@@ -101,7 +107,10 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     dispatch(connecting());
 
     try {
-      await aiSocket.connect(walletAddress);
+      const aiContacts = savedContacts.length > 0
+        ? contactsToAiFormat(savedContacts)
+        : undefined;
+      await aiSocket.connect(walletAddress, aiContacts);
     } catch (err) {
       dispatch(
         setError({
@@ -110,7 +119,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         }),
       );
     }
-  }, [walletAddress, dispatch]);
+  }, [walletAddress, savedContacts, dispatch]);
 
   // Disconnect from AI service
   const disconnect = useCallback(() => {
@@ -158,6 +167,11 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     dispatch(setPendingSwap(null));
   }, [dispatch]);
 
+  // Clear pending username
+  const clearPendingUsernameAction = useCallback(() => {
+    dispatch(setPendingUsername(null));
+  }, [dispatch]);
+
   // Setup socket callbacks
   useEffect(() => {
     aiSocket.setCallbacks({
@@ -198,6 +212,11 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         // Handle pending swap
         if (payload.pendingSwap) {
           dispatch(setPendingSwap(payload.pendingSwap));
+        }
+
+        // Handle pending username
+        if (payload.pendingUsername) {
+          dispatch(setPendingUsername(payload.pendingUsername));
         }
       },
 
@@ -255,6 +274,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     pendingTransaction,
     pendingBlik,
     pendingSwap,
+    pendingUsername,
     error,
     rateLimit,
 
@@ -267,5 +287,6 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     clearPendingTransaction: clearPendingTx,
     clearPendingBlik: clearPendingBlikAction,
     clearPendingSwap: clearPendingSwapAction,
+    clearPendingUsername: clearPendingUsernameAction,
   };
 }

@@ -35,9 +35,12 @@ async function bootstrap() {
     }),
   );
 
-  // Enable CORS for mobile app
+  // Enable CORS with env-based origins
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : ['http://localhost:3001', 'https://e-y-app.vercel.app'];
   app.enableCors({
-    origin: [process.env.WEB_APP_URL || 'https://e-y-app.vercel.app', 'http://localhost:3001'],
+    origin: corsOrigins,
     credentials: true,
   });
 

@@ -17,9 +17,11 @@ import { BalanceTool } from './tools/balance.tool';
 import { SendTool } from './tools/send.tool';
 import { HistoryTool } from './tools/history.tool';
 import { ContactsTool } from './tools/contacts.tool';
-import { ScheduledTool } from './tools/scheduled.tool';
+import { ScheduledTool, CreateScheduledTool, CancelScheduledTool } from './tools/scheduled.tool';
 import { BlikGenerateTool, BlikLookupTool } from './tools/blik.tool';
 import { SwapTool } from './tools/swap.tool';
+import { CreateSplitTool, GetSplitsTool } from './tools/split.tool';
+import { CheckUsernameTool, RegisterUsernameTool } from './tools/username.tool';
 
 interface FallbackConfig {
   enabled: boolean;
@@ -50,9 +52,15 @@ export class AiService {
     private readonly historyTool: HistoryTool,
     private readonly contactsTool: ContactsTool,
     private readonly scheduledTool: ScheduledTool,
+    private readonly createScheduledTool: CreateScheduledTool,
+    private readonly cancelScheduledTool: CancelScheduledTool,
     private readonly blikGenerateTool: BlikGenerateTool,
     private readonly blikLookupTool: BlikLookupTool,
     private readonly swapTool: SwapTool,
+    private readonly createSplitTool: CreateSplitTool,
+    private readonly getSplitsTool: GetSplitsTool,
+    private readonly checkUsernameTool: CheckUsernameTool,
+    private readonly registerUsernameTool: RegisterUsernameTool,
   ) {
     // Register Claude provider
     if (claudeProvider.isConfigured) {
@@ -79,9 +87,15 @@ export class AiService {
     this.registerTool(historyTool);
     this.registerTool(contactsTool);
     this.registerTool(scheduledTool);
+    this.registerTool(createScheduledTool);
+    this.registerTool(cancelScheduledTool);
     this.registerTool(blikGenerateTool);
     this.registerTool(blikLookupTool);
     this.registerTool(swapTool);
+    this.registerTool(createSplitTool);
+    this.registerTool(getSplitsTool);
+    this.registerTool(checkUsernameTool);
+    this.registerTool(registerUsernameTool);
 
     this.logger.log(
       `AI Service initialized with providers: ${[...this.providers.keys()].join(', ')}`,

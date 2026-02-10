@@ -132,6 +132,7 @@ export class SplitService {
 
   async findByCreator(creatorAddress: string): Promise<SplitBill[]> {
     const normalizedAddress = creatorAddress.toLowerCase();
+    this.logger.debug(`findByCreator: querying for creator_address=${normalizedAddress}`);
 
     // Get split bills for creator
     const { data: splitBillsData, error: splitError } = await this.supabase
@@ -140,10 +141,17 @@ export class SplitService {
       .eq('creator_address', normalizedAddress)
       .order('created_at', { ascending: false });
 
-    if (splitError || !splitBillsData) {
-      this.logger.error('Failed to fetch split bills', splitError);
+    if (splitError) {
+      this.logger.error(`findByCreator failed: ${splitError.message} (code: ${splitError.code})`);
+      throw new BadRequestException(`Failed to fetch split bills: ${splitError.message}`);
+    }
+
+    if (!splitBillsData || splitBillsData.length === 0) {
+      this.logger.debug(`findByCreator: found 0 split bills for ${normalizedAddress}`);
       return [];
     }
+
+    this.logger.debug(`findByCreator: found ${splitBillsData.length} split bills for ${normalizedAddress}`);
 
     // Get all participants for these splits
     const splitIds = splitBillsData.map((bill) => bill.id);
@@ -154,8 +162,8 @@ export class SplitService {
         .in('split_id', splitIds);
 
     if (participantsError) {
-      this.logger.error('Failed to fetch participants', participantsError);
-      return [];
+      this.logger.error(`Failed to fetch participants: ${participantsError.message}`);
+      throw new BadRequestException(`Failed to fetch split participants: ${participantsError.message}`);
     }
 
     // Group participants by split_id
@@ -175,6 +183,7 @@ export class SplitService {
 
   async findPendingForAddress(address: string): Promise<SplitBill[]> {
     const normalizedAddress = address.toLowerCase();
+    this.logger.debug(`findPendingForAddress: querying for address=${normalizedAddress}`);
 
     // Find all pending participants for this address
     const { data: participantsData, error: participantsError } =
@@ -184,12 +193,13 @@ export class SplitService {
         .eq('address', normalizedAddress)
         .eq('status', 'pending');
 
-    if (participantsError || !participantsData) {
-      this.logger.error('Failed to fetch pending participants', participantsError);
-      return [];
+    if (participantsError) {
+      this.logger.error(`Failed to fetch pending participants: ${participantsError.message}`);
+      throw new BadRequestException(`Failed to fetch pending participants: ${participantsError.message}`);
     }
 
-    if (participantsData.length === 0) {
+    if (!participantsData || participantsData.length === 0) {
+      this.logger.debug(`findPendingForAddress: no pending splits for ${normalizedAddress}`);
       return [];
     }
 
@@ -201,8 +211,12 @@ export class SplitService {
       .in('id', splitIds)
       .eq('status', 'active');
 
-    if (splitError || !splitBillsData) {
-      this.logger.error('Failed to fetch split bills', splitError);
+    if (splitError) {
+      this.logger.error(`Failed to fetch split bills: ${splitError.message}`);
+      throw new BadRequestException(`Failed to fetch split bills: ${splitError.message}`);
+    }
+
+    if (!splitBillsData || splitBillsData.length === 0) {
       return [];
     }
 
@@ -214,8 +228,8 @@ export class SplitService {
         .in('split_id', splitIds);
 
     if (allParticipantsError) {
-      this.logger.error('Failed to fetch all participants', allParticipantsError);
-      return [];
+      this.logger.error(`Failed to fetch all participants: ${allParticipantsError.message}`);
+      throw new BadRequestException(`Failed to fetch all participants: ${allParticipantsError.message}`);
     }
 
     // Group participants by split_id

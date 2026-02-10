@@ -73,7 +73,7 @@ export class BalanceTool implements AIToolHandler {
       this.logger.error('Failed to get balance', error);
       return {
         success: false,
-        error: 'Failed to fetch balance from blockchain',
+        error: `Failed to fetch balance: ${(error as Error).message}`,
       };
     }
   }

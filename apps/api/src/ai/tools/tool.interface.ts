@@ -32,9 +32,12 @@ export interface ToolDefinition {
  * Property definition for tool parameters
  */
 export interface ToolPropertyDefinition {
-  type: 'string' | 'number' | 'boolean';
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object';
   description: string;
   enum?: string[];
+  items?: ToolPropertyDefinition & { properties?: Record<string, ToolPropertyDefinition>; required?: string[] };
+  properties?: Record<string, ToolPropertyDefinition>;
+  required?: string[];
 }
 
 /**

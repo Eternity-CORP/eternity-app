@@ -52,9 +52,9 @@ export class WaitlistController {
    */
   @Get()
   async findAll(@Query('token') token?: string) {
-    const adminToken = this.configService.get<string>('ADMIN_TOKEN') || 'eternity-admin-2026';
+    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
 
-    if (token !== adminToken) {
+    if (!adminToken || token !== adminToken) {
       throw new UnauthorizedException('Invalid admin token');
     }
 
@@ -66,9 +66,9 @@ export class WaitlistController {
    */
   @Get('stats')
   async getStats(@Query('token') token?: string) {
-    const adminToken = this.configService.get<string>('ADMIN_TOKEN') || 'eternity-admin-2026';
+    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
 
-    if (token !== adminToken) {
+    if (!adminToken || token !== adminToken) {
       throw new UnauthorizedException('Invalid admin token');
     }
 
@@ -83,9 +83,9 @@ export class WaitlistController {
     @Query('token') token?: string,
     @Query('betaOnly') betaOnly?: string,
   ) {
-    const adminToken = this.configService.get<string>('ADMIN_TOKEN') || 'eternity-admin-2026';
+    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
 
-    if (token !== adminToken) {
+    if (!adminToken || token !== adminToken) {
       throw new UnauthorizedException('Invalid admin token');
     }
 

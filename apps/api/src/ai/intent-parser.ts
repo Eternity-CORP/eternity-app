@@ -48,7 +48,15 @@ export class IntentParser {
     if (sendMatch) {
       const recipientRaw = sendMatch[3];
       const isAddress = /^0x[a-fA-F0-9]{40}$/.test(recipientRaw);
-      const recipient = isAddress || recipientRaw.startsWith('@') ? recipientRaw : `@${recipientRaw}`;
+      const isUsername = recipientRaw.startsWith('@');
+
+      // If recipient is neither an address nor a @username, it might be a contact name
+      // Let the LLM handle name resolution with contacts context
+      if (!isAddress && !isUsername) {
+        return null;
+      }
+
+      const recipient = isAddress ? recipientRaw : recipientRaw;
       const token = sendMatch[2] ? sendMatch[2].toUpperCase().replace('ЭФИР', 'ETH') : 'ETH';
       return { tool: 'prepare_send', args: { amount: sendMatch[1], token, recipient } };
     }

@@ -82,7 +82,7 @@ export class HistoryTool implements AIToolHandler {
       this.logger.error('Failed to get history', error);
       return {
         success: false,
-        error: 'Failed to fetch transaction history from blockchain',
+        error: `Failed to fetch transaction history: ${(error as Error).message}`,
       };
     }
   }

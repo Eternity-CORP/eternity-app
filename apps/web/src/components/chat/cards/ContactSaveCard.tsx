@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { truncateAddress } from '@e-y/shared'
+import ChatCardShell from './ChatCardShell'
 
 interface ContactSaveCardProps {
   recipientAddress: string
@@ -31,8 +32,7 @@ export default function ContactSaveCard({ recipientAddress, recipientUsername, o
   }, [])
 
   return (
-    <div className="flex justify-start">
-      <div className="glass-card rounded-2xl p-4 max-w-[320px] w-full">
+    <ChatCardShell>
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-full bg-[#22C55E]/15 flex items-center justify-center text-[#22C55E]">
@@ -88,7 +88,6 @@ export default function ContactSaveCard({ recipientAddress, recipientUsername, o
             Save
           </button>
         </div>
-      </div>
-    </div>
+    </ChatCardShell>
   )
 }

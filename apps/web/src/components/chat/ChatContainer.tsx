@@ -16,6 +16,7 @@ import SendPreviewCard from './cards/SendPreviewCard'
 import BlikCard from './cards/BlikCard'
 import SwapCard from './cards/SwapCard'
 import ContactSaveCard from './cards/ContactSaveCard'
+import UsernameCard from './cards/UsernameCard'
 import ConfirmModal from './cards/ConfirmModal'
 import { loadContacts, saveContact } from '@/lib/contacts-service'
 
@@ -41,6 +42,7 @@ type ConfirmTarget =
   | { type: 'send'; transaction: SendCardTransaction }
   | { type: 'blik'; blik: Parameters<typeof BlikCard>[0]['blik'] }
   | { type: 'swap'; swap: Parameters<typeof SwapCard>[0]['swap'] }
+  | { type: 'username' }
 
 export default function ChatContainer() {
   const { address, network, currentAccount } = useAccount()
@@ -52,6 +54,7 @@ export default function ChatContainer() {
     pendingTransaction,
     pendingBlik,
     pendingSwap,
+    pendingUsername,
     error,
     isConnected,
     isStreaming,
@@ -59,6 +62,7 @@ export default function ChatContainer() {
     clearPendingTransaction,
     clearPendingBlik,
     clearPendingSwap,
+    clearPendingUsername,
   } = useAiChat()
 
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null)
@@ -70,7 +74,7 @@ export default function ChatContainer() {
   // Auto-scroll to bottom on new messages or streaming
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap, pendingContactSave])
+  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap, pendingUsername, pendingContactSave])
 
   const handleSendConfirm = useCallback((updated: SendCardTransaction) => {
     setConfirmTarget({ type: 'send', transaction: updated })
@@ -149,8 +153,31 @@ export default function ChatContainer() {
       clearPendingSwap()
       setConfirmTarget(null)
       sendMessage('Swap execution is not yet available via AI chat. Please use the Swap page.')
+    } else if (confirmTarget.type === 'username' && pendingUsername) {
+      const signature = await wallet.signMessage(pendingUsername.messageToSign || '')
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+      const response = await fetch(`${apiUrl}/api/username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: pendingUsername.username,
+          address: pendingUsername.address,
+          signature,
+          timestamp: pendingUsername.timestamp,
+        }),
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.message || 'Registration failed')
+      }
+
+      clearPendingUsername()
+      setConfirmTarget(null)
+      sendMessage(`Username @${pendingUsername.username} registered successfully!`)
     }
-  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, clearPendingTransaction, clearPendingBlik, clearPendingSwap, sendMessage])
+  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, sendMessage])
 
   const handleConfirmCancel = useCallback(() => {
     setConfirmTarget(null)
@@ -171,6 +198,15 @@ export default function ChatContainer() {
   const handleCancelSwap = useCallback(() => {
     clearPendingSwap()
   }, [clearPendingSwap])
+
+  const handleUsernameConfirm = useCallback(() => {
+    if (!pendingUsername) return
+    setConfirmTarget({ type: 'username' as const } as ConfirmTarget)
+  }, [pendingUsername])
+
+  const handleCancelUsername = useCallback(() => {
+    clearPendingUsername()
+  }, [clearPendingUsername])
 
   const hasMessages = messages.length > 0
   const showEmptyState = !hasMessages && !isStreaming
@@ -209,17 +245,28 @@ export default function ChatContainer() {
                 : []),
             ],
           }
-        : {
-            title: 'Confirm Swap',
-            summary: `${confirmTarget.swap.fromToken.amount} ${confirmTarget.swap.fromToken.symbol} → ${confirmTarget.swap.toToken.amount} ${confirmTarget.swap.toToken.symbol}`,
-            details: [
-              { label: 'Rate', value: confirmTarget.swap.rate },
-              { label: 'Price Impact', value: confirmTarget.swap.priceImpact },
-              { label: 'Gas fee', value: `${confirmTarget.swap.estimatedGas} ETH` },
-              { label: 'Slippage', value: confirmTarget.swap.slippage },
-              { label: 'Network', value: confirmTarget.swap.network },
-            ],
-          }
+        : confirmTarget.type === 'swap'
+          ? {
+              title: 'Confirm Swap',
+              summary: `${confirmTarget.swap.fromToken.amount} ${confirmTarget.swap.fromToken.symbol} → ${confirmTarget.swap.toToken.amount} ${confirmTarget.swap.toToken.symbol}`,
+              details: [
+                { label: 'Rate', value: confirmTarget.swap.rate },
+                { label: 'Price Impact', value: confirmTarget.swap.priceImpact },
+                { label: 'Gas fee', value: `${confirmTarget.swap.estimatedGas} ETH` },
+                { label: 'Slippage', value: confirmTarget.swap.slippage },
+                { label: 'Network', value: confirmTarget.swap.network },
+              ],
+            }
+          : confirmTarget.type === 'username' && pendingUsername
+            ? {
+                title: 'Register Username',
+                summary: `@${pendingUsername.username}`,
+                details: [
+                  { label: 'Username', value: `@${pendingUsername.username}` },
+                  { label: 'Wallet', value: `${pendingUsername.address.slice(0, 6)}...${pendingUsername.address.slice(-4)}` },
+                ],
+              }
+            : null
     : null
 
   return (
@@ -267,6 +314,15 @@ export default function ChatContainer() {
               swap={pendingSwap}
               onConfirm={handleSwapConfirm}
               onCancel={handleCancelSwap}
+            />
+          )}
+
+          {/* Pending Username Registration Card */}
+          {pendingUsername && (
+            <UsernameCard
+              preview={pendingUsername}
+              onConfirm={handleUsernameConfirm}
+              onCancel={handleCancelUsername}
             />
           )}
 

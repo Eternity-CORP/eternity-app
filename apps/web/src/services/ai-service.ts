@@ -5,6 +5,7 @@ import {
   type AiSocketCallbacks as SharedAiSocketCallbacks,
 } from '@e-y/shared'
 import type {
+  AiContact,
   ChunkPayload,
   DonePayload,
   ToolCall,
@@ -35,12 +36,14 @@ class WebAiSocketService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private pendingCallbacks: Record<string, any> = {}
   private userAddress = ''
+  private userContacts: AiContact[] | undefined
 
-  connect(address: string): void {
+  connect(address: string, contacts?: AiContact[]): void {
     if (this.socket?.connected && this.userAddress === address) return
 
     this.disconnect()
     this.userAddress = address
+    this.userContacts = contacts
 
     this.socket = io(`${API_BASE_URL}/ai`, {
       transports: ['websocket'],
@@ -57,7 +60,7 @@ class WebAiSocketService {
     }
 
     this.socket.on('connect', () => {
-      this.service?.subscribe(this.userAddress)
+      this.service?.subscribe(this.userAddress, this.userContacts)
       this.localCallbacks.onConnect?.()
     })
 

@@ -135,6 +135,7 @@ export interface DonePayload {
   pendingTransaction?: TransactionPreview;
   pendingBlik?: BlikPreview;
   pendingSwap?: SwapPreview;
+  pendingUsername?: UsernamePreview;
 }
 
 export interface AiErrorPayload {
@@ -185,4 +186,33 @@ export interface ToolExecutionRequest {
   tool: string;
   args: Record<string, unknown>;
   userAddress: string;
+}
+
+// ============================================
+// AI Contact (for recipient resolution)
+// ============================================
+
+/** Simplified contact sent via WebSocket for AI context */
+export interface AiContact {
+  name: string;
+  address: string;
+  username?: string;
+}
+
+/** Payload for AI subscribe event (extends base with contacts) */
+export interface AiSubscribePayload {
+  address: string;
+  contacts?: AiContact[];
+}
+
+// ============================================
+// Username Registration Preview
+// ============================================
+
+export interface UsernamePreview {
+  username: string;
+  address: string;
+  status: 'pending_confirmation';
+  messageToSign?: string;
+  timestamp?: number;
 }

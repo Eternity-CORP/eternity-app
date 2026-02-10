@@ -152,7 +152,7 @@ export class BlikGenerateTool implements AIToolHandler {
 
       return {
         success: false,
-        error: 'Failed to generate BLIK code',
+        error: `Failed to generate BLIK code: ${(error as Error).message}`,
       };
     }
   }
@@ -276,7 +276,7 @@ export class BlikLookupTool implements AIToolHandler {
       this.logger.error('Failed to lookup BLIK code', error);
       return {
         success: false,
-        error: 'Failed to lookup BLIK code',
+        error: `Failed to lookup BLIK code: ${(error as Error).message}`,
       };
     }
   }

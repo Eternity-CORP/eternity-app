@@ -156,7 +156,7 @@ export class SendTool implements AIToolHandler {
       this.logger.error('Failed to prepare send', error);
       return {
         success: false,
-        error: 'Failed to prepare transaction',
+        error: `Failed to prepare transaction: ${(error as Error).message}`,
       };
     }
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import type { SwapPreview } from '@e-y/shared'
+import ChatCardShell from './ChatCardShell'
 
 interface SwapCardProps {
   swap: SwapPreview
@@ -38,8 +39,7 @@ export default function SwapCard({ swap, onConfirm, onCancel }: SwapCardProps) {
   const impactColor = isNegativeImpact ? 'text-[#EF4444]' : 'text-[#22C55E]'
 
   return (
-    <div className="flex justify-start">
-      <div className="glass-card rounded-2xl p-4 max-w-[320px] w-full border border-white/10">
+    <ChatCardShell className="border border-white/10">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-full bg-[#3388FF]/15 flex items-center justify-center text-[#3388FF]">
@@ -134,7 +134,6 @@ export default function SwapCard({ swap, onConfirm, onCancel }: SwapCardProps) {
             Confirm Swap
           </button>
         </div>
-      </div>
-    </div>
+    </ChatCardShell>
   )
 }

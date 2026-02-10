@@ -181,53 +181,65 @@ export class ScheduledService {
   }
 
   async findByCreator(creatorAddress: string): Promise<ScheduledPayment[]> {
+    const normalizedAddress = creatorAddress.toLowerCase();
+    this.logger.debug(`findByCreator: querying for creator_address=${normalizedAddress}`);
+
     const { data, error } = await this.supabaseService
       .from('scheduled_payments')
       .select('*')
-      .eq('creator_address', creatorAddress.toLowerCase())
+      .eq('creator_address', normalizedAddress)
       .order('scheduled_at', { ascending: true });
 
     if (error) {
-      this.logger.error(`Failed to find payments by creator: ${error.message}`);
-      return [];
+      this.logger.error(`findByCreator failed: ${error.message} (code: ${error.code}, details: ${error.details})`);
+      throw new BadRequestException(`Failed to query scheduled payments: ${error.message}`);
     }
 
+    this.logger.debug(`findByCreator: found ${data?.length || 0} payments for ${normalizedAddress}`);
     return (data || []).map(item => this.mapToEntity(item));
   }
 
   async findPending(creatorAddress: string): Promise<ScheduledPayment[]> {
+    const normalizedAddress = creatorAddress.toLowerCase();
+    this.logger.debug(`findPending: querying for creator_address=${normalizedAddress}`);
+
     const { data, error } = await this.supabaseService
       .from('scheduled_payments')
       .select('*')
-      .eq('creator_address', creatorAddress.toLowerCase())
+      .eq('creator_address', normalizedAddress)
       .eq('status', 'pending')
       .order('scheduled_at', { ascending: true });
 
     if (error) {
-      this.logger.error(`Failed to find pending payments: ${error.message}`);
-      return [];
+      this.logger.error(`findPending failed: ${error.message} (code: ${error.code})`);
+      throw new BadRequestException(`Failed to query pending payments: ${error.message}`);
     }
 
+    this.logger.debug(`findPending: found ${data?.length || 0} pending payments for ${normalizedAddress}`);
     return (data || []).map(item => this.mapToEntity(item));
   }
 
   async findUpcoming(creatorAddress: string, days: number = 7): Promise<ScheduledPayment[]> {
+    const normalizedAddress = creatorAddress.toLowerCase();
     const now = new Date();
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    this.logger.debug(`findUpcoming: querying for creator_address=${normalizedAddress}, days=${days}`);
 
     const { data, error } = await this.supabaseService
       .from('scheduled_payments')
       .select('*')
-      .eq('creator_address', creatorAddress.toLowerCase())
+      .eq('creator_address', normalizedAddress)
       .eq('status', 'pending')
       .lte('scheduled_at', futureDate.toISOString())
       .order('scheduled_at', { ascending: true });
 
     if (error) {
-      this.logger.error(`Failed to find upcoming payments: ${error.message}`);
-      return [];
+      this.logger.error(`findUpcoming failed: ${error.message} (code: ${error.code})`);
+      throw new BadRequestException(`Failed to query upcoming payments: ${error.message}`);
     }
 
+    this.logger.debug(`findUpcoming: found ${data?.length || 0} upcoming payments for ${normalizedAddress}`);
     return (data || []).map(item => this.mapToEntity(item));
   }
 

@@ -27,6 +27,7 @@ import {
   AiErrorPayload,
   AiSuggestion,
   ChatRequest,
+  AiContact,
 } from '@e-y/shared';
 
 // Re-export for convenience
@@ -40,6 +41,7 @@ export interface ChatPayload {
 
 export interface SubscribePayload {
   address: string;
+  contacts?: AiContact[];
 }
 
 // Alias for consistency with existing code
@@ -62,6 +64,9 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Map of address -> socket IDs
   private addressToSockets = new Map<string, Set<string>>();
 
+  // Map of socket ID -> user's saved contacts (for recipient resolution)
+  private socketToContacts = new Map<string, AiContact[]>();
+
   @WebSocketServer()
   server: Server;
 
@@ -77,10 +82,11 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Build system prompt with user-specific context
    */
-  private getSystemPrompt(userAddress: string): string {
+  private getSystemPrompt(userAddress: string, contacts?: AiContact[]): string {
     return buildSystemPrompt({
       userAddress,
       network: this.network,
+      contacts,
     });
   }
 
@@ -95,6 +101,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const address = this.socketToAddress.get(client.id);
     if (address) {
       this.socketToAddress.delete(client.id);
+      this.socketToContacts.delete(client.id);
 
       const sockets = this.addressToSockets.get(address);
       if (sockets) {
@@ -114,12 +121,20 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: SubscribePayload,
     @ConnectedSocket() client: Socket,
   ) {
-    const address = data.address?.toLowerCase();
-
-    if (!address) {
+    if (!data.address || typeof data.address !== 'string') {
       client.emit(AI_EVENTS.ERROR, {
         code: 'INVALID_ADDRESS',
-        message: 'Address is required',
+        message: 'Address is required and must be a string',
+      } as ErrorPayload);
+      return;
+    }
+
+    const address = data.address.toLowerCase();
+
+    if (!/^0x[0-9a-f]{40}$/.test(address)) {
+      client.emit(AI_EVENTS.ERROR, {
+        code: 'INVALID_ADDRESS',
+        message: 'Address must be a valid hex address (0x + 40 hex characters)',
       } as ErrorPayload);
       return;
     }
@@ -132,10 +147,15 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     this.addressToSockets.get(address)!.add(client.id);
 
+    // Store contacts for recipient resolution
+    if (data.contacts && Array.isArray(data.contacts)) {
+      this.socketToContacts.set(client.id, data.contacts);
+    }
+
     // Join room for targeted messages
     client.join(`ai:${address}`);
 
-    this.logger.log(`Client ${client.id} subscribed to AI for ${address}`);
+    this.logger.log(`Client ${client.id} subscribed to AI for ${address} (${data.contacts?.length || 0} contacts)`);
 
     return { success: true, address };
   }
@@ -224,7 +244,8 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     }
 
-    const systemPrompt = this.getSystemPrompt(userAddress);
+    const contacts = this.socketToContacts.get(client.id);
+    const systemPrompt = this.getSystemPrompt(userAddress, contacts);
 
     // Try local intent parser first (saves LLM tokens)
     const parsedIntent = this.intentParser.parse(sanitizedContent);
@@ -376,6 +397,12 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             ? (swapResult.result as { data?: { pendingSwap?: unknown } }).data?.pendingSwap
             : undefined;
 
+          // Check for pending Username registration
+          const usernameResult = toolResults.find((r) => r.name === 'register_username');
+          const pendingUsername = usernameResult?.result?.success
+            ? (usernameResult.result as { data?: { pendingUsername?: unknown } }).data?.pendingUsername
+            : undefined;
+
           // Make follow-up AI call with tool results to generate natural language response
           // Format tool results clearly for the AI to understand
           const toolResultsSummary = toolResults.map(r => {
@@ -422,6 +449,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             pendingTransaction: pendingTx,
             pendingBlik,
             pendingSwap,
+            pendingUsername,
           } as DonePayload);
 
           // Log response

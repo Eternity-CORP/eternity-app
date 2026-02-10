@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { truncateAddress } from '@e-y/shared'
+import ChatCardShell from './ChatCardShell'
 
 type BlikPreview =
   | {
@@ -76,8 +77,7 @@ function BlikGenerateView({ blik, onCancel }: { blik: Extract<BlikPreview, { typ
   }, [blik.code])
 
   return (
-    <div className="flex justify-start">
-      <div className="glass-card rounded-2xl p-4 max-w-[320px] w-full" style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+    <ChatCardShell style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-full bg-[#8B5CF6]/15 flex items-center justify-center text-[#8B5CF6]">
@@ -145,15 +145,13 @@ function BlikGenerateView({ blik, onCancel }: { blik: Extract<BlikPreview, { typ
             Cancel
           </button>
         )}
-      </div>
-    </div>
+    </ChatCardShell>
   )
 }
 
 function BlikPayView({ blik, onConfirmPay, onCancel }: { blik: Extract<BlikPreview, { type: 'pay' }>; onConfirmPay?: (blik: BlikPreview) => void; onCancel: () => void }) {
   return (
-    <div className="flex justify-start">
-      <div className="glass-card rounded-2xl p-4 max-w-[320px] w-full" style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
+    <ChatCardShell style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-full bg-[#8B5CF6]/15 flex items-center justify-center text-[#8B5CF6]">
@@ -220,8 +218,7 @@ function BlikPayView({ blik, onConfirmPay, onCancel }: { blik: Extract<BlikPrevi
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </ChatCardShell>
   )
 }
 

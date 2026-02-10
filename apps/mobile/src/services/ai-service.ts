@@ -14,6 +14,7 @@ import {
   type AiSocketService,
   type AiSocketCallbacks,
   AI_EVENTS,
+  AiContact,
   ChatMessage,
   ToolCall,
   ToolResult,
@@ -78,15 +79,18 @@ class AiSocketServiceWrapper {
   private callbacks: AiCallbacks = {};
   private isConnecting = false;
   private userAddress: string | null = null;
+  private userContacts: AiContact[] | undefined;
 
   /**
    * Connect to the AI WebSocket server
    */
-  connect(address: string): Promise<void> {
+  connect(address: string, contacts?: AiContact[]): Promise<void> {
+    this.userContacts = contacts;
+
     if (this.socket?.connected) {
       if (address && address !== this.userAddress) {
         this.userAddress = address;
-        this.sharedService?.subscribe(address);
+        this.sharedService?.subscribe(address, contacts);
       }
       return Promise.resolve();
     }
@@ -123,7 +127,7 @@ class AiSocketServiceWrapper {
         this.isConnecting = false;
 
         if (this.userAddress) {
-          this.sharedService?.subscribe(this.userAddress);
+          this.sharedService?.subscribe(this.userAddress, this.userContacts);
         }
 
         this.callbacks.onConnect?.();
@@ -144,7 +148,7 @@ class AiSocketServiceWrapper {
       this.socket.on('reconnect', () => {
         log.info('Reconnected to AI WebSocket');
         if (this.userAddress) {
-          this.sharedService?.subscribe(this.userAddress);
+          this.sharedService?.subscribe(this.userAddress, this.userContacts);
         }
       });
 

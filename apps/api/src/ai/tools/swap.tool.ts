@@ -186,7 +186,7 @@ export class SwapTool implements AIToolHandler {
       this.logger.error('Failed to prepare swap', error);
       return {
         success: false,
-        error: 'Failed to prepare swap',
+        error: `Failed to prepare swap: ${(error as Error).message}`,
       };
     }
   }

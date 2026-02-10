@@ -18,7 +18,7 @@ import {
 } from '@/src/services/network-service';
 import { NetworkId, TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS, TestnetNetworkId } from '@/src/constants/networks-testnet';
-import { type AccountType, getCurrentAccount, switchAccount } from './wallet-slice';
+import { type AccountType, getCurrentAccount, switchAccountAction } from './wallet-slice';
 
 interface BalanceState {
   // Legacy: single-network balances (for backwards compatibility)
@@ -185,7 +185,7 @@ const balanceSlice = createSlice({
       })
 
       // Clear stale balances immediately on account switch
-      .addCase(switchAccount, (state) => {
+      .addCase(switchAccountAction, (state) => {
         state.balances = [];
         state.aggregatedBalances = [];
         state.networkBalances = {} as Record<string, NetworkTokenBalance[]>;

@@ -7,7 +7,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { ethers, isAddress } from 'ethers';
 import { NATIVE_TOKEN_ADDRESS } from '@e-y/shared';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
-import { switchAccount } from './wallet-slice';
+import { switchAccountAction } from './wallet-slice';
 import { SUPPORTED_NETWORKS, getRpcUrl, type NetworkId } from '@/src/constants/networks';
 import { getAddressPreferencesWithRetry } from '@/src/services/preferences-service';
 import { lookupUsername } from '@/src/services/username-service';
@@ -271,7 +271,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
         dispatch(updateStep({ index: stepIndex, status: 'active' }));
         dispatch(setProgress(10));
 
-        const approveTx = await approveBridgeToken(token, signer);
+        const approveTx = await approveBridgeToken(token, BigInt(route.bridgeQuote!.fromAmount), signer);
         dispatch(setApproveTxHash(approveTx.hash));
         await approveTx.wait();
 
@@ -539,7 +539,7 @@ const sendSlice = createSlice({
       })
 
       // Reset send state when account switches
-      .addCase(switchAccount, () => initialState);
+      .addCase(switchAccountAction, () => initialState);
   },
 });
 
