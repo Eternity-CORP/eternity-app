@@ -26,6 +26,8 @@ import {
   setPendingBlik,
   setPendingSwap,
   setPendingUsername,
+  setPendingScheduled,
+  setPendingSplit,
   addSuggestion,
   dismissSuggestion as dismissSuggestionAction,
   setError,
@@ -49,6 +51,8 @@ interface UseAiChatReturn {
   pendingBlik: AiState['pendingBlik'];
   pendingSwap: AiState['pendingSwap'];
   pendingUsername: AiState['pendingUsername'];
+  pendingScheduled: AiState['pendingScheduled'];
+  pendingSplit: AiState['pendingSplit'];
   error: string | null;
   rateLimit: AiState['rateLimit'];
 
@@ -62,6 +66,8 @@ interface UseAiChatReturn {
   clearPendingBlik: () => void;
   clearPendingSwap: () => void;
   clearPendingUsername: () => void;
+  clearPendingScheduled: () => void;
+  clearPendingSplit: () => void;
 }
 
 export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
@@ -87,6 +93,8 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     pendingBlik,
     pendingSwap,
     pendingUsername,
+    pendingScheduled,
+    pendingSplit,
     error,
     rateLimit,
   } = aiState;
@@ -172,6 +180,16 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     dispatch(setPendingUsername(null));
   }, [dispatch]);
 
+  // Clear pending scheduled payment
+  const clearPendingScheduledAction = useCallback(() => {
+    dispatch(setPendingScheduled(null));
+  }, [dispatch]);
+
+  // Clear pending split bill
+  const clearPendingSplitAction = useCallback(() => {
+    dispatch(setPendingSplit(null));
+  }, [dispatch]);
+
   // Setup socket callbacks
   useEffect(() => {
     aiSocket.setCallbacks({
@@ -217,6 +235,16 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         // Handle pending username
         if (payload.pendingUsername) {
           dispatch(setPendingUsername(payload.pendingUsername));
+        }
+
+        // Handle pending scheduled payment
+        if (payload.pendingScheduled) {
+          dispatch(setPendingScheduled(payload.pendingScheduled));
+        }
+
+        // Handle pending split bill
+        if (payload.pendingSplit) {
+          dispatch(setPendingSplit(payload.pendingSplit));
         }
       },
 
@@ -275,6 +303,8 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     pendingBlik,
     pendingSwap,
     pendingUsername,
+    pendingScheduled,
+    pendingSplit,
     error,
     rateLimit,
 
@@ -288,5 +318,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     clearPendingBlik: clearPendingBlikAction,
     clearPendingSwap: clearPendingSwapAction,
     clearPendingUsername: clearPendingUsernameAction,
+    clearPendingScheduled: clearPendingScheduledAction,
+    clearPendingSplit: clearPendingSplitAction,
   };
 }

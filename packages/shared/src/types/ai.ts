@@ -125,6 +125,40 @@ export interface TransactionPreview {
 }
 
 // ============================================
+// Scheduled Payment Preview
+// ============================================
+
+export interface ScheduledPaymentPreview {
+  recipient: string;
+  recipientUsername?: string;
+  amount: string;
+  token: string;
+  scheduledAt: string;
+  recurring: 'once' | 'daily' | 'weekly' | 'monthly';
+  description?: string;
+  status: 'pending_confirmation';
+}
+
+// ============================================
+// Split Bill Preview
+// ============================================
+
+export interface SplitPreview {
+  totalAmount: string;
+  token: string;
+  description?: string;
+  perPerson: string;
+  participants: Array<{
+    address: string;
+    username?: string;
+    name?: string;
+    amount: string;
+  }>;
+  creatorUsername?: string;
+  status: 'pending_confirmation';
+}
+
+// ============================================
 // Response Payloads
 // ============================================
 
@@ -136,6 +170,8 @@ export interface DonePayload {
   pendingBlik?: BlikPreview;
   pendingSwap?: SwapPreview;
   pendingUsername?: UsernamePreview;
+  pendingScheduled?: ScheduledPaymentPreview;
+  pendingSplit?: SplitPreview;
 }
 
 export interface AiErrorPayload {

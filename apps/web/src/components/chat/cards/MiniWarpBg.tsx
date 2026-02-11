@@ -30,10 +30,18 @@ function createStar(): Star {
   }
 }
 
-export default function MiniWarpBg() {
+interface MiniWarpBgProps {
+  boosted?: boolean
+}
+
+export default function MiniWarpBg({ boosted = false }: MiniWarpBgProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const starsRef = useRef<Star[]>(Array.from({ length: STAR_COUNT }, createStar))
+  const boostedRef = useRef(boosted)
+  const speedMultRef = useRef(1)
+
+  boostedRef.current = boosted
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -68,20 +76,26 @@ export default function MiniWarpBg() {
       const cy = h / 2
       const maxDim = Math.max(w, h)
 
+      // Smoothly ramp speed multiplier
+      const targetMult = boostedRef.current ? 18 : 1
+      speedMultRef.current += (targetMult - speedMultRef.current) * 0.04
+
+      const sm = speedMultRef.current
+
       ctx.clearRect(0, 0, w, h)
 
-      // Subtle central glow
+      // Central glow — intensifies when boosted
+      const glowAlpha = Math.min(0.06 + (sm - 1) * 0.015, 0.35)
       const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxDim * 0.45)
-      glowGrad.addColorStop(0, 'rgba(51, 136, 255, 0.06)')
-      glowGrad.addColorStop(0.5, 'rgba(0, 229, 255, 0.02)')
+      glowGrad.addColorStop(0, `rgba(51, 136, 255, ${glowAlpha})`)
+      glowGrad.addColorStop(0.5, `rgba(0, 229, 255, ${glowAlpha * 0.4})`)
       glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
       ctx.fillStyle = glowGrad
       ctx.fillRect(0, 0, w, h)
 
       for (const star of stars) {
-        star.dist += star.speed * 0.003
+        star.dist += star.speed * 0.003 * sm
 
-        // Reset star when it exits the card
         if (star.dist > 0.7) {
           star.dist = Math.random() * 0.05
           star.angle = Math.random() * Math.PI * 2
@@ -91,24 +105,24 @@ export default function MiniWarpBg() {
         const x = cx + Math.cos(star.angle) * star.dist * maxDim
         const y = cy + Math.sin(star.angle) * star.dist * maxDim
 
-        // Streak trail
-        const trailLen = star.dist * 12 + 2
+        // Streak trail — longer when boosted
+        const trailLen = star.dist * (12 + sm * 8) + 2
         const tx = x - Math.cos(star.angle) * trailLen
         const ty = y - Math.sin(star.angle) * trailLen
 
         const fadeIn = Math.min(star.dist / 0.08, 1)
         const fadeOut = 1 - Math.max((star.dist - 0.5) / 0.2, 0)
-        const alpha = star.opacity * fadeIn * fadeOut
+        const alpha = Math.min(star.opacity * fadeIn * fadeOut * (1 + (sm - 1) * 0.08), 1)
 
         const grad = ctx.createLinearGradient(tx, ty, x, y)
         grad.addColorStop(0, 'rgba(0,0,0,0)')
-        grad.addColorStop(1, `hsla(${star.hue}, 70%, 70%, ${alpha})`)
+        grad.addColorStop(1, `hsla(${star.hue}, 70%, ${70 + Math.min((sm - 1) * 2, 20)}%, ${alpha})`)
 
         ctx.beginPath()
         ctx.moveTo(tx, ty)
         ctx.lineTo(x, y)
         ctx.strokeStyle = grad
-        ctx.lineWidth = star.size
+        ctx.lineWidth = star.size * (1 + (sm - 1) * 0.05)
         ctx.lineCap = 'round'
         ctx.stroke()
 
@@ -130,11 +144,13 @@ export default function MiniWarpBg() {
     }
   }, [])
 
+  const opacity = boosted ? 1 : 0.6
+
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 rounded-2xl pointer-events-none"
-      style={{ opacity: 0.6 }}
+      className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500"
+      style={{ opacity }}
     />
   )
 }

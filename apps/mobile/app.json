@@ -45,7 +45,14 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow E-Y to use the microphone for voice input.",
+          "speechRecognitionPermission": "Allow E-Y to use speech recognition."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

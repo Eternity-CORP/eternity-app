@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import ChatContainer from '@/components/chat/ChatContainer'
@@ -8,7 +8,8 @@ import TokenList from '@/components/TokenList'
 import FaucetCard from '@/components/FaucetCard'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
-import { formatUsd } from '@e-y/shared'
+import { formatUsd, getPendingSplits, type SplitBill } from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function WalletDashboard() {
@@ -16,7 +17,25 @@ export default function WalletDashboard() {
   const { currentAccount, address, uiMode } = useAccount()
   const { totalUsdValue, loading, refresh } = useBalance()
   const [showFaucet, setShowFaucet] = useState(false)
+  const [pendingSplitCount, setPendingSplitCount] = useState(0)
   const isTestAccount = currentAccount?.type === 'test'
+
+  // Fetch pending splits for banner
+  useEffect(() => {
+    if (!address) return
+    let cancelled = false
+    getPendingSplits(apiClient, address)
+      .then((splits) => {
+        if (cancelled) return
+        const count = splits.filter(s =>
+          s.status === 'active' &&
+          s.participants.some(p => p.address.toLowerCase() === address.toLowerCase() && p.status === 'pending')
+        ).length
+        setPendingSplitCount(count)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [address])
 
   const networkColor = currentAccount?.type === 'real' ? '#22c55e' : '#F59E0B'
 
@@ -140,6 +159,32 @@ export default function WalletDashboard() {
               <span className="text-xs font-medium">Swap</span>
             </Link>
           </div>
+
+          {/* Pending Split Banner */}
+          {pendingSplitCount > 0 && (
+            <Link
+              href="/wallet/split"
+              className="mt-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20 transition-all hover:bg-[#F59E0B]/15 hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/15 flex items-center justify-center flex-shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[#F59E0B]">
+                  {pendingSplitCount} pending split payment{pendingSplitCount > 1 ? 's' : ''}
+                </p>
+                <p className="text-[11px] text-[#F59E0B]/60">Tap to view and pay</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" className="opacity-40">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </Link>
+          )}
 
           {/* Faucet (test accounts only) */}
           {isTestAccount && (

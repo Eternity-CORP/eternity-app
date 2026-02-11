@@ -78,7 +78,7 @@ export class AiService {
     this.fallbackConfig = {
       enabled: true,
       maxConsecutiveErrors: 3,
-      timeoutMs: 30000, // 30 seconds - tools need time for external API calls
+      timeoutMs: 45000, // 45 seconds - retries with backoff (2+4+8s) + API call time
     };
 
     // Register tools

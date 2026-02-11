@@ -11,4 +11,6 @@ export { TransactionCard, type PendingTransaction } from './TransactionCard';
 export { BlikCard, type PendingBlik, type PendingBlikGenerate, type PendingBlikPay } from './BlikCard';
 export { SwapCard, type PendingSwap } from './SwapCard';
 export { UsernameCard } from './UsernameCard';
+export { ScheduledPaymentCard } from './ScheduledPaymentCard';
+export { SplitBillCard } from './SplitBillCard';
 export { ChatBackground } from './ChatBackground';

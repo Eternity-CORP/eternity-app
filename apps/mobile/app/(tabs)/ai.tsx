@@ -36,18 +36,25 @@ import {
   BlikCard,
   SwapCard,
   UsernameCard,
+  ScheduledPaymentCard,
+  SplitBillCard,
   ChatBackground,
   type PendingTransaction,
   type PendingBlik,
   type PendingBlikPay,
   type PendingSwap,
 } from '@/src/components/ai';
-import type { UsernamePreview } from '@e-y/shared';
+import type { UsernamePreview, ScheduledPaymentPreview, SplitPreview } from '@e-y/shared';
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { sendTransaction } from '@/src/services/send-service';
+import { createSplitBill } from '@/src/services/split-bill-service';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { signScheduledTransaction } from '@/src/services/scheduled-signing';
+import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
+import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
 import { saveContactThunk, loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import type { ChatMessage, AiSuggestion } from '@/src/services/ai-service';
 
@@ -63,6 +70,8 @@ export default function AiScreen() {
     pendingBlik,
     pendingSwap,
     pendingUsername,
+    pendingScheduled,
+    pendingSplit,
     error,
     sendMessage,
     dismissSuggestion,
@@ -71,6 +80,8 @@ export default function AiScreen() {
     clearPendingBlik,
     clearPendingSwap,
     clearPendingUsername,
+    clearPendingScheduled,
+    clearPendingSplit,
   } = useAiChat();
 
   const flatListRef = useRef<FlatList>(null);
@@ -261,6 +272,83 @@ export default function AiScreen() {
     clearPendingUsername();
   }, [clearPendingUsername]);
 
+  // Handle Scheduled Payment confirmation (with pre-signing)
+  const handleConfirmScheduled = useCallback(async () => {
+    if (!pendingScheduled || !currentAccount) return;
+
+    // Load wallet and sign the transaction
+    const walletData = await loadWallet();
+    if (!walletData?.mnemonic) {
+      throw new Error('Unable to access wallet for signing');
+    }
+
+    const signingWallet = getWalletFromMnemonic(walletData.mnemonic, currentAccount.accountIndex);
+    const isTest = currentAccount.type === 'test';
+    const networkId = isTest ? TESTNET_NETWORK_IDS[0] : TIER1_NETWORK_IDS[0];
+
+    const signedData = await signScheduledTransaction({
+      privateKey: signingWallet.privateKey,
+      recipient: pendingScheduled.recipient,
+      amount: pendingScheduled.amount,
+      tokenAddress: null,
+      networkId,
+      accountType: currentAccount.type || 'test',
+    });
+
+    const { API_BASE_URL } = require('@/src/config/api');
+    const response = await fetch(`${API_BASE_URL}/api/scheduled`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-wallet-address': currentAccount.address,
+      },
+      body: JSON.stringify({
+        recipient: pendingScheduled.recipient,
+        recipientUsername: pendingScheduled.recipientUsername,
+        amount: pendingScheduled.amount,
+        token: pendingScheduled.token,
+        scheduledAt: pendingScheduled.scheduledAt,
+        recurring: pendingScheduled.recurring,
+        description: pendingScheduled.description,
+        signedTransaction: signedData.signedTransaction,
+        estimatedGasPrice: signedData.estimatedGasPrice,
+        nonce: signedData.nonce,
+        chainId: signedData.chainId,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: 'Failed to schedule payment' }));
+      throw new Error(err.message || 'Failed to schedule payment');
+    }
+
+    clearPendingScheduled();
+  }, [pendingScheduled, currentAccount, clearPendingScheduled]);
+
+  const handleCancelScheduled = useCallback(() => {
+    clearPendingScheduled();
+  }, [clearPendingScheduled]);
+
+  // Handle Split Bill confirmation
+  const handleConfirmSplit = useCallback(async () => {
+    if (!pendingSplit || !currentAccount) return;
+
+    await createSplitBill({
+      creatorAddress: currentAccount.address,
+      creatorUsername: pendingSplit.creatorUsername,
+      totalAmount: pendingSplit.totalAmount,
+      tokenSymbol: pendingSplit.token,
+      description: pendingSplit.description,
+      participants: pendingSplit.participants,
+    });
+
+    clearPendingSplit();
+  }, [pendingSplit, currentAccount, clearPendingSplit]);
+
+  const handleCancelSplit = useCallback(() => {
+    clearPendingSplit();
+  }, [clearPendingSplit]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0) {
@@ -426,6 +514,20 @@ export default function AiScreen() {
                     onConfirm={handleConfirmUsername}
                     onCancel={handleCancelUsername}
                     onComplete={handleUsernameComplete}
+                  />
+                )}
+                {pendingScheduled && (
+                  <ScheduledPaymentCard
+                    preview={pendingScheduled}
+                    onConfirm={handleConfirmScheduled}
+                    onCancel={handleCancelScheduled}
+                  />
+                )}
+                {pendingSplit && (
+                  <SplitBillCard
+                    preview={pendingSplit}
+                    onConfirm={handleConfirmSplit}
+                    onCancel={handleCancelSplit}
                   />
                 )}
               </>

@@ -101,10 +101,11 @@ export class SendTool implements AIToolHandler {
       // Resolve recipient (username or address)
       let resolvedAddress = recipient;
       let recipientUsername: string | undefined;
+      const isEthAddress = /^0x[a-fA-F0-9]{40}$/.test(recipient);
 
-      if (recipient.startsWith('@')) {
-        // Resolve username to address via UsernameService
-        recipientUsername = recipient.slice(1);
+      if (!isEthAddress) {
+        // Strip @ prefix if present, then resolve via UsernameService
+        recipientUsername = recipient.startsWith('@') ? recipient.slice(1) : recipient;
         const userRecord = await this.usernameService.lookup(recipientUsername);
 
         if (!userRecord) {

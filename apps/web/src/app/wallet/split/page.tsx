@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
@@ -10,6 +10,9 @@ import {
   createSplitBill,
   cancelSplit,
   calculateEqualSplit,
+  calculateCustomSplitFromPercentages,
+  validateCustomAmounts,
+  lookupUsername,
   type SplitBill,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
@@ -27,9 +30,42 @@ export default function SplitPage() {
   const [description, setDescription] = useState('')
   const [participantAddresses, setParticipantAddresses] = useState('')
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>('equal')
+  const [customAmounts, setCustomAmounts] = useState<string[]>([])
+  const [usePercentages, setUsePercentages] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [error, setError] = useState('')
+
+  // Parse participant entries from textarea
+  const parsedEntries = useMemo(() => {
+    return participantAddresses
+      .split(/[,\n]/)
+      .map(a => a.trim())
+      .filter(a => a.length > 0)
+  }, [participantAddresses])
+
+  // Sync customAmounts array length with participants
+  useEffect(() => {
+    setCustomAmounts(prev => {
+      if (prev.length === parsedEntries.length) return prev
+      const next = [...prev]
+      while (next.length < parsedEntries.length) next.push('')
+      return next.slice(0, parsedEntries.length)
+    })
+  }, [parsedEntries.length])
+
+  // Custom mode validation
+  const customValidation = useMemo(() => {
+    if (splitMode !== 'custom' || parsedEntries.length === 0) return null
+    if (usePercentages) {
+      const pcts = customAmounts.map(a => parseFloat(a || '0'))
+      const sum = pcts.reduce((acc, v) => acc + v, 0)
+      if (sum > 100.0001) return { valid: false, sum: sum.toFixed(1), error: `Percentages sum to ${sum.toFixed(1)}% (max 100%)` }
+      if (sum <= 0) return { valid: false, sum: '0', error: 'Enter percentages for participants' }
+      return { valid: true, sum: sum.toFixed(1) }
+    }
+    return validateCustomAmounts(totalAmount || null, customAmounts)
+  }, [splitMode, parsedEntries.length, customAmounts, usePercentages, totalAmount])
 
   // Load splits from API when address is available
   useEffect(() => {
@@ -59,29 +95,58 @@ export default function SplitPage() {
   }, [address])
 
   const handleCreate = async () => {
-    if (!totalAmount || !participantAddresses) return
+    if (!participantAddresses) return
+    if (splitMode === 'equal' && !totalAmount) return
 
-    const addresses = participantAddresses
-      .split(/[,\n]/)
-      .map(a => a.trim())
-      .filter(a => a.length > 0)
-
-    if (addresses.length === 0) return
+    const entries = parsedEntries
+    if (entries.length === 0) return
 
     setSubmitStatus('loading')
     setError('')
 
-    const perPerson = calculateEqualSplit(totalAmount, addresses.length + 1)
-
     try {
+      // Resolve @usernames to addresses
+      const resolvedAddresses: string[] = []
+      for (const entry of entries) {
+        if (entry.startsWith('@')) {
+          const result = await lookupUsername(apiClient, entry)
+          if (!result?.address) {
+            throw new Error(`Username ${entry} not found`)
+          }
+          resolvedAddresses.push(result.address)
+        } else {
+          resolvedAddresses.push(entry)
+        }
+      }
+
+      let participantAmounts: string[]
+      let finalTotal: string
+
+      if (splitMode === 'equal') {
+        const perPerson = calculateEqualSplit(totalAmount, resolvedAddresses.length + 1)
+        participantAmounts = resolvedAddresses.map(() => perPerson)
+        finalTotal = totalAmount
+      } else if (usePercentages) {
+        if (!totalAmount) {
+          throw new Error('Total amount is required when using percentages')
+        }
+        const pcts = customAmounts.map(a => parseFloat(a || '0'))
+        participantAmounts = calculateCustomSplitFromPercentages(totalAmount, pcts)
+        finalTotal = totalAmount
+      } else {
+        // Custom amounts
+        participantAmounts = customAmounts.map(a => a || '0')
+        finalTotal = totalAmount || participantAmounts.reduce((acc, a) => acc + parseFloat(a || '0'), 0).toFixed(6)
+      }
+
       const newSplit = await createSplitBill(apiClient, {
         creatorAddress: address,
-        totalAmount,
+        totalAmount: finalTotal,
         tokenSymbol: network.symbol,
         description: description || 'Split bill',
-        participants: addresses.map(addr => ({
+        participants: resolvedAddresses.map((addr, i) => ({
           address: addr,
-          amount: perPerson,
+          amount: participantAmounts[i],
         })),
       })
 
@@ -91,6 +156,9 @@ export default function SplitPage() {
       setTotalAmount('')
       setDescription('')
       setParticipantAddresses('')
+      setCustomAmounts([])
+      setUsePercentages(false)
+      setSplitMode('equal')
       setSubmitStatus('succeeded')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to create split'
@@ -109,6 +177,10 @@ export default function SplitPage() {
       // ignore
     }
   }
+
+  const canSubmit = splitMode === 'equal'
+    ? !!totalAmount && parsedEntries.length > 0
+    : parsedEntries.length > 0 && (customValidation?.valid ?? false)
 
   const createdSplits = splits.filter(s => s.creatorAddress === address && s.status === 'active')
   const pendingSplitsFiltered = pendingSplitsList.filter(s =>
@@ -141,7 +213,9 @@ export default function SplitPage() {
             {showCreate && (
               <div className="mb-6 space-y-3">
                 <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Total Amount</label>
+                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    Total Amount {splitMode === 'custom' && !usePercentages ? '(optional)' : ''}
+                  </label>
                   <div className="flex items-center gap-3 overflow-hidden">
                     <input
                       type="number"
@@ -174,6 +248,8 @@ export default function SplitPage() {
                     className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none resize-none"
                   />
                 </div>
+
+                {/* Mode Toggle */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setSplitMode('equal')}
@@ -196,10 +272,84 @@ export default function SplitPage() {
                     Custom
                   </button>
                 </div>
-                {totalAmount && participantAddresses && (
+
+                {/* Custom Mode: Amount vs % toggle + per-participant inputs */}
+                {splitMode === 'custom' && parsedEntries.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setUsePercentages(false)}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          !usePercentages
+                            ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
+                            : 'glass-card text-white/40'
+                        }`}
+                      >
+                        Amount
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!totalAmount) {
+                            setError('Set total amount first to use percentages')
+                            return
+                          }
+                          setUsePercentages(true)
+                          setError('')
+                        }}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                          usePercentages
+                            ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
+                            : 'glass-card text-white/40'
+                        }`}
+                      >
+                        %
+                      </button>
+                    </div>
+                    {parsedEntries.map((entry, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-xs text-white/50 truncate w-24 flex-shrink-0" title={entry}>
+                          {entry.startsWith('@') ? entry : `${entry.slice(0, 6)}...${entry.slice(-4)}`}
+                        </span>
+                        <input
+                          type="number"
+                          value={customAmounts[i] || ''}
+                          onChange={(e) => {
+                            const next = [...customAmounts]
+                            next[i] = e.target.value
+                            setCustomAmounts(next)
+                          }}
+                          placeholder={usePercentages ? '0' : '0.00'}
+                          step={usePercentages ? '1' : '0.0001'}
+                          className="flex-1 bg-white/5 border border-white/8 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20"
+                        />
+                        <span className="text-xs text-white/40 flex-shrink-0 w-8">
+                          {usePercentages ? '%' : network.symbol}
+                        </span>
+                      </div>
+                    ))}
+                    {/* Running sum display */}
+                    {customValidation && (
+                      <div className={`rounded-xl p-3 ${
+                        customValidation.valid
+                          ? 'bg-[#22c55e]/8 border border-[#22c55e]/20'
+                          : 'bg-[#EF4444]/8 border border-[#EF4444]/20'
+                      }`}>
+                        <p className={`text-sm ${customValidation.valid ? 'text-[#22c55e]' : 'text-[#f87171]'}`}>
+                          {usePercentages
+                            ? `Total: ${customValidation.sum}%${customValidation.error ? ` — ${customValidation.error}` : ''}`
+                            : `Sum: ${customValidation.sum} ${network.symbol}${customValidation.error ? ` — ${customValidation.error}` : ''}`
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Equal mode preview */}
+                {splitMode === 'equal' && totalAmount && parsedEntries.length > 0 && (
                   <div className="bg-[#22c55e]/8 border border-[#22c55e]/20 rounded-xl p-3">
                     <p className="text-[#22c55e] text-sm">
-                      Each person pays: {calculateEqualSplit(totalAmount, participantAddresses.split(/[,\n]/).filter(a => a.trim()).length + 1).slice(0, -2)} {network.symbol}
+                      Each person pays: {calculateEqualSplit(totalAmount, parsedEntries.length + 1).slice(0, -2)} {network.symbol}
                     </p>
                   </div>
                 )}
@@ -212,7 +362,7 @@ export default function SplitPage() {
 
                 <button
                   onClick={handleCreate}
-                  disabled={!totalAmount || !participantAddresses || submitStatus === 'loading'}
+                  disabled={!canSubmit || submitStatus === 'loading'}
                   className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
                   {submitStatus === 'loading' ? 'Creating...' : 'Create Split'}

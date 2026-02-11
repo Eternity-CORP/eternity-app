@@ -13,6 +13,25 @@ interface ConfirmModalProps {
 
 const AUTO_CANCEL_SECONDS = 60
 
+function friendlyError(raw: string): string {
+  const lower = raw.toLowerCase()
+  if (lower.includes('insufficient_funds') || lower.includes('insufficient funds'))
+    return 'Insufficient funds to cover gas fees. Top up your balance and try again.'
+  if (lower.includes('nonce') && lower.includes('too low'))
+    return 'Transaction conflict. Please try again.'
+  if (lower.includes('user rejected') || lower.includes('user denied'))
+    return 'Transaction was cancelled.'
+  if (lower.includes('wrong password') || lower.includes('invalid password') || lower.includes('incorrect password'))
+    return 'Wrong password. Please try again.'
+  if (lower.includes('timeout') || lower.includes('timed out'))
+    return 'Network timeout. Check your connection and try again.'
+  if (lower.includes('network') && lower.includes('error'))
+    return 'Network error. Check your connection.'
+  if (raw.length > 120)
+    return raw.slice(0, raw.indexOf('(') > 0 ? raw.indexOf('(') : 100).trim()
+  return raw
+}
+
 export default function ConfirmModal({ title, summary, details, onConfirm, onCancel }: ConfirmModalProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +65,8 @@ export default function ConfirmModal({ title, summary, details, onConfirm, onCan
       await onConfirm(password)
       setStatus('succeeded')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Confirmation failed')
+      const msg = err instanceof Error ? err.message : 'Confirmation failed'
+      setError(friendlyError(msg))
       setStatus('failed')
     }
   }, [password, status, onConfirm])
@@ -62,6 +82,9 @@ export default function ConfirmModal({ title, summary, details, onConfirm, onCan
     if (e.target === e.currentTarget) onCancel()
   }
 
+  const isWarpBoosted = status === 'loading' || status === 'succeeded'
+  const contentFading = isWarpBoosted
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -71,12 +94,15 @@ export default function ConfirmModal({ title, summary, details, onConfirm, onCan
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       {/* Modal */}
-      <div className="glass-card gradient-border-live rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'hidden' }}>
-        {/* Warp background */}
-        <MiniWarpBg />
+      <div className="glass-card rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'hidden' }}>
+        {/* Warp background — accelerates on confirm */}
+        <MiniWarpBg boosted={isWarpBoosted} />
 
-        {/* Content — above the canvas */}
-        <div className="relative z-[1]">
+        {/* Content — fades when warp engages */}
+        <div
+          className="relative z-[1] transition-opacity duration-700"
+          style={{ opacity: contentFading ? 0.15 : 1 }}
+        >
           {/* Logo */}
           <div className="flex justify-center mb-4">
             <img src="/logo.svg" alt="Eternity" className="w-10 h-10" />

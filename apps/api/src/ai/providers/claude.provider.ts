@@ -62,8 +62,8 @@ export class ClaudeProvider implements AIProvider {
     const anthropicMessages = this.convertMessages(messages);
     const anthropicTools = tools?.length ? this.convertTools(tools) : undefined;
 
-    try {
-      const response = await this.client.messages.create({
+    return this.withRetry(async () => {
+      const response = await this.client!.messages.create({
         model,
         max_tokens: 1024,
         messages: anthropicMessages,
@@ -73,10 +73,7 @@ export class ClaudeProvider implements AIProvider {
       });
 
       return this.parseResponse(response);
-    } catch (error) {
-      this.logger.error('Claude chat error', error);
-      throw error;
-    }
+    });
   }
 
   async *stream(params: {
@@ -96,28 +93,76 @@ export class ClaudeProvider implements AIProvider {
     const model = this.selectModel(messages);
     const anthropicMessages = this.convertMessages(messages);
 
-    try {
-      const stream = await this.client.messages.create({
-        model,
-        max_tokens: 1024,
-        messages: anthropicMessages,
-        system: systemPrompt || undefined,
-        temperature: 0.7,
-        stream: true,
-      });
+    // Retry logic for stream: on retryable error, retry from scratch with backoff
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const stream = await this.client.messages.create({
+          model,
+          max_tokens: 1024,
+          messages: anthropicMessages,
+          system: systemPrompt || undefined,
+          temperature: 0.7,
+          stream: true,
+        });
 
-      for await (const event of stream) {
-        if (
-          event.type === 'content_block_delta' &&
-          event.delta.type === 'text_delta'
-        ) {
-          yield event.delta.text;
+        for await (const event of stream) {
+          if (
+            event.type === 'content_block_delta' &&
+            event.delta.type === 'text_delta'
+          ) {
+            yield event.delta.text;
+          }
         }
+        return; // Success
+      } catch (error) {
+        lastError = error as Error;
+        if (this.isRetryableError(error) && attempt < maxRetries) {
+          const delay = 2000 * Math.pow(2, attempt);
+          this.logger.warn(`Stream retryable error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        this.logger.error('Claude stream error', error);
+        throw error;
       }
-    } catch (error) {
-      this.logger.error('Claude stream error', error);
-      throw error;
     }
+    if (lastError) throw lastError;
+  }
+
+  /**
+   * Retry a function on transient API errors (500, 502, 503, 529).
+   * Uses exponential backoff: 2s, 4s, 8s.
+   */
+  private async withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error as Error;
+        if (this.isRetryableError(error) && attempt < maxRetries) {
+          const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
+          this.logger.warn(
+            `Retryable error (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms: ${lastError.message}`,
+          );
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        this.logger.error('Claude chat error', error);
+        throw error;
+      }
+    }
+    throw lastError!;
+  }
+
+  /**
+   * Check if an error is a transient server error worth retrying.
+   */
+  private isRetryableError(error: unknown): boolean {
+    const status = (error as { status?: number }).status;
+    return status === 500 || status === 502 || status === 503 || status === 529;
   }
 
   private selectModel(messages: ChatMessage[]): string {

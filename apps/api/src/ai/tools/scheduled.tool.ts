@@ -187,12 +187,14 @@ export class CreateScheduledTool implements AIToolHandler {
     this.logger.debug(`Creating scheduled payment: ${amount} ${token} to ${recipient} at ${scheduledAt}`);
 
     try {
-      // Resolve recipient
+      // Resolve recipient (username or address)
       let resolvedAddress = recipient;
       let recipientUsername: string | undefined;
+      const isEthAddress = /^0x[a-fA-F0-9]{40}$/.test(recipient);
 
-      if (recipient.startsWith('@')) {
-        recipientUsername = recipient.slice(1);
+      if (!isEthAddress) {
+        // Strip @ prefix if present, then resolve via UsernameService
+        recipientUsername = recipient.startsWith('@') ? recipient.slice(1) : recipient;
         const record = await this.usernameService.lookup(recipientUsername);
         if (!record) {
           return { success: false, error: `Username @${recipientUsername} not found` };
@@ -210,30 +212,24 @@ export class CreateScheduledTool implements AIToolHandler {
       }
 
       const interval = recurringInterval === 'once' ? undefined : recurringInterval;
+      const recurring = interval || 'once';
 
-      const payment = await this.scheduledService.create({
-        creatorAddress: userAddress,
-        recipient: resolvedAddress,
-        recipientUsername,
-        amount,
-        tokenSymbol: token.toUpperCase(),
-        scheduledAt: scheduledDate.toISOString(),
-        recurringInterval: interval,
-        description,
-      });
-
+      // Return preview for frontend confirmation — don't create yet
       return {
         success: true,
         data: {
-          id: payment.id,
-          recipient: resolvedAddress,
-          recipientUsername,
-          amount,
-          token: token.toUpperCase(),
-          scheduledAt: payment.scheduledAt.toISOString(),
-          recurring: interval || 'once',
-          description,
-          message: `Scheduled payment created: ${amount} ${token.toUpperCase()} to ${recipientUsername ? '@' + recipientUsername : resolvedAddress} at ${scheduledDate.toLocaleString()}.${interval ? ` Repeats ${interval}.` : ''}`,
+          requiresConfirmation: true,
+          pendingScheduled: {
+            recipient: resolvedAddress,
+            recipientUsername,
+            amount,
+            token: token.toUpperCase(),
+            scheduledAt: scheduledDate.toISOString(),
+            recurring,
+            description,
+            status: 'pending_confirmation' as const,
+          },
+          message: `Ready to schedule ${amount} ${token.toUpperCase()} to ${recipientUsername ? '@' + recipientUsername : resolvedAddress} at ${scheduledDate.toLocaleString()}.${interval ? ` Repeats ${interval}.` : ''} Please confirm.`,
         },
       };
     } catch (error) {

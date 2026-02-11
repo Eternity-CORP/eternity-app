@@ -8,6 +8,8 @@ import type {
   BlikPreview,
   SwapPreview,
   UsernamePreview,
+  ScheduledPaymentPreview,
+  SplitPreview,
   ChunkPayload,
   DonePayload,
   ToolCall,
@@ -36,6 +38,8 @@ interface UseAiChatReturn {
   pendingBlik: BlikPreview | null
   pendingSwap: SwapPreview | null
   pendingUsername: UsernamePreview | null
+  pendingScheduled: ScheduledPaymentPreview | null
+  pendingSplit: SplitPreview | null
   error: string | null
   rateLimit: RateLimit | null
   isConnected: boolean
@@ -49,6 +53,8 @@ interface UseAiChatReturn {
   clearPendingBlik: () => void
   clearPendingSwap: () => void
   clearPendingUsername: () => void
+  clearPendingScheduled: () => void
+  clearPendingSplit: () => void
 }
 
 export function useAiChat(): UseAiChatReturn {
@@ -61,6 +67,8 @@ export function useAiChat(): UseAiChatReturn {
   const [pendingBlik, setPendingBlik] = useState<BlikPreview | null>(null)
   const [pendingSwap, setPendingSwap] = useState<SwapPreview | null>(null)
   const [pendingUsername, setPendingUsername] = useState<UsernamePreview | null>(null)
+  const [pendingScheduled, setPendingScheduled] = useState<ScheduledPaymentPreview | null>(null)
+  const [pendingSplit, setPendingSplit] = useState<SplitPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null)
 
@@ -116,6 +124,8 @@ export function useAiChat(): UseAiChatReturn {
     setPendingBlik(null)
     setPendingSwap(null)
     setPendingUsername(null)
+    setPendingScheduled(null)
+    setPendingSplit(null)
     aiSocket.clearHistory()
   }, [])
 
@@ -133,6 +143,14 @@ export function useAiChat(): UseAiChatReturn {
 
   const clearPendingUsername = useCallback(() => {
     setPendingUsername(null)
+  }, [])
+
+  const clearPendingScheduled = useCallback(() => {
+    setPendingScheduled(null)
+  }, [])
+
+  const clearPendingSplit = useCallback(() => {
+    setPendingSplit(null)
   }, [])
 
   useEffect(() => {
@@ -182,6 +200,12 @@ export function useAiChat(): UseAiChatReturn {
       }
       if (payload.pendingUsername) {
         setPendingUsername(payload.pendingUsername)
+      }
+      if (payload.pendingScheduled) {
+        setPendingScheduled(payload.pendingScheduled)
+      }
+      if (payload.pendingSplit) {
+        setPendingSplit(payload.pendingSplit)
       }
     })
 
@@ -250,6 +274,8 @@ export function useAiChat(): UseAiChatReturn {
     pendingBlik,
     pendingSwap,
     pendingUsername,
+    pendingScheduled,
+    pendingSplit,
     error,
     rateLimit,
     isConnected,
@@ -263,5 +289,7 @@ export function useAiChat(): UseAiChatReturn {
     clearPendingBlik,
     clearPendingSwap,
     clearPendingUsername,
+    clearPendingScheduled,
+    clearPendingSplit,
   }
 }

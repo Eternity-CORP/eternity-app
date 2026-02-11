@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback, KeyboardEvent } from 'react'
+import { useState, useRef, useCallback, useEffect, KeyboardEvent } from 'react'
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 
 interface InputBarProps {
   onSend: (msg: string) => void
@@ -8,12 +9,69 @@ interface InputBarProps {
   placeholder?: string
 }
 
+function MicIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,255,255,0.5)"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+    </svg>
+  )
+}
+
+function SendIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="white"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 19V5" />
+      <path d="M5 12l7-7 7 7" />
+    </svg>
+  )
+}
+
+function StopIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#EF4444">
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  )
+}
+
+function VoiceBars() {
+  return (
+    <div className="voice-bars">
+      <div className="voice-bar" />
+      <div className="voice-bar" />
+      <div className="voice-bar" />
+      <div className="voice-bar" />
+      <div className="voice-bar" />
+    </div>
+  )
+}
+
 export default function InputBar({ onSend, disabled = false, placeholder = 'Type a message...' }: InputBarProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleSend = useCallback(() => {
-    const trimmed = value.trim()
+  const handleSend = useCallback((text?: string) => {
+    const trimmed = (text ?? value).trim()
     if (!trimmed || disabled) return
     onSend(trimmed)
     setValue('')
@@ -21,6 +79,12 @@ export default function InputBar({ onSend, disabled = false, placeholder = 'Type
       textareaRef.current.style.height = 'auto'
     }
   }, [value, disabled, onSend])
+
+  const { isListening, isSupported, transcript, start, stop } = useSpeechRecognition({
+    onResult: (text) => {
+      handleSend(text)
+    },
+  })
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -30,52 +94,79 @@ export default function InputBar({ onSend, disabled = false, placeholder = 'Type
   }
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (isListening) {
+      stop()
+    }
     setValue(e.target.value)
     const el = e.target
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 120) + 'px'
   }
 
-  const canSend = value.trim().length > 0 && !disabled
+  const displayValue = isListening ? transcript : value
+
+  // Auto-resize textarea when transcript updates during voice input
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+    // Scroll to bottom so latest words are visible
+    el.scrollTop = el.scrollHeight
+  }, [displayValue])
+
+  const hasText = value.trim().length > 0
+  const showSend = hasText && !isListening
+
+  const handleActionButton = () => {
+    if (disabled) return
+    if (isListening) {
+      stop()
+    } else if (showSend) {
+      handleSend()
+    } else if (isSupported) {
+      setValue('')
+      start()
+    }
+  }
 
   return (
-    <div className="chat-input-container rounded-2xl px-4 py-3 flex items-end gap-3">
+    <div className={`chat-input-container rounded-2xl px-4 py-3 flex items-end gap-3 ${isListening ? '!border-red-500/30' : ''}`}>
+      {isListening && (
+        <div className="flex items-center gap-2 flex-shrink-0 self-center">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <VoiceBars />
+        </div>
+      )}
       <textarea
         ref={textareaRef}
-        value={value}
+        value={displayValue}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
         maxLength={1000}
         rows={1}
         disabled={disabled}
-        placeholder={placeholder}
-        className="flex-1 bg-transparent text-sm text-white placeholder-white/30 resize-none outline-none leading-relaxed max-h-[120px]"
+        readOnly={isListening}
+        placeholder={isListening ? 'Listening...' : placeholder}
+        className={`flex-1 bg-transparent text-sm text-white placeholder-white/30 resize-none outline-none leading-relaxed max-h-[120px] ${isListening ? '!placeholder-red-400/50' : ''}`}
       />
-      <button
-        onClick={handleSend}
-        disabled={!canSend}
-        className={`
-          w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center transition-all
-          ${canSend
-            ? 'bg-[#3388FF] hover:bg-[#3388FF]/80 cursor-pointer'
-            : 'bg-white/5 cursor-not-allowed'
-          }
-        `}
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={canSend ? 'white' : 'rgba(255,255,255,0.2)'}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+      {(showSend || isListening || isSupported) && (
+        <button
+          onClick={handleActionButton}
+          disabled={disabled}
+          className={`
+            w-9 h-9 flex-shrink-0 rounded-xl flex items-center justify-center transition-all
+            ${isListening
+              ? 'bg-red-500/20 voice-pulse cursor-pointer'
+              : showSend
+                ? 'bg-[#3388FF] hover:bg-[#3388FF]/80 cursor-pointer'
+                : 'bg-white/5 hover:bg-white/10 cursor-pointer'
+            }
+          `}
         >
-          <path d="M12 19V5" />
-          <path d="M5 12l7-7 7 7" />
-        </svg>
-      </button>
+          {isListening ? <StopIcon /> : showSend ? <SendIcon /> : <MicIcon />}
+        </button>
+      )}
     </div>
   )
 }

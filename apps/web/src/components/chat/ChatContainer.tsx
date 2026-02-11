@@ -7,7 +7,7 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
 import { useAiChat } from '@/hooks/useAiChat'
-import { sendNativeToken, sendErc20Token } from '@/lib/send-service'
+import { sendNativeToken, sendErc20Token, signTransaction } from '@/lib/send-service'
 import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 import SuggestionChips from './SuggestionChips'
@@ -17,8 +17,12 @@ import BlikCard from './cards/BlikCard'
 import SwapCard from './cards/SwapCard'
 import ContactSaveCard from './cards/ContactSaveCard'
 import UsernameCard from './cards/UsernameCard'
+import ScheduledPaymentCard from './cards/ScheduledPaymentCard'
+import SplitBillCard from './cards/SplitBillCard'
 import ConfirmModal from './cards/ConfirmModal'
 import { loadContacts, saveContact } from '@/lib/contacts-service'
+import { createSplitBill } from '@e-y/shared'
+import { apiClient } from '@/lib/api'
 
 interface SendCardTransaction {
   id: string
@@ -43,6 +47,7 @@ type ConfirmTarget =
   | { type: 'blik'; blik: Parameters<typeof BlikCard>[0]['blik'] }
   | { type: 'swap'; swap: Parameters<typeof SwapCard>[0]['swap'] }
   | { type: 'username' }
+  | { type: 'scheduled' }
 
 export default function ChatContainer() {
   const { address, network, currentAccount } = useAccount()
@@ -55,6 +60,8 @@ export default function ChatContainer() {
     pendingBlik,
     pendingSwap,
     pendingUsername,
+    pendingScheduled,
+    pendingSplit,
     error,
     isConnected,
     isStreaming,
@@ -63,6 +70,8 @@ export default function ChatContainer() {
     clearPendingBlik,
     clearPendingSwap,
     clearPendingUsername,
+    clearPendingScheduled,
+    clearPendingSplit,
   } = useAiChat()
 
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null)
@@ -74,7 +83,7 @@ export default function ChatContainer() {
   // Auto-scroll to bottom on new messages or streaming
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap, pendingUsername, pendingContactSave])
+  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap, pendingUsername, pendingScheduled, pendingSplit, pendingContactSave])
 
   const handleSendConfirm = useCallback((updated: SendCardTransaction) => {
     setConfirmTarget({ type: 'send', transaction: updated })
@@ -176,8 +185,41 @@ export default function ChatContainer() {
       clearPendingUsername()
       setConfirmTarget(null)
       sendMessage(`Username @${pendingUsername.username} registered successfully!`)
+    } else if (confirmTarget.type === 'scheduled' && pendingScheduled) {
+      const signedData = await signTransaction(connectedWallet, provider, pendingScheduled.recipient, pendingScheduled.amount)
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+      const res = await fetch(`${apiUrl}/api/scheduled`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-wallet-address': address,
+        },
+        body: JSON.stringify({
+          creatorAddress: address,
+          recipient: pendingScheduled.recipient,
+          recipientUsername: pendingScheduled.recipientUsername,
+          amount: pendingScheduled.amount,
+          tokenSymbol: pendingScheduled.token,
+          scheduledAt: pendingScheduled.scheduledAt,
+          recurringInterval: pendingScheduled.recurring === 'once' ? undefined : pendingScheduled.recurring,
+          description: pendingScheduled.description,
+          signedTransaction: signedData.signedTx,
+          estimatedGasPrice: signedData.gasPrice,
+          nonce: signedData.nonce,
+          chainId: signedData.chainId,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.message || 'Failed to create scheduled payment')
+      }
+
+      clearPendingScheduled()
+      setConfirmTarget(null)
+      sendMessage('Scheduled payment created and pre-signed for automatic execution!')
     }
-  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, sendMessage])
+  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, pendingScheduled, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, clearPendingScheduled, sendMessage])
 
   const handleConfirmCancel = useCallback(() => {
     setConfirmTarget(null)
@@ -207,6 +249,39 @@ export default function ChatContainer() {
   const handleCancelUsername = useCallback(() => {
     clearPendingUsername()
   }, [clearPendingUsername])
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+
+  const handleScheduledConfirm = useCallback(() => {
+    if (!pendingScheduled) return
+    setConfirmTarget({ type: 'scheduled' })
+  }, [pendingScheduled])
+
+  const handleCancelScheduled = useCallback(() => {
+    clearPendingScheduled()
+  }, [clearPendingScheduled])
+
+  const handleSplitConfirm = useCallback(async () => {
+    if (!pendingSplit || !address) return
+    try {
+      await createSplitBill(apiClient, {
+        creatorAddress: address,
+        totalAmount: pendingSplit.totalAmount,
+        tokenSymbol: pendingSplit.token,
+        description: pendingSplit.description,
+        participants: pendingSplit.participants,
+      })
+      clearPendingSplit()
+      sendMessage('Split bill created successfully!')
+    } catch (err) {
+      sendMessage(`Failed to create split: ${(err as Error).message}`)
+      clearPendingSplit()
+    }
+  }, [pendingSplit, address, clearPendingSplit, sendMessage])
+
+  const handleCancelSplit = useCallback(() => {
+    clearPendingSplit()
+  }, [clearPendingSplit])
 
   const hasMessages = messages.length > 0
   const showEmptyState = !hasMessages && !isStreaming
@@ -266,7 +341,20 @@ export default function ChatContainer() {
                   { label: 'Wallet', value: `${pendingUsername.address.slice(0, 6)}...${pendingUsername.address.slice(-4)}` },
                 ],
               }
-            : null
+            : confirmTarget.type === 'scheduled' && pendingScheduled
+              ? {
+                  title: 'Confirm Scheduled Payment',
+                  summary: `${pendingScheduled.amount} ${pendingScheduled.token}`,
+                  details: [
+                    { label: 'Recipient', value: pendingScheduled.recipientUsername || `${pendingScheduled.recipient.slice(0, 6)}...${pendingScheduled.recipient.slice(-4)}` },
+                    { label: 'Scheduled', value: new Date(pendingScheduled.scheduledAt).toLocaleString() },
+                    ...(pendingScheduled.recurring && pendingScheduled.recurring !== 'once'
+                      ? [{ label: 'Recurring', value: pendingScheduled.recurring }]
+                      : []),
+                    { label: 'Network', value: network.name },
+                  ],
+                }
+              : null
     : null
 
   return (
@@ -323,6 +411,24 @@ export default function ChatContainer() {
               preview={pendingUsername}
               onConfirm={handleUsernameConfirm}
               onCancel={handleCancelUsername}
+            />
+          )}
+
+          {/* Pending Scheduled Payment Card */}
+          {pendingScheduled && (
+            <ScheduledPaymentCard
+              preview={pendingScheduled}
+              onConfirm={handleScheduledConfirm}
+              onCancel={handleCancelScheduled}
+            />
+          )}
+
+          {/* Pending Split Bill Card */}
+          {pendingSplit && (
+            <SplitBillCard
+              preview={pendingSplit}
+              onConfirm={handleSplitConfirm}
+              onCancel={handleCancelSplit}
             />
           )}
 

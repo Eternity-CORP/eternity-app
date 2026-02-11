@@ -290,8 +290,11 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
           systemPrompt,
         });
 
-        const pendingTransaction = (toolResult.data as Record<string, unknown>)?.requiresConfirmation ? toolResult.data : undefined;
-        const pendingBlik = (toolResult.data as Record<string, unknown>)?.pendingBlik || undefined;
+        const toolData = toolResult.data as Record<string, unknown> | undefined;
+        const pendingTransaction = toolData?.requiresConfirmation ? toolResult.data : undefined;
+        const pendingBlik = toolData?.pendingBlik || undefined;
+        const pendingScheduled = toolData?.pendingScheduled || undefined;
+        const pendingSplit = toolData?.pendingSplit || undefined;
 
         client.emit(AI_EVENTS.DONE, {
           content: followUp.content,
@@ -299,6 +302,8 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
           toolResults: [{ name: parsedIntent.tool, result: toolResult }],
           pendingTransaction,
           pendingBlik,
+          pendingScheduled,
+          pendingSplit,
         } as DonePayload);
         return;
       } catch (error) {
@@ -403,6 +408,18 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             ? (usernameResult.result as { data?: { pendingUsername?: unknown } }).data?.pendingUsername
             : undefined;
 
+          // Check for pending Scheduled Payment
+          const scheduledResult = toolResults.find((r) => r.name === 'create_scheduled');
+          const pendingScheduled = scheduledResult?.result?.success
+            ? (scheduledResult.result as { data?: { pendingScheduled?: unknown } }).data?.pendingScheduled
+            : undefined;
+
+          // Check for pending Split Bill
+          const splitResult = toolResults.find((r) => r.name === 'create_split');
+          const pendingSplit = splitResult?.result?.success
+            ? (splitResult.result as { data?: { pendingSplit?: unknown } }).data?.pendingSplit
+            : undefined;
+
           // Make follow-up AI call with tool results to generate natural language response
           // Format tool results clearly for the AI to understand
           const toolResultsSummary = toolResults.map(r => {
@@ -450,6 +467,8 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
             pendingBlik,
             pendingSwap,
             pendingUsername,
+            pendingScheduled,
+            pendingSplit,
           } as DonePayload);
 
           // Log response

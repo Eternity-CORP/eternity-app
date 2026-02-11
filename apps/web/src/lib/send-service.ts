@@ -3,7 +3,7 @@
  * Handles ETH and ERC-20 token transfers via ethers.
  */
 
-import { ethers, Contract, parseEther, parseUnits, formatEther } from 'ethers'
+import { ethers, Contract, Transaction, parseEther, parseUnits, formatEther } from 'ethers'
 import { ERC20_TRANSFER_ABI, type GasEstimate } from '@e-y/shared'
 
 const ERC20_ABI = ERC20_TRANSFER_ABI as unknown as string[]
@@ -43,6 +43,44 @@ export async function sendErc20Token(
   const amountInUnits = parseUnits(amount, decimals)
   const tx = await contract.transfer(to, amountInUnits)
   return tx.hash
+}
+
+/**
+ * Sign a transaction without broadcasting (for scheduled payments)
+ */
+export async function signTransaction(
+  wallet: ethers.HDNodeWallet,
+  provider: ethers.JsonRpcProvider,
+  to: string,
+  amount: string,
+): Promise<{ signedTx: string; nonce: number; gasPrice: string; chainId: number }> {
+  const feeData = await provider.getFeeData()
+  const gasPrice = feeData.gasPrice || BigInt(0)
+  const nonce = await provider.getTransactionCount(wallet.address)
+  const network = await provider.getNetwork()
+  const chainId = Number(network.chainId)
+  const value = parseEther(amount)
+
+  const gasEstimate = await provider.estimateGas({
+    from: wallet.address,
+    to,
+    value,
+  })
+  const gasLimit = (gasEstimate * BigInt(120)) / BigInt(100)
+
+  const tx = Transaction.from({
+    to,
+    value,
+    gasLimit,
+    gasPrice,
+    nonce,
+    chainId,
+    type: 0,
+  })
+
+  const signedTx = await wallet.signTransaction(tx)
+
+  return { signedTx, nonce, gasPrice: gasPrice.toString(), chainId }
 }
 
 /**

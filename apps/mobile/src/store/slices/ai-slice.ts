@@ -13,7 +13,7 @@ import type {
   BlikPreview,
   SwapPreview,
 } from '@/src/services/ai-service';
-import type { UsernamePreview } from '@e-y/shared';
+import type { UsernamePreview, ScheduledPaymentPreview, SplitPreview } from '@e-y/shared';
 
 // ============================================
 // Types
@@ -48,6 +48,12 @@ export interface AiState {
   // Pending username registration from AI
   pendingUsername: UsernamePreview | null;
 
+  // Pending scheduled payment from AI (awaiting user confirmation)
+  pendingScheduled: ScheduledPaymentPreview | null;
+
+  // Pending split bill from AI (awaiting user confirmation)
+  pendingSplit: SplitPreview | null;
+
   // Error state
   error: string | null;
   errorCode: string | null;
@@ -71,6 +77,8 @@ const initialState: AiState = {
   pendingBlik: null,
   pendingSwap: null,
   pendingUsername: null,
+  pendingScheduled: null,
+  pendingSplit: null,
   error: null,
   errorCode: null,
   rateLimit: null,
@@ -307,6 +315,42 @@ const aiSlice = createSlice({
     },
 
     // ========================================
+    // Scheduled Payment Actions
+    // ========================================
+
+    /**
+     * Set pending scheduled payment from AI
+     */
+    setPendingScheduled: (state, action: PayloadAction<ScheduledPaymentPreview | null>) => {
+      state.pendingScheduled = action.payload;
+    },
+
+    /**
+     * Clear pending scheduled payment (after confirm/cancel)
+     */
+    clearPendingScheduled: (state) => {
+      state.pendingScheduled = null;
+    },
+
+    // ========================================
+    // Split Bill Actions
+    // ========================================
+
+    /**
+     * Set pending split bill from AI
+     */
+    setPendingSplit: (state, action: PayloadAction<SplitPreview | null>) => {
+      state.pendingSplit = action.payload;
+    },
+
+    /**
+     * Clear pending split bill (after confirm/cancel)
+     */
+    clearPendingSplit: (state) => {
+      state.pendingSplit = null;
+    },
+
+    // ========================================
     // Suggestion Actions
     // ========================================
 
@@ -417,6 +461,14 @@ export const {
   // Username
   setPendingUsername,
   clearPendingUsername,
+
+  // Scheduled Payment
+  setPendingScheduled,
+  clearPendingScheduled,
+
+  // Split Bill
+  setPendingSplit,
+  clearPendingSplit,
 
   // Suggestions
   addSuggestion,

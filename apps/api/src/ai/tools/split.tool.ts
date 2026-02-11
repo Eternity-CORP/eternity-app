@@ -100,15 +100,15 @@ export class CreateSplitTool implements AIToolHandler {
         let address = p.address_or_username;
         let username: string | undefined;
 
-        if (address.startsWith('@')) {
-          username = address.slice(1);
+        const isEthAddr = /^0x[a-fA-F0-9]{40}$/.test(address);
+        if (!isEthAddr) {
+          // Strip @ prefix if present, then resolve via UsernameService
+          username = address.startsWith('@') ? address.slice(1) : address;
           const record = await this.usernameService.lookup(username);
           if (!record) {
             return { success: false, error: `Username @${username} not found` };
           }
           address = record.address;
-        } else if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-          return { success: false, error: `Invalid address or username: ${address}` };
         }
 
         resolvedParticipants.push({
@@ -122,31 +122,26 @@ export class CreateSplitTool implements AIToolHandler {
       // Get creator username
       const creatorProfile = await this.usernameService.lookupByAddress(userAddress);
 
-      const splitBill = await this.splitService.create({
-        creatorAddress: userAddress,
-        creatorUsername: creatorProfile?.username,
-        totalAmount,
-        tokenSymbol: token.toUpperCase(),
-        description,
-        participants: resolvedParticipants,
-      });
-
+      // Return preview for frontend confirmation — don't create yet
       return {
         success: true,
         data: {
-          id: splitBill.id,
-          totalAmount,
-          token: token.toUpperCase(),
-          description,
-          participantCount: resolvedParticipants.length,
-          perPerson,
-          participants: resolvedParticipants.map((p) => ({
-            address: p.address,
-            username: p.username ? `@${p.username}` : undefined,
-            name: p.name,
-            amount: p.amount,
-          })),
-          message: `Split bill created: ${totalAmount} ${token.toUpperCase()} split between ${numParticipants} participants (${perPerson} ${token.toUpperCase()} each).`,
+          requiresConfirmation: true,
+          pendingSplit: {
+            totalAmount,
+            token: token.toUpperCase(),
+            description,
+            perPerson,
+            participants: resolvedParticipants.map((p) => ({
+              address: p.address,
+              username: p.username,
+              name: p.name,
+              amount: p.amount,
+            })),
+            creatorUsername: creatorProfile?.username,
+            status: 'pending_confirmation' as const,
+          },
+          message: `Ready to split ${totalAmount} ${token.toUpperCase()} between ${numParticipants} participants (${perPerson} ${token.toUpperCase()} each). Please confirm.`,
         },
       };
     } catch (error) {

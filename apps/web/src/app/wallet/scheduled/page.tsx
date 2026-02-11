@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { ethers } from 'ethers'
+import { loadAndDecrypt } from '@e-y/storage'
+import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
@@ -10,12 +13,14 @@ import {
   type ScheduledPayment,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { signTransaction } from '@/lib/send-service'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
+import ConfirmModal from '@/components/chat/cards/ConfirmModal'
 
 export default function ScheduledPage() {
   useAuthGuard()
-  const { address, network } = useAccount()
+  const { address, network, currentAccount } = useAccount()
   const [payments, setPayments] = useState<ScheduledPayment[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [recipient, setRecipient] = useState('')
@@ -25,6 +30,7 @@ export default function ScheduledPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [error, setError] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
 
   // Load scheduled payments from API when address is available
   useEffect(() => {
@@ -47,35 +53,47 @@ export default function ScheduledPage() {
     return () => { cancelled = true }
   }, [address])
 
-  const handleCreate = async () => {
+  const handleCreate = () => {
     if (!recipient || !amount || !scheduledDate || !scheduledTime) return
-
-    setSubmitStatus('loading')
     setError('')
-
-    try {
-      const newPayment = await createScheduledPayment(apiClient, {
-        creatorAddress: address,
-        recipient,
-        amount,
-        tokenSymbol: network.symbol,
-        scheduledAt: `${scheduledDate}T${scheduledTime}`,
-      })
-
-      setPayments((prev) => [...prev, newPayment])
-
-      setShowCreate(false)
-      setRecipient('')
-      setAmount('')
-      setScheduledDate('')
-      setScheduledTime('')
-      setSubmitStatus('succeeded')
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create scheduled payment'
-      setError(msg)
-      setSubmitStatus('failed')
-    }
+    setShowConfirm(true)
   }
+
+  const handleConfirmSubmit = useCallback(async (password: string) => {
+    if (!currentAccount) throw new Error('No wallet connected')
+
+    const mnemonic = await loadAndDecrypt(password)
+    const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
+    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+    const connectedWallet = wallet.connect(provider)
+
+    const signedData = await signTransaction(connectedWallet, provider, recipient, amount)
+
+    const newPayment = await createScheduledPayment(apiClient, {
+      creatorAddress: address,
+      recipient,
+      amount,
+      tokenSymbol: network.symbol,
+      scheduledAt: `${scheduledDate}T${scheduledTime}`,
+      signedTransaction: signedData.signedTx,
+      estimatedGasPrice: signedData.gasPrice,
+      nonce: signedData.nonce,
+      chainId: signedData.chainId,
+    })
+
+    setPayments((prev) => [...prev, newPayment])
+    setShowCreate(false)
+    setShowConfirm(false)
+    setRecipient('')
+    setAmount('')
+    setScheduledDate('')
+    setScheduledTime('')
+    setSubmitStatus('succeeded')
+  }, [currentAccount, network, address, recipient, amount, scheduledDate, scheduledTime])
+
+  const handleConfirmCancel = useCallback(() => {
+    setShowConfirm(false)
+  }, [])
 
   const handleCancel = async (id: string) => {
     try {
@@ -260,6 +278,20 @@ export default function ScheduledPage() {
           </div>
         </div>
       </main>
+
+      {showConfirm && (
+        <ConfirmModal
+          title="Confirm Scheduled Payment"
+          summary={`${amount} ${network.symbol}`}
+          details={[
+            { label: 'Recipient', value: recipient.startsWith('0x') ? `${recipient.slice(0, 6)}...${recipient.slice(-4)}` : recipient },
+            { label: 'Scheduled', value: new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString() },
+            { label: 'Network', value: network.name },
+          ]}
+          onConfirm={handleConfirmSubmit}
+          onCancel={handleConfirmCancel}
+        />
+      )}
     </div>
   )
 }
