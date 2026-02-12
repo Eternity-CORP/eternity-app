@@ -17,21 +17,9 @@ import ContactSaveCard from './cards/ContactSaveCard'
 import ConfirmModal from './cards/ConfirmModal'
 import type { ConfirmDetail } from './cards/ConfirmModal'
 import { loadContacts, saveContact } from '@/lib/contacts-service'
-import { createSplitBill } from '@e-y/shared'
+import { createSplitBill, registerUsername, createScheduledPayment } from '@e-y/shared'
+import type { TransactionPreview, SwapPreview } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
-
-interface SendCardTransaction {
-  id: string
-  from: string
-  to: string
-  toUsername?: string
-  amount: string
-  token: string
-  amountUsd?: string
-  estimatedGas?: string
-  estimatedGasUsd?: string
-  network?: string
-}
 
 interface PendingContactSave {
   address: string
@@ -39,9 +27,9 @@ interface PendingContactSave {
 }
 
 type ConfirmTarget =
-  | { type: 'send'; transaction: SendCardTransaction }
+  | { type: 'send'; transaction: TransactionPreview }
   | { type: 'blik'; blik: Parameters<typeof BlikCard>[0]['blik'] }
-  | { type: 'swap'; swap: { fromToken: { symbol: string; amount: string; amountUsd: string }; toToken: { symbol: string; amount: string; amountUsd: string }; rate: string; priceImpact: string; estimatedGas: string; estimatedGasUsd: string; slippage: string; network: string; requiresApproval?: boolean } }
+  | { type: 'swap'; swap: SwapPreview }
   | { type: 'username' }
   | { type: 'scheduled' }
   | { type: 'split' }
@@ -204,22 +192,12 @@ export default function ChatContainer() {
     } else if (confirmTarget.type === 'username' && pendingUsername) {
       const signature = await wallet.signMessage(pendingUsername.messageToSign || '')
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-      const response = await fetch(`${apiUrl}/api/username`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: pendingUsername.username,
-          address: pendingUsername.address,
-          signature,
-          timestamp: pendingUsername.timestamp,
-        }),
+      await registerUsername(apiClient, {
+        username: pendingUsername.username,
+        address: pendingUsername.address,
+        signature,
+        timestamp: pendingUsername.timestamp || Date.now(),
       })
-
-      if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.message || 'Registration failed')
-      }
 
       clearPendingUsername()
       setConfirmTarget(null)
@@ -229,32 +207,20 @@ export default function ChatContainer() {
       const amount = editedValues?.amount || pendingScheduled.amount
       const signedData = await signTransaction(connectedWallet, provider, recipient, amount)
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-      const res = await fetch(`${apiUrl}/api/scheduled`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-wallet-address': address,
-        },
-        body: JSON.stringify({
-          creatorAddress: address,
-          recipient,
-          recipientUsername: pendingScheduled.recipientUsername,
-          amount,
-          tokenSymbol: pendingScheduled.token,
-          scheduledAt: pendingScheduled.scheduledAt,
-          recurringInterval: pendingScheduled.recurring === 'once' ? undefined : pendingScheduled.recurring,
-          description: pendingScheduled.description,
-          signedTransaction: signedData.signedTx,
-          estimatedGasPrice: signedData.gasPrice,
-          nonce: signedData.nonce,
-          chainId: signedData.chainId,
-        }),
+      await createScheduledPayment(apiClient, {
+        creatorAddress: address,
+        recipient,
+        recipientUsername: pendingScheduled.recipientUsername,
+        amount,
+        tokenSymbol: pendingScheduled.token,
+        scheduledAt: pendingScheduled.scheduledAt,
+        recurringInterval: pendingScheduled.recurring === 'once' ? undefined : pendingScheduled.recurring,
+        description: pendingScheduled.description,
+        signedTransaction: signedData.signedTx,
+        estimatedGasPrice: signedData.gasPrice,
+        nonce: signedData.nonce,
+        chainId: signedData.chainId,
       })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.message || 'Failed to create scheduled payment')
-      }
 
       clearPendingScheduled()
       setConfirmTarget(null)
