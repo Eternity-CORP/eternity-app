@@ -148,6 +148,7 @@ export interface SplitPreview {
   token: string;
   description?: string;
   perPerson: string;
+  splitType?: 'split_with_me' | 'collect';
   participants: Array<{
     address: string;
     username?: string;

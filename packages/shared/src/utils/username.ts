@@ -35,5 +35,5 @@ export function createUsernameSignatureMessage(
   action: 'claim' | 'update' | 'delete',
 ): string {
   const normalized = normalizeUsername(username);
-  return `E-Y:${action}:@${normalized}:${address}:${timestamp}`;
+  return `E-Y:${action}:@${normalized}:${address.toLowerCase()}:${timestamp}`;
 }

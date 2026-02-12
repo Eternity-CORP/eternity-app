@@ -5,7 +5,7 @@ import {
   Delete,
   Body,
   Param,
-  Query,
+  Headers,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -51,7 +51,7 @@ export class SplitController {
   @HttpCode(HttpStatus.OK)
   async cancel(
     @Param('id') id: string,
-    @Query('address') requesterAddress: string,
+    @Headers('x-wallet-address') requesterAddress: string,
   ): Promise<SplitBill> {
     return this.splitService.cancel(id, requesterAddress);
   }

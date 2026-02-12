@@ -10,6 +10,7 @@ export interface SplitBill {
   id: string;
   creatorAddress: string;
   creatorUsername: string | null;
+  recipientAddress: string | null;
   totalAmount: string;
   tokenSymbol: string;
   description: string | null;

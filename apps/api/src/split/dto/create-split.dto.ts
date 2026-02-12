@@ -52,6 +52,11 @@ export class CreateSplitDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  @Matches(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid recipient Ethereum address' })
+  recipientAddress?: string;
+
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

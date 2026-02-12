@@ -18,6 +18,7 @@ interface SplitBillRow {
   id: string;
   creator_address: string;
   creator_username: string | null;
+  recipient_address: string | null;
   total_amount: string;
   token_symbol: string;
   description: string | null;
@@ -57,6 +58,7 @@ export class SplitService {
       .insert({
         creator_address: dto.creatorAddress.toLowerCase(),
         creator_username: dto.creatorUsername,
+        recipient_address: dto.recipientAddress?.toLowerCase() || null,
         total_amount: dto.totalAmount,
         token_symbol: dto.tokenSymbol,
         description: dto.description,
@@ -354,6 +356,7 @@ export class SplitService {
       id: billData.id,
       creatorAddress: billData.creator_address,
       creatorUsername: billData.creator_username,
+      recipientAddress: billData.recipient_address,
       totalAmount: billData.total_amount,
       tokenSymbol: billData.token_symbol,
       description: billData.description,

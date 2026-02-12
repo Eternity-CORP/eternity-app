@@ -33,6 +33,7 @@ export interface SplitBill {
 export interface CreateSplitBillRequest {
   creatorAddress: string;
   creatorUsername?: string;
+  recipientAddress?: string;
   totalAmount: string;
   tokenSymbol: string;
   description?: string;

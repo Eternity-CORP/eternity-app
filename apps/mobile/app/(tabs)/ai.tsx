@@ -333,17 +333,23 @@ export default function AiScreen() {
   const handleConfirmSplit = useCallback(async () => {
     if (!pendingSplit || !currentAccount) return;
 
-    await createSplitBill({
-      creatorAddress: currentAccount.address,
-      creatorUsername: pendingSplit.creatorUsername,
-      totalAmount: pendingSplit.totalAmount,
-      tokenSymbol: pendingSplit.token,
-      description: pendingSplit.description,
-      participants: pendingSplit.participants,
-    });
+    try {
+      await createSplitBill({
+        creatorAddress: currentAccount.address,
+        creatorUsername: pendingSplit.creatorUsername,
+        totalAmount: pendingSplit.totalAmount,
+        tokenSymbol: pendingSplit.token,
+        description: pendingSplit.description,
+        participants: pendingSplit.participants,
+      });
 
-    clearPendingSplit();
-  }, [pendingSplit, currentAccount, clearPendingSplit]);
+      clearPendingSplit();
+      sendMessage('Split bill created successfully! Check the Split tab to manage it.');
+    } catch (err) {
+      clearPendingSplit();
+      sendMessage(`Failed to create split: ${(err as Error).message}`);
+    }
+  }, [pendingSplit, currentAccount, clearPendingSplit, sendMessage]);
 
   const handleCancelSplit = useCallback(() => {
     clearPendingSplit();
