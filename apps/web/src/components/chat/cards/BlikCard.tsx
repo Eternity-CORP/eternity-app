@@ -2,33 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { truncateAddress } from '@e-y/shared'
+import type { BlikPreview, BlikGeneratePreview, BlikPayPreview } from '@e-y/shared'
 import ChatCardShell from './ChatCardShell'
-
-type BlikPreview =
-  | {
-      type: 'generate'
-      id: string
-      code: string
-      amount: string
-      token: string
-      amountUsd: string
-      expiresAt: number
-      status: string
-    }
-  | {
-      type: 'pay'
-      id: string
-      code: string
-      amount: string
-      token: string
-      amountUsd: string
-      receiverAddress: string
-      receiverUsername?: string
-      estimatedGas?: string
-      estimatedGasUsd?: string
-      network?: string
-      status: string
-    }
 
 interface BlikCardProps {
   blik: BlikPreview
@@ -50,7 +25,7 @@ function formatCountdown(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function BlikGenerateView({ blik, onCancel }: { blik: Extract<BlikPreview, { type: 'generate' }>; onCancel: () => void }) {
+function BlikGenerateView({ blik, onCancel }: { blik: BlikGeneratePreview; onCancel: () => void }) {
   const [remaining, setRemaining] = useState(blik.expiresAt - Date.now())
   const [copied, setCopied] = useState(false)
   const expired = remaining <= 0
@@ -149,7 +124,7 @@ function BlikGenerateView({ blik, onCancel }: { blik: Extract<BlikPreview, { typ
   )
 }
 
-function BlikPayView({ blik, onConfirmPay, onCancel }: { blik: Extract<BlikPreview, { type: 'pay' }>; onConfirmPay?: (blik: BlikPreview) => void; onCancel: () => void }) {
+function BlikPayView({ blik, onConfirmPay, onCancel }: { blik: BlikPayPreview; onConfirmPay?: (blik: BlikPreview) => void; onCancel: () => void }) {
   return (
     <ChatCardShell style={{ borderColor: 'rgba(139, 92, 246, 0.2)' }}>
         {/* Header */}

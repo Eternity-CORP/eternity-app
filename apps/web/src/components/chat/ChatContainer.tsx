@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import type { ReactNode } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { ethers } from 'ethers'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
@@ -8,14 +9,14 @@ import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
 import { useAiChat } from '@/hooks/useAiChat'
 import { sendNativeToken, sendErc20Token, signTransaction } from '@/lib/send-service'
-import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageBubble'
+import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
 import SuggestionChips from './SuggestionChips'
 import InputBar from './InputBar'
 import BlikCard from './cards/BlikCard'
 import ContactSaveCard from './cards/ContactSaveCard'
-import ConfirmModal from './cards/ConfirmModal'
-import type { ConfirmDetail } from './cards/ConfirmModal'
+import ConfirmModal from '../shared/ConfirmModal'
+import type { ConfirmDetail } from '../shared/ConfirmModal'
 import { loadContacts, saveContact } from '@/lib/contacts-service'
 import { createSplitBill, registerUsername, createScheduledPayment } from '@e-y/shared'
 import type { TransactionPreview, SwapPreview } from '@e-y/shared'
@@ -248,8 +249,8 @@ export default function ChatContainer() {
     }
   }, [showEmptyState])
 
-  // Build confirm modal props
-  const buildConfirmModalProps = (): { title: string; summary: string; details: ConfirmDetail[]; extraContent?: React.ReactNode; requiresPassword?: boolean; confirmLabel?: string } | null => {
+  // Build confirm modal props (memoized to avoid unnecessary re-renders)
+  const confirmModalProps = useMemo((): { title: string; summary: string; details: ConfirmDetail[]; extraContent?: ReactNode; requiresPassword?: boolean; confirmLabel?: string } | null => {
     if (!confirmTarget) return null
 
     if (confirmTarget.type === 'send') {
@@ -367,9 +368,7 @@ export default function ChatContainer() {
     }
 
     return null
-  }
-
-  const confirmModalProps = buildConfirmModalProps()
+  }, [confirmTarget, network, pendingUsername, pendingScheduled, pendingSplit])
 
   return (
     <div className="flex flex-col h-full relative">
@@ -381,16 +380,9 @@ export default function ChatContainer() {
       >
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-3">
-          {messages.map((msg) => {
-            const bubbleMsg: BubbleChatMessage = {
-              id: msg.id,
-              role: msg.role,
-              content: msg.content,
-              timestamp: new Date(msg.timestamp).getTime(),
-              toolCalls: msg.toolCalls,
-            }
-            return <MessageBubble key={msg.id} message={bubbleMsg} />
-          })}
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
 
           {/* BLIK generate card — stays in chat with countdown */}
           {pendingBlik && pendingBlik.type === 'generate' && (

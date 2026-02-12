@@ -1,20 +1,13 @@
 'use client'
 
+import type { ChatMessage } from '@e-y/shared'
 import { renderMarkdown } from '@/lib/markdown'
-
-export interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: number
-  toolCalls?: { name: string }[]
-}
 
 interface MessageBubbleProps {
   message: ChatMessage
 }
 
-function formatTime(timestamp: number): string {
+function formatTime(timestamp: string): string {
   const date = new Date(timestamp)
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }

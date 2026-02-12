@@ -16,7 +16,7 @@ import { apiClient } from '@/lib/api'
 import { signTransaction } from '@/lib/send-service'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
-import ConfirmModal from '@/components/chat/cards/ConfirmModal'
+import ConfirmModal from '@/components/shared/ConfirmModal'
 
 export default function ScheduledPage() {
   useAuthGuard()

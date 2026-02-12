@@ -2,7 +2,7 @@
 
 import type { ReactNode, KeyboardEvent, MouseEvent } from 'react'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import MiniWarpBg from './MiniWarpBg'
+import MiniWarpBg from '../chat/cards/MiniWarpBg'
 
 export interface ConfirmDetail {
   key?: string
@@ -69,6 +69,8 @@ export default function ConfirmModal({
   })
   const inputRef = useRef<HTMLInputElement>(null)
   const firstEditableRef = useRef<HTMLInputElement>(null)
+  const onCancelRef = useRef(onCancel)
+  onCancelRef.current = onCancel
 
   useEffect(() => {
     if (requiresPassword) {
@@ -83,14 +85,14 @@ export default function ConfirmModal({
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval)
-          onCancel()
+          onCancelRef.current()
           return 0
         }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [onCancel])
+  }, [])
 
   const handleConfirm = useCallback(async () => {
     if (requiresPassword && !password.trim()) return

@@ -20,7 +20,7 @@ import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
-import ConfirmModal from '@/components/chat/cards/ConfirmModal'
+import ConfirmModal from '@/components/shared/ConfirmModal'
 
 // --- Types ---
 
