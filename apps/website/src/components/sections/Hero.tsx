@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { FadeIn } from '@/components/animations/FadeIn'
-import { GlitchText } from '@/components/animations/GlitchText'
 import { useWarp } from '@/components/animations/WarpTransition'
 
 // Dynamic import for 3D scene to avoid SSR issues

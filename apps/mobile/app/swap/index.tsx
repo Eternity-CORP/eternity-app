@@ -3,7 +3,7 @@
  * Token swap interface using LI.FI DEX aggregator
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,

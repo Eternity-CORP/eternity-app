@@ -52,7 +52,9 @@ export default function NetworkPreferencesPage() {
         setDefaultNetwork((prefs.defaultNetwork as NetworkId) || null)
         setTokenOverrides(prefs.tokenOverrides || {})
       }
-    }).catch(() => {})
+    }).catch((err) => {
+      console.error('Failed to load network preferences:', err)
+    })
   }, [isReady, address])
 
   const handleSave = useCallback(async (

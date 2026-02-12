@@ -13,7 +13,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, Inject } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
@@ -26,7 +26,6 @@ import {
   DonePayload,
   AiErrorPayload,
   AiSuggestion,
-  ChatRequest,
   AiContact,
 } from '@e-y/shared';
 

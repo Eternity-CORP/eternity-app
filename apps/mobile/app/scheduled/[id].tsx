@@ -23,7 +23,6 @@ import {
   loadScheduledPaymentsThunk,
   cancelScheduledPaymentThunk,
   deleteScheduledPaymentThunk,
-  updateScheduledPaymentThunk,
 } from '@/src/store/slices/scheduled-slice';
 import { setSelectedToken, setRecipient, setAmount, setStep, setScheduledPaymentContext } from '@/src/store/slices/send-slice';
 import { getScheduledPayment, type ScheduledPayment, updateScheduledPayment } from '@/src/services/scheduled-payment-service';
@@ -35,8 +34,8 @@ import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
 import { signScheduledTransaction } from '@/src/services/scheduled-signing';
-import { TIER1_NETWORK_IDS, type NetworkId } from '@/src/constants/networks';
-import { TESTNET_NETWORK_IDS, type TestnetNetworkId } from '@/src/constants/networks-testnet';
+import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
+import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
 import type { AnyNetworkId } from '@/src/services/network-service';
 
 export default function ScheduledPaymentDetailsScreen() {

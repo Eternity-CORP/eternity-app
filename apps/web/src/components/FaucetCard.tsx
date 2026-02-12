@@ -53,8 +53,9 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
       .then((res) => {
         if (!res.enabled) setState('empty')
       })
-      .catch(() => {
+      .catch((err) => {
         // If status endpoint fails, still show claim button — it'll fail gracefully
+        console.error('Failed to check faucet status:', err)
       })
   }, [])
 
@@ -102,7 +103,9 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
       await navigator.clipboard.writeText(address)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch { /* clipboard may fail */ }
+    } catch (err) {
+      console.error('Failed to copy address to clipboard:', err)
+    }
   }, [address])
 
   const handleCopyAndOpen = useCallback(async (url: string) => {

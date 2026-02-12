@@ -85,7 +85,7 @@ export function TransactionCard({
       setContactSaved(true);
       setShowSaveContact(false);
     } catch (err) {
-      // Silently fail - contact saving is optional
+      console.error('Failed to save contact:', err);
     } finally {
       setSavingContact(false);
     }

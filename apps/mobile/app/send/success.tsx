@@ -9,7 +9,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { resetSend } from '@/src/store/slices/send-slice';
-import { fetchTransactionDetailsThunk } from '@/src/store/slices/transaction-slice';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { markPaidThunk } from '@/src/store/slices/split-slice';
 import { markPaymentExecutedThunk } from '@/src/store/slices/scheduled-slice';
@@ -23,7 +22,6 @@ export default function SuccessScreen() {
   const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const send = useAppSelector((state) => state.send);
-  const transaction = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
   const [txStatus, setTxStatus] = useState<'pending' | 'confirmed' | 'failed'>('pending');
   const [checkingStatus, setCheckingStatus] = useState(true);

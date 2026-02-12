@@ -1,11 +1,9 @@
-import { View, TouchableOpacity, Text, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface ActionsMenuProps {
   visible: boolean;

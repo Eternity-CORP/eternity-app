@@ -134,7 +134,6 @@ export class CreateScheduledTool implements AIToolHandler {
   private readonly logger = new Logger(CreateScheduledTool.name);
 
   constructor(
-    private readonly scheduledService: ScheduledService,
     private readonly usernameService: UsernameService,
   ) {}
 

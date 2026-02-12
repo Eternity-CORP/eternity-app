@@ -44,7 +44,7 @@ import {
   type PendingBlikPay,
   type PendingSwap,
 } from '@/src/components/ai';
-import type { UsernamePreview, ScheduledPaymentPreview, SplitPreview } from '@e-y/shared';
+import type { UsernamePreview } from '@e-y/shared';
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
@@ -62,7 +62,6 @@ export default function AiScreen() {
   const {
     messages,
     suggestions,
-    status,
     isConnected,
     isStreaming,
     streamingContent,
@@ -75,7 +74,6 @@ export default function AiScreen() {
     error,
     sendMessage,
     dismissSuggestion,
-    clearChat,
     clearPendingTransaction,
     clearPendingBlik,
     clearPendingSwap,

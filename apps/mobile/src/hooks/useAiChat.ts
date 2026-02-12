@@ -88,7 +88,6 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     status,
     isConnected,
     streamingContent,
-    streamingMessageId,
     pendingTransaction,
     pendingBlik,
     pendingSwap,
@@ -282,14 +281,6 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
       connect();
     }
   }, [autoConnect, walletAddress, isConnected, status, connect]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // Don't disconnect on unmount - keep connection for background suggestions
-      // disconnect();
-    };
-  }, []);
 
   return {
     // State

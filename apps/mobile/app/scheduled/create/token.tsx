@@ -16,7 +16,6 @@ export default function ScheduledTokenScreen() {
   const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const balance = useAppSelector((state) => state.balance);
-  const scheduledCreate = useAppSelector((state) => state.scheduledCreate);
 
   const handleTokenSelect = (token: string) => {
     dispatch(setSelectedToken(token));

@@ -20,7 +20,6 @@ import {
   fetchTokens as sharedFetchTokens,
   fetchPopularTokens as sharedFetchPopularTokens,
   fetchSwapQuote,
-  buildNativeToken,
   formatTokenAmount as sharedFormatTokenAmount,
   parseTokenAmount as sharedParseTokenAmount,
 } from '@e-y/shared';

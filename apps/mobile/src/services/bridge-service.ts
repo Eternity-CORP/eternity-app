@@ -21,7 +21,6 @@ import {
   sleep,
   type BridgeQuoteResult,
   type BridgeCostLevel,
-  type BridgeErrorCode as SharedBridgeErrorCode,
 } from '@e-y/shared';
 import {
   NETWORK_TO_CHAIN_ID,
@@ -44,14 +43,6 @@ function getChainId(networkId: NetworkId): number {
     throw new Error(`Unsupported network for bridging: ${networkId}`);
   }
   return chainId;
-}
-
-function getNetworkId(chainId: number): NetworkId {
-  const networkId = CHAIN_ID_TO_NETWORK[chainId];
-  if (!networkId) {
-    throw new Error(`Unknown chain ID: ${chainId}`);
-  }
-  return networkId;
 }
 
 // ============================================

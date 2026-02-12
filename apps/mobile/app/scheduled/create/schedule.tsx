@@ -131,7 +131,7 @@ export default function ScheduledScheduleScreen() {
                 mode={pickerMode}
                 display="spinner"
                 minimumDate={pickerMode === 'date' ? new Date() : undefined}
-                onChange={(event, date) => {
+                onChange={(_event, date) => {
                   if (date) {
                     if (pickerMode === 'date') {
                       const newDate = new Date(scheduledDate);

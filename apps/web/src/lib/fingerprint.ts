@@ -36,7 +36,8 @@ function getCanvasFingerprint(): string {
     ctx.fillText('Eternity.fp', 4, 17)
 
     return canvas.toDataURL().slice(-50)
-  } catch {
+  } catch (err) {
+    console.error('Canvas fingerprint generation failed:', err)
     return 'canvas-error'
   }
 }

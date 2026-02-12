@@ -18,7 +18,6 @@ import {
   formatRawTokenBalance,
   calculateTotalUsdValue as sharedCalcTotal,
   type AlchemyTokenBalanceEntry,
-  type TokenMetadata,
 } from '@e-y/shared';
 import { createLogger } from '@/src/utils/logger';
 

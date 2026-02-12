@@ -154,7 +154,7 @@ export class HistoryServiceAi {
 
   private formatTransaction(
     transfer: AlchemyTransfer,
-    userAddress: string,
+    _userAddress: string,
     type: 'sent' | 'received'
   ): Transaction {
     const counterparty = type === 'sent' ? transfer.to : transfer.from;

@@ -295,7 +295,7 @@ export default function NetworkSettingsScreen() {
             </View>
           ) : (
             <View style={styles.overridesList}>
-              {overridesList.map(({ symbol, networkId, networkName }) => (
+              {overridesList.map(({ symbol, networkId }) => (
                 <View key={symbol} style={[styles.overrideItem, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
                   <View style={styles.overrideInfo}>
                     <Text style={[styles.overrideToken, { color: dynamicTheme.colors.textPrimary }]}>{symbol}</Text>

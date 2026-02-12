@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAppDispatch } from '@/src/store/hooks';
-import { setRecipient, setAmount, setStep } from '@/src/store/slices/send-slice';
+import { setRecipient, setStep } from '@/src/store/slices/send-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';

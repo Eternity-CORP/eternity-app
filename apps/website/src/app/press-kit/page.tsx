@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { Button } from '@/components/ui/Button'
 
 const logos = [
   { name: 'Logo White', file: 'logo_white', formats: ['svg', 'png'] },

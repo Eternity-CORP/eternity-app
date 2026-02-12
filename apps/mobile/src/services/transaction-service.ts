@@ -86,7 +86,10 @@ export async function fetchTransactionHistory(
             const isTo = tx.to?.toLowerCase() === addressLower;
 
             if (isFrom || isTo) {
-              const receipt = await provider.getTransactionReceipt(txHash).catch(() => null);
+              const receipt = await provider.getTransactionReceipt(txHash).catch((err) => {
+                console.error(`Failed to fetch receipt for tx ${txHash}:`, err);
+                return null;
+              });
               const amount = formatEther(tx.value || '0');
 
               transactions.push({
@@ -132,7 +135,10 @@ export async function fetchTransactionDetails(
     const provider = getProvider();
     const [tx, receipt] = await Promise.all([
       provider.getTransaction(txHash),
-      provider.getTransactionReceipt(txHash).catch(() => null),
+      provider.getTransactionReceipt(txHash).catch((err) => {
+        console.error(`Failed to fetch receipt for tx ${txHash}:`, err);
+        return null;
+      }),
     ]);
 
     if (!tx) {

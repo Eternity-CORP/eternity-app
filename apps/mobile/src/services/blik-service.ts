@@ -10,8 +10,6 @@ import { io, Socket } from 'socket.io-client';
 import {
   createBlikSocketService,
   type BlikSocketService,
-  type BlikSocketCallbacks,
-  BLIK_EVENTS,
   type CreateCodePayload,
   type CancelCodePayload,
   type LookupCodePayload,

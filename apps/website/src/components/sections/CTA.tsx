@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FadeIn } from '@/components/animations/FadeIn'
-import { GlitchText } from '@/components/animations/GlitchText'
 import { Button } from '@/components/ui/Button'
 
 export function CTA() {

@@ -135,8 +135,8 @@ export function useSpeechRecognition({
           recognitionRef.current = null
           onResultRef.current(fullText.trim())
         }
-      } catch {
-        // Defensive — don't crash on unexpected event shape
+      } catch (err) {
+        console.error('Speech recognition result handler error:', err)
       }
     }
 
@@ -169,7 +169,8 @@ export function useSpeechRecognition({
 
     try {
       recognition.start()
-    } catch {
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err)
       setIsListening(false)
       recognitionRef.current = null
     }

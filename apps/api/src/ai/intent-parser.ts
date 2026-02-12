@@ -72,9 +72,8 @@ export class IntentParser {
         return null;
       }
 
-      const recipient = isAddress ? recipientRaw : recipientRaw;
       const token = sendMatch[2] ? sendMatch[2].toUpperCase().replace('ЭФИР', 'ETH') : 'ETH';
-      return { tool: 'prepare_send', args: { amount: sendMatch[1], token, recipient } };
+      return { tool: 'prepare_send', args: { amount: sendMatch[1], token, recipient: recipientRaw } };
     }
 
     return null;

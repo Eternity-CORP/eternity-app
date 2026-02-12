@@ -8,11 +8,10 @@ import { ethers, isAddress } from 'ethers';
 import { NATIVE_TOKEN_ADDRESS } from '@e-y/shared';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
 import { switchAccountAction } from './wallet-slice';
-import { SUPPORTED_NETWORKS, getRpcUrl, type NetworkId } from '@/src/constants/networks';
+import { getRpcUrl, type NetworkId } from '@/src/constants/networks';
 import { getAddressPreferencesWithRetry } from '@/src/services/preferences-service';
 import { lookupUsername } from '@/src/services/username-service';
 import {
-  getBridgeQuoteWithTx,
   executeBridgeWithRetry,
   waitForBridgeCompletion,
   checkBridgeAllowance,
@@ -350,7 +349,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
  */
 export const executeConsolidationSendThunk = createAsyncThunk(
   'send/executeConsolidationSend',
-  async (params: BridgeSendParams, { dispatch, getState }) => {
+  async (params: BridgeSendParams, { dispatch }) => {
     const { wallet, route, recipient, token } = params;
 
     if (!route.sources || route.sources.length === 0) {
@@ -461,7 +460,7 @@ const sendSlice = createSlice({
       state.gasEstimate = null;
       state.gasEstimateStatus = 'idle';
     },
-    resetSend: (state) => {
+    resetSend: () => {
       return initialState;
     },
     setSplitBillContext: (state, action: PayloadAction<{ splitBillId: string; participantAddress: string }>) => {

@@ -14,10 +14,10 @@ interface BridgeProgressStepsProps {
   currentStepIndex: number;
 }
 
-export function BridgeProgressSteps({ steps, currentStepIndex }: BridgeProgressStepsProps) {
+export function BridgeProgressSteps({ steps }: BridgeProgressStepsProps) {
   return (
     <View style={styles.container}>
-      {steps.map((step, index) => (
+      {steps.map((step) => (
         <View key={step.id} style={styles.stepRow}>
           <View style={styles.iconContainer}>
             {step.status === 'done' && (

@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
-import { receiverStartCreating, receiverCodeCreated, receiverError, receiverReset } from '@/src/store/slices/blik-slice';
+import { receiverStartCreating, receiverCodeCreated, receiverError } from '@/src/store/slices/blik-slice';
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';

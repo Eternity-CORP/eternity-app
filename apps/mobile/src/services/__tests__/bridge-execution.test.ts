@@ -4,7 +4,6 @@
 
 import {
   waitForBridgeCompletion,
-  type BridgeCompletionResult,
 } from '../bridge-service';
 
 // Mock fetch

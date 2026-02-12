@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/animations/FadeIn'
-import { GlitchText } from '@/components/animations/GlitchText'
 
 const pillars = [
   {

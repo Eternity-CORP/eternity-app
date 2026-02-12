@@ -7,8 +7,8 @@ import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
-  SwapToken,
-  SwapQuote,
+  type SwapToken,
+  type SwapQuote,
   getPopularTokens,
   getNativeToken,
   getSwapQuote,

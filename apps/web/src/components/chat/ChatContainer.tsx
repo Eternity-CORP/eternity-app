@@ -403,7 +403,9 @@ export default function ChatContainer() {
                   name,
                   address: pendingContactSave.address,
                   username: pendingContactSave.username,
-                }).catch(() => {})
+                }).catch((err) => {
+                  console.error('Failed to save contact:', err)
+                })
                 setPendingContactSave(null)
               }}
               onSkip={() => setPendingContactSave(null)}

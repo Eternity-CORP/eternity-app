@@ -5,7 +5,7 @@
 
 import { View, Text, Image, StyleSheet, type ViewStyle, type ImageStyle } from 'react-native';
 import { theme } from '@/src/constants/theme';
-import { NetworkId, SUPPORTED_NETWORKS, getNetworkConfig } from '@/src/constants/networks';
+import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 
 export interface NetworkBadgeProps {
   networkId: NetworkId;

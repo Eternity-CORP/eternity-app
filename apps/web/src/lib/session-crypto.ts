@@ -42,7 +42,8 @@ async function decryptString(storageKey: string): Promise<string | null> {
       new Uint8Array(ct)
     )
     return new TextDecoder().decode(decrypted)
-  } catch {
+  } catch (err) {
+    console.error('Failed to decrypt session data:', err)
     return null
   }
 }

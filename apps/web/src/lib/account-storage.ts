@@ -13,7 +13,8 @@ export function loadAccounts(): WalletAccount[] {
     const raw = localStorage.getItem(ACCOUNTS_KEY)
     if (!raw) return []
     return JSON.parse(raw)
-  } catch {
+  } catch (err) {
+    console.error('Failed to load accounts from localStorage:', err)
     return []
   }
 }
@@ -27,7 +28,8 @@ export function loadCurrentAccountIndex(): number {
     const raw = localStorage.getItem(CURRENT_INDEX_KEY)
     if (raw === null) return 0
     return parseInt(raw, 10)
-  } catch {
+  } catch (err) {
+    console.error('Failed to load current account index from localStorage:', err)
     return 0
   }
 }

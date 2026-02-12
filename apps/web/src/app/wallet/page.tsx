@@ -8,7 +8,7 @@ import TokenList from '@/components/TokenList'
 import FaucetCard from '@/components/FaucetCard'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
-import { formatUsd, getPendingSplits, type SplitBill } from '@e-y/shared'
+import { formatUsd, getPendingSplits } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
@@ -33,7 +33,9 @@ export default function WalletDashboard() {
         ).length
         setPendingSplitCount(count)
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('Failed to fetch pending splits:', err)
+      })
     return () => { cancelled = true }
   }, [address])
 

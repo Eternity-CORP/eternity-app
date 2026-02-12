@@ -4,7 +4,6 @@
 
 import { Stack } from 'expo-router';
 import { useTheme } from '@/src/contexts';
-import { theme } from '@/src/constants/theme';
 
 export default function SettingsLayout() {
   const { theme: dynamicTheme } = useTheme();

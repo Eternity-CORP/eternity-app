@@ -42,8 +42,8 @@ export default function ScheduledPage() {
       try {
         const data = await getScheduledPayments(apiClient, address)
         if (!cancelled) setPayments(data)
-      } catch {
-        // ignore — empty list on error
+      } catch (err) {
+        console.error('Failed to load scheduled payments:', err)
       } finally {
         if (!cancelled) setStatus('succeeded')
       }
@@ -101,8 +101,8 @@ export default function ScheduledPage() {
       setPayments((prev) =>
         prev.map((p) => (p.id === id ? { ...p, status: 'cancelled' as const } : p)),
       )
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to cancel scheduled payment:', err)
     }
   }
 

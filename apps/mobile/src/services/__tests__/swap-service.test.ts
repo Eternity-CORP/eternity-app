@@ -50,7 +50,6 @@ jest.mock('@/src/constants/networks', () => ({
 
 // Use real ethers for these tests
 jest.unmock('ethers');
-const { ethers } = jest.requireActual('ethers');
 
 // Re-mock specific ethers functions for our tests
 jest.mock('ethers', () => {

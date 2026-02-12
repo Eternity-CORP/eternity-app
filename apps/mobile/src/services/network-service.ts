@@ -11,7 +11,6 @@ import { JsonRpcProvider, formatEther } from 'ethers';
 import { createLogger } from '@/src/utils/logger';
 import {
   NetworkId,
-  SUPPORTED_NETWORKS,
   TIER1_NETWORK_IDS,
   getAlchemyUrl,
   getRpcUrl,

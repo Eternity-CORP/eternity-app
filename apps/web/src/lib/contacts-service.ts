@@ -6,7 +6,6 @@
 import {
   type Contact,
   type StorageAdapter,
-  loadContacts as sharedLoad,
   saveContact as sharedSave,
   deleteContact as sharedDelete,
   searchContacts as sharedSearch,

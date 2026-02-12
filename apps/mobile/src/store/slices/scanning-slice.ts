@@ -9,7 +9,6 @@ import {
   dismissAlert,
   snoozeAlert,
   shouldScan,
-  type ScanResult,
   type Tier2TokenBalance,
 } from '@/src/services/smart-scanning-service';
 

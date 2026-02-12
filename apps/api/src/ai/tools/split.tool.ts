@@ -26,7 +26,6 @@ export class CreateSplitTool implements AIToolHandler {
   private readonly logger = new Logger(CreateSplitTool.name);
 
   constructor(
-    private readonly splitService: SplitService,
     private readonly usernameService: UsernameService,
   ) {}
 

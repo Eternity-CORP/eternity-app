@@ -46,8 +46,8 @@ function BlikGenerateView({ blik, onCancel }: { blik: BlikGeneratePreview; onCan
       await navigator.clipboard.writeText(blik.code)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.error('Failed to copy BLIK code to clipboard:', err)
     }
   }, [blik.code])
 

@@ -6,7 +6,7 @@
 
 import { JsonRpcProvider, formatUnits } from 'ethers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TIER2_NETWORKS, SUPPORTED_NETWORKS, type NetworkId } from '../constants/networks';
+import { TIER2_NETWORKS, SUPPORTED_NETWORKS, type NetworkId, type Tier2NetworkKey } from '../constants/networks';
 
 // Storage keys
 const STORAGE_PREFIX = '@smart_scanning:';
@@ -195,7 +195,7 @@ async function fetchNativeBalance(
   networkId: string
 ): Promise<Tier2TokenBalance | null> {
   try {
-    const network = TIER2_NETWORKS[networkId];
+    const network = TIER2_NETWORKS[networkId as Tier2NetworkKey];
     if (!network) return null;
 
     const balance = await provider.getBalance(address);
@@ -235,7 +235,7 @@ async function fetchTokenBalance(
   tokenInfo: { address: string; decimals: number; symbol: string }
 ): Promise<Tier2TokenBalance | null> {
   try {
-    const network = TIER2_NETWORKS[networkId];
+    const network = TIER2_NETWORKS[networkId as Tier2NetworkKey];
     if (!network) return null;
 
     const { ethers } = await import('ethers');

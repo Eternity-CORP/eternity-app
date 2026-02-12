@@ -80,7 +80,8 @@ async function fetchNativeBalance(
       usdValue: 0,
       iconUrl: network.iconUrl,
     }
-  } catch {
+  } catch (err) {
+    console.error(`Failed to fetch native balance for ${networkId}:`, err)
     return null
   }
 }

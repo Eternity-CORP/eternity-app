@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
@@ -26,7 +25,6 @@ import BackButton from '@/components/BackButton'
 import ConfirmModal from '@/components/shared/ConfirmModal'
 
 export default function SplitPage() {
-  const router = useRouter()
   useAuthGuard()
   const { address, network, currentAccount } = useAccount()
   const [splits, setSplits] = useState<SplitBill[]>([])
@@ -93,8 +91,8 @@ export default function SplitPage() {
           setSplits(created)
           setPendingSplitsList(pending)
         }
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load split bills:', err)
       } finally {
         if (!cancelled) setStatus('succeeded')
       }
@@ -187,8 +185,8 @@ export default function SplitPage() {
       setSplits((prev) =>
         prev.map(s => (s.id === id ? { ...s, status: 'cancelled' as const } : s)),
       )
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('Failed to cancel split bill:', err)
     }
   }
 

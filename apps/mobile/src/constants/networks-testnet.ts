@@ -4,7 +4,7 @@
  */
 
 import { type NetworkId } from '@e-y/shared';
-import { NetworkConfig, NetworkEnvironment } from './networks';
+import { NetworkConfig } from './networks';
 
 export type TestnetNetworkId =
   | 'sepolia'

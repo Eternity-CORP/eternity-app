@@ -106,7 +106,9 @@ function SendContent() {
         if (prefs?.defaultNetwork) {
           recipientPrefNetwork = prefs.defaultNetwork as NetworkId
         }
-      } catch {}
+      } catch (err) {
+        console.error('Failed to load recipient network preferences:', err)
+      }
 
       if (cancelled) return
 
@@ -146,14 +148,16 @@ function SendContent() {
 
         const estimate = await estimateGasFn(provider, address, resolvedAddress, amount, tokenInfo)
         setGasEstimate(estimate.totalGasCost)
-      } catch {
+      } catch (err) {
+        console.error('Gas estimation failed, falling back to basic estimate:', err)
         try {
           const provider = new ethers.JsonRpcProvider(network.rpcUrl)
           const feeData = await provider.getFeeData()
           const gasLimit = BigInt(21000)
           const gasCost = gasLimit * (feeData.gasPrice || BigInt(0))
           setGasEstimate(ethers.formatEther(gasCost))
-        } catch {
+        } catch (fallbackErr) {
+          console.error('Fallback gas estimation also failed:', fallbackErr)
           setGasEstimate('')
         }
       }

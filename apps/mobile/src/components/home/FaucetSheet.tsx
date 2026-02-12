@@ -42,8 +42,8 @@ export function FaucetSheet({ visible, slideAnim, fadeAnim, address, onClose, on
       .then((res) => {
         if (!res.enabled) setState('empty');
       })
-      .catch(() => {
-        // If status endpoint fails, still show claim button
+      .catch((err) => {
+        console.error('Failed to check faucet status:', err);
       });
   }, [visible]);
 

@@ -30,14 +30,12 @@ function ScrambleChar({
   style?: React.CSSProperties
 }) {
   const [displayChar, setDisplayChar] = useState(' ')
-  const [isRevealed, setIsRevealed] = useState(false)
 
   const iterationCount = intensity === 'subtle' ? 4 : intensity === 'medium' ? 6 : 10
 
   useEffect(() => {
     if (char === ' ') {
       setDisplayChar(' ')
-      setIsRevealed(true)
       return
     }
 
@@ -53,7 +51,6 @@ function ScrambleChar({
           iteration++
         } else {
           setDisplayChar(char)
-          setIsRevealed(true)
           clearInterval(scrambleInterval)
         }
       }, 40)

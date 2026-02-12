@@ -181,7 +181,7 @@ export default function SplitConfirmScreen() {
             PARTICIPANTS
           </Text>
 
-          {splitCreate.participants.map((participant, index) => (
+          {splitCreate.participants.map((participant) => (
             <View key={participant.id} style={styles.participantRow}>
               <View style={[styles.participantAvatar, { backgroundColor: dynamicTheme.colors.surfaceHover }]}>
                 <FontAwesome name="user" size={16} color={dynamicTheme.colors.textTertiary} />

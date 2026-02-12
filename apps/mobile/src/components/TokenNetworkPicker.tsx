@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
-import { NetworkId, SUPPORTED_NETWORKS, getNetworkConfig } from '@/src/constants/networks';
+import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 import { TokenIcon } from './TokenIcon';
 import { NetworkDot } from './NetworkBadge';
 

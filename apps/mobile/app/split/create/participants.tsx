@@ -5,7 +5,7 @@
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setParticipants, setStep } from '@/src/store/slices/split-create-slice';
 import type { SplitParticipant } from '@/src/store/slices/split-create-slice';
@@ -14,7 +14,7 @@ import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
 import { calculateEqualSplit } from '@/src/services/split-bill-service';
-import { truncateAddress, sanitizeAmountInput, formatAmount } from '@/src/utils/format';
+import { sanitizeAmountInput, formatAmount } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';

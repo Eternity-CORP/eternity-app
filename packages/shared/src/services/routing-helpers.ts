@@ -157,11 +157,6 @@ export function getTokenAddressForNetwork(
 // Route description helpers
 // ============================================
 
-interface RouteStepLike {
-  type: string;
-  bridgeQuote?: { totalFeeUsd: number; estimatedTime: number } | null;
-}
-
 interface RouteLike {
   type: string;
   fromNetwork: string;

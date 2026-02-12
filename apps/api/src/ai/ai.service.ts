@@ -10,7 +10,6 @@ import {
 } from './providers/ai-provider.interface';
 import {
   AIToolHandler,
-  ToolDefinition,
   ToolResult,
 } from './tools/tool.interface';
 import { BalanceTool } from './tools/balance.tool';
@@ -400,7 +399,8 @@ export class AiService {
           health.consecutiveErrors = 0;
           this.logger.log(`Provider ${providerName} recovered`);
         }
-      } catch {
+      } catch (error) {
+        this.logger.warn(`Provider ${providerName} recovery check failed: ${(error as Error).message}`);
         // Still unhealthy, schedule another check
         setTimeout(() => {
           this.recoverProvider(providerName);

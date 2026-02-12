@@ -17,7 +17,6 @@ export default function SplitTokenScreen() {
   const dispatch = useAppDispatch();
   const { theme: dynamicTheme } = useTheme();
   const balance = useAppSelector((state) => state.balance);
-  const splitCreate = useAppSelector((state) => state.splitCreate);
 
   // Reset state when starting new flow
   useEffect(() => {

@@ -10,7 +10,6 @@ import {
   NETWORK_TO_CHAIN_ID,
   SUPPORTED_NETWORKS,
   findNetworksWithSufficientBalance,
-  getBestNetworkForToken,
   fetchBridgeQuote,
   checkBridgeCostLevel,
   formatBridgeTime,

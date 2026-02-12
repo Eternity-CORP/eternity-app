@@ -1,7 +1,7 @@
 'use client'
 
 import type { RoutingResult } from '@/lib/routing-service'
-import { SUPPORTED_NETWORKS, type NetworkId } from '@e-y/shared'
+import { SUPPORTED_NETWORKS } from '@e-y/shared'
 
 interface BridgeBannerProps {
   route: RoutingResult

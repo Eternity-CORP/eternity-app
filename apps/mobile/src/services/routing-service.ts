@@ -8,7 +8,6 @@
  */
 
 import {
-  NATIVE_TOKEN_ADDRESS,
   type AggregatedTokenBalance,
   findNetworksWithSufficientBalance,
   getCheapestNetwork,

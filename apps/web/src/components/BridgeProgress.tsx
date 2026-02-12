@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
 import type { BridgeStatusResult } from '@e-y/shared'
 
 type BridgeStep = 'approval' | 'sending' | 'bridging' | 'complete' | 'failed'

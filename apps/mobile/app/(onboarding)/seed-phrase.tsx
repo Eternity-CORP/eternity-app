@@ -18,7 +18,7 @@ export default function SeedPhraseScreen() {
   const [verificationWords, setVerificationWords] = useState<number[]>([]);
   const [userInputs, setUserInputs] = useState<{ [key: number]: string }>({});
   const [step, setStep] = useState<'show' | 'verify'>('show');
-  const [isVerified, setIsVerified] = useState(false);
+  const [_isVerified, setIsVerified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const totalWords = wordCount ? parseInt(wordCount, 10) : 12;
 

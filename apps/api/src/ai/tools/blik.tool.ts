@@ -48,14 +48,10 @@ interface BlikPayPreview {
 export class BlikGenerateTool implements AIToolHandler {
   readonly name = 'blik_generate';
   private readonly logger = new Logger(BlikGenerateTool.name);
-  private readonly network: string;
 
   constructor(
     private readonly blikService: BlikService,
-    private readonly configService: ConfigService,
-  ) {
-    this.network = this.configService.get<string>('NETWORK') || 'sepolia';
-  }
+  ) {}
 
   readonly definition: ToolDefinition = {
     name: 'blik_generate',

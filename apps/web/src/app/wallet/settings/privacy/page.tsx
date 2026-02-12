@@ -38,7 +38,9 @@ export default function PrivacySettingsPage() {
           setSplitBillPrivacy(parsed.splitBillPrivacy)
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to read privacy preferences from localStorage:', err)
+    }
   }, [isReady, address])
 
   const handleChange = useCallback((value: PrivacyLevel) => {
@@ -49,7 +51,9 @@ export default function PrivacySettingsPage() {
       const parsed = existing ? JSON.parse(existing) : {}
       parsed.splitBillPrivacy = value
       localStorage.setItem(key, JSON.stringify(parsed))
-    } catch {}
+    } catch (err) {
+      console.error('Failed to save privacy preferences to localStorage:', err)
+    }
   }, [address])
 
   return (

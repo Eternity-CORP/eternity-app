@@ -7,7 +7,7 @@
 import type { SwapToken, SwapParams, SwapTransactionRequest } from '../types/swap';
 import { LIFI_API_URL, NATIVE_TOKEN_ADDRESS, POPULAR_TOKEN_SYMBOLS } from '../constants/swap';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any -- LI.FI API responses are untyped */
 
 /**
  * Raw quote response from the shared service.
@@ -51,7 +51,7 @@ export async function fetchTokens(chainId: number): Promise<SwapToken[]> {
       logoURI: token.logoURI as string | undefined,
       priceUSD: token.priceUSD as string | undefined,
     }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch tokens:', error);
     return [];
   }

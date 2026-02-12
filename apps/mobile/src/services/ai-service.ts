@@ -12,7 +12,6 @@ import { createLogger } from '@/src/utils/logger';
 import {
   createAiSocketService,
   type AiSocketService,
-  type AiSocketCallbacks,
   AI_EVENTS,
   AiContact,
   ChatMessage,
