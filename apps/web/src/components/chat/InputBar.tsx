@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect, KeyboardEvent } from 'react'
+import type { KeyboardEvent, ChangeEvent } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 
 interface InputBarProps {
@@ -66,7 +67,7 @@ function VoiceBars() {
   )
 }
 
-export default function InputBar({ onSend, disabled = false, placeholder = 'Type a message...' }: InputBarProps) {
+export default function InputBar({ onSend, disabled = false, placeholder = 'Type or dictate a message...' }: InputBarProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -93,7 +94,7 @@ export default function InputBar({ onSend, disabled = false, placeholder = 'Type
     }
   }
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
     if (isListening) {
       stop()
     }

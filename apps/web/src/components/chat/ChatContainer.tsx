@@ -12,14 +12,10 @@ import MessageBubble, { type ChatMessage as BubbleChatMessage } from './MessageB
 import TypingIndicator from './TypingIndicator'
 import SuggestionChips from './SuggestionChips'
 import InputBar from './InputBar'
-import SendPreviewCard from './cards/SendPreviewCard'
 import BlikCard from './cards/BlikCard'
-import SwapCard from './cards/SwapCard'
 import ContactSaveCard from './cards/ContactSaveCard'
-import UsernameCard from './cards/UsernameCard'
-import ScheduledPaymentCard from './cards/ScheduledPaymentCard'
-import SplitBillCard from './cards/SplitBillCard'
 import ConfirmModal from './cards/ConfirmModal'
+import type { ConfirmDetail } from './cards/ConfirmModal'
 import { loadContacts, saveContact } from '@/lib/contacts-service'
 import { createSplitBill } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
@@ -45,9 +41,10 @@ interface PendingContactSave {
 type ConfirmTarget =
   | { type: 'send'; transaction: SendCardTransaction }
   | { type: 'blik'; blik: Parameters<typeof BlikCard>[0]['blik'] }
-  | { type: 'swap'; swap: Parameters<typeof SwapCard>[0]['swap'] }
+  | { type: 'swap'; swap: { fromToken: { symbol: string; amount: string; amountUsd: string }; toToken: { symbol: string; amount: string; amountUsd: string }; rate: string; priceImpact: string; estimatedGas: string; estimatedGasUsd: string; slippage: string; network: string; requiresApproval?: boolean } }
   | { type: 'username' }
   | { type: 'scheduled' }
+  | { type: 'split' }
 
 export default function ChatContainer() {
   const { address, network, currentAccount } = useAccount()
@@ -83,34 +80,78 @@ export default function ChatContainer() {
   // Auto-scroll to bottom on new messages or streaming
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent, pendingTransaction, pendingBlik, pendingSwap, pendingUsername, pendingScheduled, pendingSplit, pendingContactSave])
+  }, [messages, streamingContent, pendingBlik, pendingContactSave])
 
-  const handleSendConfirm = useCallback((updated: SendCardTransaction) => {
-    setConfirmTarget({ type: 'send', transaction: updated })
-  }, [])
+  // Auto-open modal when pending data arrives
+  useEffect(() => {
+    if (pendingTransaction) setConfirmTarget({ type: 'send', transaction: pendingTransaction })
+  }, [pendingTransaction])
+
+  useEffect(() => {
+    if (pendingScheduled) setConfirmTarget({ type: 'scheduled' })
+  }, [pendingScheduled])
+
+  useEffect(() => {
+    if (pendingSplit) setConfirmTarget({ type: 'split' })
+  }, [pendingSplit])
+
+  useEffect(() => {
+    if (pendingSwap) setConfirmTarget({ type: 'swap', swap: pendingSwap })
+  }, [pendingSwap])
+
+  useEffect(() => {
+    if (pendingUsername) setConfirmTarget({ type: 'username' })
+  }, [pendingUsername])
+
+  useEffect(() => {
+    if (pendingBlik && pendingBlik.type === 'pay') setConfirmTarget({ type: 'blik', blik: pendingBlik })
+  }, [pendingBlik])
 
   const handleBlikConfirm = useCallback((blik: Parameters<typeof BlikCard>[0]['blik']) => {
     setConfirmTarget({ type: 'blik', blik })
   }, [])
 
-  const handleConfirmModalSubmit = useCallback(async (password: string) => {
+  const handleCancelBlik = useCallback(() => {
+    clearPendingBlik()
+  }, [clearPendingBlik])
+
+  const handleConfirmModalSubmit = useCallback(async (password: string, editedValues?: Record<string, string>) => {
     if (!confirmTarget || !currentAccount) return
 
+    // Verify password for all actions
     const mnemonic = await loadAndDecrypt(password)
+
+    if (confirmTarget.type === 'split') {
+      if (!pendingSplit || !address) return
+      const totalAmount = editedValues?.totalAmount || pendingSplit.totalAmount
+      const description = editedValues?.description ?? pendingSplit.description
+      await createSplitBill(apiClient, {
+        creatorAddress: address,
+        totalAmount,
+        tokenSymbol: pendingSplit.token,
+        description,
+        participants: pendingSplit.participants,
+      })
+      clearPendingSplit()
+      setConfirmTarget(null)
+      sendMessage('Split bill created successfully! View your splits on the Split page.')
+      return
+    }
     const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const connectedWallet = wallet.connect(provider)
 
     if (confirmTarget.type === 'send') {
       const txn = confirmTarget.transaction
+      const toAddress = editedValues?.to || txn.to
+      const amount = editedValues?.amount || txn.amount
       const token = txn.token.toUpperCase()
       const isNative = token === 'ETH' || token === network.symbol
 
       let txHash: string
       if (isNative) {
-        txHash = await sendNativeToken(connectedWallet, provider, txn.to, txn.amount)
+        txHash = await sendNativeToken(connectedWallet, provider, toAddress, amount)
       } else {
-        // Find token contract from aggregated balances
         const tokenData = aggregatedBalances.find(
           (t) => t.symbol.toUpperCase() === token,
         )
@@ -120,14 +161,13 @@ export default function ChatContainer() {
           txHash = await sendErc20Token(
             connectedWallet,
             provider,
-            txn.to,
-            txn.amount,
+            toAddress,
+            amount,
             primaryNet.contractAddress,
             tokenData?.decimals || 18,
           )
         } else {
-          // Fallback to native send
-          txHash = await sendNativeToken(connectedWallet, provider, txn.to, txn.amount)
+          txHash = await sendNativeToken(connectedWallet, provider, toAddress, amount)
         }
       }
 
@@ -135,14 +175,13 @@ export default function ChatContainer() {
       setConfirmTarget(null)
       sendMessage(`Transaction sent! Hash: ${txHash}`)
 
-      // Offer to save recipient as contact if not already saved
       const existingContacts = loadContacts(address)
       const alreadySaved = existingContacts.some(
-        (c) => c.address.toLowerCase() === txn.to.toLowerCase(),
+        (c) => c.address.toLowerCase() === toAddress.toLowerCase(),
       )
       if (!alreadySaved) {
         setPendingContactSave({
-          address: txn.to,
+          address: toAddress,
           username: txn.toUsername,
         })
       }
@@ -186,7 +225,9 @@ export default function ChatContainer() {
       setConfirmTarget(null)
       sendMessage(`Username @${pendingUsername.username} registered successfully!`)
     } else if (confirmTarget.type === 'scheduled' && pendingScheduled) {
-      const signedData = await signTransaction(connectedWallet, provider, pendingScheduled.recipient, pendingScheduled.amount)
+      const recipient = editedValues?.to || pendingScheduled.recipient
+      const amount = editedValues?.amount || pendingScheduled.amount
+      const signedData = await signTransaction(connectedWallet, provider, recipient, amount)
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
       const res = await fetch(`${apiUrl}/api/scheduled`, {
@@ -197,9 +238,9 @@ export default function ChatContainer() {
         },
         body: JSON.stringify({
           creatorAddress: address,
-          recipient: pendingScheduled.recipient,
+          recipient,
           recipientUsername: pendingScheduled.recipientUsername,
-          amount: pendingScheduled.amount,
+          amount,
           tokenSymbol: pendingScheduled.token,
           scheduledAt: pendingScheduled.scheduledAt,
           recurringInterval: pendingScheduled.recurring === 'once' ? undefined : pendingScheduled.recurring,
@@ -219,69 +260,17 @@ export default function ChatContainer() {
       setConfirmTarget(null)
       sendMessage('Scheduled payment created and pre-signed for automatic execution!')
     }
-  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, pendingScheduled, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, clearPendingScheduled, sendMessage])
+  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, pendingScheduled, pendingSplit, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, clearPendingScheduled, clearPendingSplit, sendMessage])
 
   const handleConfirmCancel = useCallback(() => {
+    if (confirmTarget?.type === 'send') clearPendingTransaction()
+    else if (confirmTarget?.type === 'scheduled') clearPendingScheduled()
+    else if (confirmTarget?.type === 'split') clearPendingSplit()
+    else if (confirmTarget?.type === 'swap') clearPendingSwap()
+    else if (confirmTarget?.type === 'username') clearPendingUsername()
+    else if (confirmTarget?.type === 'blik') clearPendingBlik()
     setConfirmTarget(null)
-  }, [])
-
-  const handleCancelTransaction = useCallback(() => {
-    clearPendingTransaction()
-  }, [clearPendingTransaction])
-
-  const handleCancelBlik = useCallback(() => {
-    clearPendingBlik()
-  }, [clearPendingBlik])
-
-  const handleSwapConfirm = useCallback((swap: Parameters<typeof SwapCard>[0]['swap']) => {
-    setConfirmTarget({ type: 'swap', swap })
-  }, [])
-
-  const handleCancelSwap = useCallback(() => {
-    clearPendingSwap()
-  }, [clearPendingSwap])
-
-  const handleUsernameConfirm = useCallback(() => {
-    if (!pendingUsername) return
-    setConfirmTarget({ type: 'username' as const } as ConfirmTarget)
-  }, [pendingUsername])
-
-  const handleCancelUsername = useCallback(() => {
-    clearPendingUsername()
-  }, [clearPendingUsername])
-
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
-
-  const handleScheduledConfirm = useCallback(() => {
-    if (!pendingScheduled) return
-    setConfirmTarget({ type: 'scheduled' })
-  }, [pendingScheduled])
-
-  const handleCancelScheduled = useCallback(() => {
-    clearPendingScheduled()
-  }, [clearPendingScheduled])
-
-  const handleSplitConfirm = useCallback(async () => {
-    if (!pendingSplit || !address) return
-    try {
-      await createSplitBill(apiClient, {
-        creatorAddress: address,
-        totalAmount: pendingSplit.totalAmount,
-        tokenSymbol: pendingSplit.token,
-        description: pendingSplit.description,
-        participants: pendingSplit.participants,
-      })
-      clearPendingSplit()
-      sendMessage('Split bill created successfully!')
-    } catch (err) {
-      sendMessage(`Failed to create split: ${(err as Error).message}`)
-      clearPendingSplit()
-    }
-  }, [pendingSplit, address, clearPendingSplit, sendMessage])
-
-  const handleCancelSplit = useCallback(() => {
-    clearPendingSplit()
-  }, [clearPendingSplit])
+  }, [confirmTarget, clearPendingTransaction, clearPendingScheduled, clearPendingSplit, clearPendingSwap, clearPendingUsername, clearPendingBlik])
 
   const hasMessages = messages.length > 0
   const showEmptyState = !hasMessages && !isStreaming
@@ -294,72 +283,131 @@ export default function ChatContainer() {
   }, [showEmptyState])
 
   // Build confirm modal props
-  const confirmModalProps = confirmTarget
-    ? confirmTarget.type === 'send'
-      ? {
-          title: 'Confirm Send',
-          summary: `${confirmTarget.transaction.amount} ${confirmTarget.transaction.token}`,
-          details: [
-            { label: 'To', value: confirmTarget.transaction.toUsername || `${confirmTarget.transaction.to.slice(0, 6)}...${confirmTarget.transaction.to.slice(-4)}` },
-            { label: 'Network', value: confirmTarget.transaction.network || network.name },
-            ...(confirmTarget.transaction.estimatedGas
-              ? [{ label: 'Gas fee', value: `${confirmTarget.transaction.estimatedGas} ETH` }]
-              : []),
-          ],
-        }
-      : confirmTarget.type === 'blik'
-        ? {
-            title: 'Confirm BLIK Payment',
-            summary: `${confirmTarget.blik.amount} ${confirmTarget.blik.token}`,
-            details: [
-              ...(confirmTarget.blik.type === 'pay'
-                ? [
-                    { label: 'BLIK Code', value: confirmTarget.blik.code },
-                    { label: 'Receiver', value: confirmTarget.blik.receiverUsername || `${confirmTarget.blik.receiverAddress.slice(0, 6)}...${confirmTarget.blik.receiverAddress.slice(-4)}` },
-                  ]
-                : []),
-            ],
-          }
-        : confirmTarget.type === 'swap'
-          ? {
-              title: 'Confirm Swap',
-              summary: `${confirmTarget.swap.fromToken.amount} ${confirmTarget.swap.fromToken.symbol} → ${confirmTarget.swap.toToken.amount} ${confirmTarget.swap.toToken.symbol}`,
-              details: [
-                { label: 'Rate', value: confirmTarget.swap.rate },
-                { label: 'Price Impact', value: confirmTarget.swap.priceImpact },
-                { label: 'Gas fee', value: `${confirmTarget.swap.estimatedGas} ETH` },
-                { label: 'Slippage', value: confirmTarget.swap.slippage },
-                { label: 'Network', value: confirmTarget.swap.network },
-              ],
-            }
-          : confirmTarget.type === 'username' && pendingUsername
-            ? {
-                title: 'Register Username',
-                summary: `@${pendingUsername.username}`,
-                details: [
-                  { label: 'Username', value: `@${pendingUsername.username}` },
-                  { label: 'Wallet', value: `${pendingUsername.address.slice(0, 6)}...${pendingUsername.address.slice(-4)}` },
-                ],
-              }
-            : confirmTarget.type === 'scheduled' && pendingScheduled
-              ? {
-                  title: 'Confirm Scheduled Payment',
-                  summary: `${pendingScheduled.amount} ${pendingScheduled.token}`,
-                  details: [
-                    { label: 'Recipient', value: pendingScheduled.recipientUsername || `${pendingScheduled.recipient.slice(0, 6)}...${pendingScheduled.recipient.slice(-4)}` },
-                    { label: 'Scheduled', value: new Date(pendingScheduled.scheduledAt).toLocaleString() },
-                    ...(pendingScheduled.recurring && pendingScheduled.recurring !== 'once'
-                      ? [{ label: 'Recurring', value: pendingScheduled.recurring }]
-                      : []),
-                    { label: 'Network', value: network.name },
-                  ],
-                }
-              : null
-    : null
+  const buildConfirmModalProps = (): { title: string; summary: string; details: ConfirmDetail[]; extraContent?: React.ReactNode; requiresPassword?: boolean; confirmLabel?: string } | null => {
+    if (!confirmTarget) return null
+
+    if (confirmTarget.type === 'send') {
+      const txn = confirmTarget.transaction
+      return {
+        title: 'Confirm Send',
+        summary: `${txn.amount} ${txn.token}`,
+        details: [
+          { key: 'to', label: 'To', value: txn.toUsername || txn.to, editable: true },
+          { key: 'amount', label: 'Amount', value: txn.amount, editable: true, type: 'number' as const },
+          { label: 'Network', value: txn.network || network.name },
+          ...(txn.estimatedGas
+            ? [{ label: 'Gas fee', value: `${txn.estimatedGas} ETH` }]
+            : []),
+        ],
+        requiresPassword: true,
+        confirmLabel: 'Send',
+      }
+    }
+
+    if (confirmTarget.type === 'blik') {
+      return {
+        title: 'Confirm BLIK Payment',
+        summary: `${confirmTarget.blik.amount} ${confirmTarget.blik.token}`,
+        details: [
+          ...(confirmTarget.blik.type === 'pay'
+            ? [
+                { label: 'BLIK Code', value: confirmTarget.blik.code },
+                { label: 'Receiver', value: confirmTarget.blik.receiverUsername || `${confirmTarget.blik.receiverAddress.slice(0, 6)}...${confirmTarget.blik.receiverAddress.slice(-4)}` },
+              ]
+            : []),
+        ],
+        requiresPassword: true,
+        confirmLabel: 'Pay',
+      }
+    }
+
+    if (confirmTarget.type === 'swap') {
+      return {
+        title: 'Confirm Swap',
+        summary: `${confirmTarget.swap.fromToken.amount} ${confirmTarget.swap.fromToken.symbol} → ${confirmTarget.swap.toToken.amount} ${confirmTarget.swap.toToken.symbol}`,
+        details: [
+          { label: 'Rate', value: confirmTarget.swap.rate },
+          { label: 'Price Impact', value: confirmTarget.swap.priceImpact },
+          { label: 'Gas fee', value: `${confirmTarget.swap.estimatedGas} ETH` },
+          { label: 'Slippage', value: confirmTarget.swap.slippage },
+          { label: 'Network', value: confirmTarget.swap.network },
+        ],
+        requiresPassword: true,
+        confirmLabel: 'Swap',
+      }
+    }
+
+    if (confirmTarget.type === 'username' && pendingUsername) {
+      return {
+        title: 'Register Username',
+        summary: `@${pendingUsername.username}`,
+        details: [
+          { label: 'Username', value: `@${pendingUsername.username}` },
+          { label: 'Wallet', value: `${pendingUsername.address.slice(0, 6)}...${pendingUsername.address.slice(-4)}` },
+        ],
+        requiresPassword: true,
+        confirmLabel: 'Register',
+      }
+    }
+
+    if (confirmTarget.type === 'scheduled' && pendingScheduled) {
+      return {
+        title: 'Confirm Scheduled Payment',
+        summary: `${pendingScheduled.amount} ${pendingScheduled.token}`,
+        details: [
+          { key: 'to', label: 'Recipient', value: pendingScheduled.recipientUsername || pendingScheduled.recipient, editable: true },
+          { key: 'amount', label: 'Amount', value: pendingScheduled.amount, editable: true, type: 'number' as const },
+          { label: 'When', value: new Date(pendingScheduled.scheduledAt).toLocaleString() },
+          ...(pendingScheduled.recurring && pendingScheduled.recurring !== 'once'
+            ? [{ label: 'Recurring', value: pendingScheduled.recurring }]
+            : []),
+          { label: 'Network', value: network.name },
+        ],
+        requiresPassword: true,
+        confirmLabel: 'Schedule',
+      }
+    }
+
+    if (confirmTarget.type === 'split' && pendingSplit) {
+      const participantsContent = (
+        <div className="border-t border-white/5 pt-2 mb-4">
+          <span className="text-[10px] uppercase tracking-wider text-white/40 block mb-1.5">Participants</span>
+          <div className="space-y-1 max-h-[100px] overflow-y-auto">
+            {pendingSplit.participants.map((p, i) => (
+              <div key={i} className="flex items-center justify-between text-xs gap-2">
+                <span className="text-white/70 truncate max-w-[140px] flex-shrink-0">
+                  {p.username ? `@${p.username}` : p.name || `${p.address.slice(0, 6)}...${p.address.slice(-4)}`}
+                </span>
+                <span className="text-white/50 font-mono flex-shrink-0">{p.amount} {pendingSplit.token}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+
+      return {
+        title: 'Create Split Bill',
+        summary: `${pendingSplit.totalAmount} ${pendingSplit.token}`,
+        details: [
+          { key: 'totalAmount', label: 'Total', value: pendingSplit.totalAmount, editable: true, type: 'number' as const },
+          { label: 'Per person', value: `${pendingSplit.perPerson} ${pendingSplit.token}` },
+          { key: 'description', label: 'Description', value: pendingSplit.description || '', editable: true },
+          ...(pendingSplit.splitType ? [{ label: 'Mode', value: pendingSplit.splitType === 'split_with_me' ? 'Split with me' : 'Collect' }] : []),
+        ],
+        extraContent: participantsContent,
+        requiresPassword: true,
+        confirmLabel: 'Create Split',
+      }
+    }
+
+    return null
+  }
+
+  const confirmModalProps = buildConfirmModalProps()
 
   return (
     <div className="flex flex-col h-full relative">
-      {/* Active chat layout — always in DOM, hidden during empty state */}
+      {/* Active chat layout */}
       <div
         className={`flex-1 flex flex-col min-h-0 transition-opacity duration-500 ease-out ${
           showEmptyState ? 'opacity-0 pointer-events-none' : 'opacity-100'
@@ -378,57 +426,12 @@ export default function ChatContainer() {
             return <MessageBubble key={msg.id} message={bubbleMsg} />
           })}
 
-          {/* Pending Transaction Card */}
-          {pendingTransaction && (
-            <SendPreviewCard
-              transaction={pendingTransaction}
-              onConfirm={handleSendConfirm}
-              onCancel={handleCancelTransaction}
-            />
-          )}
-
-          {/* Pending Blik Card */}
-          {pendingBlik && (
+          {/* BLIK generate card — stays in chat with countdown */}
+          {pendingBlik && pendingBlik.type === 'generate' && (
             <BlikCard
               blik={pendingBlik}
               onConfirmPay={handleBlikConfirm}
               onCancel={handleCancelBlik}
-            />
-          )}
-
-          {/* Pending Swap Card */}
-          {pendingSwap && (
-            <SwapCard
-              swap={pendingSwap}
-              onConfirm={handleSwapConfirm}
-              onCancel={handleCancelSwap}
-            />
-          )}
-
-          {/* Pending Username Registration Card */}
-          {pendingUsername && (
-            <UsernameCard
-              preview={pendingUsername}
-              onConfirm={handleUsernameConfirm}
-              onCancel={handleCancelUsername}
-            />
-          )}
-
-          {/* Pending Scheduled Payment Card */}
-          {pendingScheduled && (
-            <ScheduledPaymentCard
-              preview={pendingScheduled}
-              onConfirm={handleScheduledConfirm}
-              onCancel={handleCancelScheduled}
-            />
-          )}
-
-          {/* Pending Split Bill Card */}
-          {pendingSplit && (
-            <SplitBillCard
-              preview={pendingSplit}
-              onConfirm={handleSplitConfirm}
-              onCancel={handleCancelSplit}
             />
           )}
 
@@ -442,7 +445,7 @@ export default function ChatContainer() {
                   name,
                   address: pendingContactSave.address,
                   username: pendingContactSave.username,
-                })
+                }).catch(() => {})
                 setPendingContactSave(null)
               }}
               onSkip={() => setPendingContactSave(null)}
@@ -492,7 +495,7 @@ export default function ChatContainer() {
         </div>
       </div>
 
-      {/* Empty state overlay — Gemini-style centered welcome */}
+      {/* Empty state overlay */}
       {!hasTransitioned && (
         <div
           className={`absolute inset-0 z-10 flex flex-col items-center justify-center px-6 transition-all duration-500 ease-out ${
@@ -539,6 +542,9 @@ export default function ChatContainer() {
           title={confirmModalProps.title}
           summary={confirmModalProps.summary}
           details={confirmModalProps.details}
+          extraContent={confirmModalProps.extraContent}
+          requiresPassword={confirmModalProps.requiresPassword}
+          confirmLabel={confirmModalProps.confirmLabel}
           onConfirm={handleConfirmModalSubmit}
           onCancel={handleConfirmCancel}
         />

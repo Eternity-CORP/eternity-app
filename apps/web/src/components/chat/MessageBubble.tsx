@@ -19,8 +19,19 @@ function formatTime(timestamp: number): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
+function stripToolXml(text: string): string {
+  return text
+    .replace(/<tool_use>[\s\S]*?<\/tool_use>/g, '')
+    .replace(/<invoke[\s\S]*?<\/invoke>/g, '')
+    .replace(/<[^>]*>[\s\S]*?<\/antml:[^>]*>/g, '')
+    .trim()
+}
+
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user'
+  const cleanContent = isUser ? message.content : stripToolXml(message.content)
+
+  if (!cleanContent) return null
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -35,7 +46,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         style={{ overflowWrap: 'anywhere' }}
       >
         <div className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
-          {renderMarkdown(message.content)}
+          {renderMarkdown(cleanContent)}
         </div>
 
         {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
