@@ -2,6 +2,9 @@
 
 **IMPORTANT: Read this file and project-context.md before writing ANY code.**
 
+## Planning vs Implementation
+When the user asks to 'implement' something, prioritize writing code over planning. Do NOT spend entire sessions exploring and planning without producing code changes. If a plan is needed, keep it under 5 minutes, then start implementing. Ask for confirmation only on high-risk architectural decisions, not routine implementations.
+
 ## Quick Reference
 
 ### Reference Documents (MUST read before implementing)
@@ -164,6 +167,21 @@ interface State {
 - Use `expo-secure-store` for secrets
 - Clear sensitive data from memory
 - Validate all external input
+
+## Deployment Workflow
+This project deploys to Vercel (frontend/web) and Railway (backend). After implementing changes:
+1. Run type checks and fix all errors before committing
+2. Commit and push
+3. Deploy using Vercel CLI if requested
+Always verify the build succeeds locally before deploying.
+
+## TypeScript Conventions
+- This is a TypeScript-first codebase. All new code must be TypeScript.
+- Always run `tsc --noEmit` or equivalent type check after multi-file changes before committing.
+- Watch for: BigInt literal syntax, async type mismatches, missing imports after refactors.
+
+## Session Continuations
+When a user says 'continue' or resumes a previous session, immediately summarize what was done last and what remains, then start executing the next concrete step. Do NOT re-plan from scratch or re-enter plan mode.
 
 ---
 

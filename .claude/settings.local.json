@@ -1,4 +1,18 @@
 {
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/daniillogachev/Ma\\ project/E-Y && npx tsc --noEmit 2>&1 | head -20",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
   "permissions": {
     "allow": [
       "Skill(superpowers:systematic-debugging)",
@@ -75,7 +89,21 @@
       "Bash(docker build:*)",
       "Bash(node -e:*)",
       "Bash(docker run:*)",
-      "Bash(docker stop:*)"
+      "Bash(docker stop:*)",
+      "Bash(cat:*)",
+      "Bash(npx jest:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:eternity-wallet.vercel.app)",
+      "WebFetch(domain:e-y-app.vercel.app)",
+      "Bash(wc -l:*)",
+      "Bash(npx supabase:*)",
+      "Bash(source:*)",
+      "Bash(SUPA_KEY=\"***REDACTED_SUPABASE_KEY***\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo:*)",
+      "WebFetch(domain:docs.anthropic.com)",
+      "Bash(npx turbo build:*)",
+      "Bash(sips:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

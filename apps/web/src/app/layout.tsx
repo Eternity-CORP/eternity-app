@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   description: 'AI-native crypto wallet. No addresses. No fear. Just you and your AI.',
   icons: {
     icon: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Eternity',
   },
 }
 
