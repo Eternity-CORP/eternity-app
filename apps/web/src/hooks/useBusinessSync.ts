@@ -20,13 +20,11 @@ export function useBusinessSync() {
 
     getUserBusinesses(apiClient, address)
       .then((businesses) => {
-        if (businesses.length > 0) {
-          syncBusinessAccounts(businesses.map((b) => ({
-            id: b.id,
-            name: b.name,
-            treasuryAddress: b.treasuryAddress,
-          })))
-        }
+        syncBusinessAccounts(businesses.map((b) => ({
+          id: b.id,
+          name: b.name,
+          treasuryAddress: b.treasuryAddress,
+        })))
       })
       .catch((err) => {
         console.error('Failed to sync business accounts:', err)

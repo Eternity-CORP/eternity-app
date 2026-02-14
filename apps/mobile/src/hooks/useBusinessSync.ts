@@ -26,13 +26,11 @@ export function useBusinessSync() {
     dispatch(fetchUserBusinessesThunk(address))
       .unwrap()
       .then((businesses) => {
-        if (businesses.length > 0) {
-          dispatch(syncBusinessAccountsThunk(businesses.map((b) => ({
-            id: b.id,
-            name: b.name,
-            treasuryAddress: b.treasuryAddress,
-          }))));
-        }
+        dispatch(syncBusinessAccountsThunk(businesses.map((b) => ({
+          id: b.id,
+          name: b.name,
+          treasuryAddress: b.treasuryAddress,
+        }))));
       })
       .catch((err: unknown) => {
         console.error('Failed to sync business accounts:', err);
