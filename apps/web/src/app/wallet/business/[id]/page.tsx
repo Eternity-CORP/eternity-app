@@ -28,7 +28,6 @@ import {
 import { indexToProposalStatus, indexToProposalType } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import Navigation from '@/components/Navigation'
-import BackButton from '@/components/BackButton'
 
 // --------------------------------------------------
 // Types
@@ -345,7 +344,6 @@ export default function BusinessDashboardPage() {
         <Navigation />
         <main className="w-full flex justify-center px-6 pt-12 pb-12">
           <div className="w-full max-w-[560px]">
-            <BackButton />
             <div className="glass-card gradient-border rounded-2xl p-6">
               <div className="flex justify-center py-16">
                 <div className="w-10 h-10 border-2 border-white/20 border-t-[#3388FF] rounded-full animate-spin" />
@@ -367,7 +365,6 @@ export default function BusinessDashboardPage() {
         <Navigation />
         <main className="w-full flex justify-center px-6 pt-12 pb-12">
           <div className="w-full max-w-[560px]">
-            <BackButton />
             <div className="glass-card gradient-border rounded-2xl p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-[#EF4444]/15 flex items-center justify-center mx-auto mb-4">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2">
@@ -401,15 +398,6 @@ export default function BusinessDashboardPage() {
 
       <main className="w-full flex justify-center px-6 pt-12 pb-12">
         <div className="w-full max-w-[560px]">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-xs text-white/30 mb-4 -mt-4">
-            <Link href="/wallet" className="hover:text-white/60 transition-colors">Wallet</Link>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-            <span className="text-white/50">{business.name}</span>
-          </div>
-
           {/* Header card */}
           <div className="glass-card gradient-border rounded-2xl p-6 mb-4">
             <div className="flex items-center gap-4 mb-4">
