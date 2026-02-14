@@ -249,7 +249,7 @@ export function AccountSelectorSheet({
                   const accountIndex = accounts.findIndex(a => a.id === account.id);
                   const isSelected = accountIndex === currentAccountIndex;
                   const isBusiness = account.type === 'business';
-                  const accountBalance = isBusiness ? '\u2014' : formatUsdValue(accountBalances[account.address] ?? 0);
+                  const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
 
                   if (editingAccountIndex === account.accountIndex) {
                     return (
