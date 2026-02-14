@@ -173,7 +173,7 @@ export const addBusinessAccountThunk = createAsyncThunk(
 
 /**
  * Sync business accounts from API data.
- * Adds missing business accounts and removes stale ones.
+ * Adds missing, updates addresses, removes stale.
  */
 export const syncBusinessAccountsThunk = createAsyncThunk(
   'wallet/syncBusinessAccounts',
@@ -184,9 +184,21 @@ export const syncBusinessAccountsThunk = createAsyncThunk(
       accounts.filter((a) => a.type === 'business').map((a) => a.businessId)
     );
     const apiBizIds = new Set(businesses.map((b) => b.id));
+    const bizByIdMap = new Map(businesses.map((b) => [b.id, b]));
 
     let updated = [...accounts];
     let changed = false;
+
+    // Update existing business accounts — fix address if it doesn't match treasury
+    updated = updated.map((a) => {
+      if (a.type !== 'business' || !a.businessId) return a;
+      const biz = bizByIdMap.get(a.businessId);
+      if (biz && a.address !== biz.treasuryAddress) {
+        changed = true;
+        return { ...a, address: biz.treasuryAddress };
+      }
+      return a;
+    });
 
     // Find a non-business account to derive accountIndex from
     const baseAccount = accounts.find((a) => a.type !== 'business') || accounts[0];
@@ -197,7 +209,7 @@ export const syncBusinessAccountsThunk = createAsyncThunk(
       if (!existingBizIds.has(biz.id)) {
         updated.push(createAccount({
           index: baseAccount.accountIndex,
-          address: biz.treasuryAddress, // Business wallet address = treasury address
+          address: biz.treasuryAddress,
           type: 'business',
           label: biz.name,
           businessId: biz.id,

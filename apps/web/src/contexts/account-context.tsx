@@ -205,14 +205,26 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     setCurrentAccount(newAccount)
   }, [currentAccount])
 
-  // Sync business accounts from API — adds missing, removes stale
+  // Sync business accounts from API — adds missing, updates addresses, removes stale
   const syncBusinessAccounts = useCallback((businesses: { id: string; name: string; treasuryAddress: string }[]) => {
     const accs = loadAccounts()
     const existingBizIds = new Set(accs.filter((a) => a.type === 'business').map((a) => a.businessId))
     const apiBizIds = new Set(businesses.map((b) => b.id))
+    const bizByIdMap = new Map(businesses.map((b) => [b.id, b]))
 
     let updated = [...accs]
     let changed = false
+
+    // Update existing business accounts — fix address if it doesn't match treasury
+    updated = updated.map((a) => {
+      if (a.type !== 'business' || !a.businessId) return a
+      const biz = bizByIdMap.get(a.businessId)
+      if (biz && a.address !== biz.treasuryAddress) {
+        changed = true
+        return { ...a, address: biz.treasuryAddress }
+      }
+      return a
+    })
 
     // Add missing businesses
     for (const biz of businesses) {
@@ -222,7 +234,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
         updated.push(createAccount({
           index: baseAccount.accountIndex,
-          address: biz.treasuryAddress, // Business wallet address = treasury address
+          address: biz.treasuryAddress,
           type: 'business',
           label: biz.name,
           businessId: biz.id,
