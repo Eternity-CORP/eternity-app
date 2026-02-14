@@ -20,7 +20,8 @@ const features = [
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
         <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 3" strokeLinecap="round" />
+        <path d="M15 9.5c0-1.38-1.34-2.5-3-2.5S9 8.12 9 9.5c0 1.38 1.34 2.5 3 2.5s3 1.12 3 2.5c0 1.38-1.34 2.5-3 2.5s-3-1.12-3-2.5" strokeLinecap="round" />
+        <path d="M12 6v1M12 17v1" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -46,8 +47,8 @@ const features = [
       'Create proposals, cast weighted votes, execute decisions automatically when quorum is reached.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path d="M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M4 21V5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 15l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -59,8 +60,8 @@ const features = [
       'Free transfers or approval-required mode. Sell shares, onboard new partners, or lock ownership with a vote.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-6 h-6">
-        <path d="M7 17l10-10M17 7v6M17 7h-6" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M17 17H7V7" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 12h16M20 12l-4-4M20 12l-4 4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M20 6H4M4 6l4-4M4 6l4 4" strokeLinecap="round" strokeLinejoin="round" opacity={0.4} />
       </svg>
     ),
   },
@@ -227,105 +228,132 @@ function TokenFlowAnimation() {
   const ref = useRef<HTMLDivElement>(null)
   const isInView = useInView(ref, { once: true, margin: '-80px' })
 
+  const svgSize = 280
+  const center = svgSize / 2
+  const orbitRadius = 95
+
+  const nodePositions = founders.map((_, i) => {
+    const angle = (i * 120 - 90) * (Math.PI / 180)
+    return {
+      x: center + Math.cos(angle) * orbitRadius,
+      y: center + Math.sin(angle) * orbitRadius,
+    }
+  })
+
   return (
-    <div ref={ref} className="relative h-64 md:h-72 overflow-hidden">
-      {/* Central wallet node */}
-      <motion.div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-2xl flex items-center justify-center z-10"
-        style={{
-          background: 'var(--card-bg)',
-          border: '2px solid var(--accent-blue)',
-          boxShadow: '0 0 40px rgba(51,136,255,0.2)',
-        }}
-        initial={{ scale: 0 }}
-        animate={isInView ? { scale: 1 } : {}}
-        transition={{ type: 'spring', delay: 0.2 }}
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" strokeWidth={1.5} className="w-8 h-8">
-          <rect x="3" y="8" width="18" height="12" rx="2" />
-          <path d="M7 8V6a5 5 0 0 1 10 0v2" />
-        </svg>
-      </motion.div>
+    <div ref={ref} className="flex justify-center items-center h-64 md:h-72">
+      <svg viewBox={`0 0 ${svgSize} ${svgSize}`} className="w-full h-full max-w-[280px]">
+        {/* Connecting dashed lines */}
+        {nodePositions.map((pos, i) => (
+          <motion.line
+            key={`line-${i}`}
+            x1={center}
+            y1={center}
+            x2={pos.x}
+            y2={pos.y}
+            stroke="var(--border)"
+            strokeWidth={1}
+            strokeDasharray="4 4"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={isInView ? { pathLength: 1, opacity: 0.5 } : {}}
+            transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
+          />
+        ))}
 
-      {/* Orbiting wallet nodes */}
-      {founders.map((f, i) => {
-        const angle = (i * 120 - 90) * (Math.PI / 180)
-        const orbitRadius = 100
-        const x = Math.cos(angle) * orbitRadius
-        const y = Math.sin(angle) * orbitRadius
+        {/* Central wallet node */}
+        <motion.g
+          initial={{ scale: 0, opacity: 0 }}
+          animate={isInView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ type: 'spring', delay: 0.2 }}
+          style={{ transformOrigin: `${center}px ${center}px` }}
+        >
+          <rect
+            x={center - 28}
+            y={center - 28}
+            width={56}
+            height={56}
+            rx={14}
+            fill="var(--card-bg)"
+            stroke="var(--accent-blue)"
+            strokeWidth={2}
+          />
+          <g transform={`translate(${center - 12}, ${center - 12})`}>
+            <rect x="2" y="6" width="20" height="14" rx="2" fill="none" stroke="var(--accent-blue)" strokeWidth={1.5} />
+            <path d="M7 6V4.5a5 5 0 0 1 10 0V6" fill="none" stroke="var(--accent-blue)" strokeWidth={1.5} />
+          </g>
+        </motion.g>
 
-        return (
-          <motion.div
-            key={f.name}
-            className="absolute left-1/2 top-1/2 flex flex-col items-center gap-1"
-            style={{ x: x - 20, y: y - 20 }}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.4 + i * 0.15, type: 'spring' }}
-          >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold"
-              style={{ background: f.color, color: '#fff' }}
-            >
-              {f.share}
-            </div>
-            <span className="text-[10px] font-medium whitespace-nowrap" style={{ color: 'var(--foreground-muted)' }}>
-              @{f.name.toLowerCase()}
-            </span>
-          </motion.div>
-        )
-      })}
-
-      {/* Animated token particles flowing toward center */}
-      {isInView &&
-        founders.map((f, fi) => {
-          const angle = (fi * 120 - 90) * (Math.PI / 180)
-          const startX = Math.cos(angle) * 100
-          const startY = Math.sin(angle) * 100
-          return Array.from({ length: 3 }).map((_, pi) => (
-            <motion.div
-              key={`${fi}-${pi}`}
-              className="absolute left-1/2 top-1/2 w-1.5 h-1.5 rounded-full"
-              style={{ background: f.color }}
-              initial={{ x: startX, y: startY, opacity: 0 }}
-              animate={{
-                x: [startX, 0],
-                y: [startY, 0],
-                opacity: [0, 1, 1, 0],
-              }}
-              transition={{
-                duration: 2,
-                delay: 1 + pi * 0.6 + fi * 0.3,
-                repeat: Infinity,
-                repeatDelay: 1,
-                ease: 'easeInOut',
-              }}
-            />
-          ))
-        })}
-
-      {/* Connecting lines */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
+        {/* Founder nodes */}
         {founders.map((f, i) => {
-          const angle = (i * 120 - 90) * (Math.PI / 180)
-          const endX = Math.cos(angle) * 100
-          const endY = Math.sin(angle) * 100
+          const pos = nodePositions[i]
           return (
-            <motion.line
-              key={i}
-              x1="50%"
-              y1="50%"
-              x2={`calc(50% + ${endX}px)`}
-              y2={`calc(50% + ${endY}px)`}
-              stroke="var(--border)"
-              strokeWidth={1}
-              strokeDasharray="4 4"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={isInView ? { pathLength: 1, opacity: 0.5 } : {}}
-              transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
-            />
+            <motion.g
+              key={f.name}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={isInView ? { opacity: 1, scale: 1 } : {}}
+              transition={{ delay: 0.4 + i * 0.15, type: 'spring' }}
+              style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}
+            >
+              <rect
+                x={pos.x - 18}
+                y={pos.y - 18}
+                width={36}
+                height={36}
+                rx={10}
+                fill={f.color}
+              />
+              <text
+                x={pos.x}
+                y={pos.y + 1}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#fff"
+                fontSize="12"
+                fontWeight="700"
+                fontFamily="var(--font-sans), system-ui, sans-serif"
+              >
+                {f.share}
+              </text>
+              <text
+                x={pos.x}
+                y={pos.y + 30}
+                textAnchor="middle"
+                fill="var(--foreground-muted)"
+                fontSize="10"
+                fontWeight="500"
+                fontFamily="var(--font-sans), system-ui, sans-serif"
+              >
+                @{f.name.toLowerCase()}
+              </text>
+            </motion.g>
           )
         })}
+
+        {/* Animated token particles */}
+        {isInView &&
+          founders.map((f, fi) => {
+            const pos = nodePositions[fi]
+            return Array.from({ length: 3 }).map((_, pi) => (
+              <motion.circle
+                key={`p-${fi}-${pi}`}
+                r={2.5}
+                fill={f.color}
+                initial={{ cx: pos.x, cy: pos.y, opacity: 0 }}
+                animate={{
+                  cx: [pos.x, center],
+                  cy: [pos.y, center],
+                  opacity: [0, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 2,
+                  delay: 1 + pi * 0.6 + fi * 0.3,
+                  repeat: Infinity,
+                  repeatDelay: 1,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))
+          })}
       </svg>
     </div>
   )
