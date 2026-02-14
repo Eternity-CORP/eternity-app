@@ -84,16 +84,23 @@ export async function createBusiness(
   const founders = params.founders.map((f) => f.address);
   const shares = params.founders.map((f) => f.shares);
 
-  const tx = (await contract['createBusiness']({
-    name: params.name,
-    symbol: params.tokenSymbol,
-    totalSupply: params.tokenSupply,
+  // Ethers v6: tuple struct must be passed as an array (positional),
+  // NOT as a plain object (which ethers interprets as tx overrides).
+  const tupleParam = [
+    params.name,
+    params.tokenSymbol,
+    params.tokenSupply,
     founders,
     shares,
-    transferPolicy: transferPolicyToIndex(params.transferPolicy),
-    quorumBps: params.quorumThreshold,
-    votingPeriod: params.votingPeriod,
-  })) as { hash: string; wait(): Promise<{ logs: unknown[] }> };
+    transferPolicyToIndex(params.transferPolicy),
+    params.quorumThreshold,
+    params.votingPeriod,
+  ];
+
+  const tx = (await contract['createBusiness'](tupleParam)) as {
+    hash: string;
+    wait(): Promise<{ logs: unknown[] }>;
+  };
 
   const receipt = await tx.wait();
 

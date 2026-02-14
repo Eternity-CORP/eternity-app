@@ -351,7 +351,11 @@ export default function BusinessCreatePage() {
 
       setDeployStatus('succeeded')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Deployment failed'
+      console.error('[BusinessCreate] Deploy error:', err)
+      const raw = err instanceof Error ? err.message : String(err)
+      // Extract useful part from ethers error
+      const reasonMatch = raw.match(/reason="([^"]+)"/)
+      const msg = reasonMatch ? reasonMatch[1] : raw.length > 200 ? raw.slice(0, raw.indexOf('(') > 0 ? raw.indexOf('(') : 200) : raw
       setDeployError(msg)
       setDeployStatus('failed')
       throw err // Re-throw for ConfirmModal error display
