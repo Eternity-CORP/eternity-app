@@ -21,6 +21,7 @@ import { BlikGenerateTool, BlikLookupTool } from './tools/blik.tool';
 import { SwapTool } from './tools/swap.tool';
 import { CreateSplitTool, GetSplitsTool } from './tools/split.tool';
 import { CheckUsernameTool, RegisterUsernameTool } from './tools/username.tool';
+import { GetBusinessesTool, GetBusinessDetailTool, GetBusinessProposalsTool } from './tools/business.tool';
 
 interface FallbackConfig {
   enabled: boolean;
@@ -60,6 +61,9 @@ export class AiService {
     private readonly getSplitsTool: GetSplitsTool,
     private readonly checkUsernameTool: CheckUsernameTool,
     private readonly registerUsernameTool: RegisterUsernameTool,
+    private readonly getBusinessesTool: GetBusinessesTool,
+    private readonly getBusinessDetailTool: GetBusinessDetailTool,
+    private readonly getBusinessProposalsTool: GetBusinessProposalsTool,
   ) {
     // Register Claude provider
     if (claudeProvider.isConfigured) {
@@ -95,6 +99,9 @@ export class AiService {
     this.registerTool(getSplitsTool);
     this.registerTool(checkUsernameTool);
     this.registerTool(registerUsernameTool);
+    this.registerTool(getBusinessesTool);
+    this.registerTool(getBusinessDetailTool);
+    this.registerTool(getBusinessProposalsTool);
 
     this.logger.log(
       `AI Service initialized with providers: ${[...this.providers.keys()].join(', ')}`,
