@@ -7,7 +7,7 @@
  * - 'test': Account for testnet networks only
  * - 'real': Account for mainnet networks only
  */
-export type AccountType = 'test' | 'real';
+export type AccountType = 'test' | 'real' | 'business';
 
 export interface Wallet {
   address: string;

@@ -4,6 +4,9 @@ import type { AccountType, WalletAccount } from '../types/wallet';
  * Generate a default label for an account
  */
 export function generateAccountLabel(type: AccountType, index: number): string {
+  if (type === 'business') {
+    return index === 0 ? 'Business Wallet' : `Business Wallet ${index}`;
+  }
   if (index === 0) {
     return type === 'test' ? 'Test Wallet' : 'Main Wallet';
   }

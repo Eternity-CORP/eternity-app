@@ -138,19 +138,20 @@ async function fetchNetworkBalances(
  */
 export async function fetchAllNetworkBalances(
   address: string,
-  accountType: 'test' | 'real',
+  accountType: 'test' | 'real' | 'business',
 ): Promise<MultiNetworkBalanceResult> {
-  // Test accounts: only Sepolia via the existing single-chain path
+  // Test and business accounts: only Sepolia via the existing single-chain path
+  const isTestnet = accountType === 'test' || accountType === 'business';
   const networksToFetch: NetworkId[] =
-    accountType === 'test' ? ['ethereum'] : [...TIER1_NETWORK_IDS]
+    isTestnet ? ['ethereum'] : [...TIER1_NETWORK_IDS]
 
   const networkBalances: Record<string, NetworkTokenBalance[]> = {}
   const failedNetworks: string[] = []
 
   const results = await Promise.allSettled(
     networksToFetch.map(async (networkId) => {
-      // For test accounts, use Sepolia RPC instead
-      if (accountType === 'test') {
+      // For test/business accounts, use Sepolia RPC instead
+      if (isTestnet) {
         const sepoliaUrl = `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
         const provider = new JsonRpcProvider(sepoliaUrl)
 

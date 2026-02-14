@@ -13,6 +13,7 @@ import { AiModule } from './ai/ai.module';
 import { PreferencesModule } from './preferences/preferences.module';
 import { FaucetModule } from './faucet/faucet.module';
 import { InviteModule } from './invite/invite.module';
+import { BusinessModule } from './business/business.module';
 import { SupabaseModule } from './supabase';
 
 @Module({
@@ -34,6 +35,7 @@ import { SupabaseModule } from './supabase';
     PreferencesModule,
     FaucetModule,
     InviteModule,
+    BusinessModule,
   ],
 })
 export class AppModule {}

@@ -34,6 +34,15 @@ export function buildNetworks(alchemyKey: string): Record<AccountType, SimpleNet
       explorerAddressUrl: (address: string) => `https://etherscan.io/address/${address}`,
       symbol: 'ETH',
     },
+    business: {
+      name: 'Sepolia',
+      chainId: 11155111,
+      rpcUrl: `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`,
+      explorerUrl: 'https://sepolia.etherscan.io',
+      explorerTxUrl: (hash: string) => `https://sepolia.etherscan.io/tx/${hash}`,
+      explorerAddressUrl: (address: string) => `https://sepolia.etherscan.io/address/${address}`,
+      symbol: 'ETH',
+    },
   };
 }
 
