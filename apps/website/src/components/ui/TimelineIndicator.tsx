@@ -10,6 +10,7 @@ const sections = [
   { id: 'solution', label: 'Solution' },
   { id: 'features', label: 'Features' },
   { id: 'coming-soon', label: 'Coming Soon' },
+  { id: 'business-wallet', label: 'Business' },
   { id: 'roadmap', label: 'Roadmap' },
   { id: 'cta', label: 'Join Us' },
 ]

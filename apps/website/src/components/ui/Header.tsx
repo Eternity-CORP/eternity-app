@@ -12,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext'
 
 const navItems = [
   { label: 'Features', href: '#features' },
+  { label: 'Business', href: '#business-wallet' },
   { label: 'Roadmap', href: '#coming-soon' },
 ]
 
