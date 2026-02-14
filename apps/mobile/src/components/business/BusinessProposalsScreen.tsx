@@ -264,64 +264,52 @@ export default function BusinessProposalsScreen() {
   // Voting
   // ---------------------------------------------------------------------------
 
-  const executeVote = useCallback(
-    async (proposalId: number, support: boolean, accountIndex: number) => {
-      if (!business?.treasuryAddress || !wallet.mnemonic) return;
-
-      setVotingId(proposalId);
-      try {
-        const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, accountIndex);
-        const provider = getTestnetProvider('sepolia');
-        const signer = hdWallet.connect(provider);
-
-        await voteOnChain(ethersContractFactory, business.treasuryAddress, signer, proposalId, support);
-
-        Alert.alert('Success', `Vote ${support ? 'for' : 'against'} submitted successfully.`);
-        await loadData();
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to vote';
-        Alert.alert('Error', message);
-      } finally {
-        setVotingId(null);
-      }
-    },
-    [business, wallet.mnemonic, loadData],
-  );
+  // Auto-find the personal wallet that holds shares
+  const holderAccount = personalAccounts.find((a) => {
+    const info = walletInfos[a.id];
+    return info && info.shares > 0;
+  });
 
   const handleVote = useCallback(
     (proposalId: number, support: boolean) => {
-      if (!business?.treasuryAddress || !wallet.mnemonic) return;
-
-      // Filter to wallets that hold shares
-      const eligible = personalAccounts.filter((a) => {
-        const info = walletInfos[a.id];
-        return info && info.shares > 0;
-      });
-
-      if (eligible.length === 0) {
+      if (!business?.treasuryAddress || !wallet.mnemonic || !holderAccount) {
         Alert.alert('Error', 'None of your wallets hold shares in this business.');
         return;
       }
 
-      // Build buttons with balance info
-      const buttons = eligible.map((account) => {
-        const info = walletInfos[account.id];
-        const ethBal = info ? Number(info.ethBalance).toFixed(4) : '?';
-        const shares = info?.shares ?? 0;
-        return {
-          text: `${account.label || 'Wallet'} (${shares} shares, ${ethBal} ETH)`,
-          onPress: () => executeVote(proposalId, support, account.accountIndex),
-        };
-      });
-      buttons.push({ text: 'Cancel', onPress: () => {} });
+      const info = walletInfos[holderAccount.id];
+      const shares = info?.shares ?? 0;
 
       Alert.alert(
         support ? 'Vote For' : 'Vote Against',
-        'Select wallet to sign:',
-        buttons,
+        `Sign with ${holderAccount.label || 'Wallet'} (${shares} shares)\n${holderAccount.address.slice(0, 6)}...${holderAccount.address.slice(-4)}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Confirm',
+            onPress: async () => {
+              setVotingId(proposalId);
+              try {
+                const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, holderAccount.accountIndex);
+                const provider = getTestnetProvider('sepolia');
+                const signer = hdWallet.connect(provider);
+
+                await voteOnChain(ethersContractFactory, business.treasuryAddress, signer, proposalId, support);
+
+                Alert.alert('Success', `Vote ${support ? 'for' : 'against'} submitted successfully.`);
+                await loadData();
+              } catch (err) {
+                const message = err instanceof Error ? err.message : 'Failed to vote';
+                Alert.alert('Error', message);
+              } finally {
+                setVotingId(null);
+              }
+            },
+          },
+        ],
       );
     },
-    [business, wallet.mnemonic, personalAccounts, walletInfos, executeVote],
+    [business, wallet.mnemonic, holderAccount, walletInfos, loadData],
   );
 
   // ---------------------------------------------------------------------------
@@ -336,8 +324,8 @@ export default function BusinessProposalsScreen() {
       return;
     }
 
-    // Use first personal wallet for signing
-    const signerAccount = personalAccounts[0];
+    // Use the wallet that holds shares, or first personal wallet
+    const signerAccount = holderAccount ?? personalAccounts[0];
     if (!signerAccount) {
       Alert.alert('Error', 'No personal wallet available to sign.');
       return;
@@ -395,6 +383,7 @@ export default function BusinessProposalsScreen() {
   }, [
     business,
     wallet.mnemonic,
+    holderAccount,
     personalAccounts,
     businessId,
     createType,

@@ -165,7 +165,6 @@ export default function ProposalDetailPage() {
   const [showExecute, setShowExecute] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [actionStatus, setActionStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
-  const [showWalletPicker, setShowWalletPicker] = useState<'for' | 'against' | null>(null)
 
   // Countdown timer
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -237,15 +236,19 @@ export default function ProposalDetailPage() {
     }
   }, [proposal])
 
-  // Action handlers
-  const [voteAccountIndex, setVoteAccountIndex] = useState(0)
+  // Find the personal wallet that holds shares (auto-select for signing)
+  const holderAccount = personalAccounts.find((a) => {
+    const info = walletInfos[a.id]
+    return info && info.shares > 0
+  })
 
+  // Action handlers
   const handleVote = async (password: string, support: boolean) => {
-    if (!business) return
+    if (!business || !holderAccount) return
 
     setActionStatus('loading')
     const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, voteAccountIndex)
+    const wallet = deriveWalletFromMnemonic(mnemonic, holderAccount.accountIndex)
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
@@ -259,7 +262,7 @@ export default function ProposalDetailPage() {
 
   const handleExecute = async (password: string) => {
     if (!business) return
-    const signerAccount = personalAccounts[0]
+    const signerAccount = holderAccount ?? personalAccounts[0]
     if (!signerAccount) return
 
     setActionStatus('loading')
@@ -277,7 +280,7 @@ export default function ProposalDetailPage() {
 
   const handleCancel = async (password: string) => {
     if (!business) return
-    const signerAccount = personalAccounts[0]
+    const signerAccount = holderAccount ?? personalAccounts[0]
     if (!signerAccount) return
 
     setActionStatus('loading')
@@ -307,11 +310,8 @@ export default function ProposalDetailPage() {
   const isCreator = personalAccounts.some(
     (a) => proposal?.creator.toLowerCase() === a.address.toLowerCase(),
   )
-  const hasVotableWallet = personalAccounts.some((a) => {
-    const info = walletInfos[a.id]
-    return info && info.shares > 0 && !info.voted
-  })
-  const canVote = proposalStatus === 'active' && hasVotableWallet
+  const holderInfo = holderAccount ? walletInfos[holderAccount.id] : undefined
+  const canVote = proposalStatus === 'active' && !!holderAccount && (holderInfo?.shares ?? 0) > 0 && !holderInfo?.voted
   const canExecute = proposalStatus === 'passed'
   const canCancel = proposalStatus === 'active' && isCreator
 
@@ -468,20 +468,27 @@ export default function ProposalDetailPage() {
 
                 {/* Vote Buttons */}
                 {canVote && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowWalletPicker('for')}
-                      className="flex-1 py-3 rounded-xl bg-[#22c55e]/15 text-[#22c55e] font-semibold text-sm border border-[#22c55e]/30 hover:bg-[#22c55e]/25 transition-colors"
-                    >
-                      Vote For
-                    </button>
-                    <button
-                      onClick={() => setShowWalletPicker('against')}
-                      className="flex-1 py-3 rounded-xl bg-[#EF4444]/15 text-[#EF4444] font-semibold text-sm border border-[#EF4444]/30 hover:bg-[#EF4444]/25 transition-colors"
-                    >
-                      Vote Against
-                    </button>
-                  </div>
+                  <>
+                    {holderAccount && (
+                      <p className="text-[10px] text-white/30 text-center mb-1">
+                        Signing from {holderAccount.label || 'Wallet'} ({holderAccount.address.slice(0, 6)}...{holderAccount.address.slice(-4)})
+                      </p>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setShowVoteFor(true)}
+                        className="flex-1 py-3 rounded-xl bg-[#22c55e]/15 text-[#22c55e] font-semibold text-sm border border-[#22c55e]/30 hover:bg-[#22c55e]/25 transition-colors"
+                      >
+                        Vote For
+                      </button>
+                      <button
+                        onClick={() => setShowVoteAgainst(true)}
+                        className="flex-1 py-3 rounded-xl bg-[#EF4444]/15 text-[#EF4444] font-semibold text-sm border border-[#EF4444]/30 hover:bg-[#EF4444]/25 transition-colors"
+                      >
+                        Vote Against
+                      </button>
+                    </div>
+                  </>
                 )}
 
                 {/* Execute Button */}
@@ -519,13 +526,14 @@ export default function ProposalDetailPage() {
       </main>
 
       {/* Vote For Confirmation */}
-      {showVoteFor && (
+      {showVoteFor && holderAccount && (
         <ConfirmModal
           title="Vote For"
-          summary={`Vote FOR with ${userBalance} shares`}
+          summary={`Vote FOR with ${holderInfo?.shares ?? 0} shares`}
           details={[
             { label: 'Proposal', value: `#${proposalId} ${proposalTypeLabel(proposalType)}` },
-            { label: 'Weight', value: `${userBalance} shares` },
+            { label: 'Weight', value: `${holderInfo?.shares ?? 0} shares` },
+            { label: 'Signing from', value: `${holderAccount.label || 'Wallet'} (${holderAccount.address.slice(0, 6)}...${holderAccount.address.slice(-4)})` },
             { label: 'Network', value: network.name },
           ]}
           confirmLabel="Vote For"
@@ -535,13 +543,14 @@ export default function ProposalDetailPage() {
       )}
 
       {/* Vote Against Confirmation */}
-      {showVoteAgainst && (
+      {showVoteAgainst && holderAccount && (
         <ConfirmModal
           title="Vote Against"
-          summary={`Vote AGAINST with ${userBalance} shares`}
+          summary={`Vote AGAINST with ${holderInfo?.shares ?? 0} shares`}
           details={[
             { label: 'Proposal', value: `#${proposalId} ${proposalTypeLabel(proposalType)}` },
-            { label: 'Weight', value: `${userBalance} shares` },
+            { label: 'Weight', value: `${holderInfo?.shares ?? 0} shares` },
+            { label: 'Signing from', value: `${holderAccount.label || 'Wallet'} (${holderAccount.address.slice(0, 6)}...${holderAccount.address.slice(-4)})` },
             { label: 'Network', value: network.name },
           ]}
           confirmLabel="Vote Against"
@@ -580,72 +589,6 @@ export default function ProposalDetailPage() {
         />
       )}
 
-      {/* Wallet Picker */}
-      {showWalletPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="glass-card gradient-border rounded-2xl p-6 w-[360px] max-w-[90vw]">
-            <h3 className="text-white font-semibold mb-1">
-              {showWalletPicker === 'for' ? 'Vote For' : 'Vote Against'}
-            </h3>
-            <p className="text-xs text-white/40 mb-4">Select wallet to sign the transaction:</p>
-            <div className="space-y-2">
-              {personalAccounts.map((account) => {
-                const info = walletInfos[account.id]
-                const hasShares = info && info.shares > 0
-                const alreadyVoted = info?.voted
-                const disabled = !hasShares || alreadyVoted
-
-                return (
-                  <button
-                    key={account.id}
-                    disabled={disabled}
-                    onClick={() => {
-                      setVoteAccountIndex(account.accountIndex)
-                      if (showWalletPicker === 'for') {
-                        setShowVoteFor(true)
-                      } else {
-                        setShowVoteAgainst(true)
-                      }
-                      setShowWalletPicker(null)
-                    }}
-                    className={`w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${
-                      disabled
-                        ? 'bg-white/2 border-white/5 opacity-40 cursor-not-allowed'
-                        : 'bg-white/3 border-white/8 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="text-left">
-                      <p className="text-sm text-white font-medium">{account.label || 'Wallet'}</p>
-                      <p className="text-xs text-white/40 font-mono">
-                        {account.address.slice(0, 6)}...{account.address.slice(-4)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      {info && (
-                        <>
-                          <p className="text-xs text-white/60">{Number(info.ethBalance).toFixed(4)} ETH</p>
-                          <p className={`text-[10px] ${hasShares ? 'text-[#3388FF]' : 'text-white/30'}`}>
-                            {info.shares} shares
-                          </p>
-                          {alreadyVoted && (
-                            <p className="text-[10px] text-[#f59e0b]">Already voted</p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-            <button
-              onClick={() => setShowWalletPicker(null)}
-              className="w-full mt-3 py-2 text-sm text-white/40 hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
