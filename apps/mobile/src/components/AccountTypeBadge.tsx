@@ -7,7 +7,7 @@ import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { theme } from '@/src/constants/theme';
 
 export interface AccountTypeBadgeProps {
-  type: 'test' | 'real';
+  type: 'test' | 'real' | 'business';
   size?: 'small' | 'medium';
   style?: ViewStyle;
 }
@@ -34,6 +34,10 @@ const COLORS = {
     background: '#10B981', // Green
     text: '#FFFFFF',
   },
+  business: {
+    background: '#3388FF', // Blue (matching web accent-blue)
+    text: '#FFFFFF',
+  },
 };
 
 export function AccountTypeBadge({
@@ -43,7 +47,7 @@ export function AccountTypeBadge({
 }: AccountTypeBadgeProps) {
   const sizeConfig = SIZES[size];
   const colorConfig = COLORS[type];
-  const label = type === 'test' ? 'TEST' : 'REAL';
+  const label = type === 'test' ? 'TEST' : type === 'business' ? 'BIZ' : 'REAL';
 
   return (
     <View

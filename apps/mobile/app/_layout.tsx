@@ -21,6 +21,7 @@ import { loadWalletThunk, loadAccountsThunk } from '@/src/store/slices/wallet-sl
 import { clearLegacyContactsThunk } from '@/src/store/slices/contacts-slice';
 import { hasWallet } from '@/src/services/wallet-service';
 import { initErrorTracking, setUserContext } from '@/src/services/error-tracking-service';
+import { useBusinessSync } from '@/src/hooks/useBusinessSync';
 import {
   hasMigrationModalBeenShown,
   markMigrationModalAsShown,
@@ -102,6 +103,9 @@ function RootLayoutNav() {
   const { theme, isDark } = useTheme();
   const [isCheckingWallet, setIsCheckingWallet] = useState(true);
   const [showMigrationModal, setShowMigrationModal] = useState(false);
+
+  // Sync business accounts from API on startup
+  useBusinessSync();
 
   // Create navigation theme from current app theme
   const navigationTheme = createNavigationTheme(theme);
@@ -193,6 +197,7 @@ function RootLayoutNav() {
           <Stack.Screen name="scheduled" options={{ headerShown: false }} />
           <Stack.Screen name="split" options={{ headerShown: false }} />
           <Stack.Screen name="swap" options={{ headerShown: false }} />
+          <Stack.Screen name="business" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
     </NotificationProvider>

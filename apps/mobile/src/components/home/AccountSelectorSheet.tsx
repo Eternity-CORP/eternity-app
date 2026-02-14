@@ -2,6 +2,7 @@ import { View, TouchableOpacity, Text, TextInput, StyleSheet, Animated, Dimensio
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
 import { generateAvatarColors } from '@/src/utils/avatar';
@@ -198,6 +199,23 @@ export function AccountSelectorSheet({
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#3388FF', borderWidth: 1 }]}
+              onPress={() => {
+                onHideAddWalletMenu();
+                onClose();
+                router.push('/business/create');
+              }}
+            >
+              <View style={[styles.addWalletIcon, { backgroundColor: '#3388FF' + '20' }]}>
+                <FontAwesome name="building" size={18} color="#3388FF" />
+              </View>
+              <View style={styles.addWalletOptionInfo}>
+                <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Business Wallet</Text>
+                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Tokenized equity shares</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={onShowImportSheet}
             >
@@ -228,9 +246,10 @@ export function AccountSelectorSheet({
                 contentContainerStyle={styles.accountsScrollContent}
                 renderItem={({ item: account, drag, isActive }: RenderItemParams<Account>) => {
                   const [color1, color2] = generateAvatarColors(account.address);
-                  const accountIndex = accounts.findIndex(a => a.address === account.address);
+                  const accountIndex = accounts.findIndex(a => a.id === account.id);
                   const isSelected = accountIndex === currentAccountIndex;
-                  const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
+                  const isBusiness = account.type === 'business';
+                  const accountBalance = isBusiness ? '\u2014' : formatUsdValue(accountBalances[account.address] ?? 0);
 
                   if (editingAccountIndex === account.accountIndex) {
                     return (
@@ -266,10 +285,16 @@ export function AccountSelectorSheet({
                           { backgroundColor: dynamicTheme.colors.background },
                           isActive && [styles.accountListItemDragging, { backgroundColor: dynamicTheme.colors.surfaceElevated }],
                         ]}
-                        onPress={() => isEditMode
-                          ? onStartEditing(account.accountIndex, account.label || '')
-                          : onSwitchAccount(account.address)
-                        }
+                        onPress={() => {
+                          if (isEditMode) {
+                            onStartEditing(account.accountIndex, account.label || '');
+                          } else if (isBusiness && account.businessId) {
+                            onClose();
+                            router.push(`/business/${account.businessId}`);
+                          } else {
+                            onSwitchAccount(account.address);
+                          }
+                        }}
                         activeOpacity={0.7}
                         disabled={isActive}
                       >
