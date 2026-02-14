@@ -104,25 +104,54 @@ export async function createBusiness(
 
   const receipt = await tx.wait();
 
-  // Parse BusinessCreated event from logs
-  // The event signature is: BusinessCreated(uint256 indexed businessId, address tokenAddress, address treasuryAddress, address creator, string name, string symbol)
-  // We look for the return values from the contract call
+  // Parse BusinessCreated event from logs.
+  // BusinessCreated(uint256 indexed businessId, address tokenAddress, address treasuryAddress, address creator, string name, string symbol)
+  // keccak256 topic0: 0x + first 64 hex chars of keccak256("BusinessCreated(uint256,address,address,address,string,string)")
   let businessId = 0;
   let tokenAddress = '';
   let treasuryAddress = '';
 
-  // Try to extract from decoded logs if available
   const logs = receipt.logs as Array<{
+    // Ethers EventLog (decoded)
     args?: { businessId?: bigint; tokenAddress?: string; treasuryAddress?: string };
     fragment?: { name?: string };
+    // Raw Log fields
+    topics?: string[];
+    data?: string;
+    address?: string;
   }>;
 
   for (const log of logs) {
+    // Method 1: decoded EventLog (when ethers decodes it)
     if (log.fragment?.name === 'BusinessCreated' && log.args) {
       businessId = Number(log.args.businessId ?? 0);
       tokenAddress = log.args.tokenAddress ?? '';
       treasuryAddress = log.args.treasuryAddress ?? '';
       break;
+    }
+
+    // Method 2: raw log — match by emitter address (factory) and decode manually
+    if (
+      log.address?.toLowerCase() === factoryAddress.toLowerCase() &&
+      log.topics &&
+      log.topics.length === 2 &&
+      log.data
+    ) {
+      // topics[0] = event signature, topics[1] = indexed businessId
+      // data = abi.encode(address tokenAddress, address treasuryAddress, address creator, string name, string symbol)
+      try {
+        businessId = Number(BigInt(log.topics[1]));
+        // Decode non-indexed params: (address, address, address, string, string)
+        // Quick extraction: addresses are at fixed offsets in ABI encoding
+        // Each address is left-padded to 32 bytes in the data
+        const dataHex = log.data.startsWith('0x') ? log.data.slice(2) : log.data;
+        // First 3 slots (each 64 hex chars) are: tokenAddress, treasuryAddress, creator
+        tokenAddress = '0x' + dataHex.slice(24, 64);
+        treasuryAddress = '0x' + dataHex.slice(88, 128);
+        break;
+      } catch {
+        // Skip if parsing fails
+      }
     }
   }
 
