@@ -321,7 +321,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     router.push('/unlock')
   }, [router])
 
-  const address = wallet?.address || ''
+  // For business accounts, show treasury address; for personal accounts, show HD wallet address
+  const address = currentAccount?.type === 'business'
+    ? currentAccount.address
+    : wallet?.address || ''
   const network = currentAccount ? getNetwork(currentAccount.type) : defaultNetwork
   const isLoggedIn = wallet !== null
 
