@@ -190,7 +190,14 @@ export default function BusinessDashboardPage() {
   const router = useRouter()
   const params = useParams()
   const businessId = params.id as string
-  const { address, network } = useAccount()
+  const { address, network, currentAccount } = useAccount()
+
+  // Redirect away if user switches to a non-business account
+  useEffect(() => {
+    if (currentAccount && currentAccount.type !== 'business') {
+      router.replace('/wallet')
+    }
+  }, [currentAccount, router])
 
   // Data state
   const [business, setBusiness] = useState<BusinessWallet | null>(null)

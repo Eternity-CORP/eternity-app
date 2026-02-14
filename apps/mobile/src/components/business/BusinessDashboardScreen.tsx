@@ -237,6 +237,13 @@ export function BusinessDashboardScreen() {
   const currentAccount = getCurrentAccount(wallet);
   const address = currentAccount?.address;
 
+  // Redirect away if user switches to a non-business account
+  useEffect(() => {
+    if (currentAccount && currentAccount.type !== 'business') {
+      router.replace('/(tabs)');
+    }
+  }, [currentAccount]);
+
   // State
   const [business, setBusiness] = useState<BusinessWallet | null>(null);
   const [holders, setHolders] = useState<HolderInfo[]>([]);

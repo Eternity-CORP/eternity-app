@@ -437,7 +437,11 @@ export function BusinessCreateScreen() {
 
       // 3. Add business account to local storage
       await dispatch(
-        addBusinessAccountThunk({ businessId: savedBusiness.id, label: name }),
+        addBusinessAccountThunk({
+          businessId: savedBusiness.id,
+          label: name,
+          treasuryAddress: result.treasuryAddress,
+        }),
       ).unwrap();
 
       setDeployStatus('succeeded');

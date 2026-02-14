@@ -138,7 +138,7 @@ export const addAccountThunk = createAsyncThunk(
  */
 export const addBusinessAccountThunk = createAsyncThunk(
   'wallet/addBusinessAccount',
-  async (params: { businessId: string; label: string }, { getState }) => {
+  async (params: { businessId: string; label: string; treasuryAddress: string }, { getState }) => {
     const state = getState() as { wallet: WalletState };
     const accounts = state.wallet.accounts;
 
@@ -154,7 +154,7 @@ export const addBusinessAccountThunk = createAsyncThunk(
 
     const newAccount = createAccount({
       index: currentAccount.accountIndex,
-      address: currentAccount.address,
+      address: params.treasuryAddress, // Business wallet address = treasury address
       type: 'business',
       label: params.label,
       businessId: params.businessId,
@@ -177,7 +177,7 @@ export const addBusinessAccountThunk = createAsyncThunk(
  */
 export const syncBusinessAccountsThunk = createAsyncThunk(
   'wallet/syncBusinessAccounts',
-  async (businesses: { id: string; name: string }[], { getState }) => {
+  async (businesses: { id: string; name: string; treasuryAddress: string }[], { getState }) => {
     const state = getState() as { wallet: WalletState };
     const accounts = state.wallet.accounts;
     const existingBizIds = new Set(
@@ -188,7 +188,7 @@ export const syncBusinessAccountsThunk = createAsyncThunk(
     let updated = [...accounts];
     let changed = false;
 
-    // Find a non-business account to derive address from
+    // Find a non-business account to derive accountIndex from
     const baseAccount = accounts.find((a) => a.type !== 'business') || accounts[0];
     if (!baseAccount) return { accounts: updated, changed: false };
 
@@ -197,7 +197,7 @@ export const syncBusinessAccountsThunk = createAsyncThunk(
       if (!existingBizIds.has(biz.id)) {
         updated.push(createAccount({
           index: baseAccount.accountIndex,
-          address: baseAccount.address,
+          address: biz.treasuryAddress, // Business wallet address = treasury address
           type: 'business',
           label: biz.name,
           businessId: biz.id,

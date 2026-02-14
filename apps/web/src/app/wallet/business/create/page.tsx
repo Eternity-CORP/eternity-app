@@ -353,7 +353,7 @@ export default function BusinessCreatePage() {
       setCreatedBusinessId(savedBusiness.id)
 
       // Add business account to local storage so it appears in account selector
-      addBusinessAccount(savedBusiness.id, name)
+      addBusinessAccount(savedBusiness.id, name, result.treasuryAddress)
 
       setDeployStatus('succeeded')
     } catch (err) {

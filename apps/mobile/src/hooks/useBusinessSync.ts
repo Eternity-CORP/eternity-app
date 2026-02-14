@@ -27,7 +27,11 @@ export function useBusinessSync() {
       .unwrap()
       .then((businesses) => {
         if (businesses.length > 0) {
-          dispatch(syncBusinessAccountsThunk(businesses.map((b) => ({ id: b.id, name: b.name }))));
+          dispatch(syncBusinessAccountsThunk(businesses.map((b) => ({
+            id: b.id,
+            name: b.name,
+            treasuryAddress: b.treasuryAddress,
+          }))));
         }
       })
       .catch((err: unknown) => {

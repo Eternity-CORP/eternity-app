@@ -32,8 +32,8 @@ interface AccountContextValue {
   login: (mnemonic: string) => Promise<void>
   switchAccount: (accountId: string) => Promise<void>
   addAccount: (type: AccountType, label?: string) => Promise<void>
-  addBusinessAccount: (businessId: string, label: string) => void
-  syncBusinessAccounts: (businesses: { id: string; name: string }[]) => void
+  addBusinessAccount: (businessId: string, label: string, treasuryAddress: string) => void
+  syncBusinessAccounts: (businesses: { id: string; name: string; treasuryAddress: string }[]) => void
   renameAccount: (accountId: string, label: string) => void
   removeAccount: (accountId: string) => Promise<void>
   importWallet: (mnemonic: string) => Promise<boolean>
@@ -57,8 +57,8 @@ const AccountContext = createContext<AccountContextValue>({
   login: async () => {},
   switchAccount: async () => {},
   addAccount: async () => {},
-  addBusinessAccount: () => {},
-  syncBusinessAccounts: () => {},
+  addBusinessAccount: () => { /* noop */ },
+  syncBusinessAccounts: () => { /* noop */ },
   renameAccount: () => {},
   removeAccount: async () => {},
   importWallet: async () => false,
@@ -177,8 +177,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     setWallet(w)
   }, [])
 
-  // Add a business account — reuses current account's address & index
-  const addBusinessAccount = useCallback((businessId: string, label: string) => {
+  // Add a business account — uses treasury address as the business wallet address
+  const addBusinessAccount = useCallback((businessId: string, label: string, treasuryAddress: string) => {
     const accs = loadAccounts()
 
     // Skip if already exists
@@ -189,7 +189,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     const newAccount = createAccount({
       index: current.accountIndex,
-      address: current.address,
+      address: treasuryAddress, // Business wallet address = treasury address
       type: 'business',
       label,
       businessId,
@@ -206,7 +206,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }, [currentAccount])
 
   // Sync business accounts from API — adds missing, removes stale
-  const syncBusinessAccounts = useCallback((businesses: { id: string; name: string }[]) => {
+  const syncBusinessAccounts = useCallback((businesses: { id: string; name: string; treasuryAddress: string }[]) => {
     const accs = loadAccounts()
     const existingBizIds = new Set(accs.filter((a) => a.type === 'business').map((a) => a.businessId))
     const apiBizIds = new Set(businesses.map((b) => b.id))
@@ -217,13 +217,12 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     // Add missing businesses
     for (const biz of businesses) {
       if (!existingBizIds.has(biz.id)) {
-        // Find a non-business account to derive address from (use first available)
         const baseAccount = accs.find((a) => a.type !== 'business') || accs[0]
         if (!baseAccount) continue
 
         updated.push(createAccount({
           index: baseAccount.accountIndex,
-          address: baseAccount.address,
+          address: biz.treasuryAddress, // Business wallet address = treasury address
           type: 'business',
           label: biz.name,
           businessId: biz.id,
