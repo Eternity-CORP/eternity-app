@@ -200,6 +200,7 @@ export default function BusinessDashboardPage() {
   const [activities, setActivities] = useState<BusinessActivity[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [error, setError] = useState('')
+  const [showDepositInfo, setShowDepositInfo] = useState(false)
 
   // Contract factory helper
   const contractFactory: ContractFactory = (addr, abi, signerOrProvider) =>
@@ -223,10 +224,17 @@ export default function BusinessDashboardPage() {
 
         const provider = new ethers.JsonRpcProvider(network.rpcUrl)
 
-        // 2. Load on-chain data in parallel
-        const memberAddresses = biz.createdBy ? [biz.createdBy] : []
-        // We pass known addresses from the business metadata
-        // In a real scenario we would get member addresses from the API
+        // 2. Collect all known member addresses from the API response
+        const memberAddresses = (biz.members || []).map(m => m.address)
+        if (memberAddresses.length === 0 && biz.createdBy) {
+          memberAddresses.push(biz.createdBy)
+        }
+
+        // Build username lookup from API members
+        const usernameByAddress: Record<string, string> = {}
+        for (const m of biz.members || []) {
+          if (m.username) usernameByAddress[m.address.toLowerCase()] = m.username
+        }
 
         const [holdersData, treasuryData, proposalCountData, activityData] = await Promise.all([
           getAllHolders(contractFactory, biz.contractAddress, provider, memberAddresses).catch(() => [] as HolderInfo[]),
@@ -237,7 +245,22 @@ export default function BusinessDashboardPage() {
 
         if (cancelled) return
 
-        setHolders(holdersData)
+        // Enrich holders with username/role from API members
+        const enrichedHolders: HolderInfo[] = holdersData.length > 0
+          ? holdersData.map(h => ({
+              ...h,
+              username: usernameByAddress[h.address.toLowerCase()],
+              role: (biz.members || []).find(m => m.address.toLowerCase() === h.address.toLowerCase())?.role,
+            }))
+          : (biz.members || []).map(m => ({
+              address: m.address,
+              balance: m.initialShares,
+              percent: biz.tokenSupply > 0 ? Math.round((m.initialShares / biz.tokenSupply) * 10000) / 100 : 0,
+              username: m.username,
+              role: m.role,
+            }))
+
+        setHolders(enrichedHolders)
         setTreasuryEth(treasuryData.eth)
         setActivities(activityData)
 
@@ -442,9 +465,31 @@ export default function BusinessDashboardPage() {
                 <p className="text-2xl font-bold text-white mb-1">{parseFloat(treasuryEth).toFixed(4)}</p>
                 <p className="text-xs text-white/40">ETH</p>
               </div>
-              <button className="w-full mt-4 py-2.5 rounded-xl bg-[#22c55e]/10 text-[#22c55e] text-sm font-medium border border-[#22c55e]/20 hover:bg-[#22c55e]/20 transition-colors">
-                Deposit
+              <button
+                onClick={() => setShowDepositInfo(!showDepositInfo)}
+                className="w-full mt-4 py-2.5 rounded-xl bg-[#22c55e]/10 text-[#22c55e] text-sm font-medium border border-[#22c55e]/20 hover:bg-[#22c55e]/20 transition-colors"
+              >
+                {showDepositInfo ? 'Hide' : 'Deposit'}
               </button>
+
+              {showDepositInfo && (
+                <div className="mt-3 p-3 bg-white/3 rounded-xl border border-white/8">
+                  <p className="text-[10px] text-white/40 mb-1.5">Send ETH to the treasury address:</p>
+                  <button
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(business.treasuryAddress)
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg text-xs font-mono text-white/60 hover:text-white hover:bg-white/8 transition-colors text-left"
+                  >
+                    <span className="truncate flex-1">{business.treasuryAddress}</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                  </button>
+                  <p className="text-[10px] text-white/25 mt-1.5">Or send from any wallet to this address</p>
+                </div>
+              )}
             </div>
 
             {/* Members List */}
@@ -485,9 +530,12 @@ export default function BusinessDashboardPage() {
             <div className="glass-card rounded-2xl p-5 sm:col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs text-white/40 uppercase tracking-wide">Active Proposals</h3>
-                <button className="text-[10px] text-[#3388FF] hover:text-[#3388FF]/80 transition-colors">
+                <Link
+                  href={`/wallet/business/${businessId}/proposals`}
+                  className="text-[10px] text-[#3388FF] hover:text-[#3388FF]/80 transition-colors"
+                >
                   Create Proposal
-                </button>
+                </Link>
               </div>
 
               {activeProposals.length > 0 ? (
@@ -559,9 +607,12 @@ export default function BusinessDashboardPage() {
               )}
 
               {proposals.length > activeProposals.length && (
-                <button className="w-full mt-3 py-2 rounded-lg text-xs text-[#3388FF] hover:bg-[#3388FF]/5 transition-colors">
+                <Link
+                  href={`/wallet/business/${businessId}/proposals`}
+                  className="w-full mt-3 py-2 rounded-lg text-xs text-[#3388FF] hover:bg-[#3388FF]/5 transition-colors block text-center"
+                >
                   View All ({proposals.length})
-                </button>
+                </Link>
               )}
             </div>
 

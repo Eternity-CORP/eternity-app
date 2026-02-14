@@ -29,6 +29,7 @@ export interface BusinessWallet {
   dividendsConfig?: DividendConfig;
   createdBy: string;
   createdAt: string;
+  members?: BusinessMember[];
 }
 
 export interface BusinessMember {
