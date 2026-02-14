@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Contract } from 'ethers';
+import { Contract, formatEther } from 'ethers';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { useAppSelector } from '@/src/store/hooks';
@@ -46,6 +46,8 @@ import {
   createApiClient,
   type ContractFactory,
   type BusinessWallet,
+  getShareBalance,
+  hasVoted as checkHasVoted,
 } from '@e-y/shared';
 
 // ---------------------------------------------------------------------------
@@ -139,6 +141,9 @@ export default function BusinessProposalsScreen() {
   // Personal (non-business) accounts that can sign transactions
   const personalAccounts = wallet.accounts.filter((a) => a.type !== 'business');
 
+  // Per-wallet info: ETH balance + shares + voted
+  const [walletInfos, setWalletInfos] = useState<Record<string, { ethBalance: string; shares: number; voted: boolean }>>({});
+
   // State
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [business, setBusiness] = useState<BusinessWallet | null>(null);
@@ -219,13 +224,31 @@ export default function BusinessProposalsScreen() {
       });
 
       setProposals(enriched);
+
+      // Load per-wallet info (ETH balance + shares)
+      const infos: Record<string, { ethBalance: string; shares: number; voted: boolean }> = {};
+      await Promise.all(
+        personalAccounts.map(async (acc) => {
+          const [ethBal, shares] = await Promise.all([
+            provider.getBalance(acc.address),
+            getShareBalance(ethersContractFactory, biz.contractAddress, provider, acc.address),
+          ]);
+          infos[acc.id] = {
+            ethBalance: formatEther(ethBal),
+            shares,
+            voted: false, // will be checked per-proposal when voting
+          };
+        }),
+      );
+      setWalletInfos(infos);
+
       setLoadingStatus('succeeded');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load proposals';
       setError(message);
       setLoadingStatus('failed');
     }
-  }, [businessId, apiClient]);
+  }, [businessId, apiClient, personalAccounts]);
 
   useEffect(() => {
     loadData();
@@ -269,39 +292,36 @@ export default function BusinessProposalsScreen() {
     (proposalId: number, support: boolean) => {
       if (!business?.treasuryAddress || !wallet.mnemonic) return;
 
-      if (personalAccounts.length === 0) {
-        Alert.alert('Error', 'No personal wallets available to sign the transaction.');
+      // Filter to wallets that hold shares
+      const eligible = personalAccounts.filter((a) => {
+        const info = walletInfos[a.id];
+        return info && info.shares > 0;
+      });
+
+      if (eligible.length === 0) {
+        Alert.alert('Error', 'None of your wallets hold shares in this business.');
         return;
       }
 
-      // If only one personal wallet, skip selection
-      if (personalAccounts.length === 1) {
-        const account = personalAccounts[0];
-        Alert.alert(
-          support ? 'Vote For' : 'Vote Against',
-          `Sign with ${account.label || 'Wallet'} (${account.address.slice(0, 6)}...${account.address.slice(-4)})?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Confirm', onPress: () => executeVote(proposalId, support, account.accountIndex) },
-          ],
-        );
-        return;
-      }
-
-      // Multiple wallets — let user choose
-      const buttons = personalAccounts.map((account) => ({
-        text: `${account.label || 'Wallet'} (${account.address.slice(0, 6)}...${account.address.slice(-4)})`,
-        onPress: () => executeVote(proposalId, support, account.accountIndex),
-      }));
+      // Build buttons with balance info
+      const buttons = eligible.map((account) => {
+        const info = walletInfos[account.id];
+        const ethBal = info ? Number(info.ethBalance).toFixed(4) : '?';
+        const shares = info?.shares ?? 0;
+        return {
+          text: `${account.label || 'Wallet'} (${shares} shares, ${ethBal} ETH)`,
+          onPress: () => executeVote(proposalId, support, account.accountIndex),
+        };
+      });
       buttons.push({ text: 'Cancel', onPress: () => {} });
 
       Alert.alert(
         support ? 'Vote For' : 'Vote Against',
-        'Select wallet to sign the transaction:',
+        'Select wallet to sign:',
         buttons,
       );
     },
-    [business, wallet.mnemonic, personalAccounts, executeVote],
+    [business, wallet.mnemonic, personalAccounts, walletInfos, executeVote],
   );
 
   // ---------------------------------------------------------------------------

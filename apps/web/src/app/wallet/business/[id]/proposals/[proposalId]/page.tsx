@@ -153,6 +153,9 @@ export default function ProposalDetailPage() {
   const [quorumBps, setQuorumBps] = useState(0)
   const [countdown, setCountdown] = useState('')
 
+  // Per-wallet info for the wallet picker
+  const [walletInfos, setWalletInfos] = useState<Record<string, { ethBalance: string; shares: number; voted: boolean }>>({})
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [error, setError] = useState('')
 
@@ -177,22 +180,38 @@ export default function ProposalDetailPage() {
 
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
 
-      const [onChain, balance, voted, qBps] = await Promise.all([
+      const [onChain, qBps] = await Promise.all([
         getOnChainProposal(contractFactory, biz.treasuryAddress, provider, proposalId),
-        address
-          ? getShareBalance(contractFactory, biz.contractAddress, provider, address)
-          : Promise.resolve(0),
-        address
-          ? checkHasVoted(contractFactory, biz.treasuryAddress, provider, proposalId, address)
-          : Promise.resolve(false),
         getQuorumBps(contractFactory, biz.treasuryAddress, provider),
       ])
+
+      // Load per-wallet data for all personal accounts
+      const infos: Record<string, { ethBalance: string; shares: number; voted: boolean }> = {}
+      let maxShares = 0
+      let anyVoted = false
+      await Promise.all(
+        personalAccounts.map(async (acc) => {
+          const [ethBal, shares, voted] = await Promise.all([
+            provider.getBalance(acc.address),
+            getShareBalance(contractFactory, biz.contractAddress, provider, acc.address),
+            checkHasVoted(contractFactory, biz.treasuryAddress, provider, proposalId, acc.address),
+          ])
+          infos[acc.id] = {
+            ethBalance: ethers.formatEther(ethBal),
+            shares,
+            voted,
+          }
+          if (shares > maxShares) maxShares = shares
+          if (voted) anyVoted = true
+        }),
+      )
+      setWalletInfos(infos)
 
       setProposal(onChain)
       setProposalType(indexToProposalType(onChain.proposalType))
       setProposalStatus(indexToProposalStatus(onChain.status))
-      setUserBalance(balance)
-      setUserHasVoted(voted)
+      setUserBalance(maxShares)
+      setUserHasVoted(anyVoted)
       setQuorumBps(qBps)
       setCountdown(formatCountdown(onChain.deadline))
       setStatus('succeeded')
@@ -201,7 +220,7 @@ export default function ProposalDetailPage() {
       setError(msg)
       setStatus('failed')
     }
-  }, [businessId, proposalId, address, network.rpcUrl])
+  }, [businessId, proposalId, personalAccounts, network.rpcUrl])
 
   useEffect(() => {
     loadData()
@@ -285,8 +304,14 @@ export default function ProposalDetailPage() {
     : false
   const quorumPercent = quorumBps / 100
 
-  const isCreator = proposal?.creator.toLowerCase() === address.toLowerCase()
-  const canVote = proposalStatus === 'active' && userBalance > 0 && !userHasVoted
+  const isCreator = personalAccounts.some(
+    (a) => proposal?.creator.toLowerCase() === a.address.toLowerCase(),
+  )
+  const hasVotableWallet = personalAccounts.some((a) => {
+    const info = walletInfos[a.id]
+    return info && info.shares > 0 && !info.voted
+  })
+  const canVote = proposalStatus === 'active' && hasVotableWallet
   const canExecute = proposalStatus === 'passed'
   const canCancel = proposalStatus === 'active' && isCreator
 
@@ -445,27 +470,13 @@ export default function ProposalDetailPage() {
                 {canVote && (
                   <div className="flex gap-3">
                     <button
-                      onClick={() => {
-                        if (personalAccounts.length === 1) {
-                          setVoteAccountIndex(personalAccounts[0].accountIndex)
-                          setShowVoteFor(true)
-                        } else {
-                          setShowWalletPicker('for')
-                        }
-                      }}
+                      onClick={() => setShowWalletPicker('for')}
                       className="flex-1 py-3 rounded-xl bg-[#22c55e]/15 text-[#22c55e] font-semibold text-sm border border-[#22c55e]/30 hover:bg-[#22c55e]/25 transition-colors"
                     >
                       Vote For
                     </button>
                     <button
-                      onClick={() => {
-                        if (personalAccounts.length === 1) {
-                          setVoteAccountIndex(personalAccounts[0].accountIndex)
-                          setShowVoteAgainst(true)
-                        } else {
-                          setShowWalletPicker('against')
-                        }
-                      }}
+                      onClick={() => setShowWalletPicker('against')}
                       className="flex-1 py-3 rounded-xl bg-[#EF4444]/15 text-[#EF4444] font-semibold text-sm border border-[#EF4444]/30 hover:bg-[#EF4444]/25 transition-colors"
                     >
                       Vote Against
@@ -578,28 +589,53 @@ export default function ProposalDetailPage() {
             </h3>
             <p className="text-xs text-white/40 mb-4">Select wallet to sign the transaction:</p>
             <div className="space-y-2">
-              {personalAccounts.map((account) => (
-                <button
-                  key={account.id}
-                  onClick={() => {
-                    setVoteAccountIndex(account.accountIndex)
-                    if (showWalletPicker === 'for') {
-                      setShowVoteFor(true)
-                    } else {
-                      setShowVoteAgainst(true)
-                    }
-                    setShowWalletPicker(null)
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/8 hover:border-white/20 transition-colors"
-                >
-                  <div className="text-left">
-                    <p className="text-sm text-white font-medium">{account.label || 'Wallet'}</p>
-                    <p className="text-xs text-white/40 font-mono">
-                      {account.address.slice(0, 6)}...{account.address.slice(-4)}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              {personalAccounts.map((account) => {
+                const info = walletInfos[account.id]
+                const hasShares = info && info.shares > 0
+                const alreadyVoted = info?.voted
+                const disabled = !hasShares || alreadyVoted
+
+                return (
+                  <button
+                    key={account.id}
+                    disabled={disabled}
+                    onClick={() => {
+                      setVoteAccountIndex(account.accountIndex)
+                      if (showWalletPicker === 'for') {
+                        setShowVoteFor(true)
+                      } else {
+                        setShowVoteAgainst(true)
+                      }
+                      setShowWalletPicker(null)
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${
+                      disabled
+                        ? 'bg-white/2 border-white/5 opacity-40 cursor-not-allowed'
+                        : 'bg-white/3 border-white/8 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className="text-sm text-white font-medium">{account.label || 'Wallet'}</p>
+                      <p className="text-xs text-white/40 font-mono">
+                        {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      {info && (
+                        <>
+                          <p className="text-xs text-white/60">{Number(info.ethBalance).toFixed(4)} ETH</p>
+                          <p className={`text-[10px] ${hasShares ? 'text-[#3388FF]' : 'text-white/30'}`}>
+                            {info.shares} shares
+                          </p>
+                          {alreadyVoted && (
+                            <p className="text-[10px] text-[#f59e0b]">Already voted</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
             </div>
             <button
               onClick={() => setShowWalletPicker(null)}
