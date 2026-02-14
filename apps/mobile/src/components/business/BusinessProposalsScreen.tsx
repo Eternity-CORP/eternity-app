@@ -136,6 +136,9 @@ export default function BusinessProposalsScreen() {
   const currentAccount = getCurrentAccount(wallet);
   const address = currentAccount?.address ?? '';
 
+  // Personal (non-business) accounts that can sign transactions
+  const personalAccounts = wallet.accounts.filter((a) => a.type !== 'business');
+
   // State
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [business, setBusiness] = useState<BusinessWallet | null>(null);
@@ -238,40 +241,67 @@ export default function BusinessProposalsScreen() {
   // Voting
   // ---------------------------------------------------------------------------
 
+  const executeVote = useCallback(
+    async (proposalId: number, support: boolean, accountIndex: number) => {
+      if (!business?.treasuryAddress || !wallet.mnemonic) return;
+
+      setVotingId(proposalId);
+      try {
+        const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, accountIndex);
+        const provider = getTestnetProvider('sepolia');
+        const signer = hdWallet.connect(provider);
+
+        await voteOnChain(ethersContractFactory, business.treasuryAddress, signer, proposalId, support);
+
+        Alert.alert('Success', `Vote ${support ? 'for' : 'against'} submitted successfully.`);
+        await loadData();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to vote';
+        Alert.alert('Error', message);
+      } finally {
+        setVotingId(null);
+      }
+    },
+    [business, wallet.mnemonic, loadData],
+  );
+
   const handleVote = useCallback(
-    async (proposalId: number, support: boolean) => {
-      if (!business?.treasuryAddress || !wallet.mnemonic || !currentAccount) return;
+    (proposalId: number, support: boolean) => {
+      if (!business?.treasuryAddress || !wallet.mnemonic) return;
+
+      if (personalAccounts.length === 0) {
+        Alert.alert('Error', 'No personal wallets available to sign the transaction.');
+        return;
+      }
+
+      // If only one personal wallet, skip selection
+      if (personalAccounts.length === 1) {
+        const account = personalAccounts[0];
+        Alert.alert(
+          support ? 'Vote For' : 'Vote Against',
+          `Sign with ${account.label || 'Wallet'} (${account.address.slice(0, 6)}...${account.address.slice(-4)})?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Confirm', onPress: () => executeVote(proposalId, support, account.accountIndex) },
+          ],
+        );
+        return;
+      }
+
+      // Multiple wallets — let user choose
+      const buttons = personalAccounts.map((account) => ({
+        text: `${account.label || 'Wallet'} (${account.address.slice(0, 6)}...${account.address.slice(-4)})`,
+        onPress: () => executeVote(proposalId, support, account.accountIndex),
+      }));
+      buttons.push({ text: 'Cancel', onPress: () => {} });
 
       Alert.alert(
         support ? 'Vote For' : 'Vote Against',
-        `Are you sure you want to vote ${support ? 'for' : 'against'} proposal #${proposalId}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Confirm',
-            onPress: async () => {
-              setVotingId(proposalId);
-              try {
-                const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, currentAccount.accountIndex);
-                const provider = getTestnetProvider('sepolia');
-                const signer = hdWallet.connect(provider);
-
-                await voteOnChain(ethersContractFactory, business.treasuryAddress, signer, proposalId, support);
-
-                Alert.alert('Success', `Vote ${support ? 'for' : 'against'} submitted successfully.`);
-                await loadData();
-              } catch (err) {
-                const message = err instanceof Error ? err.message : 'Failed to vote';
-                Alert.alert('Error', message);
-              } finally {
-                setVotingId(null);
-              }
-            },
-          },
-        ],
+        'Select wallet to sign the transaction:',
+        buttons,
       );
     },
-    [business, wallet.mnemonic, currentAccount, loadData],
+    [business, wallet.mnemonic, personalAccounts, executeVote],
   );
 
   // ---------------------------------------------------------------------------
@@ -279,16 +309,23 @@ export default function BusinessProposalsScreen() {
   // ---------------------------------------------------------------------------
 
   const handleCreate = useCallback(async () => {
-    if (!business?.treasuryAddress || !wallet.mnemonic || !currentAccount || !businessId) return;
+    if (!business?.treasuryAddress || !wallet.mnemonic || !businessId) return;
 
     if (!createTitle.trim()) {
       Alert.alert('Error', 'Please enter a proposal title.');
       return;
     }
 
+    // Use first personal wallet for signing
+    const signerAccount = personalAccounts[0];
+    if (!signerAccount) {
+      Alert.alert('Error', 'No personal wallet available to sign.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, currentAccount.accountIndex);
+      const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, signerAccount.accountIndex);
       const provider = getTestnetProvider('sepolia');
       const signer = hdWallet.connect(provider);
 
@@ -316,7 +353,7 @@ export default function BusinessProposalsScreen() {
           ? { amount: createAmount, recipient: createRecipient }
           : undefined,
         deadline: deadline.toISOString(),
-        createdBy: address,
+        createdBy: signerAccount.address,
       });
 
       Alert.alert('Success', 'Proposal created successfully.');
@@ -338,14 +375,13 @@ export default function BusinessProposalsScreen() {
   }, [
     business,
     wallet.mnemonic,
-    currentAccount,
+    personalAccounts,
     businessId,
     createType,
     createTitle,
     createDescription,
     createAmount,
     createRecipient,
-    address,
     apiClient,
     loadData,
   ]);

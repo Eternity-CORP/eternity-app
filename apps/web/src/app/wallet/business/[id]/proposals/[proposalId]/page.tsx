@@ -141,7 +141,8 @@ export default function ProposalDetailPage() {
   const params = useParams()
   const businessId = params.id as string
   const proposalId = parseInt(params.proposalId as string)
-  const { address, network, currentAccount } = useAccount()
+  const { address, network, currentAccount, accounts } = useAccount()
+  const personalAccounts = accounts.filter((a) => a.type !== 'business')
 
   const [business, setBusiness] = useState<BusinessWallet | null>(null)
   const [proposal, setProposal] = useState<OnChainProposal | null>(null)
@@ -161,6 +162,7 @@ export default function ProposalDetailPage() {
   const [showExecute, setShowExecute] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [actionStatus, setActionStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
+  const [showWalletPicker, setShowWalletPicker] = useState<'for' | 'against' | null>(null)
 
   // Countdown timer
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -217,12 +219,14 @@ export default function ProposalDetailPage() {
   }, [proposal])
 
   // Action handlers
+  const [voteAccountIndex, setVoteAccountIndex] = useState(0)
+
   const handleVote = async (password: string, support: boolean) => {
-    if (!business || !currentAccount) return
+    if (!business) return
 
     setActionStatus('loading')
     const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
+    const wallet = deriveWalletFromMnemonic(mnemonic, voteAccountIndex)
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
@@ -235,11 +239,13 @@ export default function ProposalDetailPage() {
   }
 
   const handleExecute = async (password: string) => {
-    if (!business || !currentAccount) return
+    if (!business) return
+    const signerAccount = personalAccounts[0]
+    if (!signerAccount) return
 
     setActionStatus('loading')
     const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
+    const wallet = deriveWalletFromMnemonic(mnemonic, signerAccount.accountIndex)
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
@@ -251,11 +257,13 @@ export default function ProposalDetailPage() {
   }
 
   const handleCancel = async (password: string) => {
-    if (!business || !currentAccount) return
+    if (!business) return
+    const signerAccount = personalAccounts[0]
+    if (!signerAccount) return
 
     setActionStatus('loading')
     const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
+    const wallet = deriveWalletFromMnemonic(mnemonic, signerAccount.accountIndex)
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
@@ -437,13 +445,27 @@ export default function ProposalDetailPage() {
                 {canVote && (
                   <div className="flex gap-3">
                     <button
-                      onClick={() => setShowVoteFor(true)}
+                      onClick={() => {
+                        if (personalAccounts.length === 1) {
+                          setVoteAccountIndex(personalAccounts[0].accountIndex)
+                          setShowVoteFor(true)
+                        } else {
+                          setShowWalletPicker('for')
+                        }
+                      }}
                       className="flex-1 py-3 rounded-xl bg-[#22c55e]/15 text-[#22c55e] font-semibold text-sm border border-[#22c55e]/30 hover:bg-[#22c55e]/25 transition-colors"
                     >
                       Vote For
                     </button>
                     <button
-                      onClick={() => setShowVoteAgainst(true)}
+                      onClick={() => {
+                        if (personalAccounts.length === 1) {
+                          setVoteAccountIndex(personalAccounts[0].accountIndex)
+                          setShowVoteAgainst(true)
+                        } else {
+                          setShowWalletPicker('against')
+                        }
+                      }}
                       className="flex-1 py-3 rounded-xl bg-[#EF4444]/15 text-[#EF4444] font-semibold text-sm border border-[#EF4444]/30 hover:bg-[#EF4444]/25 transition-colors"
                     >
                       Vote Against
@@ -545,6 +567,48 @@ export default function ProposalDetailPage() {
           onConfirm={handleCancel}
           onCancel={() => setShowCancel(false)}
         />
+      )}
+
+      {/* Wallet Picker */}
+      {showWalletPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-card gradient-border rounded-2xl p-6 w-[360px] max-w-[90vw]">
+            <h3 className="text-white font-semibold mb-1">
+              {showWalletPicker === 'for' ? 'Vote For' : 'Vote Against'}
+            </h3>
+            <p className="text-xs text-white/40 mb-4">Select wallet to sign the transaction:</p>
+            <div className="space-y-2">
+              {personalAccounts.map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => {
+                    setVoteAccountIndex(account.accountIndex)
+                    if (showWalletPicker === 'for') {
+                      setShowVoteFor(true)
+                    } else {
+                      setShowVoteAgainst(true)
+                    }
+                    setShowWalletPicker(null)
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/8 hover:border-white/20 transition-colors"
+                >
+                  <div className="text-left">
+                    <p className="text-sm text-white font-medium">{account.label || 'Wallet'}</p>
+                    <p className="text-xs text-white/40 font-mono">
+                      {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowWalletPicker(null)}
+              className="w-full mt-3 py-2 text-sm text-white/40 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
