@@ -41,7 +41,6 @@ interface ProposalTypeOption {
 
 const PROPOSAL_TYPES: ProposalTypeOption[] = [
   { value: 'WITHDRAW_ETH', label: 'Withdraw ETH', description: 'Send ETH from treasury to an address' },
-  { value: 'WITHDRAW_TOKEN', label: 'Withdraw Token', description: 'Send ERC-20 tokens from treasury' },
   { value: 'TRANSFER_SHARES', label: 'Transfer Shares', description: 'Transfer ownership shares between addresses' },
   { value: 'CHANGE_SETTINGS', label: 'Change Settings', description: 'Update quorum or voting period' },
   { value: 'CUSTOM', label: 'Custom', description: 'Off-chain governance proposal' },
@@ -53,13 +52,6 @@ function typeIcon(t: ProposalType) {
       return (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2v20M17 7l-5-5-5 5" />
-        </svg>
-      )
-    case 'WITHDRAW_TOKEN':
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v12M8 10l4-4 4 4" />
         </svg>
       )
     case 'TRANSFER_SHARES':
@@ -108,11 +100,6 @@ export default function CreateProposalPage() {
   const [ethRecipient, setEthRecipient] = useState('')
   const [ethAmount, setEthAmount] = useState('')
 
-  // WITHDRAW_TOKEN fields
-  const [tokenAddress, setTokenAddress] = useState('')
-  const [tokenRecipient, setTokenRecipient] = useState('')
-  const [tokenAmount, setTokenAmount] = useState('')
-
   // TRANSFER_SHARES fields
   const [sharesFrom, setSharesFrom] = useState('')
   const [sharesTo, setSharesTo] = useState('')
@@ -137,8 +124,6 @@ export default function CreateProposalPage() {
     switch (selectedType) {
       case 'WITHDRAW_ETH':
         return ethers.isAddress(ethRecipient) && parseFloat(ethAmount) > 0
-      case 'WITHDRAW_TOKEN':
-        return ethers.isAddress(tokenAddress) && ethers.isAddress(tokenRecipient) && parseFloat(tokenAmount) > 0
       case 'TRANSFER_SHARES':
         return ethers.isAddress(sharesFrom) && ethers.isAddress(sharesTo) && parseInt(sharesAmount) > 0
       case 'CHANGE_SETTINGS':
@@ -149,8 +134,8 @@ export default function CreateProposalPage() {
         return false
     }
   }, [
-    selectedType, ethRecipient, ethAmount, tokenAddress, tokenRecipient,
-    tokenAmount, sharesFrom, sharesTo, sharesAmount, newQuorum,
+    selectedType, ethRecipient, ethAmount,
+    sharesFrom, sharesTo, sharesAmount, newQuorum,
     newVotingPeriod, customTitle,
   ])
 
@@ -163,13 +148,6 @@ export default function CreateProposalPage() {
         case 'WITHDRAW_ETH':
           return ethers.getBytes(
             coder.encode(['address', 'uint256'], [ethRecipient, ethers.parseEther(ethAmount || '0')]),
-          )
-        case 'WITHDRAW_TOKEN':
-          return ethers.getBytes(
-            coder.encode(
-              ['address', 'address', 'uint256'],
-              [tokenAddress, tokenRecipient, ethers.parseUnits(tokenAmount || '0', 18)],
-            ),
           )
         case 'TRANSFER_SHARES':
           return ethers.getBytes(
@@ -196,8 +174,8 @@ export default function CreateProposalPage() {
       return new Uint8Array(0)
     }
   }, [
-    selectedType, ethRecipient, ethAmount, tokenAddress, tokenRecipient,
-    tokenAmount, sharesFrom, sharesTo, sharesAmount, newQuorum,
+    selectedType, ethRecipient, ethAmount,
+    sharesFrom, sharesTo, sharesAmount, newQuorum,
     newVotingPeriod, customTitle, customDescription,
   ])
 
@@ -206,8 +184,6 @@ export default function CreateProposalPage() {
     switch (selectedType) {
       case 'WITHDRAW_ETH':
         return `Withdraw ${ethAmount} ETH to ${shortenAddress(ethRecipient)}`
-      case 'WITHDRAW_TOKEN':
-        return `Withdraw ${tokenAmount} tokens to ${shortenAddress(tokenRecipient)}`
       case 'TRANSFER_SHARES':
         return `Transfer ${sharesAmount} shares from ${shortenAddress(sharesFrom)} to ${shortenAddress(sharesTo)}`
       case 'CHANGE_SETTINGS':
@@ -218,7 +194,7 @@ export default function CreateProposalPage() {
         return 'New Proposal'
     }
   }, [
-    selectedType, ethAmount, ethRecipient, tokenAmount, tokenRecipient,
+    selectedType, ethAmount, ethRecipient,
     sharesAmount, sharesFrom, sharesTo, newQuorum, newVotingPeriod, customTitle,
   ])
 
@@ -359,48 +335,6 @@ export default function CreateProposalPage() {
                         value={ethAmount}
                         onChange={(e) => setEthAmount(e.target.value)}
                         placeholder="0.0"
-                        step="0.0001"
-                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {selectedType === 'WITHDRAW_TOKEN' && (
-                  <>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
-                        Token Contract Address
-                      </label>
-                      <input
-                        type="text"
-                        value={tokenAddress}
-                        onChange={(e) => setTokenAddress(e.target.value)}
-                        placeholder="0x..."
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono"
-                      />
-                    </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
-                        Recipient Address
-                      </label>
-                      <input
-                        type="text"
-                        value={tokenRecipient}
-                        onChange={(e) => setTokenRecipient(e.target.value)}
-                        placeholder="0x..."
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono"
-                      />
-                    </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
-                        Amount
-                      </label>
-                      <input
-                        type="number"
-                        value={tokenAmount}
-                        onChange={(e) => setTokenAmount(e.target.value)}
-                        placeholder="0"
                         step="0.0001"
                         className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
                       />
@@ -553,23 +487,6 @@ export default function CreateProposalPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">Amount</span>
                       <span className="text-sm text-white font-bold">{ethAmount} ETH</span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedType === 'WITHDRAW_TOKEN' && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Token</span>
-                      <span className="text-xs text-white font-mono">{shortenAddress(tokenAddress)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Recipient</span>
-                      <span className="text-xs text-white font-mono">{shortenAddress(tokenRecipient)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Amount</span>
-                      <span className="text-sm text-white font-bold">{tokenAmount}</span>
                     </div>
                   </div>
                 )}

@@ -8,13 +8,29 @@ enum TransferPolicy {
     APPROVAL_REQUIRED
 }
 
+struct VestingSchedule {
+    uint256 totalAmount;
+    uint256 startTime;
+    uint256 cliffEnd;
+    uint256 vestingEnd;
+    uint256 released;
+}
+
 contract BusinessToken is ERC20 {
     address public immutable treasury;
     TransferPolicy public transferPolicy;
     uint8 private immutable _tokenDecimals;
 
+    mapping(address => VestingSchedule) public vestingSchedules;
+
+    event VestingCreated(address indexed beneficiary, uint256 amount, uint256 cliffEnd, uint256 vestingEnd);
+    event TokensReleased(address indexed beneficiary, uint256 amount);
+
     error TransferNotAllowed();
     error OnlyTreasury();
+    error InsufficientUnlockedBalance();
+    error NoVestingSchedule();
+    error NothingToRelease();
 
     modifier onlyTreasury() {
         if (msg.sender != treasury) revert OnlyTreasury();
@@ -58,6 +74,62 @@ contract BusinessToken is ERC20 {
         transferPolicy = newPolicy;
     }
 
+    function setVesting(
+        address beneficiary,
+        uint256 totalAmount,
+        uint256 cliffDuration,
+        uint256 vestingDuration
+    ) external onlyTreasury {
+        uint256 start = block.timestamp;
+        uint256 cliffEnd = start + cliffDuration;
+        uint256 vestEnd = start + vestingDuration;
+
+        vestingSchedules[beneficiary] = VestingSchedule({
+            totalAmount: totalAmount,
+            startTime: start,
+            cliffEnd: cliffEnd,
+            vestingEnd: vestEnd,
+            released: 0
+        });
+
+        emit VestingCreated(beneficiary, totalAmount, cliffEnd, vestEnd);
+    }
+
+    function vestedAmount(address beneficiary) public view returns (uint256) {
+        VestingSchedule storage schedule = vestingSchedules[beneficiary];
+        if (schedule.totalAmount == 0) return 0;
+
+        if (block.timestamp < schedule.cliffEnd) {
+            return 0;
+        } else if (block.timestamp >= schedule.vestingEnd) {
+            return schedule.totalAmount;
+        } else {
+            return (schedule.totalAmount * (block.timestamp - schedule.startTime)) /
+                (schedule.vestingEnd - schedule.startTime);
+        }
+    }
+
+    function releasable(address beneficiary) public view returns (uint256) {
+        return vestedAmount(beneficiary) - vestingSchedules[beneficiary].released;
+    }
+
+    function locked(address beneficiary) public view returns (uint256) {
+        VestingSchedule storage schedule = vestingSchedules[beneficiary];
+        if (schedule.totalAmount == 0) return 0;
+        return schedule.totalAmount - vestedAmount(beneficiary);
+    }
+
+    function release() external {
+        VestingSchedule storage schedule = vestingSchedules[msg.sender];
+        if (schedule.totalAmount == 0) revert NoVestingSchedule();
+
+        uint256 amount = releasable(msg.sender);
+        if (amount == 0) revert NothingToRelease();
+
+        schedule.released += amount;
+        emit TokensReleased(msg.sender, amount);
+    }
+
     function _update(
         address from,
         address to,
@@ -68,6 +140,11 @@ contract BusinessToken is ERC20 {
         if (from != address(0) && msg.sender != treasury) {
             if (transferPolicy == TransferPolicy.APPROVAL_REQUIRED) {
                 revert TransferNotAllowed();
+            }
+            // Vesting check: ensure sender has enough unlocked tokens
+            uint256 lockedAmount = locked(from);
+            if (balanceOf(from) - lockedAmount < value) {
+                revert InsufficientUnlockedBalance();
             }
         }
         super._update(from, to, value);

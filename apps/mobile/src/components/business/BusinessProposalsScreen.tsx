@@ -64,7 +64,6 @@ type ViewMode = 'list' | 'create';
 
 const PROPOSAL_TYPE_OPTIONS: { value: ProposalType; label: string }[] = [
   { value: 'WITHDRAW_ETH', label: 'Withdraw ETH' },
-  { value: 'WITHDRAW_TOKEN', label: 'Withdraw Token' },
   { value: 'TRANSFER_SHARES', label: 'Transfer Shares' },
   { value: 'CHANGE_SETTINGS', label: 'Change Settings' },
   { value: 'CUSTOM', label: 'Custom' },

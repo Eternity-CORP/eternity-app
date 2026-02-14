@@ -57,6 +57,7 @@ const PROPOSAL_TYPE_MAP: Record<number, ProposalType> = {
   2: 'TRANSFER_SHARES',
   3: 'CHANGE_SETTINGS',
   4: 'CUSTOM',
+  5: 'DISTRIBUTE_DIVIDENDS',
 };
 
 export function indexToProposalStatus(index: number): ProposalStatus {

@@ -5,7 +5,7 @@
  * BusinessFactory contract address on Sepolia testnet.
  * Set after deployment via: pnpm --filter @e-y/contracts deploy:sepolia
  */
-export const BUSINESS_FACTORY_ADDRESS = '0xA3B3a05Bcb8f139cECEaDe31bfA50801671378d8' as const;
+export const BUSINESS_FACTORY_ADDRESS = '0xA5cD5585963f2d76EB4ea22C92E5e78c6dAEEaC1' as const;
 
 export const BUSINESS_TOKEN_ABI = [
   {
@@ -428,6 +428,202 @@ export const BUSINESS_TOKEN_ABI = [
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cliffDuration",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "vestingDuration",
+        "type": "uint256"
+      }
+    ],
+    "name": "setVesting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "vestedAmount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "releasable",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      }
+    ],
+    "name": "locked",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "release",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "vestingSchedules",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "startTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cliffEnd",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "vestingEnd",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "released",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientUnlockedBalance",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NoVestingSchedule",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NothingToRelease",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "cliffEnd",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "vestingEnd",
+        "type": "uint256"
+      }
+    ],
+    "name": "VestingCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "TokensReleased",
+    "type": "event"
   }
 ] as const;
 
@@ -983,6 +1179,36 @@ export const BUSINESS_TREASURY_ABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "proposalId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "recipientCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "DividendsDistributed",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientTreasuryBalance",
+    "type": "error"
   },
   {
     "stateMutability": "payable",

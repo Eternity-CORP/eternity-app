@@ -5,7 +5,7 @@
 
 export type TransferPolicy = 'FREE' | 'APPROVAL_REQUIRED';
 
-export type ProposalType = 'WITHDRAW_ETH' | 'WITHDRAW_TOKEN' | 'TRANSFER_SHARES' | 'CHANGE_SETTINGS' | 'CUSTOM';
+export type ProposalType = 'WITHDRAW_ETH' | 'WITHDRAW_TOKEN' | 'TRANSFER_SHARES' | 'CHANGE_SETTINGS' | 'CUSTOM' | 'DISTRIBUTE_DIVIDENDS';
 
 export type ProposalStatus = 'active' | 'passed' | 'rejected' | 'executed' | 'canceled';
 

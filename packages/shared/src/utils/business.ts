@@ -54,6 +54,7 @@ export function proposalTypeToIndex(type: ProposalType): number {
     TRANSFER_SHARES: 2,
     CHANGE_SETTINGS: 3,
     CUSTOM: 4,
+    DISTRIBUTE_DIVIDENDS: 5,
   };
   return map[type] ?? 4;
 }

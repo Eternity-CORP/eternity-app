@@ -20,11 +20,12 @@ contract BusinessTreasury is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     enum ProposalType {
-        WITHDRAW_ETH,
-        WITHDRAW_TOKEN,
-        TRANSFER_SHARES,
-        CHANGE_SETTINGS,
-        CUSTOM
+        WITHDRAW_ETH,      // 0
+        WITHDRAW_TOKEN,    // 1
+        TRANSFER_SHARES,   // 2
+        CHANGE_SETTINGS,   // 3
+        CUSTOM,            // 4
+        DISTRIBUTE_DIVIDENDS // 5
     }
     enum ProposalStatus {
         ACTIVE,
@@ -70,8 +71,10 @@ contract BusinessTreasury is ReentrancyGuard {
     event ProposalExecuted(uint256 indexed id);
     event ProposalCanceled(uint256 indexed id);
     event Deposited(address token, uint256 amount, address sender);
+    event DividendsDistributed(uint256 indexed proposalId, uint256 totalAmount, uint256 recipientCount);
 
     error NotInitialized();
+    error InsufficientTreasuryBalance();
     error AlreadyInitialized();
     error OnlyFactory();
     error NotTokenHolder();
@@ -197,6 +200,29 @@ contract BusinessTreasury is ReentrancyGuard {
             );
             if (newQuorum > 0) quorumBps = newQuorum;
             if (newVotingPeriod > 0) votingPeriod = newVotingPeriod;
+        } else if (p.proposalType == ProposalType.DISTRIBUTE_DIVIDENDS) {
+            (uint256 totalAmount, address[] memory holders) = abi.decode(
+                p.data,
+                (uint256, address[])
+            );
+            if (address(this).balance < totalAmount) revert InsufficientTreasuryBalance();
+
+            uint256 supply = token.totalSupply();
+            uint256 recipientCount = 0;
+
+            for (uint256 i = 0; i < holders.length; i++) {
+                uint256 holderBalance = token.balanceOf(holders[i]);
+                if (holderBalance == 0) continue;
+
+                uint256 share = (totalAmount * holderBalance) / supply;
+                if (share == 0) continue;
+
+                (bool success, ) = holders[i].call{value: share}("");
+                require(success, "Dividend transfer failed");
+                recipientCount++;
+            }
+
+            emit DividendsDistributed(proposalId, totalAmount, recipientCount);
         }
         // CUSTOM proposals have no on-chain execution
 

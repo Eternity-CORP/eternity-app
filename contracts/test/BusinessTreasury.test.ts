@@ -274,4 +274,126 @@ describe("BusinessTreasury", function () {
       ).to.be.revertedWithCustomError(treasury, "ProposalNotActive");
     });
   });
+
+  describe("Dividends Distribution", function () {
+    it("should distribute ETH pro-rata to holders", async function () {
+      // Fund treasury with 1 ETH
+      await owner.sendTransaction({
+        to: await treasury.getAddress(),
+        value: ethers.parseEther("1.0"),
+      });
+
+      const totalAmount = ethers.parseEther("1.0");
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "address[]"],
+        [totalAmount, [owner.address, alice.address]]
+      );
+
+      // Create DISTRIBUTE_DIVIDENDS proposal (type index 5)
+      await treasury.connect(owner).createProposal(5, data);
+      // Owner votes (60/100 >= 51% quorum) -> PASSED
+      await treasury.connect(owner).vote(0, true);
+
+      const ownerBalBefore = await ethers.provider.getBalance(owner.address);
+      const aliceBalBefore = await ethers.provider.getBalance(alice.address);
+
+      // Execute
+      const tx = await treasury.connect(bob).executeProposal(0);
+      await tx.wait();
+
+      const ownerBalAfter = await ethers.provider.getBalance(owner.address);
+      const aliceBalAfter = await ethers.provider.getBalance(alice.address);
+
+      // owner has 60/100 shares -> 0.6 ETH, alice has 40/100 -> 0.4 ETH
+      expect(ownerBalAfter - ownerBalBefore).to.equal(ethers.parseEther("0.6"));
+      expect(aliceBalAfter - aliceBalBefore).to.equal(ethers.parseEther("0.4"));
+
+      const proposal = await treasury.getProposal(0);
+      expect(proposal.status).to.equal(3); // EXECUTED
+    });
+
+    it("should emit DividendsDistributed event", async function () {
+      await owner.sendTransaction({
+        to: await treasury.getAddress(),
+        value: ethers.parseEther("1.0"),
+      });
+
+      const totalAmount = ethers.parseEther("1.0");
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "address[]"],
+        [totalAmount, [owner.address, alice.address]]
+      );
+
+      await treasury.connect(owner).createProposal(5, data);
+      await treasury.connect(owner).vote(0, true);
+
+      await expect(treasury.connect(bob).executeProposal(0))
+        .to.emit(treasury, "DividendsDistributed")
+        .withArgs(0, totalAmount, 2);
+    });
+
+    it("should skip holders with 0 balance", async function () {
+      await owner.sendTransaction({
+        to: await treasury.getAddress(),
+        value: ethers.parseEther("1.0"),
+      });
+
+      const totalAmount = ethers.parseEther("1.0");
+      // Include nonHolder (0 balance) in holders array
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "address[]"],
+        [totalAmount, [owner.address, alice.address, nonHolder.address]]
+      );
+
+      await treasury.connect(owner).createProposal(5, data);
+      await treasury.connect(owner).vote(0, true);
+
+      // recipientCount should be 2, not 3 (nonHolder skipped)
+      await expect(treasury.connect(bob).executeProposal(0))
+        .to.emit(treasury, "DividendsDistributed")
+        .withArgs(0, totalAmount, 2);
+    });
+
+    it("should revert with InsufficientTreasuryBalance if treasury has less ETH", async function () {
+      // Fund treasury with only 0.5 ETH
+      await owner.sendTransaction({
+        to: await treasury.getAddress(),
+        value: ethers.parseEther("0.5"),
+      });
+
+      // Try to distribute 1 ETH
+      const totalAmount = ethers.parseEther("1.0");
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "address[]"],
+        [totalAmount, [owner.address, alice.address]]
+      );
+
+      await treasury.connect(owner).createProposal(5, data);
+      await treasury.connect(owner).vote(0, true);
+
+      await expect(
+        treasury.connect(bob).executeProposal(0)
+      ).to.be.revertedWithCustomError(treasury, "InsufficientTreasuryBalance");
+    });
+
+    it("should handle empty holders array with 0 recipients", async function () {
+      await owner.sendTransaction({
+        to: await treasury.getAddress(),
+        value: ethers.parseEther("1.0"),
+      });
+
+      const totalAmount = ethers.parseEther("1.0");
+      const data = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "address[]"],
+        [totalAmount, []]
+      );
+
+      await treasury.connect(owner).createProposal(5, data);
+      await treasury.connect(owner).vote(0, true);
+
+      await expect(treasury.connect(bob).executeProposal(0))
+        .to.emit(treasury, "DividendsDistributed")
+        .withArgs(0, totalAmount, 0);
+    });
+  });
 });
