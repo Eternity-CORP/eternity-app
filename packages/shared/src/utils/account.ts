@@ -62,12 +62,14 @@ export function createAccount(params: {
   address: string;
   type: AccountType;
   label?: string;
+  businessId?: string;
 }): WalletAccount {
   return {
-    id: String(params.index),
+    id: params.businessId ? `biz-${params.businessId}` : String(params.index),
     address: params.address,
     accountIndex: params.index,
     label: params.label || generateAccountLabel(params.type, params.index),
     type: params.type,
+    ...(params.businessId && { businessId: params.businessId }),
   };
 }

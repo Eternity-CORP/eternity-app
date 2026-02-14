@@ -114,7 +114,7 @@ function StepIndicator({ current }: { current: Step }) {
 export default function BusinessCreatePage() {
   useAuthGuard()
   const router = useRouter()
-  const { address, network, currentAccount, wallet } = useAccount()
+  const { address, network, currentAccount, wallet, addBusinessAccount } = useAccount()
 
   // Step state
   const [step, setStep] = useState<Step>(1)
@@ -149,6 +149,7 @@ export default function BusinessCreatePage() {
   const [deployStatus, setDeployStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [deployError, setDeployError] = useState('')
   const [txHash, setTxHash] = useState('')
+  const [createdBusinessId, setCreatedBusinessId] = useState('')
 
   // --------------------------------------------------
   // Computed values
@@ -320,7 +321,7 @@ export default function BusinessCreatePage() {
       setTxHash(result.txHash)
 
       // 2. Save metadata to backend
-      await saveBusiness(apiClient, {
+      const savedBusiness = await saveBusiness(apiClient, {
         name,
         description: description || undefined,
         tokenSymbol,
@@ -348,6 +349,11 @@ export default function BusinessCreatePage() {
           role: 'founder',
         })),
       })
+
+      setCreatedBusinessId(savedBusiness.id)
+
+      // Add business account to local storage so it appears in account selector
+      addBusinessAccount(savedBusiness.id, name)
 
       setDeployStatus('succeeded')
     } catch (err) {
@@ -914,7 +920,7 @@ export default function BusinessCreatePage() {
                   Back to Wallet
                 </button>
                 <button
-                  onClick={() => router.push(`/wallet/business/${txHash}`)}
+                  onClick={() => router.push(`/wallet/business/${createdBusinessId}`)}
                   className="flex-1 py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 transition-colors"
                 >
                   View Business

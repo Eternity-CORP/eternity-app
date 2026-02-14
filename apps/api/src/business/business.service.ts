@@ -154,16 +154,18 @@ export class BusinessService {
   }
 
   async findByContractAddress(contractAddress: string): Promise<Business> {
-    const normalizedAddress = contractAddress.toLowerCase();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contractAddress);
+    const column = isUuid ? 'id' : 'contract_address';
+    const value = isUuid ? contractAddress : contractAddress.toLowerCase();
 
     const { data: businessData, error: businessError } = await this.supabase
       .from('businesses')
       .select('*')
-      .eq('contract_address', normalizedAddress)
+      .eq(column, value)
       .single();
 
     if (businessError || !businessData) {
-      throw new NotFoundException(`Business with contract ${contractAddress} not found`);
+      throw new NotFoundException(`Business with ${column} ${contractAddress} not found`);
     }
 
     const { data: membersData } = await this.supabase

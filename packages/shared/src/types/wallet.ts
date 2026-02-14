@@ -21,8 +21,9 @@ export interface WalletAccount {
   address: string;
   accountIndex: number;
   label?: string;
-  type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets
+  type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets, 'business' for business wallets
   createdAt?: number;
+  businessId?: string; // UUID from API — links this account to a specific business wallet
 }
 
 export interface WalletBalance {

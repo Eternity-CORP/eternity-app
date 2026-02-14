@@ -70,6 +70,11 @@ export default function AccountSelector() {
       await Promise.all(
         accounts.map(async (acc) => {
           try {
+            if (acc.type === 'business') {
+              // Business accounts don't show personal balance — show '—'
+              results[acc.id] = '—'
+              return
+            }
             const net = getNetwork(acc.type)
             const provider = new ethers.JsonRpcProvider(net.rpcUrl)
             const bal = await provider.getBalance(acc.address)
