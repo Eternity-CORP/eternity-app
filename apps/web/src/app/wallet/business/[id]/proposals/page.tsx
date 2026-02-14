@@ -57,6 +57,7 @@ function proposalTypeLabel(t: ProposalType): string {
     TRANSFER_SHARES: 'Transfer Shares',
     CHANGE_SETTINGS: 'Change Settings',
     CUSTOM: 'Custom',
+    DISTRIBUTE_DIVIDENDS: 'Distribute Dividends',
   }
   return map[t] ?? t
 }
