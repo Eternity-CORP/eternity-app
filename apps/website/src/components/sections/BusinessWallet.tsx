@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/animations/FadeIn'
+import { ParallaxLayer } from '@/components/animations/SectionReveal'
 import { GlitchText } from '@/components/animations/GlitchText'
 import { Button } from '@/components/ui/Button'
 
@@ -384,11 +385,7 @@ function GovernanceDemo() {
   ]
 
   return (
-    <div
-      ref={ref}
-      className="p-5 rounded-2xl"
-      style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
-    >
+    <div ref={ref}>
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs font-mono" style={{ color: 'var(--foreground-light)' }}>
           LIVE DEMO
@@ -488,20 +485,24 @@ export function BusinessWallet() {
       <div className="absolute inset-0 bg-grid opacity-30" />
 
       {/* Ambient glow */}
-      <motion.div
-        className="absolute top-1/4 -left-32 w-96 h-96 rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(51,136,255,0.08) 0%, transparent 70%)',
-          opacity: bgOpacity,
-        }}
-      />
-      <motion.div
-        className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%)',
-          opacity: bgOpacity,
-        }}
-      />
+      <ParallaxLayer speed={-0.15} className="absolute top-1/4 -left-32 pointer-events-none">
+        <motion.div
+          className="w-96 h-96 rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(51,136,255,0.08) 0%, transparent 70%)',
+            opacity: bgOpacity,
+          }}
+        />
+      </ParallaxLayer>
+      <ParallaxLayer speed={0.12} className="absolute bottom-1/4 -right-32 pointer-events-none">
+        <motion.div
+          className="w-96 h-96 rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%)',
+            opacity: bgOpacity,
+          }}
+        />
+      </ParallaxLayer>
 
       <div className="container mx-auto px-6 relative z-10">
         {/* ---------- Header ---------- */}
@@ -538,24 +539,29 @@ export function BusinessWallet() {
             {/* Pie chart */}
             <div
               className="p-6 rounded-2xl flex items-center justify-center"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
+              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)', minHeight: '340px' }}
             >
               <AnimatedPieChart />
             </div>
 
             {/* Token flow */}
             <div
-              className="p-6 rounded-2xl"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
+              className="p-6 rounded-2xl flex flex-col"
+              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)', minHeight: '340px' }}
             >
               <p className="text-xs font-mono mb-2" style={{ color: 'var(--foreground-light)' }}>
                 TREASURY FLOW
               </p>
-              <TokenFlowAnimation />
+              <div className="flex-1 flex items-center">
+                <TokenFlowAnimation />
+              </div>
             </div>
 
             {/* Governance demo */}
-            <div className="flex flex-col justify-center">
+            <div
+              className="p-6 rounded-2xl flex flex-col justify-center"
+              style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)', minHeight: '340px' }}
+            >
               <GovernanceDemo />
             </div>
           </div>

@@ -13,6 +13,8 @@ import { CTA } from '@/components/sections/CTA'
 import { Footer } from '@/components/sections/Footer'
 import { PageWrapper } from '@/components/PageWrapper'
 import { WarpProvider } from '@/components/animations/WarpTransition'
+import { FloatingShards } from '@/components/animations/FloatingShards'
+import { SectionReveal } from '@/components/animations/SectionReveal'
 
 export default function Home() {
   return (
@@ -21,18 +23,40 @@ export default function Home() {
         <main className="relative">
           <Header />
           <TimelineIndicator />
+          <FloatingShards />
 
           <div id="hero">
             <Hero />
           </div>
 
-          <Problem />
-          <Solution />
-          <Features />
-          <ComingSoon />
-          <BusinessWallet />
-          <Roadmap />
-          <CTA />
+          <SectionReveal>
+            <Problem />
+          </SectionReveal>
+
+          <SectionReveal parallax={0.03}>
+            <Solution />
+          </SectionReveal>
+
+          <SectionReveal>
+            <Features />
+          </SectionReveal>
+
+          <SectionReveal parallax={0.03}>
+            <ComingSoon />
+          </SectionReveal>
+
+          <SectionReveal>
+            <BusinessWallet />
+          </SectionReveal>
+
+          <SectionReveal parallax={0.02}>
+            <Roadmap />
+          </SectionReveal>
+
+          <SectionReveal>
+            <CTA />
+          </SectionReveal>
+
           <Footer />
         </main>
       </WarpProvider>
