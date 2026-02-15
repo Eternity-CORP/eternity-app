@@ -28,6 +28,7 @@ import {
   BalanceSection,
   ActionButtons,
   TokensList,
+  SharesList,
   BannerSection,
   ActionsMenu,
   AccountSelectorSheet,
@@ -342,6 +343,8 @@ export default function HomeScreen() {
         />
 
         <ActionButtons onOpenActionsMenu={openActionsMenu} />
+
+        <SharesList />
 
         <TokensList
           balances={balance.balances}

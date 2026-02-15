@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import ChatContainer from '@/components/chat/ChatContainer'
 import TokenList from '@/components/TokenList'
+import BusinessShares from '@/components/BusinessShares'
 import FaucetCard from '@/components/FaucetCard'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
@@ -223,6 +224,11 @@ export default function WalletDashboard() {
               )}
             </div>
           )}
+
+          {/* Business Shares */}
+          <div className="mt-4">
+            <BusinessShares />
+          </div>
 
           {/* Token List */}
           <div className="mt-4">
