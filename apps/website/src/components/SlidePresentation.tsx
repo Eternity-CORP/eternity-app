@@ -810,11 +810,11 @@ export function SlidePresentation() {
         {/* Sidebar */}
         <Sidebar activeIndex={activeIndex} onNavigate={navigateTo} />
 
-        {/* Content area — full width, phone centered, text to the right */}
-        <div className="flex-1 flex items-center">
-          <div className="w-full flex flex-col lg:flex-row items-center lg:items-center">
-            {/* Phone mockup — centered on the remaining space */}
-            <div className="flex-1 flex justify-center py-4 lg:py-0">
+        {/* Content area — phone left-center, text right-center */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center lg:items-center gap-8 lg:gap-16 px-6">
+            {/* Phone mockup */}
+            <div className="flex-shrink-0 py-4 lg:py-0">
               <PhoneFrame>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -831,8 +831,8 @@ export function SlidePresentation() {
               </PhoneFrame>
             </div>
 
-            {/* Text content — right side, fixed width */}
-            <div className="w-full lg:w-[400px] xl:w-[440px] flex-shrink-0 px-6 lg:pr-12 lg:pl-0">
+            {/* Text content */}
+            <div className="flex-1 max-w-md">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeIndex}

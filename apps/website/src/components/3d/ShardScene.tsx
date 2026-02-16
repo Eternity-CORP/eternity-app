@@ -402,7 +402,7 @@ export function GlobalShardScene() {
       >
         <Suspense fallback={null}>
           <SceneLighting isDark={isDark} />
-          <CheckpointShardsGroup isDark={isDark} scrollRef={sharedProgress} />
+          <ShardsGroup isDark={isDark} />
           <Particles count={80} isDark={isDark} />
         </Suspense>
       </Canvas>
