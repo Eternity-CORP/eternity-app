@@ -10,6 +10,7 @@ import { ScanLine } from '../ScanLine'
 
 interface SolutionSectionProps {
   visible: boolean
+  face?: 'full' | 'top' | 'bottom'
 }
 
 function BlikCode({ visible }: { visible: boolean }) {
@@ -42,9 +43,9 @@ function BlikCode({ visible }: { visible: boolean }) {
   )
 }
 
-export function SolutionSection({ visible }: SolutionSectionProps) {
+export function SolutionSection({ visible, face }: SolutionSectionProps) {
   return (
-    <TriangleContainer face="bottom" visible={visible}>
+    <TriangleContainer face={face ?? 'bottom'} visible={visible}>
       <ScanLine visible={visible} delay={0.1} />
 
       {/* Title at top (wide part of bottom triangle) */}

@@ -9,6 +9,7 @@ import { ScanLine } from '../ScanLine'
 
 interface RoadmapSectionProps {
   visible: boolean
+  face?: 'full' | 'top' | 'bottom'
 }
 
 const MILESTONES = [
@@ -38,11 +39,11 @@ const MILESTONES = [
   },
 ]
 
-export function RoadmapSection({ visible }: RoadmapSectionProps) {
+export function RoadmapSection({ visible, face }: RoadmapSectionProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   return (
-    <TriangleContainer face="top" visible={visible}>
+    <TriangleContainer face={face ?? 'top'} visible={visible}>
       <ScanLine visible={visible} delay={0.1} />
 
       <div className="text-center mb-2">

@@ -9,6 +9,7 @@ import { ScanLine } from '../ScanLine'
 
 interface FeaturesSectionProps {
   visible: boolean
+  face?: 'full' | 'top' | 'bottom'
 }
 
 /* ---- BLIK Demo ---- */
@@ -121,9 +122,9 @@ function BalanceDashboard({ visible }: { visible: boolean }) {
   )
 }
 
-export function FeaturesSection({ visible }: FeaturesSectionProps) {
+export function FeaturesSection({ visible, face }: FeaturesSectionProps) {
   return (
-    <TriangleContainer face="top" visible={visible}>
+    <TriangleContainer face={face ?? 'top'} visible={visible}>
       <ScanLine visible={visible} delay={0.1} />
 
       <div className="text-center mb-2">

@@ -10,15 +10,16 @@ import { ScanLine } from '../ScanLine'
 
 interface ProblemSectionProps {
   visible: boolean
+  face?: 'full' | 'top' | 'bottom'
 }
 
 const NETWORKS = ['Mainnet', 'Polygon', 'Arbitrum', 'Optimism', 'Base', 'zkSync', 'Avalanche', 'BSC']
 
-export function ProblemSection({ visible }: ProblemSectionProps) {
+export function ProblemSection({ visible, face }: ProblemSectionProps) {
   const [expandedNetwork, setExpandedNetwork] = useState(3)
 
   return (
-    <TriangleContainer face="top" visible={visible}>
+    <TriangleContainer face={face ?? 'top'} visible={visible}>
       <ScanLine visible={visible} delay={0.1} />
 
       {/* Tag at vertex (narrow top) */}

@@ -9,6 +9,7 @@ import { ScanLine } from '../ScanLine'
 
 interface BusinessSectionProps {
   visible: boolean
+  face?: 'full' | 'top' | 'bottom'
 }
 
 const SHAREHOLDERS = [
@@ -23,11 +24,11 @@ const PROPOSALS = [
   { title: 'New Product Line', votes: { for: 0, against: 0 }, status: 'pending' },
 ]
 
-export function BusinessSection({ visible }: BusinessSectionProps) {
+export function BusinessSection({ visible, face }: BusinessSectionProps) {
   const [hoveredShareholder, setHoveredShareholder] = useState<number | null>(null)
 
   return (
-    <TriangleContainer face="bottom" visible={visible}>
+    <TriangleContainer face={face ?? 'bottom'} visible={visible}>
       <ScanLine visible={visible} delay={0.1} />
 
       {/* Title at top (wide) */}
