@@ -119,7 +119,7 @@ const slides: Slide[] = [
 function PhoneFrame({ children }: { children: React.ReactNode }) {
   return (
     <motion.div
-      className="relative mx-auto flex-shrink-0"
+      className="relative mx-auto flex-shrink-0 scale-[0.7] sm:scale-[0.85] lg:scale-100 origin-center"
       style={{ width: 260, height: 530 }}
       animate={{ y: [0, -6, 0] }}
       transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
@@ -594,7 +594,7 @@ function SlideContent({ slide, index }: { slide: Slide; index: number }) {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 whitespace-pre-line leading-tight"
+        className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-2 lg:mb-4 whitespace-pre-line leading-tight"
         style={{ color: 'var(--foreground)' }}
       >
         {slide.title}
@@ -605,7 +605,7 @@ function SlideContent({ slide, index }: { slide: Slide; index: number }) {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="text-base md:text-lg mb-6 max-w-md"
+        className="text-sm sm:text-base lg:text-lg mb-3 lg:mb-6 max-w-md"
         style={{ color: 'var(--foreground-muted)' }}
       >
         {slide.description}
@@ -613,24 +613,24 @@ function SlideContent({ slide, index }: { slide: Slide; index: number }) {
 
       {/* Bullets */}
       {slide.bullets && (
-        <div className="space-y-3 mb-6">
+        <div className="space-y-1.5 lg:space-y-3 mb-4 lg:mb-6">
           {slide.bullets.map((bullet, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.25 + i * 0.08 }}
-              className="flex items-start gap-3"
+              className="flex items-start gap-2 lg:gap-3"
             >
               <div
-                className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0"
+                className="w-1.5 h-1.5 rounded-full mt-1.5 lg:mt-2 flex-shrink-0"
                 style={{ background: 'var(--accent-blue)' }}
               />
               <div>
-                <span className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
+                <span className="text-xs lg:text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
                   {bullet.label}
                 </span>
-                <span className="text-sm ml-1" style={{ color: 'var(--foreground-muted)' }}>
+                <span className="text-xs lg:text-sm ml-1 hidden sm:inline" style={{ color: 'var(--foreground-muted)' }}>
                   — {bullet.text}
                 </span>
               </div>
@@ -784,10 +784,7 @@ export function SlidePresentation() {
   const PhoneScreen = phoneScreens[activeIndex]
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative theme-transition" style={{ background: 'var(--background)' }}>
-      {/* Background patterns */}
-      <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
-
+    <div className="h-screen w-screen overflow-hidden relative z-[2]">
       {/* Header */}
       <header className="absolute top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
@@ -808,16 +805,16 @@ export function SlidePresentation() {
         </div>
       </header>
 
-      {/* Main layout */}
+      {/* Main layout — full width */}
       <div className="h-full flex items-stretch pt-16 pb-4">
         {/* Sidebar */}
         <Sidebar activeIndex={activeIndex} onNavigate={navigateTo} />
 
-        {/* Content area */}
-        <div className="flex-1 flex items-center justify-center px-6 lg:px-12">
-          <div className="grid lg:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-center max-w-5xl w-full">
-            {/* Phone mockup */}
-            <div className="flex justify-center lg:justify-end">
+        {/* Content area — full width, phone centered, text to the right */}
+        <div className="flex-1 flex items-center">
+          <div className="w-full flex flex-col lg:flex-row items-center lg:items-center">
+            {/* Phone mockup — centered on the remaining space */}
+            <div className="flex-1 flex justify-center py-4 lg:py-0">
               <PhoneFrame>
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -834,18 +831,20 @@ export function SlidePresentation() {
               </PhoneFrame>
             </div>
 
-            {/* Text content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeIndex}
-                initial={{ opacity: 0, y: direction >= 0 ? 30 : -30 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: direction >= 0 ? -30 : 30 }}
-                transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-              >
-                <SlideContent slide={slides[activeIndex]} index={activeIndex} />
-              </motion.div>
-            </AnimatePresence>
+            {/* Text content — right side, fixed width */}
+            <div className="w-full lg:w-[400px] xl:w-[440px] flex-shrink-0 px-6 lg:pr-12 lg:pl-0">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeIndex}
+                  initial={{ opacity: 0, y: direction >= 0 ? 30 : -30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: direction >= 0 ? -30 : 30 }}
+                  transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                >
+                  <SlideContent slide={slides[activeIndex]} index={activeIndex} />
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>
