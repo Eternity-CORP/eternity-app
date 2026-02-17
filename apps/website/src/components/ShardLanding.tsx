@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { Suspense, useRef, useState, useEffect, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
 import { EffectComposer, Vignette } from '@react-three/postprocessing'
@@ -516,20 +516,14 @@ function SectionOverlay({ section, isActive, index }: { section: Section; isActi
 /*  Progress Indicator (white dots)                                     */
 /* ------------------------------------------------------------------ */
 
-function ProgressIndicator({ activeIndex }: { activeIndex: number }) {
+function ProgressIndicator({ activeIndex, onNavigate }: { activeIndex: number; onNavigate: (index: number) => void }) {
   return (
     <div className="fixed right-4 lg:right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2">
       {sections.map((section, i) => (
         <button
           key={section.id}
           className="group relative flex items-center"
-          onClick={() => {
-            const target = section.range[0]
-            const scrollContainer = document.getElementById('shard-scroll-container')
-            if (scrollContainer) {
-              scrollContainer.scrollTop = target * (scrollContainer.scrollHeight - scrollContainer.clientHeight)
-            }
-          }}
+          onClick={() => onNavigate(i)}
         >
           {/* Label on hover */}
           <span className="absolute right-6 whitespace-nowrap text-xs font-medium text-white/0 group-hover:text-white/60 transition-all duration-200 pointer-events-none">
@@ -550,43 +544,147 @@ function ProgressIndicator({ activeIndex }: { activeIndex: number }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Precompute section midpoints for stable camera positions            */
+/* ------------------------------------------------------------------ */
+
+const sectionMidpoints = sections.map((s) => (s.range[0] + s.range[1]) / 2)
+
+/* ------------------------------------------------------------------ */
 /*  Main ShardLanding Component                                         */
 /* ------------------------------------------------------------------ */
 
 export function ShardLanding() {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [progress, setProgress] = useState(0)
   const { startWarp } = useWarp()
 
-  // Handle scroll and update progress
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return
-    const el = scrollRef.current
-    const scrollTop = el.scrollTop
-    const scrollHeight = el.scrollHeight - el.clientHeight
-    const p = scrollHeight > 0 ? Math.min(scrollTop / scrollHeight, 1) : 0
-    scrollStore.progress = p
-    setProgress(p)
+  // Refs for wheel-snap logic (stable across renders)
+  const targetIndexRef = useRef(0)
+  const animatingRef = useRef(false)
+  const cooldownRef = useRef(false)
+  const accumulatedDeltaRef = useRef(0)
+  const rafIdRef = useRef<number | null>(null)
 
-    // Determine active section
-    for (let i = sections.length - 1; i >= 0; i--) {
-      if (p >= sections[i].range[0]) {
-        setActiveIndex(i)
-        break
+  // Navigate to a specific section index (used by dots, keyboard, wheel)
+  const navigateTo = useMemo(() => {
+    return (index: number) => {
+      const clamped = Math.max(0, Math.min(index, sections.length - 1))
+      if (clamped === targetIndexRef.current && animatingRef.current) return
+      targetIndexRef.current = clamped
+      accumulatedDeltaRef.current = 0
+
+      // Start cooldown to prevent rapid jumping
+      cooldownRef.current = true
+      setTimeout(() => { cooldownRef.current = false }, 800)
+
+      // Start animation loop if not already running
+      if (!animatingRef.current) {
+        animatingRef.current = true
+        const animate = () => {
+          const target = sectionMidpoints[targetIndexRef.current]
+          const current = scrollStore.progress
+          const diff = target - current
+
+          // Lerp toward target
+          const next = current + diff * 0.08
+
+          // Snap when close enough
+          if (Math.abs(diff) < 0.001) {
+            scrollStore.progress = target
+            setProgress(target)
+            setActiveIndex(targetIndexRef.current)
+            animatingRef.current = false
+            rafIdRef.current = null
+            return
+          }
+
+          scrollStore.progress = next
+          setProgress(next)
+
+          // Determine active section from current animated progress
+          let newActive = 0
+          for (let i = sections.length - 1; i >= 0; i--) {
+            if (next >= sections[i].range[0]) {
+              newActive = i
+              break
+            }
+          }
+          setActiveIndex(newActive)
+
+          rafIdRef.current = requestAnimationFrame(animate)
+        }
+        rafIdRef.current = requestAnimationFrame(animate)
       }
     }
   }, [])
 
+  // Wheel event handler with delta accumulation
   useEffect(() => {
-    const el = scrollRef.current
+    const el = containerRef.current
     if (!el) return
-    el.addEventListener('scroll', handleScroll, { passive: true })
-    return () => el.removeEventListener('scroll', handleScroll)
-  }, [handleScroll])
+
+    const DELTA_THRESHOLD = 50
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault()
+
+      if (cooldownRef.current) return
+
+      accumulatedDeltaRef.current += e.deltaY
+
+      if (accumulatedDeltaRef.current > DELTA_THRESHOLD) {
+        // Scroll down -> next section
+        navigateTo(targetIndexRef.current + 1)
+      } else if (accumulatedDeltaRef.current < -DELTA_THRESHOLD) {
+        // Scroll up -> previous section
+        navigateTo(targetIndexRef.current - 1)
+      }
+    }
+
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel)
+  }, [navigateTo])
+
+  // Keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (cooldownRef.current) return
+
+      switch (e.key) {
+        case 'ArrowDown':
+        case ' ':
+          e.preventDefault()
+          navigateTo(targetIndexRef.current + 1)
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          navigateTo(targetIndexRef.current - 1)
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [navigateTo])
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+      }
+    }
+  }, [])
+
+  // Initialize progress to first section midpoint
+  useEffect(() => {
+    scrollStore.progress = sectionMidpoints[0]
+    setProgress(sectionMidpoints[0])
+  }, [])
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative" style={{ background: '#050505' }}>
+    <div ref={containerRef} className="h-screen w-screen overflow-hidden relative" style={{ background: '#050505' }}>
       {/* Header -- clean, minimal */}
       <header className="absolute top-0 left-0 right-0 z-50 px-6 sm:px-10 py-5 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
@@ -643,22 +741,10 @@ export function ShardLanding() {
         />
       </div>
 
-      {/* Scrollable content container */}
-      <div
-        id="shard-scroll-container"
-        ref={scrollRef}
-        className="absolute inset-0 z-[2] overflow-y-auto"
-        style={{ scrollBehavior: 'smooth' }}
-      >
-        {/* Tall spacer to create scrollable area */}
-        <div style={{ height: '700vh' }} />
-      </div>
-
-      {/* Section overlays (fixed, controlled by scroll progress) */}
+      {/* Section overlays (controlled by animated progress) */}
       <div className="absolute inset-0 z-[3] pointer-events-none pt-16 pb-8">
         {sections.map((section, i) => {
-          const sectionProgress = progress
-          const isActive = sectionProgress >= section.range[0] && sectionProgress < section.range[1]
+          const isActive = progress >= section.range[0] && progress < section.range[1]
           return (
             <SectionOverlay
               key={section.id}
@@ -671,12 +757,12 @@ export function ShardLanding() {
       </div>
 
       {/* Progress dots */}
-      <ProgressIndicator activeIndex={activeIndex} />
+      <ProgressIndicator activeIndex={activeIndex} onNavigate={navigateTo} />
 
       {/* Scroll hint -- subtle */}
       <motion.div
         className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1"
-        animate={{ opacity: progress < 0.03 ? 1 : 0 }}
+        animate={{ opacity: activeIndex === 0 ? 1 : 0 }}
         transition={{ duration: 0.3 }}
       >
         <motion.div
