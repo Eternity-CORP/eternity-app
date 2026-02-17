@@ -9,9 +9,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useWarp } from '@/components/animations/WarpTransition'
-import { useTheme } from '@/context/ThemeContext'
 import { ShardObject } from '@/components/3d/ShardObject'
 import { SectionVisual } from '@/components/sections/SectionVisuals'
 
@@ -22,16 +20,28 @@ import { SectionVisual } from '@/components/sections/SectionVisuals'
 const scrollStore = { progress: 0 }
 
 /* ------------------------------------------------------------------ */
-/*  Section definitions (same content as SlidePresentation)             */
+/*  Gradient text helper                                                */
+/* ------------------------------------------------------------------ */
+
+const gradientStyle: React.CSSProperties = {
+  background: 'linear-gradient(135deg, #ffffff 0%, #a78bfa 100%)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+}
+
+/* ------------------------------------------------------------------ */
+/*  Section definitions                                                 */
 /* ------------------------------------------------------------------ */
 
 interface Section {
   id: string
   tag: string
   title: string
+  gradientWord: string // the word(s) in the title that get a gradient
   description: string
   bullets?: { label: string; text: string }[]
-  range: [number, number] // scroll range [start, end]
+  range: [number, number]
 }
 
 const sections: Section[] = [
@@ -39,6 +49,7 @@ const sections: Section[] = [
     id: 'hero',
     tag: 'Welcome',
     title: 'The AI-Native\nCrypto Wallet',
+    gradientWord: 'AI-Native',
     description: 'Send crypto like a text message. Just type a name and hit send.',
     range: [0, 0.15],
   },
@@ -46,6 +57,7 @@ const sections: Section[] = [
     id: 'problem',
     tag: 'The Problem',
     title: "Crypto wasn't built\nfor humans",
+    gradientWord: 'humans',
     description: 'It was built for machines. We rebuilt it with AI.',
     bullets: [
       { label: '01 Complexity', text: 'Wallet addresses, gas fees, network selection — each step is a potential mistake.' },
@@ -58,6 +70,7 @@ const sections: Section[] = [
     id: 'solution',
     tag: 'The Solution',
     title: 'AI-Native\nby Design',
+    gradientWord: 'AI-Native',
     description: 'Intelligence built into every layer.',
     bullets: [
       { label: 'BLIK Codes', text: '6 digits instead of 42. Share a code, receive money.' },
@@ -71,6 +84,7 @@ const sections: Section[] = [
     id: 'features',
     tag: 'Features',
     title: 'Available\nNow',
+    gradientWord: 'Now',
     description: 'Already working. Ready to try.',
     bullets: [
       { label: 'BLIK Codes', text: 'Share a 6-digit code and money arrives in seconds.' },
@@ -84,6 +98,7 @@ const sections: Section[] = [
     id: 'business',
     tag: 'New Feature',
     title: 'Your Business,\nOn-Chain',
+    gradientWord: 'On-Chain',
     description: 'Tokenize ownership, govern collectively, and transfer shares — all from your wallet.',
     bullets: [
       { label: 'Tokenized Equity', text: 'ERC-20 tokens representing ownership shares.' },
@@ -97,6 +112,7 @@ const sections: Section[] = [
     id: 'roadmap',
     tag: 'Roadmap',
     title: 'Our\nJourney',
+    gradientWord: 'Journey',
     description: 'Building the future, step by step.',
     bullets: [
       { label: 'Q1 2026 — MVP', text: 'Core wallet, BLIK codes, AI agent, multi-chain.' },
@@ -110,81 +126,92 @@ const sections: Section[] = [
     id: 'cta',
     tag: 'Join Us',
     title: 'Experience\nAI-Native Crypto',
+    gradientWord: 'AI-Native',
     description: 'Join the waitlist for early access.',
     range: [0.90, 1.0],
   },
 ]
 
 /* ------------------------------------------------------------------ */
-/*  Camera Controller (inside R3F Canvas)                               */
+/*  Render title with gradient on specific word                         */
+/* ------------------------------------------------------------------ */
+
+function renderTitle(title: string, gradientWord: string) {
+  // Split by the gradient word and rebuild with styled span
+  const parts = title.split(gradientWord)
+  if (parts.length === 1) {
+    // gradientWord not found, render plain
+    return <>{title}</>
+  }
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < parts.length - 1 && (
+            <span style={gradientStyle}>{gradientWord}</span>
+          )}
+        </span>
+      ))}
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Camera positions per section (orbit showcase)                       */
+/* ------------------------------------------------------------------ */
+
+const cameraPositions: [number, number, number][] = [
+  [0, 0.3, 5],       // Section 0 (Hero): front view, slightly above
+  [3, 1.5, 3.5],     // Section 1 (Problem): upper right view
+  [-2, 0, 4.5],      // Section 2 (Solution): left front view
+  [2.5, -0.5, 4],    // Section 3 (Features): right, slightly below
+  [-3, 1, 3.5],      // Section 4 (Business): upper left view
+  [0, 2.5, 3],       // Section 5 (Roadmap): top-down view
+  [0, 0.3, 4.5],     // Section 6 (CTA): front view, closer
+]
+
+/* ------------------------------------------------------------------ */
+/*  Camera Controller (orbit per section, lerp between positions)       */
 /* ------------------------------------------------------------------ */
 
 function CameraController() {
   const { camera } = useThree()
+  const targetPos = useRef(new THREE.Vector3(0, 0.3, 5))
 
   useFrame(() => {
     const p = scrollStore.progress
 
-    // Camera positions at each scroll checkpoint
-    // 0-15%: Far view, shard visible whole
-    // 15-30%: Approaching, facets fill screen
-    // 30-45%: Passing through surface
-    // 45-65%: Inside void
-    // 65-80%: Moving toward exit
-    // 80-90%: Timeline path
-    // 90-100%: Exit, two shards
+    // Find which two section positions to interpolate between
+    let fromIdx = 0
+    let toIdx = 0
+    let localT = 0
 
-    let targetZ: number
-    let targetY: number
-    let targetX: number
-
-    if (p < 0.15) {
-      // Far view
-      const t = p / 0.15
-      targetZ = 8 - t * 1.5
-      targetY = 0.5 - t * 0.3
-      targetX = 0
-    } else if (p < 0.30) {
-      // Approaching surface
-      const t = (p - 0.15) / 0.15
-      targetZ = 6.5 - t * 3.0
-      targetY = 0.2 - t * 0.3
-      targetX = t * 0.5
-    } else if (p < 0.45) {
-      // Passing through (close up, slight orbit)
-      const t = (p - 0.30) / 0.15
-      targetZ = 3.5 - t * 1.5
-      targetY = -0.1 + t * 0.3
-      targetX = 0.5 - t * 1.0
-    } else if (p < 0.65) {
-      // Inside void (orbiting slowly)
-      const t = (p - 0.45) / 0.20
-      targetZ = 2.0 + Math.sin(t * Math.PI) * 0.5
-      targetY = 0.2 + Math.sin(t * Math.PI * 0.5) * 0.5
-      targetX = -0.5 + t * 1.5
-    } else if (p < 0.80) {
-      // Moving toward exit
-      const t = (p - 0.65) / 0.15
-      targetZ = 2.5 + t * 2.0
-      targetY = 0.7 - t * 0.5
-      targetX = 1.0 - t * 1.0
-    } else if (p < 0.90) {
-      // Roadmap view
-      const t = (p - 0.80) / 0.10
-      targetZ = 4.5 + t * 2.0
-      targetY = 0.2 + t * 0.3
-      targetX = t * -0.5
-    } else {
-      // Exit view
-      const t = (p - 0.90) / 0.10
-      targetZ = 6.5 + t * 2.0
-      targetY = 0.5
-      targetX = -0.5 + t * 0.5
+    for (let i = sections.length - 1; i >= 0; i--) {
+      if (p >= sections[i].range[0]) {
+        fromIdx = i
+        toIdx = Math.min(i + 1, sections.length - 1)
+        const rangeStart = sections[i].range[0]
+        const rangeEnd = sections[i].range[1]
+        localT = rangeEnd > rangeStart ? (p - rangeStart) / (rangeEnd - rangeStart) : 0
+        localT = Math.min(Math.max(localT, 0), 1)
+        break
+      }
     }
 
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetX, 0.05)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetY, 0.05)
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetZ, 0.05)
+    // Interpolate between section camera positions
+    const from = cameraPositions[fromIdx]
+    const to = cameraPositions[toIdx]
+    const targetX = from[0] + (to[0] - from[0]) * localT
+    const targetY = from[1] + (to[1] - from[1]) * localT
+    const targetZ = from[2] + (to[2] - from[2]) * localT
+
+    targetPos.current.set(targetX, targetY, targetZ)
+
+    // Very smooth lerp for premium feel
+    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetPos.current.x, 0.04)
+    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetPos.current.y, 0.04)
+    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetPos.current.z, 0.04)
     camera.lookAt(0, 0, 0)
   })
 
@@ -192,10 +219,10 @@ function CameraController() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Inner Void Particles (visible when "inside" the shard)              */
+/*  Void Particles (subtle white, low opacity)                          */
 /* ------------------------------------------------------------------ */
 
-function VoidParticles({ count = 80 }: { count?: number }) {
+function VoidParticles({ count = 40 }: { count?: number }) {
   const ref = useRef<THREE.Points>(null)
 
   const positions = useMemo(() => {
@@ -210,15 +237,8 @@ function VoidParticles({ count = 80 }: { count?: number }) {
 
   useFrame((state) => {
     if (!ref.current) return
-    const p = scrollStore.progress
-    // Only visible when "inside" (30%-80%)
-    const insideAmount = p > 0.30 && p < 0.80
-      ? Math.min((p - 0.30) / 0.05, 1) * Math.min((0.80 - p) / 0.05, 1)
-      : 0
-    const mat = ref.current.material as THREE.PointsMaterial
-    mat.opacity = insideAmount * 0.6
-    ref.current.rotation.y = state.clock.elapsedTime * 0.05
-    ref.current.rotation.x = state.clock.elapsedTime * 0.03
+    ref.current.rotation.y = state.clock.elapsedTime * 0.03
+    ref.current.rotation.x = state.clock.elapsedTime * 0.02
   })
 
   return (
@@ -232,10 +252,10 @@ function VoidParticles({ count = 80 }: { count?: number }) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.02}
-        color="#7c3aed"
+        size={0.01}
+        color="#ffffff"
         transparent
-        opacity={0}
+        opacity={0.3}
         sizeAttenuation
         blending={THREE.AdditiveBlending}
         depthWrite={false}
@@ -245,7 +265,7 @@ function VoidParticles({ count = 80 }: { count?: number }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  3D Scene (full viewport background)                                 */
+/*  3D Scene                                                            */
 /* ------------------------------------------------------------------ */
 
 function Scene() {
@@ -261,7 +281,7 @@ function Scene() {
 
       <CameraController />
       <ShardObject />
-      <VoidParticles count={80} />
+      <VoidParticles count={40} />
 
       <EffectComposer>
         <Bloom
@@ -325,8 +345,8 @@ function WaitlistForm() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h3 className="text-xl font-bold mb-2 text-white">You're In!</h3>
-        <p className="text-sm text-white/60">We'll notify you when early access is available.</p>
+        <h3 className="text-xl font-bold mb-2 text-white">You&apos;re In!</h3>
+        <p className="text-sm text-white/60">We&apos;ll notify you when early access is available.</p>
       </motion.div>
     )
   }
@@ -402,58 +422,58 @@ function SectionOverlay({ section, isActive, index }: { section: Section; isActi
 
   return (
     <motion.div
-      className="absolute inset-0 flex items-center pointer-events-none px-6 sm:px-12 lg:px-20"
+      className="absolute inset-0 flex items-center pointer-events-none px-8 sm:px-16 lg:px-24"
       initial={false}
       animate={{ opacity: isActive ? 1 : 0 }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
       style={{ zIndex: isActive ? 10 : 1 }}
     >
       <div className={`w-full flex items-center gap-8 lg:gap-16 ${textOnLeft ? 'flex-row' : 'flex-row-reverse'} ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}>
         {/* Text content */}
-        <div className={`max-w-lg flex-shrink-0 ${textOnLeft ? 'text-left' : 'text-right'}`}>
+        <div className={`max-w-xl flex-shrink-0 ${textOnLeft ? 'text-left' : 'text-right'}`}>
           {/* Tag */}
           <motion.p
-            className="text-xs font-medium tracking-widest uppercase mb-3 text-white/50"
-            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 15 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-[11px] font-medium tracking-[0.2em] uppercase mb-4 text-white/40"
+            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 12 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
           >
             {section.tag}
           </motion.p>
 
           {/* Title */}
           <motion.h2
-            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 lg:mb-4 whitespace-pre-line leading-tight text-white"
-            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 lg:mb-5 whitespace-pre-line leading-[1.1] text-white"
+            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 16 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            {section.title}
+            {renderTitle(section.title, section.gradientWord)}
           </motion.h2>
 
           {/* Description */}
           <motion.p
-            className="text-sm sm:text-base lg:text-lg mb-4 lg:mb-6 text-white/60"
-            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            className="text-base lg:text-lg mb-5 lg:mb-7 text-white/60"
+            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 16 }}
+            transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
           >
             {section.description}
           </motion.p>
 
           {/* Bullets */}
           {section.bullets && (
-            <div className="space-y-2 lg:space-y-3 mb-4 lg:mb-6">
+            <div className="space-y-2.5 lg:space-y-3 mb-5 lg:mb-7">
               {section.bullets.map((bullet, i) => (
                 <motion.div
                   key={i}
                   className={`flex items-start gap-3 ${textOnLeft ? '' : 'flex-row-reverse text-right'}`}
-                  animate={{ opacity: isActive ? 1 : 0, x: isActive ? 0 : (textOnLeft ? -10 : 10) }}
-                  transition={{ duration: 0.4, delay: 0.25 + i * 0.08 }}
+                  animate={{ opacity: isActive ? 1 : 0, x: isActive ? 0 : (textOnLeft ? -8 : 8) }}
+                  transition={{ duration: 0.4, delay: 0.25 + i * 0.06, ease: [0.25, 0.1, 0.25, 1] }}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 bg-violet-400" />
+                  <div className="w-1 h-1 rounded-full mt-2 flex-shrink-0 bg-white/30" />
                   <div>
-                    <span className="text-xs lg:text-sm font-semibold text-white">
+                    <span className="text-sm font-semibold text-white/90">
                       {bullet.label}
                     </span>
-                    <span className="text-xs lg:text-sm ml-1 hidden sm:inline text-white/50">
+                    <span className="text-sm ml-1.5 hidden sm:inline text-white/50">
                       — {bullet.text}
                     </span>
                   </div>
@@ -466,7 +486,7 @@ function SectionOverlay({ section, isActive, index }: { section: Section; isActi
           {isHero && (
             <motion.div
               animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 10 }}
-              transition={{ duration: 0.5, delay: 0.35 }}
+              transition={{ duration: 0.5, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <Button variant="primary" size="lg" onClick={startWarp}>
                 Launch App
@@ -479,18 +499,22 @@ function SectionOverlay({ section, isActive, index }: { section: Section; isActi
             <motion.div
               className="max-w-sm"
               animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 10 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ duration: 0.5, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <WaitlistForm />
             </motion.div>
           )}
         </div>
 
-        {/* Visual content — shown on opposite side from text */}
+        {/* Visual content -- shown on opposite side from text (desktop only) */}
         {hasVisual && (
-          <div className="flex-1 hidden lg:flex justify-center items-center">
+          <motion.div
+            className="flex-1 hidden lg:flex justify-center items-center"
+            animate={{ opacity: isActive ? 1 : 0 }}
+            transition={{ duration: 0.5, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          >
             <SectionVisual sectionId={section.id} isActive={isActive} />
-          </div>
+          </motion.div>
         )}
       </div>
     </motion.div>
@@ -498,10 +522,10 @@ function SectionOverlay({ section, isActive, index }: { section: Section; isActi
 }
 
 /* ------------------------------------------------------------------ */
-/*  Progress Indicator                                                  */
+/*  Progress Indicator (white dots)                                     */
 /* ------------------------------------------------------------------ */
 
-function ProgressIndicator({ progress, activeIndex }: { progress: number; activeIndex: number }) {
+function ProgressIndicator({ activeIndex }: { activeIndex: number }) {
   return (
     <div className="fixed right-4 lg:right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-2">
       {sections.map((section, i) => (
@@ -517,14 +541,15 @@ function ProgressIndicator({ progress, activeIndex }: { progress: number; active
           }}
         >
           {/* Label on hover */}
-          <span className="absolute right-6 whitespace-nowrap text-xs font-medium text-white/0 group-hover:text-white/70 transition-all duration-200 pointer-events-none">
+          <span className="absolute right-6 whitespace-nowrap text-xs font-medium text-white/0 group-hover:text-white/60 transition-all duration-200 pointer-events-none">
             {section.tag}
           </span>
           <div
-            className="w-2 h-2 rounded-full transition-all duration-300"
+            className="rounded-full transition-all duration-300"
             style={{
-              background: i === activeIndex ? '#7c3aed' : 'rgba(255,255,255,0.2)',
-              transform: i === activeIndex ? 'scale(1.5)' : 'scale(1)',
+              width: i === activeIndex ? 8 : 6,
+              height: i === activeIndex ? 8 : 6,
+              background: i === activeIndex ? '#ffffff' : 'rgba(255,255,255,0.15)',
             }}
           />
         </button>
@@ -541,7 +566,6 @@ export function ShardLanding() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [progress, setProgress] = useState(0)
-  const { isDark } = useTheme()
   const { startWarp } = useWarp()
 
   // Handle scroll and update progress
@@ -572,9 +596,9 @@ export function ShardLanding() {
 
   return (
     <div className="h-screen w-screen overflow-hidden relative" style={{ background: '#050505' }}>
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-50 px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+      {/* Header -- clean, minimal */}
+      <header className="absolute top-0 left-0 right-0 z-50 px-6 sm:px-10 py-5 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="/images/logo_white.svg"
             alt="Eternity"
@@ -584,18 +608,15 @@ export function ShardLanding() {
           />
           <span className="text-lg font-bold text-white">Eternity</span>
         </Link>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Button variant="primary" size="sm" onClick={startWarp} className="hidden sm:inline-flex">
-            Launch App
-          </Button>
-        </div>
+        <Button variant="primary" size="sm" onClick={startWarp} className="hidden sm:inline-flex">
+          Launch App
+        </Button>
       </header>
 
       {/* 3D Canvas (fixed behind everything) */}
       <div className="absolute inset-0 z-0">
         <Canvas
-          camera={{ position: [0, 0.5, 8], fov: 45 }}
+          camera={{ position: [0, 0.3, 5], fov: 45 }}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
           dpr={[1, 1.5]}
           style={{ background: 'transparent' }}
@@ -609,16 +630,24 @@ export function ShardLanding() {
       {/* Gradient overlays for readability */}
       <div className="absolute inset-0 z-[1] pointer-events-none">
         {/* Top gradient for header */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/50 to-transparent" />
         {/* Bottom gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/40 to-transparent" />
-        {/* Side gradient for text readability — alternates per section */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/30 to-transparent" />
+        {/* Side gradient for text readability -- alternates per section */}
         <div
           className="absolute inset-0 transition-opacity duration-700"
           style={{
             background: activeIndex % 2 === 0
-              ? 'linear-gradient(90deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 40%, transparent 70%)'
-              : 'linear-gradient(270deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 40%, transparent 70%)',
+              ? 'linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.25) 40%, transparent 70%)'
+              : 'linear-gradient(270deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.25) 40%, transparent 70%)',
+          }}
+        />
+        {/* Subtle noise texture overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
+            backgroundRepeat: 'repeat',
           }}
         />
       </div>
@@ -630,7 +659,7 @@ export function ShardLanding() {
         className="absolute inset-0 z-[2] overflow-y-auto"
         style={{ scrollBehavior: 'smooth' }}
       >
-        {/* Tall spacer to create scrollable area — 700vh gives room for all sections */}
+        {/* Tall spacer to create scrollable area */}
         <div style={{ height: '700vh' }} />
       </div>
 
@@ -651,38 +680,38 @@ export function ShardLanding() {
       </div>
 
       {/* Progress dots */}
-      <ProgressIndicator progress={progress} activeIndex={activeIndex} />
+      <ProgressIndicator activeIndex={activeIndex} />
 
-      {/* Scroll hint */}
+      {/* Scroll hint -- subtle */}
       <motion.div
         className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-1"
         animate={{ opacity: progress < 0.03 ? 1 : 0 }}
         transition={{ duration: 0.3 }}
       >
         <motion.div
-          animate={{ y: [0, 6, 0] }}
+          animate={{ y: [0, 5, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
         >
-          <svg className="w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
         </motion.div>
-        <span className="text-[10px] text-white/30">Scroll to explore</span>
+        <span className="text-[9px] text-white/20">Scroll to explore</span>
       </motion.div>
 
       {/* Section counter */}
       <div className="absolute bottom-4 left-6 z-40 hidden lg:block">
-        <span className="text-xs font-mono text-white/30">
+        <span className="text-xs font-mono text-white/20">
           {String(activeIndex + 1).padStart(2, '0')} / {String(sections.length).padStart(2, '0')}
         </span>
       </div>
 
-      {/* Progress bar at bottom */}
+      {/* Progress bar at bottom -- subtle white */}
       <div className="absolute bottom-0 left-0 right-0 h-[2px] z-40 bg-white/5">
         <motion.div
           className="h-full"
           style={{
-            background: 'linear-gradient(90deg, #7c3aed, #3b82f6)',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.6))',
             width: `${progress * 100}%`,
           }}
         />

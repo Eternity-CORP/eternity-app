@@ -2,220 +2,185 @@ import * as THREE from 'three'
 
 /* ------------------------------------------------------------------ */
 /*  FacetedDropGeometry                                                */
-/*  A teardrop / faceted-drop shape:                                   */
-/*    - Wide, rounded top with a pronounced concave dip (infinity ref) */
-/*    - Tapers to a sharp point at the bottom                          */
-/*    - Higher segment count for smooth crystal facets                  */
-/*    - Subtle asymmetric variation for organic feel                    */
-/*    - Non-indexed geometry with per-face normals for flat shading     */
+/*  Hand-crafted angular crystal built from vertex rings.              */
+/*  ~60-70 triangles total -- intentionally low-poly.                 */
+/*  The beauty comes from LARGE flat faces catching light differently. */
+/*  Non-indexed geometry with per-face normals for flat shading.       */
 /* ------------------------------------------------------------------ */
 
-/**
- * Deterministic pseudo-random offset for a given radial column.
- * Returns a small value in [-0.03, +0.03] to break perfect symmetry
- * without introducing actual randomness (stays stable across frames).
- */
-function asymmetricOffset(col: number): number {
-  return Math.sin(col * 7.13) * 0.03
+export interface FacetedDropOptions {
+  /** Overall scale multiplier. Default: 1.0 */
+  scale?: number
+}
+
+/* ------------------------------------------------------------------ */
+/*  Vertex ring definitions                                            */
+/* ------------------------------------------------------------------ */
+
+interface Ring {
+  y: number
+  radius: number
+  count: number
+  /** Rotation offset in degrees -- creates the twisted facet look */
+  offsetDeg: number
 }
 
 /**
- * Evaluate the teardrop profile radius at a given height parameter t.
- *
- *   t = 0  -> bottom tip  (radius = 0)
- *   t = 1  -> top cap      (radius ~0 with concave dip)
- *
- * The curve combines a sine-based teardrop envelope with a concave
- * indent near the top to reference the infinity symbol.
- * The bottom tip uses a steeper power curve for a sharper point.
+ * Generate vertices for a single ring at height y with given radius,
+ * vertex count, and angular offset.
  */
-function profileRadius(t: number, maxRadius: number, col: number): number {
-  // Base teardrop: sine envelope that peaks around t=0.65
-  // Steeper power curve (0.45) for sharper bottom tip
-  const base = Math.sin(Math.PI * Math.pow(t, 0.45))
+function buildRing(ring: Ring, scale: number): THREE.Vector3[] {
+  const verts: THREE.Vector3[] = []
+  const offsetRad = (ring.offsetDeg * Math.PI) / 180
+  for (let i = 0; i < ring.count; i++) {
+    const theta = (i / ring.count) * Math.PI * 2 + offsetRad
+    const x = Math.cos(theta) * ring.radius * scale
+    const z = Math.sin(theta) * ring.radius * scale
+    const y = ring.y * scale
+    verts.push(new THREE.Vector3(x, y, z))
+  }
+  return verts
+}
 
-  // Concave dip near the top (t > 0.85)
-  // More pronounced: deeper and slightly wider for dramatic infinity-loop reference
-  const dipCenter = 0.93
-  const dipWidth = 0.08
-  const dipDepth = 0.45
-  const dipDist = (t - dipCenter) / dipWidth
-  const dip = dipDepth * Math.exp(-dipDist * dipDist * 2)
+/* ------------------------------------------------------------------ */
+/*  Triangle assembly helpers                                          */
+/* ------------------------------------------------------------------ */
 
-  // Apply subtle asymmetric variation per radial column
-  const variation = 1.0 + asymmetricOffset(col)
+const _cb = new THREE.Vector3()
+const _ab = new THREE.Vector3()
 
-  return Math.max(0, (base - dip)) * maxRadius * variation
+function faceNormal(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3): THREE.Vector3 | null {
+  _cb.subVectors(c, b)
+  _ab.subVectors(a, b)
+  _cb.cross(_ab)
+  const len = _cb.length()
+  if (len < 1e-8) return null
+  _cb.divideScalar(len)
+  return _cb.clone()
+}
+
+function pushTriangle(
+  positions: number[],
+  normals: number[],
+  a: THREE.Vector3,
+  b: THREE.Vector3,
+  c: THREE.Vector3,
+) {
+  const n = faceNormal(a, b, c)
+  if (!n) return
+
+  positions.push(a.x, a.y, a.z)
+  positions.push(b.x, b.y, b.z)
+  positions.push(c.x, c.y, c.z)
+
+  normals.push(n.x, n.y, n.z)
+  normals.push(n.x, n.y, n.z)
+  normals.push(n.x, n.y, n.z)
 }
 
 /**
- * Evaluate the Y coordinate for a given height parameter t.
- *
- *   t = 0  -> bottom point  (y = -bottomExtent)
- *   t = 1  -> top            (y = +topExtent)
- *
- * Non-linear mapping so the bottom tapers faster while the top
- * is more gently rounded.
+ * Connect two rings of EQUAL vertex count with optional rotation offset.
+ * The offset between rings creates diagonal facets -- two triangles per
+ * pair of adjacent vertices on each ring.
  */
-function profileY(t: number, height: number): number {
-  // Place the widest part slightly above center
-  const bottomExtent = height * 0.45
-  const topExtent = height * 0.55
-  return -bottomExtent + (bottomExtent + topExtent) * t
+function connectRings(
+  positions: number[],
+  normals: number[],
+  lower: THREE.Vector3[],
+  upper: THREE.Vector3[],
+) {
+  const count = lower.length // both rings have the same count
+  for (let i = 0; i < count; i++) {
+    const ni = (i + 1) % count
+
+    const bl = lower[i]
+    const br = lower[ni]
+    const tl = upper[i]
+    const tr = upper[ni]
+
+    // Two triangles per quad
+    pushTriangle(positions, normals, bl, br, tr)
+    pushTriangle(positions, normals, bl, tr, tl)
+  }
+}
+
+/**
+ * Connect an apex point to a ring -- creates a fan of triangles.
+ * @param topDown  true = apex is ABOVE the ring (fan points upward)
+ *                 false = apex is BELOW the ring (fan points downward)
+ */
+function connectApex(
+  positions: number[],
+  normals: number[],
+  ring: THREE.Vector3[],
+  apex: THREE.Vector3,
+  topDown: boolean,
+) {
+  const count = ring.length
+  for (let i = 0; i < count; i++) {
+    const ni = (i + 1) % count
+    if (topDown) {
+      // Winding: ring[i], ring[ni], apex -- normal faces outward
+      pushTriangle(positions, normals, ring[i], ring[ni], apex)
+    } else {
+      // Winding: ring[ni], ring[i], apex -- normal faces outward
+      pushTriangle(positions, normals, ring[ni], ring[i], apex)
+    }
+  }
 }
 
 /* ------------------------------------------------------------------ */
 /*  Main geometry builder                                              */
 /* ------------------------------------------------------------------ */
 
-export interface FacetedDropOptions {
-  /** Total height of the drop. Default: 2.5 */
-  height?: number
-  /** Maximum radius at the widest point. Default: 0.6 */
-  maxRadius?: number
-  /** Number of radial segments (facet count around Y). Default: 24 */
-  radialSegments?: number
-  /** Number of height rings (profile samples). Default: 32 */
-  heightSegments?: number
-}
-
 /**
- * Create a faceted-drop BufferGeometry.
+ * Create the faceted crystal BufferGeometry.
  *
- * The geometry is non-indexed: every triangle has its own set of three
- * vertices with a single face normal, producing crisp flat-shaded facets
- * that look like a cut gemstone.
+ * Shape: elongated angular crystal with sharp top/bottom points,
+ * wider "equator" below center, and 30-degree rotation offsets
+ * between adjacent rings for the twisted faceted look.
  *
- * Approximate triangle count with defaults (24 x 32): ~1536 triangles.
+ * Total: ~72 triangles (6 per apex fan x2 + 12 per ring pair x4)
  */
 export function createFacetedDropGeometry(opts: FacetedDropOptions = {}): THREE.BufferGeometry {
-  const {
-    height = 2.5,
-    maxRadius = 0.6,
-    radialSegments = 24,
-    heightSegments = 32,
-  } = opts
+  const scale = opts.scale ?? 1.0
 
-  // ------------------------------------------------------------------
-  // Step 1: Build the ring vertices (parametric revolve)
-  // ------------------------------------------------------------------
-  // rings[row][col] = THREE.Vector3
-  // row 0 = bottom tip, row heightSegments = top
-  // col 0..radialSegments-1 around the Y axis
+  // ---- Define the crystal shape via vertex rings ----
+  // The 30-degree offset between adjacent rings is CRITICAL for the
+  // asymmetric faceted crystal aesthetic.
 
-  const rings: THREE.Vector3[][] = []
+  const rings: Ring[] = [
+    { y: 1.0,   radius: 0.22, count: 6, offsetDeg: 0  },   // Upper -- narrow cone
+    { y: 0.25,  radius: 0.55, count: 6, offsetDeg: 30 },   // Mid -- transitional, twisted
+    { y: -0.15, radius: 0.65, count: 6, offsetDeg: 0  },   // Equator -- widest
+    { y: -0.65, radius: 0.38, count: 6, offsetDeg: 30 },   // Lower -- narrowing
+  ]
 
-  for (let row = 0; row <= heightSegments; row++) {
-    const t = row / heightSegments
-    const y = profileY(t, height)
+  const topApex = new THREE.Vector3(0, 2.0 * scale, 0)
+  const bottomApex = new THREE.Vector3(0, -1.3 * scale, 0)
 
-    const ring: THREE.Vector3[] = []
-    for (let col = 0; col < radialSegments; col++) {
-      const r = profileRadius(t, maxRadius, col)
-      const theta = (col / radialSegments) * Math.PI * 2
-      const x = Math.cos(theta) * r
-      const z = Math.sin(theta) * r
-      ring.push(new THREE.Vector3(x, y, z))
-    }
-    rings.push(ring)
-  }
+  // Build ring vertex arrays
+  const ringVerts = rings.map((r) => buildRing(r, scale))
 
-  // ------------------------------------------------------------------
-  // Step 2: Build non-indexed triangle soup
-  // ------------------------------------------------------------------
-  // For each quad on the surface, emit two triangles.
-  // Each triangle gets its own copy of vertices so we can assign a
-  // unique face normal -> flat shading.
-
+  // ---- Assemble triangle soup ----
   const positions: number[] = []
   const normals: number[] = []
 
-  const vA = new THREE.Vector3()
-  const vB = new THREE.Vector3()
-  const vC = new THREE.Vector3()
-  const cb = new THREE.Vector3()
-  const ab = new THREE.Vector3()
+  // Top apex -> uppermost ring
+  connectApex(positions, normals, ringVerts[0], topApex, true)
 
-  function pushTriangle(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) {
-    // Compute face normal
-    vA.copy(a)
-    vB.copy(b)
-    vC.copy(c)
-    cb.subVectors(vC, vB)
-    ab.subVectors(vA, vB)
-    cb.cross(ab)
-
-    // Skip degenerate triangles (e.g. at the tip where radius = 0)
-    const len = cb.length()
-    if (len < 1e-8) return
-
-    cb.divideScalar(len)
-
-    positions.push(a.x, a.y, a.z)
-    positions.push(b.x, b.y, b.z)
-    positions.push(c.x, c.y, c.z)
-
-    normals.push(cb.x, cb.y, cb.z)
-    normals.push(cb.x, cb.y, cb.z)
-    normals.push(cb.x, cb.y, cb.z)
+  // Connect each adjacent pair of rings
+  for (let i = 0; i < ringVerts.length - 1; i++) {
+    connectRings(positions, normals, ringVerts[i], ringVerts[i + 1])
   }
 
-  for (let row = 0; row < heightSegments; row++) {
-    for (let col = 0; col < radialSegments; col++) {
-      const nextCol = (col + 1) % radialSegments
+  // Bottom ring -> bottom apex
+  connectApex(positions, normals, ringVerts[ringVerts.length - 1], bottomApex, false)
 
-      const bl = rings[row][col]       // bottom-left
-      const br = rings[row][nextCol]   // bottom-right
-      const tl = rings[row + 1][col]   // top-left
-      const tr = rings[row + 1][nextCol] // top-right
-
-      // Two triangles per quad
-      pushTriangle(bl, br, tr)
-      pushTriangle(bl, tr, tl)
-    }
-  }
-
-  // ------------------------------------------------------------------
-  // Step 3: Cap the very top with a concave polygon
-  // ------------------------------------------------------------------
-  // The top ring (row = heightSegments) may collapse to near-zero radius
-  // but we also want an explicit cap center point at the concave dip.
-
-  const topCenterT = 1.0
-  const topCenterY = profileY(topCenterT, height)
-  // Pull the center slightly downward to enhance the concave look
-  const topCenter = new THREE.Vector3(0, topCenterY - 0.04, 0)
-  const topRing = rings[heightSegments]
-
-  for (let col = 0; col < radialSegments; col++) {
-    const nextCol = (col + 1) % radialSegments
-    pushTriangle(topRing[col], topRing[nextCol], topCenter)
-  }
-
-  // ------------------------------------------------------------------
-  // Step 4: Cap the bottom tip (in case bottom row has nonzero radius)
-  // ------------------------------------------------------------------
-  const bottomCenterT = 0.0
-  const bottomCenterY = profileY(bottomCenterT, height)
-  const bottomCenter = new THREE.Vector3(0, bottomCenterY, 0)
-  const bottomRing = rings[0]
-
-  for (let col = 0; col < radialSegments; col++) {
-    const nextCol = (col + 1) % radialSegments
-    pushTriangle(bottomRing[nextCol], bottomRing[col], bottomCenter)
-  }
-
-  // ------------------------------------------------------------------
-  // Step 5: Assemble BufferGeometry
-  // ------------------------------------------------------------------
+  // ---- Build BufferGeometry ----
   const geometry = new THREE.BufferGeometry()
-  const posArray = new Float32Array(positions)
-  const normArray = new Float32Array(normals)
-
-  geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3))
-  geometry.setAttribute('normal', new THREE.BufferAttribute(normArray, 3))
-
-  // Recompute bounding volumes for frustum culling
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3))
+  geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3))
   geometry.computeBoundingSphere()
   geometry.computeBoundingBox()
 
@@ -227,11 +192,8 @@ export function createFacetedDropGeometry(opts: FacetedDropOptions = {}): THREE.
 /* ------------------------------------------------------------------ */
 
 /**
- * Create an EdgesGeometry suitable for wireframe overlay.
- *
- * The threshold angle (default 1 degree) means only edges where
- * adjacent faces form a sharp angle are included -- i.e., every
- * facet edge on our flat-shaded geometry.
+ * Create an EdgesGeometry for wireframe overlay.
+ * Threshold angle of 1 degree means every facet edge is included.
  */
 export function createFacetedDropEdges(
   opts: FacetedDropOptions = {},
