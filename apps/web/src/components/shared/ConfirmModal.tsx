@@ -2,7 +2,8 @@
 
 import type { ReactNode, KeyboardEvent, MouseEvent } from 'react'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import MiniWarpBg from '../chat/cards/MiniWarpBg'
+import ShardMerge from '../animations/ShardMerge'
+import ShardSeal from '../animations/ShardSeal'
 
 export interface ConfirmDetail {
   key?: string
@@ -12,6 +13,9 @@ export interface ConfirmDetail {
   type?: 'text' | 'number'
 }
 
+/** 'merge' = transaction confirmation (two shards -> infinity), 'seal' = signature (facets light up) */
+export type ConfirmAnimationType = 'merge' | 'seal'
+
 interface ConfirmModalProps {
   title: string
   summary: string
@@ -19,6 +23,8 @@ interface ConfirmModalProps {
   extraContent?: ReactNode
   requiresPassword?: boolean
   confirmLabel?: string
+  /** Animation style: 'merge' for transactions, 'seal' for signatures. Default: 'merge' */
+  animationType?: ConfirmAnimationType
   onConfirm: (password: string, editedValues?: Record<string, string>) => Promise<void>
   onCancel: () => void
 }
@@ -51,6 +57,7 @@ export default function ConfirmModal({
   extraContent,
   requiresPassword = true,
   confirmLabel = 'Confirm',
+  animationType = 'merge',
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -125,8 +132,8 @@ export default function ConfirmModal({
     setEditedValues((prev) => ({ ...prev, [key]: value }))
   }
 
-  const isWarpBoosted = status === 'loading' || status === 'succeeded'
-  const contentFading = isWarpBoosted
+  const isAnimating = status === 'loading' || status === 'succeeded'
+  const contentFading = isAnimating
 
   const canConfirm = requiresPassword ? !!password.trim() : true
 
@@ -142,8 +149,12 @@ export default function ConfirmModal({
 
       {/* Modal */}
       <div className="glass-card rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'hidden' }}>
-        {/* Warp background */}
-        <MiniWarpBg boosted={isWarpBoosted} />
+        {/* Shard animation background */}
+        {animationType === 'seal' ? (
+          <ShardSeal active={isAnimating} />
+        ) : (
+          <ShardMerge active={isAnimating} />
+        )}
 
         {/* Content */}
         <div

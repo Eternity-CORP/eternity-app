@@ -5,57 +5,63 @@ import type { ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const APP_URL = 'https://e-y-app.vercel.app'
-const STAR_COUNT = 400
-const ANIMATION_DURATION = 6500
+const PARTICLE_COUNT = 300
+const ANIMATION_DURATION = 1400 // 1.4s total
 
 // Animation phases (normalized 0-1)
 const PHASE = {
-  CHARGE_END: 0.15,    // 0–1s: stars appear, subtle drift
-  ENGAGE_END: 0.35,    // 1–2.3s: sudden acceleration
-  CRUISE_END: 0.80,    // 2.3–5.2s: full hyperspace tunnel
-  BURST_START: 0.82,   // 5.3s: blue burst begins
+  PULL_END: 0.65,       // 0-0.91s: particles accelerate toward center
+  COLLAPSE_END: 0.85,   // 0.91-1.19s: everything converges to point
+  BLACKOUT_END: 1.0,    // 1.19-1.4s: fade to black
 }
 
-interface Star {
-  id: number
-  x: number
-  y: number
-  angle: number
-  speed: number
-  size: number
-  delay: number
-  hue: number
-  layer: number
+interface Particle {
+  angle: number        // radial position angle
+  radius: number       // starting distance from center (0-1, normalized)
+  speed: number        // individual speed multiplier
+  size: number         // particle size
+  hue: number          // color hue
+  saturation: number   // color saturation
+  lightness: number    // color lightness
+  trail: number        // trail length multiplier
 }
 
-function generateStars(): Star[] {
-  return Array.from({ length: STAR_COUNT }, (_, i) => {
-    const angle = Math.random() * Math.PI * 2
-    const distance = Math.random() * 0.4 + 0.03
-    const layer = i < 120 ? 0 : i < 280 ? 1 : 2
-    // Color palette: cyan, teal, blue, purple accents
-    const hueRoll = Math.random()
-    let hue: number
-    if (hueRoll < 0.35) hue = 190 + Math.random() * 20       // cyan/teal
-    else if (hueRoll < 0.65) hue = 210 + Math.random() * 20   // blue
-    else if (hueRoll < 0.85) hue = 170 + Math.random() * 15   // aqua
-    else hue = 260 + Math.random() * 30                        // purple accent
+function generateParticles(): Particle[] {
+  return Array.from({ length: PARTICLE_COUNT }, () => {
+    const colorRoll = Math.random()
+    let hue: number, saturation: number, lightness: number
+    if (colorRoll < 0.45) {
+      // Purple family (#7c3aed range)
+      hue = 260 + Math.random() * 20
+      saturation = 70 + Math.random() * 20
+      lightness = 55 + Math.random() * 15
+    } else if (colorRoll < 0.85) {
+      // Blue family (#3b82f6 range)
+      hue = 210 + Math.random() * 20
+      saturation = 75 + Math.random() * 20
+      lightness = 55 + Math.random() * 20
+    } else {
+      // White/bright accent
+      hue = 230 + Math.random() * 40
+      saturation = 20 + Math.random() * 30
+      lightness = 85 + Math.random() * 10
+    }
 
     return {
-      id: i,
-      x: 50 + Math.cos(angle) * distance * 50,
-      y: 50 + Math.sin(angle) * distance * 50,
-      angle,
-      speed: (Math.random() * 0.5 + 0.5) * (0.6 + layer * 0.3),
-      size: (Math.random() * 1.5 + 0.5) * (0.7 + layer * 0.3),
-      delay: Math.random() * 300 * (1 - layer * 0.3),
+      angle: Math.random() * Math.PI * 2,
+      radius: 0.3 + Math.random() * 0.7, // start from mid-to-edge
+      speed: 0.5 + Math.random() * 1.0,
+      size: 1 + Math.random() * 2.5,
       hue,
-      layer,
+      saturation,
+      lightness,
+      trail: 0.3 + Math.random() * 0.7,
     }
   })
 }
 
 // Easing helpers
+function easeInQuad(t: number) { return t * t }
 function easeInCubic(t: number) { return t * t * t }
 function easeInQuart(t: number) { return t * t * t * t }
 function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3) }
@@ -77,7 +83,7 @@ export function useWarp() {
 // --- Provider: wraps the page, renders overlay once ---
 export function WarpProvider({ children }: { children: ReactNode }) {
   const [isWarping, setIsWarping] = useState(false)
-  const [stars] = useState<Star[]>(generateStars)
+  const [particles] = useState<Particle[]>(generateParticles)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   const startTimeRef = useRef<number>(0)
@@ -86,7 +92,7 @@ export function WarpProvider({ children }: { children: ReactNode }) {
     setIsWarping(true)
     setTimeout(() => {
       window.location.href = APP_URL
-    }, ANIMATION_DURATION)
+    }, ANIMATION_DURATION + 200) // small buffer after animation ends
   }, [])
 
   useEffect(() => {
@@ -107,169 +113,146 @@ export function WarpProvider({ children }: { children: ReactNode }) {
     const h = window.innerHeight
     const cx = w / 2
     const cy = h / 2
-    const maxDim = Math.max(w, h)
-    // Scale down streaks on narrow screens so they don't fill everything
-    const mobileScale = Math.min(w / 1000, 1) // 1.0 on desktop, ~0.39 on iPhone
+    const maxRadius = Math.sqrt(cx * cx + cy * cy)
     startTimeRef.current = performance.now()
 
     const animate = (now: number) => {
       const elapsed = now - startTimeRef.current
       const progress = Math.min(elapsed / ANIMATION_DURATION, 1)
 
-      // Phase-based acceleration curve
-      const chargeP = phaseProgress(progress, 0, PHASE.CHARGE_END)
-      const engageP = phaseProgress(progress, PHASE.CHARGE_END, PHASE.ENGAGE_END)
-      const cruiseP = phaseProgress(progress, PHASE.ENGAGE_END, PHASE.CRUISE_END)
-      const burstP = phaseProgress(progress, PHASE.BURST_START, 1)
+      const pullP = phaseProgress(progress, 0, PHASE.PULL_END)
+      const collapseP = phaseProgress(progress, PHASE.PULL_END, PHASE.COLLAPSE_END)
+      const blackoutP = phaseProgress(progress, PHASE.COLLAPSE_END, PHASE.BLACKOUT_END)
 
-      // Overall speed multiplier
-      const speedMult =
-        chargeP < 1 ? easeInCubic(chargeP) * 0.05 :
-        engageP < 1 ? 0.05 + easeInQuart(engageP) * 0.95 :
-        1.0
+      // Dark background
+      ctx.fillStyle = '#0a0a1a'
+      ctx.fillRect(0, 0, w, h)
 
-      // Screen shake during engage phase
-      const shakeAmount = engageP > 0 && engageP < 1 ? Math.sin(elapsed * 0.05) * 3 * engageP * (1 - engageP) : 0
-      const shakeX = shakeAmount * Math.cos(elapsed * 0.03)
-      const shakeY = shakeAmount * Math.sin(elapsed * 0.04)
-
-      ctx.save()
-      ctx.translate(shakeX, shakeY)
-
-      // Black background with slight deep blue tint during cruise
-      const bgBlue = cruiseP > 0 ? Math.floor(10 * easeOutCubic(cruiseP)) : 0
-      ctx.fillStyle = `rgb(0, 0, ${bgBlue})`
-      ctx.fillRect(-10, -10, w + 20, h + 20)
-
-      // --- Draw tunnel rings during cruise ---
-      if (cruiseP > 0) {
-        const ringAlpha = 0.04 * easeOutCubic(cruiseP)
-        const ringCount = 8
+      // --- Radial distortion rings (chromatic aberration feel) ---
+      if (pullP > 0.1) {
+        const ringIntensity = pullP < 0.8
+          ? easeInQuad((pullP - 0.1) / 0.7)
+          : 1.0 - easeInCubic(collapseP)
+        const ringCount = 6
         for (let r = 0; r < ringCount; r++) {
-          const ringPhase = ((elapsed * 0.001 + r * 0.12) % 1)
-          const ringRadius = ringPhase * maxDim * 0.8
-          const ringFade = (1 - ringPhase) * ringAlpha
+          const baseRadius = maxRadius * (0.3 + r * 0.12) * (1 - easeInCubic(pullP) * 0.6 - collapseP * 0.35)
+          if (baseRadius < 2) continue
+          const alpha = ringIntensity * 0.12 * (1 - r / ringCount)
+
+          // Red channel offset (outward)
           ctx.beginPath()
-          ctx.arc(cx, cy, ringRadius, 0, Math.PI * 2)
-          // Alternating cyan and blue rings
-          const ringHue = r % 2 === 0 ? 190 : 220
-          ctx.strokeStyle = `hsla(${ringHue}, 80%, 60%, ${ringFade})`
+          ctx.arc(cx, cy, baseRadius + 3, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(255, 80, 80, ${alpha * 0.7})`
           ctx.lineWidth = 1.5
+          ctx.stroke()
+
+          // Blue/purple channel (inward)
+          ctx.beginPath()
+          ctx.arc(cx, cy, Math.max(baseRadius - 3, 1), 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(124, 58, 237, ${alpha})`
+          ctx.lineWidth = 1.5
+          ctx.stroke()
+
+          // Core ring
+          ctx.beginPath()
+          ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(59, 130, 246, ${alpha * 0.5})`
+          ctx.lineWidth = 1
           ctx.stroke()
         }
       }
 
-      // --- Draw stars ---
-      for (const star of stars) {
-        if (elapsed < star.delay) continue
+      // --- Edge vignette with chromatic aberration ---
+      const vignetteStrength = 0.3 + easeInQuad(pullP) * 0.5 + collapseP * 0.2
+      // Purple-tinted vignette
+      const vGrad = ctx.createRadialGradient(cx, cy, maxRadius * 0.15, cx, cy, maxRadius)
+      vGrad.addColorStop(0, 'rgba(0, 0, 0, 0)')
+      vGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
+      vGrad.addColorStop(0.75, `rgba(40, 10, 80, ${vignetteStrength * 0.3})`)
+      vGrad.addColorStop(1, `rgba(0, 0, 0, ${vignetteStrength})`)
+      ctx.fillStyle = vGrad
+      ctx.fillRect(0, 0, w, h)
 
-        const starElapsed = elapsed - star.delay
-        const starMaxDur = ANIMATION_DURATION - star.delay
-        const starProgress = Math.min(starElapsed / starMaxDur, 1)
+      // --- Particles accelerating toward center ---
+      for (const particle of particles) {
+        // Current radius: starts at initial position, moves toward 0
+        const pullEase = easeInCubic(pullP)
+        const collapseEase = easeInQuart(collapseP)
+        const radiusFraction = particle.radius * (1 - pullEase * 0.85) * (1 - collapseEase)
+        const currentRadius = radiusFraction * maxRadius
 
-        const starSpeed = speedMult * star.speed
+        if (currentRadius < 1 && collapseP > 0) continue // already at center
 
-        const startX = (star.x / 100) * w
-        const startY = (star.y / 100) * h
+        const px = cx + Math.cos(particle.angle) * currentRadius
+        const py = cy + Math.sin(particle.angle) * currentRadius
 
-        const dx = startX - cx
-        const dy = startY - cy
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        const normX = dist > 0 ? dx / dist : 0
-        const normY = dist > 0 ? dy / dist : 0
+        // Trail: line from current position toward where particle was
+        const trailRadius = currentRadius + particle.trail * 30 * (pullEase + collapseEase * 2)
+        const trailX = cx + Math.cos(particle.angle) * Math.min(trailRadius, maxRadius)
+        const trailY = cy + Math.sin(particle.angle) * Math.min(trailRadius, maxRadius)
 
-        const stretch = starSpeed * maxDim * 1.5 * (0.4 + mobileScale * 0.6)
+        // Alpha: particles get brighter as they accelerate, then fade at collapse
+        const moveAlpha = Math.min(pullP * 2, 1)
+        const fadeAlpha = 1 - collapseP * 0.8
+        const alpha = moveAlpha * fadeAlpha * (0.4 + particle.speed * 0.4)
 
-        const tailMult = speedMult > 0.5 ? 0.6 + speedMult * 0.4 : speedMult * 1.2
-        const tailLength = Math.min(stretch * tailMult, 500 * mobileScale)
+        // Size increases slightly as particles compress
+        const size = particle.size * (1 + pullEase * 0.5)
 
-        const endX = startX + normX * stretch
-        const endY = startY + normY * stretch
-        const tailX = endX - normX * tailLength
-        const tailY = endY - normY * tailLength
-
-        // Brightness: dim during charge, bright during engage, dim in burst
-        const fadeIn = Math.min(starElapsed / 200, 1)
-        const fadeOut = 1 - burstP * 0.8
-        const layerBrightness = 0.5 + star.layer * 0.25
-        const alpha = fadeIn * fadeOut * layerBrightness * (0.3 + speedMult * 0.7)
-        const width = star.size * (1 + speedMult * 3) * (0.6 + mobileScale * 0.4)
-
-        // Color: more saturated, shift toward white at high speed
-        const saturation = Math.max(20, 100 - speedMult * 50)
-        const lightness = 65 + speedMult * 25
-        const headColor = `hsla(${star.hue}, ${saturation}%, ${lightness}%, ${alpha})`
-        const midColor = `hsla(${star.hue}, ${Math.min(saturation + 20, 100)}%, ${lightness - 10}%, ${alpha * 0.5})`
-
-        if (speedMult < 0.02) {
-          // Charge phase: twinkling dots
-          const twinkle = 0.5 + 0.5 * Math.sin(starElapsed * 0.01 + star.id)
+        // Draw trail
+        if (pullP > 0.15) {
+          const trailGrad = ctx.createLinearGradient(trailX, trailY, px, py)
+          trailGrad.addColorStop(0, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, 0)`)
+          trailGrad.addColorStop(1, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${alpha * 0.6})`)
           ctx.beginPath()
-          ctx.arc(startX, startY, star.size * (0.5 + twinkle * 0.5), 0, Math.PI * 2)
-          ctx.fillStyle = `hsla(${star.hue}, 80%, 80%, ${alpha * twinkle})`
-          ctx.fill()
-        } else {
-          // Streak
-          const gradient = ctx.createLinearGradient(tailX, tailY, endX, endY)
-          gradient.addColorStop(0, 'rgba(0, 0, 0, 0)')
-          gradient.addColorStop(0.2, midColor)
-          gradient.addColorStop(1, headColor)
-
-          ctx.beginPath()
-          ctx.moveTo(tailX, tailY)
-          ctx.lineTo(endX, endY)
-          ctx.strokeStyle = gradient
-          ctx.lineWidth = width
+          ctx.moveTo(trailX, trailY)
+          ctx.lineTo(px, py)
+          ctx.strokeStyle = trailGrad
+          ctx.lineWidth = size * 0.6
           ctx.lineCap = 'round'
           ctx.stroke()
         }
+
+        // Draw particle head
+        ctx.beginPath()
+        ctx.arc(px, py, size, 0, Math.PI * 2)
+        ctx.fillStyle = `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${alpha})`
+        ctx.fill()
       }
 
-      // --- Central glow: engine core (cyan/blue) ---
-      const glowIntensity = speedMult
-      const glowSize = (30 + glowIntensity * 350 + (cruiseP > 0 ? Math.sin(elapsed * 0.005) * 30 : 0)) * (0.5 + mobileScale * 0.5)
-      const glowGradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize)
-      glowGradient.addColorStop(0, `rgba(0, 229, 255, ${0.4 * glowIntensity})`)
-      glowGradient.addColorStop(0.3, `rgba(51, 136, 255, ${0.2 * glowIntensity})`)
-      glowGradient.addColorStop(0.6, `rgba(80, 120, 255, ${0.08 * glowIntensity})`)
-      glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
-      ctx.fillStyle = glowGradient
-      ctx.fillRect(-10, -10, w + 20, h + 20)
+      // --- Central glow: grows as particles converge ---
+      const glowIntensity = easeInQuad(pullP) * 0.6 + collapseP * 0.4
+      const glowSize = 20 + glowIntensity * 180
+      const coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize)
+      coreGlow.addColorStop(0, `rgba(124, 58, 237, ${glowIntensity * 0.8})`)   // purple core
+      coreGlow.addColorStop(0.3, `rgba(59, 130, 246, ${glowIntensity * 0.5})`) // blue mid
+      coreGlow.addColorStop(0.6, `rgba(99, 102, 241, ${glowIntensity * 0.2})`) // indigo
+      coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+      ctx.fillStyle = coreGlow
+      ctx.fillRect(0, 0, w, h)
 
-      // --- Vignette: darkened edges during cruise ---
-      if (cruiseP > 0) {
-        const vignetteAlpha = 0.6 * easeOutCubic(cruiseP)
-        const vGrad = ctx.createRadialGradient(cx, cy, maxDim * 0.2, cx, cy, maxDim * 0.7)
-        vGrad.addColorStop(0, 'rgba(0, 0, 0, 0)')
-        vGrad.addColorStop(1, `rgba(0, 0, 0, ${vignetteAlpha})`)
-        ctx.fillStyle = vGrad
-        ctx.fillRect(-10, -10, w + 20, h + 20)
+      // --- Collapse: bright flash at center point ---
+      if (collapseP > 0.3) {
+        const flashP = (collapseP - 0.3) / 0.7
+        const flashEase = easeOutCubic(flashP)
+        const flashSize = 5 + flashEase * 60
+        const flashAlpha = flashEase * 0.9
+
+        const flashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, flashSize)
+        flashGrad.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`)
+        flashGrad.addColorStop(0.3, `rgba(139, 92, 246, ${flashAlpha * 0.7})`)
+        flashGrad.addColorStop(0.7, `rgba(59, 130, 246, ${flashAlpha * 0.3})`)
+        flashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+        ctx.fillStyle = flashGrad
+        ctx.fillRect(0, 0, w, h)
       }
 
-      // --- Final burst: blue/cyan radial light from center → fade to black ---
-      if (burstP > 0) {
-        // Bright radial glow from center
-        const burstEase = easeOutCubic(burstP)
-        const burstRadius = burstEase * maxDim * 0.6
-        const burstAlpha = burstP < 0.4 ? easeInCubic(burstP / 0.4) * 0.7 : 0.7 * (1 - easeOutCubic((burstP - 0.4) / 0.6))
-
-        const burstGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, burstRadius + 100)
-        burstGrad.addColorStop(0, `rgba(0, 229, 255, ${burstAlpha})`)
-        burstGrad.addColorStop(0.3, `rgba(51, 136, 255, ${burstAlpha * 0.6})`)
-        burstGrad.addColorStop(0.6, `rgba(30, 60, 180, ${burstAlpha * 0.3})`)
-        burstGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
-        ctx.fillStyle = burstGrad
-        ctx.fillRect(-10, -10, w + 20, h + 20)
-
-        // Black fade-in on top (last 50% of burst)
-        if (burstP > 0.5) {
-          const blackFade = easeInCubic((burstP - 0.5) / 0.5)
-          ctx.fillStyle = `rgba(0, 0, 0, ${blackFade})`
-          ctx.fillRect(-10, -10, w + 20, h + 20)
-        }
+      // --- Blackout: fade to black ---
+      if (blackoutP > 0) {
+        const blackAlpha = easeInQuad(blackoutP)
+        ctx.fillStyle = `rgba(0, 0, 0, ${blackAlpha})`
+        ctx.fillRect(0, 0, w, h)
       }
-
-      ctx.restore()
 
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate)
@@ -281,7 +264,7 @@ export function WarpProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelAnimationFrame(animationRef.current)
     }
-  }, [isWarping, stars])
+  }, [isWarping, particles])
 
   return (
     <WarpContext.Provider value={{ startWarp }}>
@@ -293,37 +276,16 @@ export function WarpProvider({ children }: { children: ReactNode }) {
             className="fixed inset-0 z-[9999]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.15 }}
           >
-            {/* Black backdrop */}
-            <motion.div
-              className="absolute inset-0 bg-black"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-            />
+            {/* Dark backdrop */}
+            <div className="absolute inset-0 bg-[#0a0a1a]" />
 
-            {/* Star field canvas */}
+            {/* Shard pull canvas */}
             <canvas
               ref={canvasRef}
               className="absolute inset-0"
             />
-
-            {/* "ENTERING ETERNITY" text — appears longer */}
-            <motion.div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0, 0, 0.9, 0.9, 0] }}
-              transition={{
-                duration: ANIMATION_DURATION / 1000,
-                times: [0, 0.35, 0.42, 0.52, 0.72, 0.82],
-              }}
-            >
-              <span className="text-2xl md:text-4xl font-bold tracking-[0.3em] text-white/90 uppercase"
-                style={{ textShadow: '0 0 40px rgba(0,229,255,0.8), 0 0 80px rgba(51,136,255,0.5), 0 0 120px rgba(0,229,255,0.3)' }}>
-                Entering Eternity
-              </span>
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
