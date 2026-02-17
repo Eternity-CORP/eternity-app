@@ -3,11 +3,21 @@ import * as THREE from 'three'
 /* ------------------------------------------------------------------ */
 /*  FacetedDropGeometry                                                */
 /*  A teardrop / faceted-drop shape:                                   */
-/*    - Wide, rounded top with a slight concave dip (infinity ref)     */
+/*    - Wide, rounded top with a pronounced concave dip (infinity ref) */
 /*    - Tapers to a sharp point at the bottom                          */
-/*    - Low radial segments give a gem-cut / crystal facet look         */
+/*    - Higher segment count for smooth crystal facets                  */
+/*    - Subtle asymmetric variation for organic feel                    */
 /*    - Non-indexed geometry with per-face normals for flat shading     */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Deterministic pseudo-random offset for a given radial column.
+ * Returns a small value in [-0.03, +0.03] to break perfect symmetry
+ * without introducing actual randomness (stays stable across frames).
+ */
+function asymmetricOffset(col: number): number {
+  return Math.sin(col * 7.13) * 0.03
+}
 
 /**
  * Evaluate the teardrop profile radius at a given height parameter t.
@@ -17,21 +27,25 @@ import * as THREE from 'three'
  *
  * The curve combines a sine-based teardrop envelope with a concave
  * indent near the top to reference the infinity symbol.
+ * The bottom tip uses a steeper power curve for a sharper point.
  */
-function profileRadius(t: number, maxRadius: number): number {
+function profileRadius(t: number, maxRadius: number, col: number): number {
   // Base teardrop: sine envelope that peaks around t=0.65
-  // and tapers to zero at t=0 (bottom tip) and t=1 (top)
-  const base = Math.sin(Math.PI * Math.pow(t, 0.55))
+  // Steeper power curve (0.45) for sharper bottom tip
+  const base = Math.sin(Math.PI * Math.pow(t, 0.45))
 
   // Concave dip near the top (t > 0.85)
-  // This pulls the surface inward creating the infinity-loop reference
+  // More pronounced: deeper and slightly wider for dramatic infinity-loop reference
   const dipCenter = 0.93
-  const dipWidth = 0.07
-  const dipDepth = 0.35
+  const dipWidth = 0.08
+  const dipDepth = 0.45
   const dipDist = (t - dipCenter) / dipWidth
   const dip = dipDepth * Math.exp(-dipDist * dipDist * 2)
 
-  return Math.max(0, (base - dip)) * maxRadius
+  // Apply subtle asymmetric variation per radial column
+  const variation = 1.0 + asymmetricOffset(col)
+
+  return Math.max(0, (base - dip)) * maxRadius * variation
 }
 
 /**
@@ -59,9 +73,9 @@ export interface FacetedDropOptions {
   height?: number
   /** Maximum radius at the widest point. Default: 0.6 */
   maxRadius?: number
-  /** Number of radial segments (facet count around Y). Default: 10 */
+  /** Number of radial segments (facet count around Y). Default: 24 */
   radialSegments?: number
-  /** Number of height rings (profile samples). Default: 16 */
+  /** Number of height rings (profile samples). Default: 32 */
   heightSegments?: number
 }
 
@@ -72,14 +86,14 @@ export interface FacetedDropOptions {
  * vertices with a single face normal, producing crisp flat-shaded facets
  * that look like a cut gemstone.
  *
- * Approximate triangle count with defaults: ~320 triangles.
+ * Approximate triangle count with defaults (24 x 32): ~1536 triangles.
  */
 export function createFacetedDropGeometry(opts: FacetedDropOptions = {}): THREE.BufferGeometry {
   const {
     height = 2.5,
     maxRadius = 0.6,
-    radialSegments = 10,
-    heightSegments = 16,
+    radialSegments = 24,
+    heightSegments = 32,
   } = opts
 
   // ------------------------------------------------------------------
@@ -94,10 +108,10 @@ export function createFacetedDropGeometry(opts: FacetedDropOptions = {}): THREE.
   for (let row = 0; row <= heightSegments; row++) {
     const t = row / heightSegments
     const y = profileY(t, height)
-    const r = profileRadius(t, maxRadius)
 
     const ring: THREE.Vector3[] = []
     for (let col = 0; col < radialSegments; col++) {
+      const r = profileRadius(t, maxRadius, col)
       const theta = (col / radialSegments) * Math.PI * 2
       const x = Math.cos(theta) * r
       const z = Math.sin(theta) * r

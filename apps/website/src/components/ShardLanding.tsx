@@ -3,15 +3,17 @@
 import { Suspense, useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { useWarp } from '@/components/animations/WarpTransition'
 import { useTheme } from '@/context/ThemeContext'
 import { ShardObject } from '@/components/3d/ShardObject'
+import { SectionVisual } from '@/components/sections/SectionVisuals'
 
 /* ------------------------------------------------------------------ */
 /*  Scroll progress store (shared between DOM and R3F)                  */
@@ -249,16 +251,27 @@ function VoidParticles({ count = 80 }: { count?: number }) {
 function Scene() {
   return (
     <>
-      <Environment preset="night" />
-      <ambientLight intensity={0.2} />
-      <directionalLight position={[5, 8, 5]} intensity={0.6} color="#ffffff" />
-      <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#6366f1" />
-      <pointLight position={[0, 3, 2]} intensity={0.5} color="#7c3aed" distance={10} />
-      <pointLight position={[0, -2, -2]} intensity={0.3} color="#3b82f6" distance={8} />
+      <Environment preset="studio" />
+      <ambientLight intensity={0.15} />
+      <directionalLight position={[5, 8, 5]} intensity={0.8} color="#ffffff" />
+      <directionalLight position={[-5, -3, -5]} intensity={0.4} color="#6366f1" />
+      <pointLight position={[0, 3, 2]} intensity={0.6} color="#7c3aed" distance={10} />
+      <pointLight position={[0, -2, -2]} intensity={0.4} color="#3b82f6" distance={8} />
+      <spotLight position={[3, 5, 3]} intensity={0.3} color="#06b6d4" angle={0.3} penumbra={0.5} />
 
       <CameraController />
       <ShardObject />
       <VoidParticles count={80} />
+
+      <EffectComposer>
+        <Bloom
+          intensity={0.7}
+          luminanceThreshold={0.2}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+        />
+        <Vignette eskil={false} offset={0.3} darkness={0.6} />
+      </EffectComposer>
     </>
   )
 }
@@ -384,91 +397,100 @@ function SectionOverlay({ section, isActive, index }: { section: Section; isActi
   const { startWarp } = useWarp()
   const isHero = index === 0
   const isCTA = index === sections.length - 1
-
-  // Position the text content based on section
-  const alignment = index % 2 === 0 ? 'items-start text-left' : 'items-end text-right'
+  const textOnLeft = index % 2 === 0
+  const hasVisual = !isHero && !isCTA
 
   return (
     <motion.div
-      className={`absolute inset-0 flex ${alignment} justify-center flex-col px-6 sm:px-12 lg:px-20 pointer-events-none`}
+      className="absolute inset-0 flex items-center pointer-events-none px-6 sm:px-12 lg:px-20"
       initial={false}
       animate={{ opacity: isActive ? 1 : 0 }}
       transition={{ duration: 0.6 }}
       style={{ zIndex: isActive ? 10 : 1 }}
     >
-      <div className={`max-w-lg ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}>
-        {/* Tag */}
-        <motion.p
-          className="text-xs font-medium tracking-widest uppercase mb-3 text-white/50"
-          animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 15 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          {section.tag}
-        </motion.p>
+      <div className={`w-full flex items-center gap-8 lg:gap-16 ${textOnLeft ? 'flex-row' : 'flex-row-reverse'} ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        {/* Text content */}
+        <div className={`max-w-lg flex-shrink-0 ${textOnLeft ? 'text-left' : 'text-right'}`}>
+          {/* Tag */}
+          <motion.p
+            className="text-xs font-medium tracking-widest uppercase mb-3 text-white/50"
+            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 15 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            {section.tag}
+          </motion.p>
 
-        {/* Title */}
-        <motion.h2
-          className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 lg:mb-4 whitespace-pre-line leading-tight text-white"
-          animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
-          transition={{ duration: 0.5, delay: 0.15 }}
-        >
-          {section.title}
-        </motion.h2>
+          {/* Title */}
+          <motion.h2
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 lg:mb-4 whitespace-pre-line leading-tight text-white"
+            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+          >
+            {section.title}
+          </motion.h2>
 
-        {/* Description */}
-        <motion.p
-          className="text-sm sm:text-base lg:text-lg mb-4 lg:mb-6 text-white/60"
-          animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          {section.description}
-        </motion.p>
+          {/* Description */}
+          <motion.p
+            className="text-sm sm:text-base lg:text-lg mb-4 lg:mb-6 text-white/60"
+            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            {section.description}
+          </motion.p>
 
-        {/* Bullets */}
-        {section.bullets && (
-          <div className="space-y-2 lg:space-y-3 mb-4 lg:mb-6">
-            {section.bullets.map((bullet, i) => (
-              <motion.div
-                key={i}
-                className="flex items-start gap-3"
-                animate={{ opacity: isActive ? 1 : 0, x: isActive ? 0 : -10 }}
-                transition={{ duration: 0.4, delay: 0.25 + i * 0.08 }}
-              >
-                <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 bg-violet-400" />
-                <div>
-                  <span className="text-xs lg:text-sm font-semibold text-white">
-                    {bullet.label}
-                  </span>
-                  <span className="text-xs lg:text-sm ml-1 hidden sm:inline text-white/50">
-                    — {bullet.text}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
+          {/* Bullets */}
+          {section.bullets && (
+            <div className="space-y-2 lg:space-y-3 mb-4 lg:mb-6">
+              {section.bullets.map((bullet, i) => (
+                <motion.div
+                  key={i}
+                  className={`flex items-start gap-3 ${textOnLeft ? '' : 'flex-row-reverse text-right'}`}
+                  animate={{ opacity: isActive ? 1 : 0, x: isActive ? 0 : (textOnLeft ? -10 : 10) }}
+                  transition={{ duration: 0.4, delay: 0.25 + i * 0.08 }}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 bg-violet-400" />
+                  <div>
+                    <span className="text-xs lg:text-sm font-semibold text-white">
+                      {bullet.label}
+                    </span>
+                    <span className="text-xs lg:text-sm ml-1 hidden sm:inline text-white/50">
+                      — {bullet.text}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Hero CTA */}
+          {isHero && (
+            <motion.div
+              animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 10 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+            >
+              <Button variant="primary" size="lg" onClick={startWarp}>
+                Launch App
+              </Button>
+            </motion.div>
+          )}
+
+          {/* CTA Waitlist Form */}
+          {isCTA && (
+            <motion.div
+              className="max-w-sm"
+              animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 10 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <WaitlistForm />
+            </motion.div>
+          )}
+        </div>
+
+        {/* Visual content — shown on opposite side from text */}
+        {hasVisual && (
+          <div className="flex-1 hidden lg:flex justify-center items-center">
+            <SectionVisual sectionId={section.id} isActive={isActive} />
           </div>
-        )}
-
-        {/* Hero CTA */}
-        {isHero && (
-          <motion.div
-            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 10 }}
-            transition={{ duration: 0.5, delay: 0.35 }}
-          >
-            <Button variant="primary" size="lg" onClick={startWarp}>
-              Launch App
-            </Button>
-          </motion.div>
-        )}
-
-        {/* CTA Waitlist Form */}
-        {isCTA && (
-          <motion.div
-            className="max-w-sm"
-            animate={{ opacity: isActive ? 1 : 0, y: isActive ? 0 : 10 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <WaitlistForm />
-          </motion.div>
         )}
       </div>
     </motion.div>
