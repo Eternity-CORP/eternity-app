@@ -3,7 +3,7 @@
 import { Suspense, useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment } from '@react-three/drei'
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
+import { EffectComposer, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -272,25 +272,16 @@ function Scene() {
   return (
     <>
       <Environment preset="studio" />
-      <ambientLight intensity={0.15} />
-      <directionalLight position={[5, 8, 5]} intensity={0.8} color="#ffffff" />
-      <directionalLight position={[-5, -3, -5]} intensity={0.4} color="#6366f1" />
-      <pointLight position={[0, 3, 2]} intensity={0.6} color="#7c3aed" distance={10} />
-      <pointLight position={[0, -2, -2]} intensity={0.4} color="#3b82f6" distance={8} />
-      <spotLight position={[3, 5, 3]} intensity={0.3} color="#06b6d4" angle={0.3} penumbra={0.5} />
+      <ambientLight intensity={0.2} />
+      <directionalLight position={[5, 8, 5]} intensity={0.6} color="#ffffff" />
+      <directionalLight position={[-5, -3, -5]} intensity={0.2} color="#ffffff" />
 
       <CameraController />
       <ShardObject />
       <VoidParticles count={40} />
 
       <EffectComposer>
-        <Bloom
-          intensity={0.7}
-          luminanceThreshold={0.2}
-          luminanceSmoothing={0.9}
-          mipmapBlur
-        />
-        <Vignette eskil={false} offset={0.3} darkness={0.6} />
+        <Vignette eskil={false} offset={0.3} darkness={0.5} />
       </EffectComposer>
     </>
   )

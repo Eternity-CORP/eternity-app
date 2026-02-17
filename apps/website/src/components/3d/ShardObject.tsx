@@ -150,8 +150,6 @@ export function ShardObject({ scrollProgress = 0 }: ShardObjectProps) {
       iridescence: 0.3,
       iridescenceIOR: 1.3,
       iridescenceThicknessRange: [100, 400],
-      emissive: new THREE.Color('#0a0515'),
-      emissiveIntensity: 0.1,
       flatShading: true,
       side: THREE.FrontSide,
     })
@@ -190,10 +188,6 @@ export function ShardObject({ scrollProgress = 0 }: ShardObjectProps) {
       0.04,
     )
 
-    // Subtle emissive pulse -- barely noticeable, just enough for life
-    const pulse = Math.sin(t * 0.5) * 0.5 + 0.5
-    material.emissiveIntensity = 0.05 + pulse * 0.08
-
     // Edge opacity: very gentle breathing
     if (edgeMeshRef.current) {
       const edgeMat = edgeMeshRef.current.material as THREE.LineBasicMaterial
@@ -206,18 +200,12 @@ export function ShardObject({ scrollProgress = 0 }: ShardObjectProps) {
       {/* Main shard mesh -- premium glass crystal */}
       <mesh ref={meshRef} geometry={geometry} material={material} />
 
-      {/* Inner glow -- subtle purple/blue core */}
-      <InnerGlow geometry={geometry} />
-
       {/* Edge wireframe -- very subtle facet definition */}
       <lineSegments
         ref={edgeMeshRef}
         geometry={edgesGeometry}
         material={edgeMaterial}
       />
-
-      {/* Ambient particles -- refined, minimal */}
-      <CrystalParticles count={45} />
     </group>
   )
 }
