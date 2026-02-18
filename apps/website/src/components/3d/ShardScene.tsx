@@ -2,114 +2,16 @@
 'use client'
 
 import { Suspense, useRef, useState, useEffect } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Float, Environment } from '@react-three/drei'
-import { ShardSimple } from './Shard'
-import * as THREE from 'three'
-import { useTheme } from '@/context/ThemeContext'
-
-function Particles({ count = 100, isDark = false }) {
-  const ref = useRef<THREE.Points>(null)
-
-  const positions = new Float32Array(count * 3)
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 25
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 25
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 15
-  }
-
-  useFrame((state) => {
-    if (!ref.current) return
-    ref.current.rotation.y = state.clock.elapsedTime * 0.01
-  })
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.015}
-        color={isDark ? '#FFFFFF' : '#000000'}
-        transparent
-        opacity={isDark ? 0.5 : 0.3}
-        sizeAttenuation
-      />
-    </points>
-  )
-}
-
-function MouseParallax({ children }: { children: React.ReactNode }) {
-  const groupRef = useRef<THREE.Group>(null)
-  const { viewport } = useThree()
-
-  useFrame((state) => {
-    if (!groupRef.current) return
-    const x = (state.mouse.x * viewport.width) / 60
-    const y = (state.mouse.y * viewport.height) / 60
-    groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, x * 0.08, 0.03)
-    groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -y * 0.08, 0.03)
-  })
-
-  return <group ref={groupRef}>{children}</group>
-}
-
-function ShardsGroup({ isDark = false }) {
-  // Light theme: black and blue/cyan crystals
-  // Dark theme: white, cyan, and purple crystals
-  const shards = isDark ? [
-    { position: [-3.5, 1.5, -2] as [number, number, number], scale: 0.7, color: '#00E5FF', speed: 0.9 },
-    { position: [3.5, -0.5, -1.5] as [number, number, number], scale: 0.9, color: '#FFFFFF', speed: 0.75 },
-    { position: [-2.5, -1.5, 1] as [number, number, number], scale: 0.55, color: '#8B5CF6', speed: 1.1 },
-    { position: [2.5, 2, 0.5] as [number, number, number], scale: 0.8, color: '#FFFFFF', speed: 0.7 },
-    { position: [-1.5, 2.5, -1.5] as [number, number, number], scale: 0.45, color: '#3388FF', speed: 0.85 },
-    { position: [1.5, -2, 1.5] as [number, number, number], scale: 0.6, color: '#FFFFFF', speed: 1 },
-    { position: [4, 0.5, -0.5] as [number, number, number], scale: 0.5, color: '#00E5FF', speed: 0.95 },
-    { position: [-4, -0.5, 0] as [number, number, number], scale: 0.65, color: '#8B5CF6', speed: 0.8 },
-  ] : [
-    { position: [-3.5, 1.5, -2] as [number, number, number], scale: 0.7, color: '#0066FF', speed: 0.9 },
-    { position: [3.5, -0.5, -1.5] as [number, number, number], scale: 0.9, color: '#000000', speed: 0.75 },
-    { position: [-2.5, -1.5, 1] as [number, number, number], scale: 0.55, color: '#00D4FF', speed: 1.1 },
-    { position: [2.5, 2, 0.5] as [number, number, number], scale: 0.8, color: '#000000', speed: 0.7 },
-    { position: [-1.5, 2.5, -1.5] as [number, number, number], scale: 0.45, color: '#0066FF', speed: 0.85 },
-    { position: [1.5, -2, 1.5] as [number, number, number], scale: 0.6, color: '#000000', speed: 1 },
-    { position: [4, 0.5, -0.5] as [number, number, number], scale: 0.5, color: '#00D4FF', speed: 0.95 },
-    { position: [-4, -0.5, 0] as [number, number, number], scale: 0.65, color: '#000000', speed: 0.8 },
-  ]
-
-  return (
-    <MouseParallax>
-      {shards.map((shard, i) => (
-        <Float
-          key={i}
-          speed={1.5}
-          rotationIntensity={0.3}
-          floatIntensity={0.4}
-        >
-          <ShardSimple
-            position={shard.position}
-            scale={shard.scale}
-            color={shard.color}
-            speed={shard.speed}
-            floatIntensity={0.2}
-          />
-        </Float>
-      ))}
-    </MouseParallax>
-  )
-}
+import { Canvas } from '@react-three/fiber'
+import { Environment } from '@react-three/drei'
+import { CrystalGem } from './CrystalGem'
+import { DotFloor } from './DotFloor'
 
 export function ShardScene({ className = '' }: { className?: string }) {
   const [isVisible, setIsVisible] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const { isDark } = useTheme()
 
-  // Lazy load 3D scene - only render when in viewport
+  // Lazy load 3D scene — only render when in viewport
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -139,17 +41,21 @@ export function ShardScene({ className = '' }: { className?: string }) {
         >
           <Suspense fallback={null}>
             {/* Environment for reflections */}
-            <Environment preset={isDark ? 'night' : 'city'} />
+            <Environment preset="night" />
 
-            {/* Lighting for glass/chrome effect */}
-            <ambientLight intensity={isDark ? 0.3 : 0.4} />
-            <directionalLight position={[10, 10, 5]} intensity={isDark ? 0.8 : 1} />
-            <directionalLight position={[-10, -10, -5]} intensity={isDark ? 0.4 : 0.5} />
-            <directionalLight position={[0, -10, 0]} intensity={0.3} />
-            <pointLight position={[0, 5, 0]} intensity={isDark ? 0.4 : 0.5} color={isDark ? '#8B5CF6' : '#FFFFFF'} />
+            {/* Lighting */}
+            <ambientLight intensity={0.3} />
+            <directionalLight
+              position={[5, 8, 4]}
+              intensity={0.9}
+              color="#fff5e6"
+            />
 
-            <ShardsGroup isDark={isDark} />
-            <Particles count={80} isDark={isDark} />
+            {/* Crystal gem centered at origin */}
+            <CrystalGem />
+
+            {/* Cursor-reactive dot floor */}
+            <DotFloor />
           </Suspense>
         </Canvas>
       )}
