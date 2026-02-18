@@ -14,7 +14,7 @@ function PageContent({ children }: PageWrapperProps) {
   return (
     <>
       <LoadingScreen
-        duration={1500}
+        duration={3500}
         onComplete={() => setIsLoaded(true)}
       />
 

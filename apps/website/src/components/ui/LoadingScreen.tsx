@@ -1,23 +1,40 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 
+// Logo variants — only 730x787 viewBox with consistent content size
+const logoVariants = [
+  '/images/logo_blue.svg',
+  '/images/logo_light-green.svg',
+  '/images/logo_breeze.svg',
+  '/images/logo_light-blue.svg',
+  '/images/logo_saladik.svg',
+  '/images/logo_black-green.svg',
+  '/images/logo_blue.svg',
+  '/images/logo_breeze.svg',
+  '/images/logo_light-blue.svg',
+  '/images/logo_light-green.svg',
+  '/images/logo_saladik.svg',
+  '/images/logo_black-green.svg',
+]
+
 interface LoadingScreenProps {
-  duration?: number // in milliseconds
+  duration?: number
   onComplete?: () => void
 }
 
 export function LoadingScreen({
-  duration = 2500,
-  onComplete
+  duration = 3500,
+  onComplete,
 }: LoadingScreenProps) {
-  const [progress, setProgress] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [phase, setPhase] = useState<'cycling' | 'done'>('cycling')
   const [isComplete, setIsComplete] = useState(false)
-  const [isDark, setIsDark] = useState(true) // Default to dark
+  const [isDark, setIsDark] = useState(true)
 
-  // Check theme from localStorage on mount
+  // Detect theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme === 'light') {
@@ -25,73 +42,148 @@ export function LoadingScreen({
     } else if (savedTheme === 'dark') {
       setIsDark(true)
     } else {
-      // Check system preference, default to dark
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setIsDark(prefersDark || true) // Default dark if no preference
+      setIsDark(true)
     }
   }, [])
 
+  // Preload all logo images
   useEffect(() => {
+    logoVariants.forEach((src) => {
+      const img = new window.Image()
+      img.src = src
+    })
+  }, [])
+
+  const finishLoading = useCallback(() => {
+    setIsComplete(true)
+    onComplete?.()
+  }, [onComplete])
+
+  // Phase 1: Rapid cycling (faster and faster)
+  useEffect(() => {
+    if (phase !== 'cycling') return
+
+    // Start fast, get faster: 200ms -> 100ms -> 60ms
+    const cycleTime = duration * 0.7 // 70% of time for cycling
     const startTime = Date.now()
-    const interval = 16 // ~60fps
 
-    const timer = setInterval(() => {
+    const tick = () => {
       const elapsed = Date.now() - startTime
-      const newProgress = Math.min((elapsed / duration) * 100, 100)
+      const progress = elapsed / cycleTime
 
-      setProgress(Math.floor(newProgress))
-
-      if (newProgress >= 100) {
-        clearInterval(timer)
-        // Small delay before hiding
-        setTimeout(() => {
-          setIsComplete(true)
-          onComplete?.()
-        }, 200)
+      if (progress >= 1) {
+        setPhase('done')
+        return
       }
-    }, interval)
 
-    return () => clearInterval(timer)
-  }, [duration, onComplete])
+      // Speed increases over time: starts at 200ms intervals, ends at 60ms
+      const interval = 200 - progress * 140
+      setCurrentIndex((prev) => (prev + 1) % logoVariants.length)
+
+      setTimeout(tick, interval)
+    }
+
+    const timer = setTimeout(tick, 200)
+    return () => clearTimeout(timer)
+  }, [phase, duration])
+
+  // Phase 2: Done — hold final logo then fade out
+  useEffect(() => {
+    if (phase !== 'done') return
+
+    const hideTimer = setTimeout(() => {
+      finishLoading()
+    }, duration * 0.2) // 20% of time for final hold
+
+    return () => clearTimeout(hideTimer)
+  }, [phase, duration, finishLoading])
+
+  const finalLogo = isDark ? '/images/logo_white.svg' : '/images/logo_black.svg'
 
   return (
     <AnimatePresence>
       {!isComplete && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-end justify-end"
+          className="fixed inset-0 z-[100] flex items-center justify-center"
           style={{ backgroundColor: isDark ? '#0a0a0a' : '#ffffff' }}
           initial={{ opacity: 1 }}
           exit={{
             opacity: 0,
-            transition: { duration: 0.5, ease: 'easeInOut' }
+            transition: { duration: 0.6, ease: 'easeInOut' },
           }}
         >
-          {/* Logo */}
-          <div className="absolute top-8 left-8">
-            <Image
-              src={isDark ? '/images/logo_white.svg' : '/images/logo.svg'}
-              alt="Eternity"
-              width={48}
-              height={48}
-              priority
-            />
-          </div>
-
-          {/* Progress counter */}
-          <motion.div
-            className="p-8 md:p-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <span
-              className="font-mono text-6xl md:text-9xl font-light tracking-tighter"
-              style={{ color: isDark ? '#ffffff' : '#000000' }}
+          {/* Cycling phase — rapid logo switching */}
+          {phase === 'cycling' && (
+            <motion.div
+              className="relative"
+              style={{ width: 180, height: 194 }}
             >
-              {progress}
-              <span className="text-4xl md:text-6xl opacity-50">%</span>
-            </span>
-          </motion.div>
+              <AnimatePresence mode="popLayout">
+                <motion.div
+                  key={currentIndex}
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.1 }}
+                  transition={{ duration: 0.08 }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={logoVariants[currentIndex]}
+                    alt=""
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* Done phase — final logo reveal */}
+          {phase === 'done' && (
+            <motion.div
+              className="relative"
+              style={{ width: 180, height: 194 }}
+              initial={{ opacity: 0, scale: 1.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              <Image
+                src={finalLogo}
+                alt="Eternity"
+                fill
+                className="object-contain"
+                priority
+              />
+
+              {/* Subtle glow behind final logo */}
+              <motion.div
+                className="absolute inset-0 -z-10"
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 0.3, scale: 2 }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+                style={{
+                  background: `radial-gradient(circle, ${isDark ? 'rgba(51,136,255,0.3)' : 'rgba(0,102,255,0.15)'}, transparent 70%)`,
+                }}
+              />
+            </motion.div>
+          )}
+
+          {/* "ETERNITY" text appears with final logo */}
+          {phase === 'done' && (
+            <motion.p
+              className="absolute bottom-[30%] text-sm font-medium tracking-[0.3em] uppercase"
+              style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)' }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+            >
+              ETERNITY
+            </motion.p>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

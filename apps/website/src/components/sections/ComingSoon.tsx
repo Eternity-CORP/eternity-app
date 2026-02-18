@@ -1,97 +1,133 @@
 'use client'
 
-import { ScrollReveal, Stagger, StaggerItem } from '@/components/animations/ScrollReveal'
-import { PhoneFrame } from '@/components/ui/PhoneFrame'
+import { motion } from 'framer-motion'
+import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 
-const upcomingFeatures = [
+const comingSoonFeatures = [
   {
-    title: 'Smart Splits',
-    description: 'Split bills with friends, on-chain',
+    id: 'abstraction',
+    title: 'Network Abstraction',
+    description: 'Send USDC anywhere. We find the best route automatically. No more chain confusion.',
+    status: 'Q2 2026',
   },
   {
-    title: 'Token Swap',
-    description: 'Best rates, one tap',
+    id: 'shard',
+    title: 'SHARD Identity',
+    description: 'NFC passport scan from home. Your unique crypto identity in seconds. Privacy-preserving.',
+    status: 'Q2 2026',
   },
   {
-    title: 'Scheduled Payments',
-    description: 'Set it and forget it',
+    id: 'personhood',
+    title: 'Proof of Personhood',
+    description: '1.4B+ passports supported worldwide. One identity, infinite possibilities.',
+    status: 'Q3 2026',
+  },
+  {
+    id: 'fiat',
+    title: 'Fiat Ramp',
+    description: 'Buy and sell crypto directly in the app. No external exchanges needed.',
+    status: 'Q3 2026',
   },
 ]
 
-function SplitsScreen() {
+function FeatureCard({ feature, index }: { feature: typeof comingSoonFeatures[0]; index: number }) {
   return (
-    <div className="flex flex-col h-full px-5 py-8">
-      <p className="text-xs text-white/30 uppercase tracking-widest mb-4 text-center">Smart Splits</p>
+    <motion.div
+      className="group relative"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+    >
+      <div
+        className="relative p-8 rounded-2xl transition-all duration-300 hover:shadow-subtle"
+        style={{
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border-light)'
+        }}
+      >
+        {/* Status badge */}
+        <div className="absolute top-6 right-6">
+          <span className="text-xs font-mono tracking-wider" style={{ color: 'var(--foreground-light)' }}>
+            {feature.status}
+          </span>
+        </div>
 
-      <div className="glass-card p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-white/70">Dinner at Joe&apos;s</span>
-          <span className="text-sm font-semibold text-white">$45.00</span>
+        {/* Number */}
+        <div className="text-sm font-mono mb-6" style={{ color: 'var(--foreground-light)' }}>
+          0{index + 1}
         </div>
-        <div className="h-px bg-white/10 mb-3" />
-        <div className="space-y-2">
-          {['@alice', '@bob', '@you'].map((name) => (
-            <div key={name} className="flex items-center justify-between">
-              <span className="text-xs text-white/50">{name}</span>
-              <span className="text-xs text-white/70">$15.00</span>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="mt-auto">
-        <div className="w-full py-2.5 rounded-xl text-center text-sm font-medium bg-white/10 text-white/70">
-          Send Reminders
-        </div>
+        {/* Content */}
+        <h3 className="text-xl font-semibold mb-3 group-hover:text-gradient-blue transition-all duration-300" style={{ color: 'var(--foreground)' }}>
+          {feature.title}
+        </h3>
+        <p className="text-sm leading-relaxed [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
+          {feature.description}
+        </p>
+
+        {/* Hover indicator */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-blue to-accent-cyan rounded-b-2xl"
+          initial={{ scaleX: 0 }}
+          whileHover={{ scaleX: 1 }}
+          transition={{ duration: 0.3 }}
+          style={{ originX: 0 }}
+        />
       </div>
-    </div>
+    </motion.div>
   )
 }
 
 export function ComingSoon() {
   return (
-    <section id="coming-soon" className="relative min-h-screen flex items-center py-32 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6 relative z-10 w-full">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Phone — left */}
-          <ScrollReveal variant="slide-right">
-            <PhoneFrame>
-              <SplitsScreen />
-            </PhoneFrame>
-          </ScrollReveal>
+    <section
+      id="coming-soon"
+      className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background-secondary)' }}
+    >
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 bg-dots opacity-30" />
 
-          {/* Text — right */}
-          <div>
-            <ScrollReveal variant="slide-left">
-              <p className="text-tag text-white/30 mb-6">COMING SOON</p>
-            </ScrollReveal>
+      <div className="container mx-auto px-6 relative z-10">
+        <FadeIn>
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
+            Roadmap
+          </p>
+        </FadeIn>
 
-            <ScrollReveal variant="slide-left" delay={0.1}>
-              <h2 className="text-heading mb-10">
-                And we&apos;re just
-                <br />
-                getting <span className="text-gradient-blue">started.</span>
-              </h2>
-            </ScrollReveal>
+        <FadeIn delay={0.1}>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Coming Soon
+            </GlitchText>
+          </h2>
+        </FadeIn>
 
-            <Stagger staggerDelay={0.15} className="space-y-6">
-              {upcomingFeatures.map((feature) => (
-                <StaggerItem key={feature.title}>
-                  <div className="group flex items-start gap-4 cursor-default">
-                    <div className="w-1 h-8 rounded-full bg-gradient-to-b from-blue-500 to-cyan-400 flex-shrink-0 mt-1" />
-                    <div>
-                      <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
-                        {feature.title}
-                        <span className="text-white/0 group-hover:text-white/50 transition-colors">&rarr;</span>
-                      </h3>
-                      <p className="text-sm text-white/50">{feature.description}</p>
-                    </div>
-                  </div>
-                </StaggerItem>
-              ))}
-            </Stagger>
-          </div>
+        <FadeIn delay={0.2}>
+          <p className="text-center text-lg md:text-xl max-w-2xl mx-auto mb-16 [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
+            The future we're building
+          </p>
+        </FadeIn>
+
+        {/* Features Grid */}
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {comingSoonFeatures.map((feature, index) => (
+            <FeatureCard key={feature.id} feature={feature} index={index} />
+          ))}
         </div>
+
+        {/* Bottom note */}
+        <FadeIn delay={0.5}>
+          <p className="text-center text-sm mt-16 [text-wrap:balance]" style={{ color: 'var(--foreground-light)' }}>
+            Dates are estimates and may change based on development progress.
+          </p>
+        </FadeIn>
       </div>
     </section>
   )

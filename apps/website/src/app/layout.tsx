@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { ThemeProvider } from '@/context/ThemeContext'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -53,9 +54,11 @@ export default function RootLayout({
   children: ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
-      <body className="antialiased bg-black text-white">
-        {children}
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="antialiased" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

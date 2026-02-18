@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTheme } from '@/context/ThemeContext'
 
 const footerLinks = {
   product: [
@@ -18,32 +19,39 @@ const footerLinks = {
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
+  const { isDark } = useTheme()
 
   return (
-    <footer className="relative py-16" style={{ borderTop: '1px solid var(--glass-border)' }}>
-      <div className="max-w-6xl mx-auto px-6">
+    <footer
+      className="relative py-16 theme-transition"
+      style={{ background: 'var(--background)', borderTop: '1px solid var(--border-light)' }}
+    >
+      <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-3 gap-12 mb-12">
           {/* Brand */}
           <div className="md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Image
-                src="/images/logo_white.svg"
+                src={isDark ? '/images/logo_white.svg' : '/images/logo.svg'}
                 alt="Eternity"
                 width={32}
                 height={32}
                 className="w-8 h-8"
               />
-              <span className="text-xl font-bold text-white">Eternity</span>
+              <span className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Eternity</span>
             </Link>
             <p className="text-sm mb-4 text-gradient-blue font-medium">AI-Native Crypto Wallet</p>
-            <p className="text-xs mb-4 text-white/50">
+            <p className="text-xs mb-4" style={{ color: 'var(--foreground-muted)' }}>
               Intelligence meets simplicity.
               <br />
               Your AI-powered crypto companion.
             </p>
             <a
               href="mailto:eternity.shard.business@gmail.com"
-              className="text-xs text-white/50 hover:text-white transition-colors"
+              className="text-xs transition-colors"
+              style={{ color: 'var(--foreground-muted)' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--foreground-muted)'}
             >
               eternity.shard.business@gmail.com
             </a>
@@ -51,13 +59,16 @@ export function Footer() {
 
           {/* Product links */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">Product</h4>
+            <h4 className="font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Product</h4>
             <ul className="space-y-3">
               {footerLinks.product.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: 'var(--foreground-muted)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--foreground-muted)'}
                   >
                     {link.label}
                   </Link>
@@ -68,13 +79,16 @@ export function Footer() {
 
           {/* Legal links */}
           <div>
-            <h4 className="font-semibold mb-4 text-white">Legal</h4>
+            <h4 className="font-semibold mb-4" style={{ color: 'var(--foreground)' }}>Legal</h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
+                    className="text-sm transition-colors"
+                    style={{ color: 'var(--foreground-muted)' }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+                    onMouseLeave={(e) => e.currentTarget.style.color = 'var(--foreground-muted)'}
                   >
                     {link.label}
                   </Link>
@@ -85,11 +99,15 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderTop: '1px solid var(--glass-border)' }}>
-          <p className="text-sm text-white/50">
-            &copy; {currentYear} Eternity. All rights reserved.
+        <div
+          className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
+          style={{ borderTop: '1px solid var(--border-light)' }}
+        >
+          <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+            © {currentYear} Eternity. All rights reserved.
           </p>
-          <p className="text-sm text-white/50">
+
+          <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
             Powered by AI. Built for humans.
           </p>
         </div>

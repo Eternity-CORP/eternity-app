@@ -1,123 +1,250 @@
 'use client'
 
 import { useRef } from 'react'
-import { motion, useInView } from 'framer-motion'
-import { ScrollReveal } from '@/components/animations/ScrollReveal'
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { FadeIn } from '@/components/animations/FadeIn'
+import { GlitchText } from '@/components/animations/GlitchText'
 
-const phases = [
+const milestones = [
   {
     quarter: 'Q1 2026',
-    title: 'MVP',
-    description: 'Wallet + BLIK + AI Agent',
-    status: 'current' as const,
+    title: 'MVP + AI Agent',
+    status: 'completed',
+    items: [
+      { text: 'Core wallet functionality', done: true },
+      { text: 'BLIK codes system', done: true },
+      { text: '@username registry', done: true },
+      { text: 'Contacts & scheduled payments', done: true },
+      { text: 'AI Financial Agent', done: true },
+      { text: 'Multi-chain balances', done: true },
+    ],
   },
   {
     quarter: 'Q2 2026',
     title: 'Expansion',
-    description: 'Splits, Swap, Scheduled',
-    status: 'future' as const,
+    status: 'next',
+    items: [
+      { text: 'Network abstraction', done: false },
+      { text: 'Cross-chain swaps', done: false },
+      { text: 'Fiat on-ramp', done: false },
+    ],
   },
   {
     quarter: 'Q3 2026',
-    title: 'Business',
-    description: 'Business Wallets + Governance',
-    status: 'future' as const,
+    title: 'Identity',
+    status: 'upcoming',
+    items: [
+      { text: 'SHARD Identity', done: false },
+      { text: 'Proof of Personhood', done: false },
+      { text: 'Privacy-preserving KYC', done: false },
+    ],
   },
   {
     quarter: 'Q4 2026',
     title: 'Scale',
-    description: 'Multi-chain mainnet + Mobile',
-    status: 'future' as const,
+    status: 'future',
+    items: [
+      { text: 'Mobile app launch', done: false },
+      { text: 'Advanced AI insights', done: false },
+      { text: 'Institutional features', done: false },
+    ],
   },
 ]
 
-export function Roadmap() {
-  const timelineRef = useRef<HTMLDivElement>(null)
-  const isInView = useInView(timelineRef, { once: true, amount: 0.3 })
+function TimelineMarker({ status }: { status: string }) {
+  const isActive = status === 'completed' || status === 'next'
 
   return (
-    <section id="roadmap" className="relative py-32 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
-        <ScrollReveal>
-          <p className="text-tag text-white/30 text-center mb-4">ROADMAP</p>
-        </ScrollReveal>
+    <div className="relative w-8 h-8 flex items-center justify-center">
+      <div
+        className="w-3 h-3 rounded-full"
+        style={{ background: isActive ? 'var(--foreground)' : 'var(--border)' }}
+      />
+      {status === 'next' && (
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          style={{ border: '1px solid var(--foreground)' }}
+          animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      )}
+    </div>
+  )
+}
 
-        <ScrollReveal delay={0.1}>
-          <h2 className="text-heading text-center mb-16">
-            The <span className="text-gradient-blue">journey</span> ahead.
+function MilestoneCard({
+  milestone,
+  index,
+  isLeft,
+}: {
+  milestone: typeof milestones[0]
+  index: number
+  isLeft: boolean
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, margin: '-100px' }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      className={`relative ${isLeft ? 'md:pr-16 md:text-right' : 'md:pl-16'}`}
+    >
+      <div
+        className="p-6 rounded-2xl transition-colors"
+        style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
+      >
+        {/* Quarter badge */}
+        <div
+          className="inline-block px-3 py-1 rounded-full text-xs font-mono mb-3"
+          style={{
+            background: milestone.status === 'completed' ? 'var(--foreground)' : milestone.status === 'next' ? 'var(--border)' : 'var(--surface-light)',
+            color: milestone.status === 'completed' ? 'var(--background)' : milestone.status === 'next' ? 'var(--foreground)' : 'var(--foreground-muted)',
+          }}
+        >
+          {milestone.quarter}
+        </div>
+
+        <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--foreground)' }}>{milestone.title}</h3>
+
+        <ul className={`space-y-2 ${isLeft ? 'md:text-right' : ''}`}>
+          {milestone.items.map((item, i) => (
+            <li
+              key={i}
+              className={`flex items-center gap-2 text-sm ${
+                isLeft ? 'md:flex-row-reverse' : ''
+              }`}
+              style={{ color: item.done ? 'var(--foreground)' : 'var(--foreground-muted)' }}
+            >
+              {item.done ? (
+                <svg
+                  className="w-4 h-4 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              ) : (
+                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ border: '1px solid var(--border)' }} />
+              )}
+              {item.text}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </motion.div>
+  )
+}
+
+export function Roadmap() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start end', 'end start'],
+  })
+
+  const lineHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
+
+  return (
+    <section
+      id="roadmap"
+      ref={containerRef}
+      className="relative min-h-screen py-32 overflow-hidden theme-transition"
+      style={{ background: 'var(--background)' }}
+    >
+      <div className="absolute inset-0 bg-grid opacity-30" />
+
+      <div className="container mx-auto px-6 relative z-10">
+        <FadeIn>
+          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
+            Roadmap
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.1}>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
+            <GlitchText
+              delay={0.3}
+              glitchIntensity="medium"
+              style={{ color: 'var(--foreground)' }}
+            >
+              Our Journey
+            </GlitchText>
           </h2>
-        </ScrollReveal>
+        </FadeIn>
 
-        {/* Horizontal Timeline — Desktop */}
-        <div ref={timelineRef} className="hidden md:block relative">
-          {/* Timeline line */}
-          <div className="absolute top-6 left-0 right-0 h-px bg-white/10">
+        <FadeIn delay={0.2}>
+          <p className="text-center text-lg md:text-xl mb-16" style={{ color: 'var(--foreground-muted)' }}>
+            Building the future, step by step
+          </p>
+        </FadeIn>
+
+        {/* Timeline */}
+        <div className="relative max-w-4xl mx-auto">
+          {/* Vertical line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 hidden md:block" style={{ background: 'var(--border)' }}>
             <motion.div
-              className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-              initial={{ width: '0%' }}
-              animate={isInView ? { width: '25%' } : {}}
-              transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+              className="w-full"
+              style={{ height: lineHeight, background: 'var(--foreground)' }}
             />
           </div>
 
-          <div className="grid grid-cols-4 gap-8">
-            {phases.map((phase, i) => (
-              <motion.div
-                key={phase.quarter}
-                initial={{ opacity: 0, y: 20 }}
-                animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.3 + i * 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="relative pt-12"
+          {/* Milestones */}
+          <div className="space-y-12 md:space-y-24">
+            {milestones.map((milestone, index) => (
+              <div
+                key={milestone.quarter}
+                className="relative grid md:grid-cols-2 gap-8 md:gap-0"
               >
-                {/* Dot */}
-                <div className="absolute top-[18px] left-0">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      phase.status === 'current' ? 'bg-white' : 'bg-white/20'
-                    }`}
-                  />
-                  {phase.status === 'current' && (
-                    <motion.div
-                      className="absolute inset-0 rounded-full border border-white"
-                      animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                  )}
+                {/* Marker (center) */}
+                <div className="absolute left-1/2 top-6 -translate-x-1/2 z-10 hidden md:block">
+                  <TimelineMarker status={milestone.status} />
                 </div>
 
-                <p className="text-xs font-mono text-white/30 mb-2">{phase.quarter}</p>
-                <h3 className={`text-lg font-semibold mb-1 ${phase.status === 'current' ? 'text-white' : 'text-white/50'}`}>
-                  {phase.title}
-                </h3>
-                <p className="text-sm text-white/30">{phase.description}</p>
-              </motion.div>
+                {/* Mobile marker */}
+                <div className="md:hidden flex items-center gap-4 mb-4">
+                  <TimelineMarker status={milestone.status} />
+                  <span className="text-sm font-mono" style={{ color: 'var(--foreground-muted)' }}>{milestone.quarter}</span>
+                </div>
+
+                {/* Card - alternating sides */}
+                {index % 2 === 0 ? (
+                  <>
+                    <MilestoneCard
+                      milestone={milestone}
+                      index={index}
+                      isLeft={true}
+                    />
+                    <div className="hidden md:block" />
+                  </>
+                ) : (
+                  <>
+                    <div className="hidden md:block" />
+                    <MilestoneCard
+                      milestone={milestone}
+                      index={index}
+                      isLeft={false}
+                    />
+                  </>
+                )}
+              </div>
             ))}
           </div>
-        </div>
 
-        {/* Vertical Timeline — Mobile */}
-        <div className="md:hidden space-y-8">
-          {phases.map((phase, i) => (
-            <motion.div
-              key={phase.quarter}
-              initial={{ opacity: 0, x: -20 }}
-              animate={isInView ? { opacity: 1, x: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.2 + i * 0.15 }}
-              className="flex gap-4"
-            >
-              <div className="flex flex-col items-center">
-                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${phase.status === 'current' ? 'bg-white' : 'bg-white/20'}`} />
-                {i < phases.length - 1 && <div className="w-px flex-1 bg-white/10 mt-2" />}
-              </div>
-              <div className="pb-6">
-                <p className="text-xs font-mono text-white/30 mb-1">{phase.quarter}</p>
-                <h3 className={`text-base font-semibold mb-1 ${phase.status === 'current' ? 'text-white' : 'text-white/50'}`}>
-                  {phase.title}
-                </h3>
-                <p className="text-sm text-white/30">{phase.description}</p>
-              </div>
-            </motion.div>
-          ))}
+          {/* End marker */}
+          <FadeIn delay={0.5}>
+            <div className="text-center mt-16">
+              <span className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                This is just the beginning
+              </span>
+            </div>
+          </FadeIn>
         </div>
       </div>
     </section>
