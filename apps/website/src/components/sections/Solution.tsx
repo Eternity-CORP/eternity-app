@@ -1,128 +1,109 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { FadeIn, StaggerContainer, StaggerItem } from '@/components/animations/FadeIn'
+import { useRef, useEffect, useState } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { ScrollReveal, Stagger, StaggerItem } from '@/components/animations/ScrollReveal'
+import { PhoneFrame } from '@/components/ui/PhoneFrame'
 
-const pillars = [
-  {
-    number: '01',
-    title: 'BLIK Codes',
-    subtitle: '6 digits instead of 42',
-    description: 'Share a simple code, receive money. No addresses, no mistakes, no fear.',
-  },
-  {
-    number: '02',
-    title: 'Network Abstraction',
-    subtitle: 'One token, any chain',
-    description: 'See "USDC", not "USDC (Polygon)". We handle the complexity.',
-  },
-  {
-    number: '03',
-    title: 'SHARD Identity',
-    subtitle: 'Your passport = your ID',
-    description: 'Your passport becomes your crypto identity. Verify from home.',
-  },
-  {
-    number: '04',
-    title: 'AI Agent',
-    subtitle: 'The brain behind your wallet',
-    description: 'AI that understands context, prevents mistakes, and speaks your language.',
-  },
-]
+const pills = ['No addresses', '60-second codes', 'Works cross-chain']
+
+function BlikScreen() {
+  const digits = '847291'
+  const ref = useRef<HTMLDivElement>(null)
+  const isInView = useInView(ref, { once: true, amount: 0.5 })
+  const [visibleCount, setVisibleCount] = useState(0)
+
+  useEffect(() => {
+    if (!isInView) return
+    let i = 0
+    const interval = setInterval(() => {
+      i++
+      setVisibleCount(i)
+      if (i >= 6) clearInterval(interval)
+    }, 150)
+    return () => clearInterval(interval)
+  }, [isInView])
+
+  return (
+    <div ref={ref} className="flex flex-col items-center justify-center h-full px-6 py-8">
+      <p className="text-xs text-white/30 uppercase tracking-widest mb-6">Your BLIK Code</p>
+
+      <div className="flex gap-2 mb-6">
+        {digits.split('').map((d, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={i < visibleCount ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="w-10 h-12 rounded-lg flex items-center justify-center text-xl font-bold"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: i < 3 ? 'var(--accent-blue)' : 'var(--accent-cyan)',
+            }}
+          >
+            {i < visibleCount ? d : ''}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Timer bar */}
+      <div className="w-full max-w-[180px] h-1 rounded-full overflow-hidden bg-white/10">
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"
+          initial={{ width: '100%' }}
+          animate={isInView ? { width: '0%' } : {}}
+          transition={{ duration: 60, ease: 'linear' }}
+        />
+      </div>
+      <p className="text-[10px] text-white/30 mt-2">Expires in 60s</p>
+    </div>
+  )
+}
 
 export function Solution() {
   return (
-    <section
-      id="solution"
-      className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
-      style={{ background: 'var(--background-secondary)' }}
-    >
-      {/* Background */}
-      <div className="absolute inset-0 bg-dots opacity-30" />
+    <section id="solution" className="relative min-h-screen flex items-center py-32 overflow-hidden">
+      <div className="max-w-6xl mx-auto px-6 relative z-10 w-full">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Text — left */}
+          <div>
+            <ScrollReveal variant="slide-right">
+              <p className="text-tag text-white/30 mb-6">BLIK CODES</p>
+            </ScrollReveal>
 
-      <div className="container mx-auto px-6 relative z-10">
-        <FadeIn>
-          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
-            The Solution
-          </p>
-        </FadeIn>
+            <ScrollReveal variant="slide-right" delay={0.1}>
+              <h2 className="text-heading mb-6">
+                Six digits.
+                <br />
+                Money <span className="text-gradient-blue">arrives.</span>
+              </h2>
+            </ScrollReveal>
 
-        <FadeIn delay={0.1}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6" style={{ color: 'var(--foreground)' }}>
-            <span className="text-gradient-blue">AI-Native</span> by Design
-          </h2>
-        </FadeIn>
+            <ScrollReveal variant="slide-right" delay={0.2}>
+              <p className="text-body-lg text-white/70 mb-8 max-w-md">
+                Share a 6-digit code. Your friend enters it. Crypto sent — no addresses, no mistakes.
+              </p>
+            </ScrollReveal>
 
-        <FadeIn delay={0.2}>
-          <p className="text-center text-lg md:text-xl mb-20" style={{ color: 'var(--foreground-muted)' }}>
-            Intelligence built into every layer.
-          </p>
-        </FadeIn>
-
-        <StaggerContainer className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
-          {pillars.map((pillar, index) => (
-            <StaggerItem key={index}>
-              <motion.div
-                className="group relative p-8 rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-subtle"
-                style={{
-                  background: 'var(--card-bg)',
-                  border: '1px solid var(--border-light)'
-                }}
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.2 }}
-              >
-                {/* Number */}
-                <div className="text-sm font-mono mb-6" style={{ color: 'var(--foreground-light)' }}>
-                  {pillar.number}
-                </div>
-
-                <div className="relative z-10">
-                  <h3 className="text-2xl font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
-                    {pillar.title}
-                  </h3>
-
-                  <p className="text-sm font-medium mb-4 text-gradient-blue">
-                    {pillar.subtitle}
-                  </p>
-
-                  <p className="leading-relaxed [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
-                    {pillar.description}
-                  </p>
-                </div>
-
-                {/* Hover line */}
-                <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-0.5"
-                  style={{ background: 'var(--foreground)' }}
-                  initial={{ scaleX: 0 }}
-                  whileHover={{ scaleX: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.div>
-            </StaggerItem>
-          ))}
-        </StaggerContainer>
-
-        {/* Connection mapping */}
-        <FadeIn delay={0.6}>
-          <div className="mt-20 flex flex-wrap justify-center gap-8 text-sm">
-            <div className="flex items-center gap-3">
-              <span style={{ color: 'var(--foreground-muted)' }}>Fear</span>
-              <span style={{ color: 'var(--foreground-light)' }}>→</span>
-              <span className="font-medium" style={{ color: 'var(--foreground)' }}>BLIK</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span style={{ color: 'var(--foreground-muted)' }}>Confusion</span>
-              <span style={{ color: 'var(--foreground-light)' }}>→</span>
-              <span className="font-medium" style={{ color: 'var(--foreground)' }}>Abstraction</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span style={{ color: 'var(--foreground-muted)' }}>Exclusion</span>
-              <span style={{ color: 'var(--foreground-light)' }}>→</span>
-              <span className="font-medium" style={{ color: 'var(--foreground)' }}>SHARD + AI</span>
-            </div>
+            <Stagger staggerDelay={0.1} className="flex flex-wrap gap-3">
+              {pills.map((pill) => (
+                <StaggerItem key={pill}>
+                  <span className="px-4 py-2 rounded-full text-sm text-white/70 glass-card">
+                    {pill}
+                  </span>
+                </StaggerItem>
+              ))}
+            </Stagger>
           </div>
-        </FadeIn>
+
+          {/* Phone — right */}
+          <ScrollReveal variant="slide-left" delay={0.2}>
+            <PhoneFrame>
+              <BlikScreen />
+            </PhoneFrame>
+          </ScrollReveal>
+        </div>
       </div>
     </section>
   )
