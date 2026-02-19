@@ -16,6 +16,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { cardStyles } from './card-styles';
+import { ParticleBg } from './ParticleBg';
 import type { UsernamePreview } from '@e-y/shared';
 
 interface UsernameCardProps {
@@ -68,6 +69,7 @@ export function UsernameCard({
   return (
     <View style={cardStyles.container}>
       <View style={cardStyles.card}>
+        <ParticleBg />
         {/* Header */}
         <View style={cardStyles.header}>
           <View style={[cardStyles.headerIcon, { backgroundColor: 'rgba(51, 136, 255, 0.15)' }]}>

@@ -56,7 +56,7 @@ import { signScheduledTransaction } from '@/src/services/scheduled-signing';
 import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
 import { saveContactThunk, loadContactsThunk } from '@/src/store/slices/contacts-slice';
-import type { ChatMessage, AiSuggestion } from '@/src/services/ai-service';
+import { aiSocket, type ChatMessage, type AiSuggestion } from '@/src/services/ai-service';
 
 export default function AiScreen() {
   const {
@@ -80,6 +80,7 @@ export default function AiScreen() {
     clearPendingUsername,
     clearPendingScheduled,
     clearPendingSplit,
+    addLocalMessage,
   } = useAiChat();
 
   const flatListRef = useRef<FlatList>(null);
@@ -155,6 +156,7 @@ export default function AiScreen() {
 
   const handleCancelTransaction = useCallback(() => {
     clearPendingTransaction();
+    aiSocket.addSystemMessage('The user CANCELLED the pending send confirmation. Do NOT re-prepare it unless they explicitly request a new transaction with full parameters.');
   }, [clearPendingTransaction]);
 
   // Handle BLIK pay confirmation
@@ -191,6 +193,7 @@ export default function AiScreen() {
 
   const handleCancelBlik = useCallback(() => {
     clearPendingBlik();
+    aiSocket.addSystemMessage('The user CANCELLED the pending BLIK confirmation. Do NOT re-prepare it unless they explicitly request a new operation with full parameters.');
   }, [clearPendingBlik]);
 
   // Handle Swap confirmation
@@ -225,6 +228,7 @@ export default function AiScreen() {
 
   const handleCancelSwap = useCallback(() => {
     clearPendingSwap();
+    aiSocket.addSystemMessage('The user CANCELLED the pending swap confirmation. Do NOT re-prepare it unless they explicitly request a new operation with full parameters.');
   }, [clearPendingSwap]);
 
   // Handle Username registration
@@ -262,12 +266,13 @@ export default function AiScreen() {
   const handleUsernameComplete = useCallback(() => {
     clearPendingUsername();
     if (pendingUsername) {
-      sendMessage(`Username @${pendingUsername.username} registered!`);
+      addLocalMessage(`Username @${pendingUsername.username} registered!`);
     }
-  }, [clearPendingUsername, pendingUsername, sendMessage]);
+  }, [clearPendingUsername, pendingUsername, addLocalMessage]);
 
   const handleCancelUsername = useCallback(() => {
     clearPendingUsername();
+    aiSocket.addSystemMessage('The user CANCELLED the pending username registration. Do NOT re-prepare it unless they explicitly request a new operation.');
   }, [clearPendingUsername]);
 
   // Handle Scheduled Payment confirmation (with pre-signing)
@@ -325,6 +330,7 @@ export default function AiScreen() {
 
   const handleCancelScheduled = useCallback(() => {
     clearPendingScheduled();
+    aiSocket.addSystemMessage('The user CANCELLED the pending scheduled payment. Do NOT re-prepare it unless they explicitly request a new operation with full parameters.');
   }, [clearPendingScheduled]);
 
   // Handle Split Bill confirmation
@@ -342,15 +348,16 @@ export default function AiScreen() {
       });
 
       clearPendingSplit();
-      sendMessage('Split bill created successfully! Check the Split tab to manage it.');
+      addLocalMessage('Split bill created successfully! Check the Split tab to manage it.');
     } catch (err) {
       clearPendingSplit();
-      sendMessage(`Failed to create split: ${(err as Error).message}`);
+      addLocalMessage(`Failed to create split: ${(err as Error).message}`);
     }
-  }, [pendingSplit, currentAccount, clearPendingSplit, sendMessage]);
+  }, [pendingSplit, currentAccount, clearPendingSplit, addLocalMessage]);
 
   const handleCancelSplit = useCallback(() => {
     clearPendingSplit();
+    aiSocket.addSystemMessage('The user CANCELLED the pending split bill. Do NOT re-prepare it unless they explicitly request a new operation with full parameters.');
   }, [clearPendingSplit]);
 
   // Auto-scroll to bottom when new messages arrive

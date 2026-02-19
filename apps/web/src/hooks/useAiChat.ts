@@ -55,6 +55,7 @@ interface UseAiChatReturn {
   clearPendingUsername: () => void
   clearPendingScheduled: () => void
   clearPendingSplit: () => void
+  addLocalMessage: (content: string, role?: 'user' | 'assistant') => void
 }
 
 export function useAiChat(): UseAiChatReturn {
@@ -151,6 +152,16 @@ export function useAiChat(): UseAiChatReturn {
 
   const clearPendingSplit = useCallback(() => {
     setPendingSplit(null)
+  }, [])
+
+  const addLocalMessage = useCallback((content: string, role: 'user' | 'assistant' = 'assistant') => {
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role,
+      content,
+      timestamp: new Date().toISOString(),
+    }
+    setMessages((prev) => [...prev, msg])
   }, [])
 
   useEffect(() => {
@@ -291,5 +302,6 @@ export function useAiChat(): UseAiChatReturn {
     clearPendingUsername,
     clearPendingScheduled,
     clearPendingSplit,
+    addLocalMessage,
   }
 }

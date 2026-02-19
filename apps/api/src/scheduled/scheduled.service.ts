@@ -51,8 +51,8 @@ const CHAIN_RPC_URLS: Record<number, string> = {
   10: 'https://opt-mainnet.g.alchemy.com/v2/', // Optimism
   42161: 'https://arb-mainnet.g.alchemy.com/v2/', // Arbitrum
   8453: 'https://base-mainnet.g.alchemy.com/v2/', // Base
-  // Testnets
-  11155111: 'https://eth-sepolia.g.alchemy.com/v2/', // Sepolia
+  // Testnets (public RPCs — Alchemy 500s from Railway)
+  11155111: 'https://ethereum-sepolia-rpc.publicnode.com', // Sepolia
   80002: 'https://polygon-amoy.g.alchemy.com/v2/', // Amoy
   11155420: 'https://opt-sepolia.g.alchemy.com/v2/', // Optimism Sepolia
   421614: 'https://arb-sepolia.g.alchemy.com/v2/', // Arbitrum Sepolia
@@ -120,8 +120,8 @@ export class ScheduledService {
       throw new Error(`Unsupported chain ID: ${chainId}`);
     }
 
-    const rpcUrl = baseUrl + this.alchemyApiKey;
-    const provider = new JsonRpcProvider(rpcUrl);
+    const rpcUrl = baseUrl.includes('alchemy.com') ? baseUrl + this.alchemyApiKey : baseUrl;
+    const provider = new JsonRpcProvider(rpcUrl, undefined, { staticNetwork: true });
     this.providerCache.set(chainId, provider);
 
     return provider;

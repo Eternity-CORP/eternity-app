@@ -20,13 +20,9 @@ export class FaucetService implements OnModuleInit {
       return;
     }
 
-    const alchemyKey = this.configService.get<string>('ALCHEMY_API_KEY');
-    const network = this.configService.get<string>('NETWORK') || 'sepolia';
-    const rpcUrl = alchemyKey
-      ? `https://eth-${network}.g.alchemy.com/v2/${alchemyKey}`
-      : `https://rpc.sepolia.org`;
+    const rpcUrl = 'https://ethereum-sepolia-rpc.publicnode.com';
 
-    this.provider = new ethers.JsonRpcProvider(rpcUrl);
+    this.provider = new ethers.JsonRpcProvider(rpcUrl, 'sepolia', { staticNetwork: true });
     this.wallet = new ethers.Wallet(privateKey, this.provider);
     this.logger.log(`Faucet wallet: ${this.wallet.address}`);
   }

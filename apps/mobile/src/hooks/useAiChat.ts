@@ -30,6 +30,7 @@ import {
   setPendingSplit,
   addSuggestion,
   dismissSuggestion as dismissSuggestionAction,
+  addMessage,
   setError,
   clearMessages,
   type AiState,
@@ -68,6 +69,7 @@ interface UseAiChatReturn {
   clearPendingUsername: () => void;
   clearPendingScheduled: () => void;
   clearPendingSplit: () => void;
+  addLocalMessage: (content: string, role?: 'user' | 'assistant') => void;
 }
 
 export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
@@ -187,6 +189,16 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
   // Clear pending split bill
   const clearPendingSplitAction = useCallback(() => {
     dispatch(setPendingSplit(null));
+  }, [dispatch]);
+
+  // Add a local-only message (not sent to AI server)
+  const addLocalMessage = useCallback((content: string, role: 'user' | 'assistant' = 'assistant') => {
+    dispatch(addMessage({
+      id: `local_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      role,
+      content,
+      timestamp: new Date().toISOString(),
+    }));
   }, [dispatch]);
 
   // Setup socket callbacks
@@ -311,5 +323,6 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     clearPendingUsername: clearPendingUsernameAction,
     clearPendingScheduled: clearPendingScheduledAction,
     clearPendingSplit: clearPendingSplitAction,
+    addLocalMessage,
   };
 }

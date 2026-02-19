@@ -253,6 +253,13 @@ class AiSocketServiceWrapper {
   }
 
   /**
+   * Add system message to history (not sent to server, just context for AI)
+   */
+  addSystemMessage(content: string): void {
+    this.sharedService?.addSystemMessage(content);
+  }
+
+  /**
    * Clear message history
    */
   clearHistory(): void {

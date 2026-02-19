@@ -57,7 +57,7 @@ export class BalanceServiceAi {
 
   private getProvider(rpcUrl: string): JsonRpcProvider {
     if (!this.providers[rpcUrl]) {
-      this.providers[rpcUrl] = new JsonRpcProvider(rpcUrl);
+      this.providers[rpcUrl] = new JsonRpcProvider(rpcUrl, undefined, { staticNetwork: true });
     }
     return this.providers[rpcUrl];
   }
@@ -69,7 +69,7 @@ export class BalanceServiceAi {
         id: 'sepolia',
         name: 'Sepolia (Testnet)',
         alchemyUrl,
-        rpcUrl: alchemyUrl,
+        rpcUrl: 'https://ethereum-sepolia-rpc.publicnode.com',
         nativeSymbol: 'ETH',
         nativeName: 'Ether',
       }];

@@ -8,6 +8,7 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
 import { useAiChat } from '@/hooks/useAiChat'
+import { aiSocket } from '@/services/ai-service'
 import { sendNativeToken, sendErc20Token, signTransaction } from '@/lib/send-service'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
@@ -58,6 +59,7 @@ export default function ChatContainer() {
     clearPendingUsername,
     clearPendingScheduled,
     clearPendingSplit,
+    addLocalMessage,
   } = useAiChat()
 
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget | null>(null)
@@ -123,7 +125,7 @@ export default function ChatContainer() {
       })
       clearPendingSplit()
       setConfirmTarget(null)
-      sendMessage('Split bill created successfully! View your splits on the Split page.')
+      addLocalMessage('Split bill created successfully! View your splits on the Split page.')
       return
     }
     const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
@@ -162,7 +164,7 @@ export default function ChatContainer() {
 
       clearPendingTransaction()
       setConfirmTarget(null)
-      sendMessage(`Transaction sent! Hash: ${txHash}`)
+      addLocalMessage(`Transaction sent! Hash: ${txHash}`)
 
       const existingContacts = loadContacts(address)
       const alreadySaved = existingContacts.some(
@@ -185,11 +187,11 @@ export default function ChatContainer() {
 
       clearPendingBlik()
       setConfirmTarget(null)
-      sendMessage(`BLIK payment sent! Hash: ${tx.hash}`)
+      addLocalMessage(`BLIK payment sent! Hash: ${tx.hash}`)
     } else if (confirmTarget.type === 'swap') {
       clearPendingSwap()
       setConfirmTarget(null)
-      sendMessage('Swap execution is not yet available via AI chat. Please use the Swap page.')
+      addLocalMessage('Swap execution is not yet available via AI chat. Please use the Swap page.')
     } else if (confirmTarget.type === 'username' && pendingUsername) {
       const signature = await wallet.signMessage(pendingUsername.messageToSign || '')
 
@@ -202,7 +204,7 @@ export default function ChatContainer() {
 
       clearPendingUsername()
       setConfirmTarget(null)
-      sendMessage(`Username @${pendingUsername.username} registered successfully!`)
+      addLocalMessage(`Username @${pendingUsername.username} registered successfully!`)
     } else if (confirmTarget.type === 'scheduled' && pendingScheduled) {
       const recipient = editedValues?.to || pendingScheduled.recipient
       const amount = editedValues?.amount || pendingScheduled.amount
@@ -225,11 +227,12 @@ export default function ChatContainer() {
 
       clearPendingScheduled()
       setConfirmTarget(null)
-      sendMessage('Scheduled payment created and pre-signed for automatic execution!')
+      addLocalMessage('Scheduled payment created and pre-signed for automatic execution!')
     }
-  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, pendingScheduled, pendingSplit, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, clearPendingScheduled, clearPendingSplit, sendMessage])
+  }, [confirmTarget, currentAccount, network, address, aggregatedBalances, pendingUsername, pendingScheduled, pendingSplit, clearPendingTransaction, clearPendingBlik, clearPendingSwap, clearPendingUsername, clearPendingScheduled, clearPendingSplit, addLocalMessage])
 
   const handleConfirmCancel = useCallback(() => {
+    const typeLabel = confirmTarget?.type || 'operation'
     if (confirmTarget?.type === 'send') clearPendingTransaction()
     else if (confirmTarget?.type === 'scheduled') clearPendingScheduled()
     else if (confirmTarget?.type === 'split') clearPendingSplit()
@@ -237,6 +240,7 @@ export default function ChatContainer() {
     else if (confirmTarget?.type === 'username') clearPendingUsername()
     else if (confirmTarget?.type === 'blik') clearPendingBlik()
     setConfirmTarget(null)
+    aiSocket.addSystemMessage(`The user CANCELLED the pending ${typeLabel} confirmation. Do NOT re-prepare it unless they explicitly request a new operation with full parameters.`)
   }, [confirmTarget, clearPendingTransaction, clearPendingScheduled, clearPendingSplit, clearPendingSwap, clearPendingUsername, clearPendingBlik])
 
   const hasMessages = messages.length > 0

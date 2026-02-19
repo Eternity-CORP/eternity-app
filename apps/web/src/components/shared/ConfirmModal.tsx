@@ -2,7 +2,7 @@
 
 import type { ReactNode, KeyboardEvent, MouseEvent } from 'react'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import MiniWarpBg from '../chat/cards/MiniWarpBg'
+import MiniParticleBg from '../chat/cards/MiniParticleBg'
 
 export interface ConfirmDetail {
   key?: string
@@ -125,9 +125,6 @@ export default function ConfirmModal({
     setEditedValues((prev) => ({ ...prev, [key]: value }))
   }
 
-  const isWarpBoosted = status === 'loading' || status === 'succeeded'
-  const contentFading = isWarpBoosted
-
   const canConfirm = requiresPassword ? !!password.trim() : true
 
   const firstEditableIdx = details.findIndex((d) => d.editable && d.key)
@@ -142,14 +139,11 @@ export default function ConfirmModal({
 
       {/* Modal */}
       <div className="glass-card rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'hidden' }}>
-        {/* Warp background */}
-        <MiniWarpBg boosted={isWarpBoosted} />
+        {/* Particle background — logo always visible */}
+        <MiniParticleBg />
 
         {/* Content */}
-        <div
-          className="relative z-[1] transition-opacity duration-700"
-          style={{ opacity: contentFading ? 0.15 : 1 }}
-        >
+        <div className="relative z-[1]">
           {/* Logo */}
           <div className="flex justify-center mb-4">
             <img src="/logo.svg" alt="Eternity" className="w-10 h-10" />

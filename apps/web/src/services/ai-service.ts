@@ -89,6 +89,10 @@ class WebAiSocketService {
     this.service?.clearHistory()
   }
 
+  addSystemMessage(content: string): void {
+    this.service?.addSystemMessage(content)
+  }
+
   on<K extends CallbackKey>(event: K, callback: AiSocketCallbacks[K]): void {
     // Handle connect/disconnect on socket level
     if (event === 'onConnect') {

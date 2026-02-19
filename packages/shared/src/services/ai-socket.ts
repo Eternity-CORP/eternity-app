@@ -32,6 +32,7 @@ export interface AiSocketService {
   unsubscribe(): void;
   sendMessage(content: string): void;
   addResponseToHistory(content: string): void;
+  addSystemMessage(content: string): void;
   clearHistory(): void;
   setCallbacks(callbacks: AiSocketCallbacks): void;
   clearCallbacks(): void;
@@ -102,6 +103,13 @@ export function createAiSocketService(socket: SocketLike): AiSocketService {
 
     addResponseToHistory(content: string): void {
       messageHistory.push({ role: 'assistant', content });
+      if (messageHistory.length > MAX_HISTORY_LENGTH) {
+        messageHistory = messageHistory.slice(-MAX_HISTORY_LENGTH);
+      }
+    },
+
+    addSystemMessage(content: string): void {
+      messageHistory.push({ role: 'user', content: `[SYSTEM] ${content}` });
       if (messageHistory.length > MAX_HISTORY_LENGTH) {
         messageHistory = messageHistory.slice(-MAX_HISTORY_LENGTH);
       }

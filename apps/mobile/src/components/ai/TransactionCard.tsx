@@ -20,6 +20,7 @@ import { aiChat } from '@/src/constants/ai-chat-theme';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { cardStyles } from './card-styles';
+import { ParticleBg } from './ParticleBg';
 
 export interface PendingTransaction {
   id: string;
@@ -185,6 +186,9 @@ export function TransactionCard({
   return (
     <View style={cardStyles.container}>
       <View style={cardStyles.card}>
+        {/* Particle background */}
+        <ParticleBg />
+
         {/* Header */}
         <View style={cardStyles.header}>
           <View style={[cardStyles.headerIcon, styles.headerIconBg]}>
