@@ -1,18 +1,4 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "cd /Users/daniillogachev/Ma\\ project/E-Y && npx tsc --noEmit 2>&1 | head -20",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
-  },
   "permissions": {
     "allow": [
       "Skill(superpowers:systematic-debugging)",
@@ -103,11 +89,40 @@
       "Bash(echo:*)",
       "WebFetch(domain:docs.anthropic.com)",
       "Bash(npx turbo build:*)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "WebFetch(domain:dashboard.alchemy.com)",
+      "WebFetch(domain:railway.com)",
+      "WebFetch(domain:phantom.com)",
+      "WebFetch(domain:rainbow.me)",
+      "WebFetch(domain:zerion.io)",
+      "WebFetch(domain:linear.app)",
+      "WebFetch(domain:family.co)",
+      "WebFetch(domain:stripe.com)",
+      "WebFetch(domain:www.behance.net)",
+      "WebFetch(domain:kevinhufnagl.com)",
+      "WebFetch(domain:www.webstacks.com)",
+      "Bash(git restore:*)",
+      "Bash(for f in logo_black-green.svg logo_blue.svg logo_black.svg logo_saladik.svg loho_purple.svg logo_light-blue.svg logo_light-green.svg logo_breeze.svg)",
+      "Bash(do sed -i '' '/<rect.*fill=\"\"white\"\"\\\\/>/d' \"$f\")",
+      "WebFetch(domain:app.spline.design)"
     ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "linear"
-  ]
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/daniillogachev/Ma\\ project/E-Y && npx tsc --noEmit 2>&1 | head -20",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
 }
