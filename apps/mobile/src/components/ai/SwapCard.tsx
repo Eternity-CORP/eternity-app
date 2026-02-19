@@ -18,7 +18,7 @@ import { aiChat } from '@/src/constants/ai-chat-theme';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { cardStyles } from './card-styles';
-import { ParticleBg } from './ParticleBg';
+import { LogoStrokeDraw } from './LogoStrokeDraw';
 
 export interface PendingSwap {
   id: string;
@@ -128,7 +128,7 @@ export function SwapCard({
   return (
     <View style={cardStyles.container}>
       <View style={cardStyles.card}>
-        <ParticleBg />
+        <LogoStrokeDraw />
         {/* Header */}
         <View style={cardStyles.header}>
           <View style={[cardStyles.headerIcon, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>

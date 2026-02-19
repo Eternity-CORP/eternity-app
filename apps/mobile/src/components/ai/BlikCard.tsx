@@ -19,7 +19,7 @@ import { aiChat } from '@/src/constants/ai-chat-theme';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import { cardStyles } from './card-styles';
-import { ParticleBg } from './ParticleBg';
+import { LogoStrokeDraw } from './LogoStrokeDraw';
 
 export interface PendingBlikGenerate {
   type: 'generate';
@@ -141,7 +141,7 @@ export function BlikCard({
     return (
       <View style={cardStyles.container}>
         <View style={[cardStyles.card, { borderColor: 'rgba(139,92,246,0.2)' }]}>
-          <ParticleBg />
+          <LogoStrokeDraw />
           <LinearGradient
             colors={['#8B5CF6', '#7C3AED']}
             start={{ x: 0, y: 0 }}
@@ -278,7 +278,7 @@ export function BlikCard({
   return (
     <View style={cardStyles.container}>
       <View style={[cardStyles.card, { borderColor: 'rgba(139,92,246,0.2)' }]}>
-        <ParticleBg />
+        <LogoStrokeDraw />
         {/* Header */}
         <View style={cardStyles.header}>
           <View style={[cardStyles.headerIcon, { backgroundColor: 'rgba(139,92,246,0.15)' }]}>

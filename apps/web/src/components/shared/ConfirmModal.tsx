@@ -2,7 +2,7 @@
 
 import type { ReactNode, KeyboardEvent, MouseEvent } from 'react'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import MiniParticleBg from '../chat/cards/MiniParticleBg'
+import LogoStrokeDraw from './LogoStrokeDraw'
 
 export interface ConfirmDetail {
   key?: string
@@ -139,16 +139,11 @@ export default function ConfirmModal({
 
       {/* Modal */}
       <div className="glass-card rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'hidden' }}>
-        {/* Particle background — logo always visible */}
-        <MiniParticleBg />
+        {/* Logo stroke-draw background animation */}
+        <LogoStrokeDraw />
 
         {/* Content */}
         <div className="relative z-[1]">
-          {/* Logo */}
-          <div className="flex justify-center mb-4">
-            <img src="/logo.svg" alt="Eternity" className="w-10 h-10" />
-          </div>
-
           {/* Title */}
           <h3 className="text-base font-semibold text-white mb-1 text-center">{title}</h3>
 

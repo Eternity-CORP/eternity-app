@@ -8,3 +8,4 @@ export * from './swap';
 export * from './erc20';
 export * from './coingecko';
 export * from './business';
+export * from './logo-paths';

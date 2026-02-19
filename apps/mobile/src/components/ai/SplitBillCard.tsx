@@ -16,7 +16,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { cardStyles } from './card-styles';
-import { ParticleBg } from './ParticleBg';
+import { LogoStrokeDraw } from './LogoStrokeDraw';
 import type { SplitPreview } from '@e-y/shared';
 
 interface SplitBillCardProps {
@@ -74,7 +74,7 @@ export function SplitBillCard({
   return (
     <View style={cardStyles.container}>
       <View style={cardStyles.card}>
-        <ParticleBg />
+        <LogoStrokeDraw />
         {/* Header */}
         <View style={cardStyles.header}>
           <View style={[cardStyles.headerIcon, styles.headerIconBg]}>
