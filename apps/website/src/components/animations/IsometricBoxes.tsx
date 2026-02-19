@@ -257,14 +257,9 @@ export function IsometricBoxes({ className = '' }: IsometricBoxesProps) {
       const dark = isDarkRef.current
 
       if (!mouse.active) {
-        const isMobile = 'ontouchstart' in window
-        if (isMobile) {
-          autoSpot.x = w / 2 + Math.sin(t * 0.15) * w * 0.25
-          autoSpot.y = h / 2 + Math.cos(t * 0.12) * h * 0.2
-        } else {
-          autoSpot.x = -9999
-          autoSpot.y = -9999
-        }
+        // Lissajous figure-8 pattern — always visible when no cursor
+        autoSpot.x = w / 2 + Math.sin(t * 0.18) * w * 0.28
+        autoSpot.y = h / 2 + Math.sin(t * 0.24) * h * 0.22
       }
 
       const spotX = mouse.active ? mouse.x : autoSpot.x
