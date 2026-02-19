@@ -5,7 +5,6 @@ import { useRef, useMemo, useEffect, useState, useCallback } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useTheme } from '@/context/ThemeContext'
-import { useLoading } from '@/context/LoadingContext'
 
 const SCATTER_RADIUS = 10
 const FORM_DURATION = 2
@@ -167,12 +166,10 @@ function fastSin(x: number): number {
 function ParticleSystem({
   isDark,
   mouseWorld,
-  animationStarted,
   isVisible,
 }: {
   isDark: boolean
   mouseWorld: React.MutableRefObject<{ x: number; y: number; active: boolean }>
-  animationStarted: boolean
   isVisible: boolean
 }) {
   const pointsRef = useRef<THREE.Points>(null)
@@ -293,7 +290,6 @@ function ParticleSystem({
 
   useFrame((state) => {
     if (!pointsRef.current || !targetPositions) return
-    if (!animationStarted) return
 
     // Skip computation when hero is off-screen (settled phase only)
     if (!isVisible && settledRef.current) return
@@ -431,7 +427,6 @@ function ParticleSystem({
 export function LogoParticles({ className = '' }: { className?: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { isDark } = useTheme()
-  const { isLoaded } = useLoading()
   const mouseWorld = useRef({ x: -9999, y: -9999, active: false })
   const [isVisible, setIsVisible] = useState(true)
 
@@ -477,7 +472,7 @@ export function LogoParticles({ className = '' }: { className?: string }) {
         style={{ background: 'transparent', pointerEvents: 'none' }}
         frameloop={isVisible ? 'always' : 'never'}
       >
-        <ParticleSystem isDark={isDark} mouseWorld={mouseWorld} animationStarted={isLoaded} isVisible={isVisible} />
+        <ParticleSystem isDark={isDark} mouseWorld={mouseWorld} isVisible={isVisible} />
       </Canvas>
     </div>
   )
