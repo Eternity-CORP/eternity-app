@@ -20,11 +20,9 @@ export function IsometricBoxes({ className = '' }: IsometricBoxesProps) {
   const isDarkRef = useRef(isDark)
   isDarkRef.current = isDark
 
-  const { dpr, isVisible, shouldSkipFrame, observerRef, reducedMotion } = useCanvasPerf()
+  const { dpr, isVisible, observerRef } = useCanvasPerf()
   const isVisibleRef = useRef(isVisible)
   isVisibleRef.current = isVisible
-  const shouldSkipFrameRef = useRef(shouldSkipFrame)
-  shouldSkipFrameRef.current = shouldSkipFrame
 
   useEffect(() => {
     const canvas = canvasRef.current

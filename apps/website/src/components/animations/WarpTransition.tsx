@@ -16,10 +16,6 @@ function easeInOutCubic(t: number) {
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3)
 }
-function easeInCubic(t: number) {
-  return t * t * t
-}
-
 /* ---- Context ---- */
 const WarpContext = createContext<{ startWarp: () => void }>({ startWarp: () => {} })
 
@@ -441,27 +437,3 @@ export function WarpProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/* ---- Exported button (unchanged API) ---- */
-export function WarpTransition() {
-  const { startWarp } = useWarp()
-
-  return (
-    <button
-      onClick={startWarp}
-      className="group relative inline-flex items-center justify-center gap-2 px-7 py-3 text-base font-medium rounded-full transition-all duration-300 bg-transparent border dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black border-black text-black hover:bg-black hover:text-white"
-    >
-      <span className="relative z-10 flex items-center gap-2">
-        Launch App
-        <svg
-          className="w-4 h-4 transition-transform group-hover:translate-x-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
-      </span>
-    </button>
-  )
-}

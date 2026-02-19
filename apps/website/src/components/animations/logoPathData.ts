@@ -67,26 +67,3 @@ export function measurePathLength(d: string): number {
   return length
 }
 
-/**
- * Sample evenly-spaced points along an SVG path string.
- * Uses a temporary offscreen SVG element and getPointAtLength()
- * to extract coordinate positions for the particle constellation animation.
- */
-export function samplePathPoints(d: string, count: number): Array<{ x: number; y: number }> {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-  path.setAttribute('d', d)
-  svg.appendChild(path)
-  svg.style.position = 'absolute'
-  svg.style.width = '0'
-  svg.style.height = '0'
-  document.body.appendChild(svg)
-  const length = path.getTotalLength()
-  const points: Array<{ x: number; y: number }> = []
-  for (let i = 0; i < count; i++) {
-    const pt = path.getPointAtLength((i / count) * length)
-    points.push({ x: pt.x, y: pt.y })
-  }
-  document.body.removeChild(svg)
-  return points
-}

@@ -151,7 +151,7 @@ const allFeatures: Record<ShowcaseCategory, ShowcaseFeature[]> = {
 /*  IPhoneMockup                                                       */
 /* ================================================================== */
 
-function IPhoneMockup({ screen }: { screen: { title: string; content: string; details: string[] }; id: string }) {
+function IPhoneMockup({ screen }: { screen: { title: string; content: string; details: string[] } }) {
   return (
     <motion.div
       className="relative mx-auto"
@@ -550,67 +550,6 @@ function TransferVisual() {
 }
 
 /* ================================================================== */
-/*  AnnotationLines (desktop only)                                     */
-/* ================================================================== */
-
-function AnnotationLines({ activeIndex }: { activeIndex: number }) {
-  // Lines connect from detail bullets (left col) to visual area (right col)
-  // Positions are percentage-based relative to the container
-  const lineConfigs = [
-    { x1: '48%', y1: '52%', x2: '55%', y2: '35%' },
-    { x1: '48%', y1: '60%', x2: '55%', y2: '50%' },
-    { x1: '48%', y1: '68%', x2: '55%', y2: '65%' },
-  ]
-
-  return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none hidden lg:block" style={{ zIndex: 5 }}>
-      <AnimatePresence mode="wait">
-        <motion.g key={activeIndex}>
-          {lineConfigs.map((line, i) => (
-            <motion.g key={i}>
-              {/* Bezier curve path */}
-              <motion.path
-                d={`M ${line.x1} ${line.y1} Q 51% ${line.y1}, ${line.x2} ${line.y2}`}
-                fill="none"
-                stroke="var(--border)"
-                strokeWidth={1}
-                strokeDasharray="4 3"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 0.5 }}
-                exit={{ pathLength: 0, opacity: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 + i * 0.2 }}
-              />
-              {/* Start dot */}
-              <motion.circle
-                cx={line.x1}
-                cy={line.y1}
-                r={3}
-                fill="var(--accent-blue)"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.8 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ delay: 0.4 + i * 0.2 }}
-              />
-              {/* End dot */}
-              <motion.circle
-                cx={line.x2}
-                cy={line.y2}
-                r={3}
-                fill="var(--accent-blue)"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 0.8 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ delay: 0.5 + i * 0.2 }}
-              />
-            </motion.g>
-          ))}
-        </motion.g>
-      </AnimatePresence>
-    </svg>
-  )
-}
-
-/* ================================================================== */
 /*  FeatureVisual — renders the right visual for each feature          */
 /* ================================================================== */
 
@@ -618,7 +557,7 @@ function FeatureVisual({ feature }: { feature: ShowcaseFeature }) {
   switch (feature.visual) {
     case 'phone':
       return feature.phoneScreen ? (
-        <IPhoneMockup screen={feature.phoneScreen} id={feature.id} />
+        <IPhoneMockup screen={feature.phoneScreen} />
       ) : null
     case 'pie-chart':
       return (
@@ -777,13 +716,10 @@ export function Showcase() {
 
   // When paused, stop the timer progress
   useEffect(() => {
-    if (isPaused) {
-      // Save current elapsed time
-    } else {
-      // Resume from current progress
+    if (!isPaused) {
       startTimeRef.current = Date.now() - (progress / 100) * SLIDE_DURATION
     }
-  }, [isPaused]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isPaused, progress])
 
   // Reset on category change
   const switchCategory = (cat: ShowcaseCategory) => {

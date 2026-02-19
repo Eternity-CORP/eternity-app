@@ -8,7 +8,6 @@ import { useTheme } from '@/context/ThemeContext'
 
 const SCATTER_RADIUS = 10
 const FORM_DURATION = 2
-const FORM_DELAY = 0
 const CURSOR_RADIUS = 0.35
 const CURSOR_FORCE = 0.4
 
@@ -255,7 +254,7 @@ function ParticleSystem({
     return { darkColors, lightColors }
   }, [])
 
-  const initialColors = colorSets.darkColors
+  const initialColors = isDark ? colorSets.darkColors : colorSets.lightColors
 
   const scatterPositions = useRef(new Float32Array(PARTICLE_COUNT * 3))
 
@@ -310,9 +309,7 @@ function ParticleSystem({
     }
 
     const elapsed = time - startTimeRef.current
-    const assembleStart = FORM_DELAY
-    const assembleEnd = FORM_DELAY + FORM_DURATION
-    const cursorRadiusSq = CURSOR_RADIUS * CURSOR_RADIUS
+    const assembleEnd = FORM_DURATION
 
     if (elapsed < assembleEnd) {
       // Phase 2: Assembly — simple lerp, no stagger, no cursor during assembly
@@ -336,6 +333,8 @@ function ParticleSystem({
           positions[i3 + 2] = targetPositions[i3 + 2]
         }
       }
+
+      const cursorRadiusSq = CURSOR_RADIUS * CURSOR_RADIUS
 
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const i3 = i * 3

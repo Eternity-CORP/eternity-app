@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Supabase configuration
-const SUPABASE_URL = 'https://***REDACTED_SUPABASE_HOST***'
-const SUPABASE_ANON_KEY = '***REDACTED_SUPABASE_ANON_KEY***'
+// Supabase configuration — loaded from environment variables
+const SUPABASE_URL = process.env.SUPABASE_URL || ''
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || ''
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,7 +90,13 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('token')
     
     // Simple admin token check
-    const adminToken = process.env.ADMIN_TOKEN || 'eternity-admin-2026'
+    const adminToken = process.env.ADMIN_TOKEN
+    if (!adminToken) {
+      return NextResponse.json(
+        { error: 'Server misconfigured' },
+        { status: 500 }
+      )
+    }
     
     if (token !== adminToken) {
       return NextResponse.json(
