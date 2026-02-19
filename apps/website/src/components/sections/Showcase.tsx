@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { FadeIn } from '@/components/animations/FadeIn'
 import { GlitchText } from '@/components/animations/GlitchText'
-import { SpotlightGrid } from '@/components/animations/SpotlightGrid'
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -844,8 +843,6 @@ export function Showcase() {
       onTouchStart={() => setIsPaused(true)}
       onTouchEnd={() => setIsPaused(false)}
     >
-      <SpotlightGrid />
-
       <div className="container mx-auto px-6 relative z-10">
         {/* Header */}
         <FadeIn>
