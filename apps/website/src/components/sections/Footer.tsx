@@ -6,9 +6,8 @@ import { useTheme } from '@/context/ThemeContext'
 
 const footerLinks = {
   product: [
-    { label: 'Features', href: '#features' },
+    { label: 'Features', href: '#showcase' },
     { label: 'Roadmap', href: '#roadmap' },
-    { label: 'Coming Soon', href: '#coming-soon' },
   ],
   legal: [
     { label: 'Privacy', href: '/privacy' },

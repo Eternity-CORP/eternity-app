@@ -33,7 +33,7 @@ export default function TermsPage() {
 
         <article className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>Terms of Service</h1>
-          <p className="mb-12" style={{ color: 'var(--foreground-muted)' }}>Last updated: January 2026</p>
+          <p className="mb-12" style={{ color: 'var(--foreground-muted)' }}>Last updated: February 2026</p>
 
           <div className="prose prose-lg max-w-none space-y-8">
             <section>
@@ -41,9 +41,8 @@ export default function TermsPage() {
                 1. Acceptance of Terms
               </h2>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
-                By accessing or using Eternity ("the App"), you agree to be bound by these
-                Terms of Service. If you do not agree to these terms, do not use the
-                App.
+                By accessing or using Eternity (&ldquo;the App&rdquo;), you agree to be bound by these
+                Terms of Service. If you do not agree to these terms, do not use the App.
               </p>
             </section>
 
@@ -61,10 +60,12 @@ export default function TermsPage() {
                 <li>View token balances and transaction history</li>
                 <li>Use BLIK codes for simplified transfers</li>
                 <li>Register and use @usernames</li>
+                <li>Interact with an AI Agent for wallet assistance</li>
+                <li>Create and manage on-chain business wallets with tokenized equity and governance</li>
               </ul>
               <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
                 <p className="text-amber-800 dark:text-amber-200 text-sm">
-                  <strong>Note:</strong> The current version operates on testnet
+                  <strong>Note:</strong> The current version operates on Sepolia testnet
                   only. Do not use real funds.
                 </p>
               </div>
@@ -105,7 +106,19 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>4. Disclaimers</h2>
+              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+                4. AI Agent
+              </h2>
+              <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
+                The AI Agent provides conversational wallet assistance. It can suggest
+                transactions, provide balance information, and help with wallet operations.
+                The AI Agent does not have independent access to execute transactions —
+                all actions require your explicit confirmation.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>5. Disclaimers</h2>
               <ul className="space-y-4" style={{ color: 'var(--foreground-muted)' }}>
                 <li>
                   <strong style={{ color: 'var(--foreground)' }}>Not Financial Advice:</strong> The
@@ -118,14 +131,14 @@ export default function TermsPage() {
                 <li>
                   <strong style={{ color: 'var(--foreground)' }}>Third-Party Services:</strong> We
                   are not responsible for third-party services (blockchain networks,
-                  RPC providers).
+                  RPC providers, AI model providers).
                 </li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-                5. Limitation of Liability
+                6. Limitation of Liability
               </h2>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
                 To the maximum extent permitted by law, Eternity and its team shall not be
@@ -136,7 +149,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-                6. Changes to Terms
+                7. Changes to Terms
               </h2>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
                 We may update these Terms from time to time. Continued use of the App
@@ -145,10 +158,12 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>7. Contact</h2>
+              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>8. Contact</h2>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
-                For questions about these Terms, please use our waitlist form on the homepage
-                and mention your concern. We will get back to you as soon as possible.
+                For questions about these Terms, contact us at{' '}
+                <a href="mailto:eternity.shard.business@gmail.com" className="underline" style={{ color: 'var(--foreground)' }}>
+                  eternity.shard.business@gmail.com
+                </a>.
               </p>
             </section>
           </div>

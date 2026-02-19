@@ -7,8 +7,8 @@ import { FadeIn } from '@/components/animations/FadeIn'
 import { useWarp } from '@/components/animations/WarpTransition'
 
 // Dynamic import for 3D scene to avoid SSR issues
-const ShardScene = dynamic(
-  () => import('@/components/3d/ShardScene').then((mod) => mod.ShardScene),
+const LogoParticles = dynamic(
+  () => import('@/components/3d/LogoParticles').then((mod) => mod.LogoParticles),
   { ssr: false }
 )
 
@@ -24,24 +24,51 @@ export function Hero() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden theme-transition"
       style={{ background: 'var(--background)' }}
     >
-      {/* Background Grid */}
-      <div className="absolute inset-0 bg-grid opacity-50" />
-
-      {/* 3D Shards Scene */}
-      <div className="absolute inset-0 z-0">
-        <ShardScene />
-      </div>
-
-      {/* Gradient Overlay - theme aware */}
+      {/* Background Grid — fades in from edges */}
       <div
-        className="absolute inset-0 z-10 pointer-events-none"
+        className="absolute inset-0 bg-grid opacity-80"
         style={{
-          background: `linear-gradient(to bottom, var(--background), transparent, var(--background))`
+          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%, black, transparent)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%, black, transparent)',
         }}
       />
 
-      {/* Content */}
-      <div className="relative z-20 container mx-auto px-6 text-center pt-20">
+      {/* Grid center glow — gradient-tinted grid fading out from center */}
+      <div
+        className="absolute inset-0 bg-grid"
+        style={{
+          maskImage: 'radial-gradient(ellipse 50% 40% at 50% 45%, black, transparent)',
+          WebkitMaskImage: 'radial-gradient(ellipse 50% 40% at 50% 45%, black, transparent)',
+          backgroundImage: `
+            linear-gradient(var(--accent-blue-grid) 1px, transparent 1px),
+            linear-gradient(90deg, var(--accent-blue-grid) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px',
+          opacity: 0.6,
+        }}
+      />
+
+      {/* 3D Logo Particles — z-10 so the mouse overlay covers the whole section */}
+      <div className="absolute inset-0 z-10">
+        <LogoParticles />
+      </div>
+
+      {/* Gradient Overlay - theme aware, semi-opaque center keeps text readable */}
+      <div
+        className="absolute inset-0 z-20 pointer-events-none"
+        style={{
+          background: `linear-gradient(to bottom,
+            var(--background) 0%,
+            color-mix(in srgb, var(--background) 70%, transparent) 35%,
+            color-mix(in srgb, var(--background) 60%, transparent) 50%,
+            color-mix(in srgb, var(--background) 70%, transparent) 65%,
+            var(--background) 100%
+          )`
+        }}
+      />
+
+      {/* Content — pointer-events-none so cursor reaches particles, auto on interactive elements */}
+      <div className="relative z-30 container mx-auto px-6 text-center pt-20 pointer-events-none">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -72,6 +99,7 @@ export function Hero() {
               variant="primary"
               size="lg"
               onClick={startWarp}
+              className="pointer-events-auto"
             >
               Launch App
             </Button>
@@ -82,7 +110,7 @@ export function Hero() {
       {/* Scroll Indicator - positioned lower and separated from buttons */}
       <FadeIn delay={1}>
         <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 pointer-events-auto"
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >

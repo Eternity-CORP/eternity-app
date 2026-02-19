@@ -11,9 +11,8 @@ import { cn } from '@/lib/utils'
 import { useTheme } from '@/context/ThemeContext'
 
 const navItems = [
-  { label: 'Features', href: '#features' },
-  { label: 'Business', href: '#business-wallet' },
-  { label: 'Roadmap', href: '#coming-soon' },
+  { label: 'Features', href: '#showcase' },
+  { label: 'Roadmap', href: '#roadmap' },
 ]
 
 export function Header() {

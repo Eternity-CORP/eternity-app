@@ -33,15 +33,15 @@ export default function PrivacyPage() {
 
         <article className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>Privacy Policy</h1>
-          <p className="mb-12" style={{ color: 'var(--foreground-muted)' }}>Last updated: January 2026</p>
+          <p className="mb-12" style={{ color: 'var(--foreground-muted)' }}>Last updated: February 2026</p>
 
           <div className="prose prose-lg max-w-none space-y-8">
             <section>
               <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>Introduction</h2>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
-                Eternity ("we", "our", or "us") is committed to protecting your privacy.
+                Eternity (&ldquo;we&rdquo;, &ldquo;our&rdquo;, or &ldquo;us&rdquo;) is committed to protecting your privacy.
                 This Privacy Policy explains how we collect, use, and safeguard your
-                information when you use our mobile wallet application.
+                information when you use our wallet application.
               </p>
             </section>
 
@@ -73,6 +73,14 @@ export default function PrivacyPage() {
                     username and wallet address.
                   </p>
                 </div>
+                <div className="p-4 rounded-lg" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
+                  <h3 className="font-semibold mb-2" style={{ color: 'var(--foreground)' }}>AI Chat Messages</h3>
+                  <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                    When you use the AI Agent, your messages are processed to provide
+                    wallet assistance. We do not store chat history on our servers
+                    beyond the active session.
+                  </p>
+                </div>
               </div>
             </section>
 
@@ -82,19 +90,19 @@ export default function PrivacyPage() {
               </h2>
               <ul className="space-y-2" style={{ color: 'var(--foreground-muted)' }}>
                 <li className="flex items-center gap-2">
-                  <span style={{ color: 'var(--foreground)' }}>✓</span>
+                  <span style={{ color: 'var(--foreground)' }}>&#10003;</span>
                   Private keys or seed phrases
                 </li>
                 <li className="flex items-center gap-2">
-                  <span style={{ color: 'var(--foreground)' }}>✓</span>
-                  Personal identification information (until SHARD Identity)
+                  <span style={{ color: 'var(--foreground)' }}>&#10003;</span>
+                  Personal identification information
                 </li>
                 <li className="flex items-center gap-2">
-                  <span style={{ color: 'var(--foreground)' }}>✓</span>
-                  Transaction contents beyond what's public on blockchain
+                  <span style={{ color: 'var(--foreground)' }}>&#10003;</span>
+                  Transaction contents beyond what&apos;s public on blockchain
                 </li>
                 <li className="flex items-center gap-2">
-                  <span style={{ color: 'var(--foreground)' }}>✓</span>
+                  <span style={{ color: 'var(--foreground)' }}>&#10003;</span>
                   Location data
                 </li>
               </ul>
@@ -107,12 +115,16 @@ export default function PrivacyPage() {
               </p>
               <ul className="space-y-2" style={{ color: 'var(--foreground-muted)' }}>
                 <li>
-                  <strong style={{ color: 'var(--foreground)' }}>Alchemy</strong> - Blockchain RPC
+                  <strong style={{ color: 'var(--foreground)' }}>Alchemy</strong> — Blockchain RPC
                   provider for transaction processing
                 </li>
                 <li>
-                  <strong style={{ color: 'var(--foreground)' }}>CoinGecko</strong> - Price data for
+                  <strong style={{ color: 'var(--foreground)' }}>CoinGecko</strong> — Price data for
                   displaying USD values
+                </li>
+                <li>
+                  <strong style={{ color: 'var(--foreground)' }}>Anthropic</strong> — AI model provider
+                  for the in-app AI Agent
                 </li>
               </ul>
             </section>
@@ -132,8 +144,10 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>Contact Us</h2>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
-                For privacy-related inquiries, please use our waitlist form on the homepage
-                and mention your concern. We will get back to you as soon as possible.
+                For privacy-related inquiries, contact us at{' '}
+                <a href="mailto:eternity.shard.business@gmail.com" className="underline" style={{ color: 'var(--foreground)' }}>
+                  eternity.shard.business@gmail.com
+                </a>.
               </p>
             </section>
           </div>

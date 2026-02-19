@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/animations/FadeIn'
+import { IsometricBoxes } from '@/components/animations/IsometricBoxes'
 
 const pillars = [
   {
@@ -35,10 +36,10 @@ export function Solution() {
     <section
       id="solution"
       className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
-      style={{ background: 'var(--background-secondary)' }}
+      style={{ background: 'var(--background)' }}
     >
-      {/* Background */}
-      <div className="absolute inset-0 bg-dots opacity-30" />
+      {/* Cursor-reactive isometric cubes */}
+      <IsometricBoxes />
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>

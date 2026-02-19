@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FadeIn } from '@/components/animations/FadeIn'
+import { SpotlightGrid } from '@/components/animations/SpotlightGrid'
 import { Button } from '@/components/ui/Button'
 
 export function CTA() {
@@ -49,10 +50,9 @@ export function CTA() {
     <section
       id="cta"
       className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
-      style={{ background: 'var(--background-secondary)' }}
+      style={{ background: 'var(--background)' }}
     >
-      {/* Background dots */}
-      <div className="absolute inset-0 bg-dots opacity-50" />
+      <SpotlightGrid />
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>

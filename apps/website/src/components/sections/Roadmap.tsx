@@ -16,6 +16,7 @@ const milestones = [
       { text: '@username registry', done: true },
       { text: 'Contacts & scheduled payments', done: true },
       { text: 'AI Financial Agent', done: true },
+      { text: 'Business Wallet & Governance', done: true },
       { text: 'Multi-chain balances', done: true },
     ],
   },
@@ -51,105 +52,238 @@ const milestones = [
   },
 ]
 
-function TimelineMarker({ status }: { status: string }) {
-  const isActive = status === 'completed' || status === 'next'
+/* ------------------------------------------------------------------ */
+/*  SVG Winding Road Path                                               */
+/* ------------------------------------------------------------------ */
+
+function WindingRoad() {
+  const ref = useRef<SVGSVGElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end start'],
+  })
+
+  const pathProgress = useTransform(scrollYProgress, [0.05, 0.75], [0, 1])
+
+  // S-curve winding path that flows through 4 milestone positions
+  // Cards positioned at: ~y=80, ~y=260, ~y=440, ~y=620
+  const roadPath =
+    'M 400 20 C 400 60, 650 80, 650 140 C 650 200, 150 220, 150 280 C 150 340, 650 360, 650 420 C 650 480, 150 500, 150 560 C 150 620, 400 640, 400 680'
 
   return (
-    <div className="relative w-8 h-8 flex items-center justify-center">
-      <div
-        className="w-3 h-3 rounded-full"
-        style={{ background: isActive ? 'var(--foreground)' : 'var(--border)' }}
+    <svg
+      ref={ref}
+      className="absolute left-0 top-0 w-full h-full pointer-events-none hidden md:block"
+      viewBox="0 0 800 700"
+      preserveAspectRatio="none"
+      style={{ opacity: 0.9 }}
+    >
+      <defs>
+        <linearGradient id="roadGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="var(--accent-blue)" />
+          <stop offset="50%" stopColor="var(--accent-cyan)" />
+          <stop offset="100%" stopColor="var(--accent-blue)" />
+        </linearGradient>
+        <filter id="roadGlow">
+          <feGaussianBlur stdDeviation="6" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="roadGlowSoft">
+          <feGaussianBlur stdDeviation="12" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Wide soft glow behind */}
+      <path
+        d={roadPath}
+        fill="none"
+        stroke="url(#roadGradient)"
+        strokeWidth="20"
+        strokeLinecap="round"
+        filter="url(#roadGlowSoft)"
+        opacity="0.15"
       />
-      {status === 'next' && (
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{ border: '1px solid var(--foreground)' }}
-          animate={{ scale: [1, 1.5, 1], opacity: [1, 0, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
+
+      {/* Dashed background path */}
+      <path
+        d={roadPath}
+        fill="none"
+        stroke="var(--border)"
+        strokeWidth="2"
+        strokeDasharray="8 8"
+        strokeLinecap="round"
+      />
+
+      {/* Animated glowing progress path */}
+      <motion.path
+        d={roadPath}
+        fill="none"
+        stroke="url(#roadGradient)"
+        strokeWidth="3"
+        strokeLinecap="round"
+        filter="url(#roadGlow)"
+        style={{ pathLength: pathProgress }}
+      />
+
+      {/* Milestone dots on the road */}
+      {[
+        { cx: 400, cy: 20 },
+        { cx: 650, cy: 140 },
+        { cx: 150, cy: 280 },
+        { cx: 650, cy: 420 },
+        { cx: 150, cy: 560 },
+        { cx: 400, cy: 680 },
+      ].map((dot, i) => (
+        <circle
+          key={i}
+          cx={dot.cx}
+          cy={dot.cy}
+          r={i === 0 || i === 5 ? 3 : 5}
+          fill={i === 0 || i === 5 ? 'var(--border)' : 'var(--foreground)'}
         />
-      )}
-    </div>
+      ))}
+    </svg>
   )
 }
+
+/* ------------------------------------------------------------------ */
+/*  Milestone Card (horizontal layout)                                  */
+/* ------------------------------------------------------------------ */
 
 function MilestoneCard({
   milestone,
   index,
-  isLeft,
 }: {
-  milestone: typeof milestones[0]
+  milestone: (typeof milestones)[0]
   index: number
-  isLeft: boolean
 }) {
+  const isCompleted = milestone.status === 'completed'
+  const isNext = milestone.status === 'next'
+
+  // Desktop: alternate left/right aligned to match the S-curve
+  // 0 → right, 1 → left, 2 → right, 3 → left
+  const isRight = index % 2 === 0
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
+      initial={{ opacity: 0, x: isRight ? 40 : -40 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: '-100px' }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
-      className={`relative ${isLeft ? 'md:pr-16 md:text-right' : 'md:pl-16'}`}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.6, delay: index * 0.1 }}
+      className={`relative md:w-[45%] ${isRight ? 'md:ml-auto' : 'md:mr-auto'}`}
     >
-      <div
-        className="p-6 rounded-2xl transition-colors"
-        style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}
+      <motion.div
+        className="p-6 rounded-2xl backdrop-blur-sm transition-all duration-300"
+        style={{
+          background: 'var(--card-bg)',
+          border: `1px solid ${isCompleted ? 'var(--accent-blue)' : isNext ? 'var(--border)' : 'var(--border-light)'}`,
+          boxShadow: isCompleted
+            ? '0 0 30px rgba(51, 136, 255, 0.08)'
+            : 'none',
+        }}
+        whileHover={{ y: -3, boxShadow: '0 8px 30px rgba(51, 136, 255, 0.1)' }}
+        transition={{ duration: 0.3 }}
       >
-        {/* Quarter badge */}
-        <div
-          className="inline-block px-3 py-1 rounded-full text-xs font-mono mb-3"
-          style={{
-            background: milestone.status === 'completed' ? 'var(--foreground)' : milestone.status === 'next' ? 'var(--border)' : 'var(--surface-light)',
-            color: milestone.status === 'completed' ? 'var(--background)' : milestone.status === 'next' ? 'var(--foreground)' : 'var(--foreground-muted)',
-          }}
-        >
-          {milestone.quarter}
+        <div className="flex items-center gap-3 mb-4">
+          {/* Status dot */}
+          <div className="relative flex-shrink-0">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                background: isCompleted
+                  ? 'var(--accent-blue)'
+                  : isNext
+                    ? 'var(--foreground)'
+                    : 'var(--border)',
+              }}
+            />
+            {isNext && (
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{ border: '1.5px solid var(--accent-cyan)' }}
+                animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            )}
+          </div>
+
+          {/* Quarter */}
+          <span
+            className="text-xs font-mono tracking-wider"
+            style={{
+              color: isCompleted
+                ? 'var(--accent-blue)'
+                : isNext
+                  ? 'var(--foreground)'
+                  : 'var(--foreground-muted)',
+            }}
+          >
+            {milestone.quarter}
+          </span>
+
+          {/* Status label */}
+          {isCompleted && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full ml-auto"
+              style={{ background: 'var(--accent-blue)', color: '#fff' }}>
+              DONE
+            </span>
+          )}
+          {isNext && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full ml-auto"
+              style={{ border: '1px solid var(--foreground)', color: 'var(--foreground)' }}>
+              NEXT
+            </span>
+          )}
         </div>
 
-        <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--foreground)' }}>{milestone.title}</h3>
+        <h3
+          className="text-xl font-semibold mb-3"
+          style={{ color: 'var(--foreground)' }}
+        >
+          {milestone.title}
+        </h3>
 
-        <ul className={`space-y-2 ${isLeft ? 'md:text-right' : ''}`}>
+        <ul className="space-y-1.5">
           {milestone.items.map((item, i) => (
             <li
               key={i}
-              className={`flex items-center gap-2 text-sm ${
-                isLeft ? 'md:flex-row-reverse' : ''
-              }`}
+              className="flex items-center gap-2 text-sm"
               style={{ color: item.done ? 'var(--foreground)' : 'var(--foreground-muted)' }}
             >
               {item.done ? (
                 <svg
-                  className="w-4 h-4 flex-shrink-0"
+                  className="w-3.5 h-3.5 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
-                  style={{ color: 'var(--foreground)' }}
+                  style={{ color: 'var(--accent-blue)' }}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ border: '1px solid var(--border)' }} />
+                <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ border: '1px solid var(--border)' }} />
               )}
               {item.text}
             </li>
           ))}
         </ul>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }
 
+/* ------------------------------------------------------------------ */
+/*  Main Section                                                       */
+/* ------------------------------------------------------------------ */
+
 export function Roadmap() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'end start'],
-  })
-
-  const lineHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
 
   return (
     <section
@@ -162,77 +296,60 @@ export function Roadmap() {
 
       <div className="container mx-auto px-6 relative z-10">
         <FadeIn>
-          <p className="text-sm font-medium tracking-widest uppercase mb-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
+          <p
+            className="text-sm font-medium tracking-widest uppercase mb-4 text-center"
+            style={{ color: 'var(--foreground-muted)' }}
+          >
             Roadmap
           </p>
         </FadeIn>
 
         <FadeIn delay={0.1}>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-6">
-            <GlitchText
-              delay={0.3}
-              glitchIntensity="medium"
-              style={{ color: 'var(--foreground)' }}
-            >
+            <GlitchText delay={0.3} glitchIntensity="medium" style={{ color: 'var(--foreground)' }}>
               Our Journey
             </GlitchText>
           </h2>
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <p className="text-center text-lg md:text-xl mb-16" style={{ color: 'var(--foreground-muted)' }}>
+          <p className="text-center text-lg md:text-xl mb-20" style={{ color: 'var(--foreground-muted)' }}>
             Building the future, step by step
           </p>
         </FadeIn>
 
-        {/* Timeline */}
-        <div className="relative max-w-4xl mx-auto">
-          {/* Vertical line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 hidden md:block" style={{ background: 'var(--border)' }}>
-            <motion.div
-              className="w-full"
-              style={{ height: lineHeight, background: 'var(--foreground)' }}
-            />
-          </div>
+        {/* Road + Cards container */}
+        <div className="relative max-w-5xl mx-auto">
+          {/* SVG winding road (desktop only) */}
+          <WindingRoad />
 
-          {/* Milestones */}
-          <div className="space-y-12 md:space-y-24">
+          {/* Mobile: vertical glowing line */}
+          <div
+            className="absolute left-6 top-0 bottom-0 w-px md:hidden"
+            style={{
+              background: 'linear-gradient(to bottom, var(--accent-blue), var(--accent-cyan), var(--border))',
+            }}
+          />
+
+          {/* Milestone cards */}
+          <div className="space-y-8 md:space-y-16 relative z-10">
             {milestones.map((milestone, index) => (
-              <div
-                key={milestone.quarter}
-                className="relative grid md:grid-cols-2 gap-8 md:gap-0"
-              >
-                {/* Marker (center) */}
-                <div className="absolute left-1/2 top-6 -translate-x-1/2 z-10 hidden md:block">
-                  <TimelineMarker status={milestone.status} />
+              <div key={milestone.quarter} className="pl-12 md:pl-0">
+                {/* Mobile dot */}
+                <div className="absolute left-[18px] md:hidden">
+                  <div
+                    className="w-4 h-4 rounded-full border-2"
+                    style={{
+                      background: milestone.status === 'completed' ? 'var(--accent-blue)' : 'var(--background)',
+                      borderColor: milestone.status === 'completed'
+                        ? 'var(--accent-blue)'
+                        : milestone.status === 'next'
+                          ? 'var(--foreground)'
+                          : 'var(--border)',
+                    }}
+                  />
                 </div>
-
-                {/* Mobile marker */}
-                <div className="md:hidden flex items-center gap-4 mb-4">
-                  <TimelineMarker status={milestone.status} />
-                  <span className="text-sm font-mono" style={{ color: 'var(--foreground-muted)' }}>{milestone.quarter}</span>
-                </div>
-
-                {/* Card - alternating sides */}
-                {index % 2 === 0 ? (
-                  <>
-                    <MilestoneCard
-                      milestone={milestone}
-                      index={index}
-                      isLeft={true}
-                    />
-                    <div className="hidden md:block" />
-                  </>
-                ) : (
-                  <>
-                    <div className="hidden md:block" />
-                    <MilestoneCard
-                      milestone={milestone}
-                      index={index}
-                      isLeft={false}
-                    />
-                  </>
-                )}
+                <MilestoneCard milestone={milestone} index={index} />
               </div>
             ))}
           </div>
@@ -240,9 +357,14 @@ export function Roadmap() {
           {/* End marker */}
           <FadeIn delay={0.5}>
             <div className="text-center mt-16">
-              <span className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
-                This is just the beginning
-              </span>
+              <motion.span
+                className="text-sm font-mono"
+                style={{ color: 'var(--foreground-muted)' }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              >
+                This is just the beginning...
+              </motion.span>
             </div>
           </FadeIn>
         </div>

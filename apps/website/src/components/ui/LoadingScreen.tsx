@@ -1,22 +1,25 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
+import { useTheme } from '@/context/ThemeContext'
 
-// Logo variants — only 730x787 viewBox with consistent content size
-const logoVariants = [
+const darkThemeVariants = [
   '/images/logo_blue.svg',
   '/images/logo_light-green.svg',
   '/images/logo_breeze.svg',
   '/images/logo_light-blue.svg',
   '/images/logo_saladik.svg',
   '/images/logo_black-green.svg',
+]
+
+const lightThemeVariants = [
   '/images/logo_blue.svg',
-  '/images/logo_breeze.svg',
-  '/images/logo_light-blue.svg',
-  '/images/logo_light-green.svg',
-  '/images/logo_saladik.svg',
+  '/images/logo_black-green.svg',
+  '/images/logo_blue.svg',
+  '/images/logo_black-green.svg',
+  '/images/logo_blue.svg',
   '/images/logo_black-green.svg',
 ]
 
@@ -25,50 +28,83 @@ interface LoadingScreenProps {
   onComplete?: () => void
 }
 
+function preloadImages(srcs: string[]): Promise<void> {
+  const unique = [...new Set(srcs)]
+  return Promise.all(
+    unique.map(
+      (src) =>
+        new Promise<void>((resolve) => {
+          const img = new window.Image()
+          img.onload = () => resolve()
+          img.onerror = () => resolve()
+          img.src = src
+        })
+    )
+  ).then(() => {})
+}
+
 export function LoadingScreen({
-  duration = 3500,
+  duration = 2000,
   onComplete,
 }: LoadingScreenProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [phase, setPhase] = useState<'cycling' | 'done'>('cycling')
+  const [phase, setPhase] = useState<'preloading' | 'cycling' | 'done'>('preloading')
   const [isComplete, setIsComplete] = useState(false)
-  const [isDark, setIsDark] = useState(true)
+  const { isDark } = useTheme()
 
-  // Detect theme
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme')
-    if (savedTheme === 'light') {
-      setIsDark(false)
-    } else if (savedTheme === 'dark') {
-      setIsDark(true)
-    } else {
-      setIsDark(true)
-    }
-  }, [])
+  const isDarkRef = useRef(isDark)
+  isDarkRef.current = isDark
 
-  // Preload all logo images
+  const imgRef = useRef<HTMLImageElement>(null)
+
   useEffect(() => {
-    logoVariants.forEach((src) => {
-      const img = new window.Image()
-      img.src = src
+    if (phase !== 'preloading') return
+
+    let cancelled = false
+    const variants = isDarkRef.current ? darkThemeVariants : lightThemeVariants
+
+    preloadImages(variants).then(() => {
+      if (!cancelled) {
+        setPhase('cycling')
+      }
     })
-  }, [])
+
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        setPhase((prev) => (prev === 'preloading' ? 'cycling' : prev))
+      }
+    }, 500)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [phase])
 
   const finishLoading = useCallback(() => {
     setIsComplete(true)
     onComplete?.()
   }, [onComplete])
 
-  // Phase 1: Rapid cycling (faster and faster)
+  useLayoutEffect(() => {
+    if (phase === 'cycling' && imgRef.current) {
+      const variants = isDarkRef.current ? darkThemeVariants : lightThemeVariants
+      imgRef.current.src = variants[0]
+    }
+  }, [phase])
+
   useEffect(() => {
     if (phase !== 'cycling') return
 
-    // Start fast, get faster: 200ms -> 100ms -> 60ms
-    const cycleTime = duration * 0.7 // 70% of time for cycling
-    const startTime = Date.now()
+    let cancelled = false
+    const cycleTime = duration * 0.7
+    const startTime = performance.now()
+    let index = 0
+    let lastSwap = 0
 
-    const tick = () => {
-      const elapsed = Date.now() - startTime
+    const tick = (now: number) => {
+      if (cancelled) return
+
+      const elapsed = now - startTime
       const progress = elapsed / cycleTime
 
       if (progress >= 1) {
@@ -76,24 +112,36 @@ export function LoadingScreen({
         return
       }
 
-      // Speed increases over time: starts at 200ms intervals, ends at 60ms
-      const interval = 200 - progress * 140
-      setCurrentIndex((prev) => (prev + 1) % logoVariants.length)
+      const interval = 200 - progress * 120
+      if (elapsed - lastSwap >= interval) {
+        lastSwap = elapsed
+        const variants = isDarkRef.current ? darkThemeVariants : lightThemeVariants
+        index = (index + 1) % variants.length
 
-      setTimeout(tick, interval)
+        if (imgRef.current) {
+          imgRef.current.src = variants[index]
+        }
+      }
+
+      requestAnimationFrame(tick)
     }
 
-    const timer = setTimeout(tick, 200)
-    return () => clearTimeout(timer)
+    const startTimer = setTimeout(() => {
+      requestAnimationFrame(tick)
+    }, 50)
+
+    return () => {
+      cancelled = true
+      clearTimeout(startTimer)
+    }
   }, [phase, duration])
 
-  // Phase 2: Done — hold final logo then fade out
   useEffect(() => {
     if (phase !== 'done') return
 
     const hideTimer = setTimeout(() => {
       finishLoading()
-    }, duration * 0.2) // 20% of time for final hold
+    }, duration * 0.2)
 
     return () => clearTimeout(hideTimer)
   }, [phase, duration, finishLoading])
@@ -105,41 +153,32 @@ export function LoadingScreen({
       {!isComplete && (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ backgroundColor: isDark ? '#0a0a0a' : '#ffffff' }}
+          style={{ backgroundColor: isDark ? '#000000' : '#ffffff' }}
           initial={{ opacity: 1 }}
           exit={{
             opacity: 0,
-            transition: { duration: 0.6, ease: 'easeInOut' },
+            transition: { duration: 0.5, ease: 'easeInOut' },
           }}
         >
-          {/* Cycling phase — rapid logo switching */}
-          {phase === 'cycling' && (
-            <motion.div
+          {(phase === 'preloading' || phase === 'cycling') && (
+            <div
               className="relative"
               style={{ width: 180, height: 194 }}
             >
-              <AnimatePresence mode="popLayout">
-                <motion.div
-                  key={currentIndex}
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.1 }}
-                  transition={{ duration: 0.08 }}
-                  className="absolute inset-0"
-                >
-                  <Image
-                    src={logoVariants[currentIndex]}
-                    alt=""
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                </motion.div>
-              </AnimatePresence>
-            </motion.div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                alt=""
+                src={isDark ? darkThemeVariants[0] : lightThemeVariants[0]}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
           )}
 
-          {/* Done phase — final logo reveal */}
           {phase === 'done' && (
             <motion.div
               className="relative"
@@ -147,7 +186,7 @@ export function LoadingScreen({
               initial={{ opacity: 0, scale: 1.3 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{
-                duration: 0.5,
+                duration: 0.4,
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
@@ -158,13 +197,11 @@ export function LoadingScreen({
                 className="object-contain"
                 priority
               />
-
-              {/* Subtle glow behind final logo */}
               <motion.div
                 className="absolute inset-0 -z-10"
                 initial={{ opacity: 0, scale: 0.5 }}
                 animate={{ opacity: 0.3, scale: 2 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
                 style={{
                   background: `radial-gradient(circle, ${isDark ? 'rgba(51,136,255,0.3)' : 'rgba(0,102,255,0.15)'}, transparent 70%)`,
                 }}
@@ -172,14 +209,13 @@ export function LoadingScreen({
             </motion.div>
           )}
 
-          {/* "ETERNITY" text appears with final logo */}
           {phase === 'done' && (
             <motion.p
               className="absolute bottom-[30%] text-sm font-medium tracking-[0.3em] uppercase"
               style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)' }}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
             >
               ETERNITY
             </motion.p>

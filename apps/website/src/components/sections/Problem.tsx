@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef } from 'react'
 import { FadeIn } from '@/components/animations/FadeIn'
 import { GlitchText } from '@/components/animations/GlitchText'
+import { NoiseField } from '@/components/animations/NoiseField'
 
 const barriers = [
   {
@@ -47,8 +48,8 @@ export function Problem() {
       className="relative min-h-screen flex items-center py-32 overflow-hidden theme-transition"
       style={{ background: 'var(--background)' }}
     >
-      {/* Subtle grid */}
-      <div className="absolute inset-0 bg-grid opacity-50" />
+      {/* Chaotic noise field — represents broken crypto UX */}
+      <NoiseField />
 
       <motion.div style={{ opacity }} className="container mx-auto px-6 relative z-10">
         <FadeIn>

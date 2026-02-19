@@ -14,17 +14,20 @@ function PageContent({ children }: PageWrapperProps) {
   return (
     <>
       <LoadingScreen
-        duration={3500}
+        duration={2000}
         onComplete={() => setIsLoaded(true)}
       />
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isLoaded ? 1 : 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        {children}
-      </motion.div>
+      {/* Only mount children (with their heavy canvases) after loading is done */}
+      {isLoaded && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          {children}
+        </motion.div>
+      )}
     </>
   )
 }
