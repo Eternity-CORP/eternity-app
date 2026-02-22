@@ -17,8 +17,13 @@ export const metadata: Metadata = {
   keywords: ['crypto wallet', 'AI wallet', 'BLIK', 'cryptocurrency', 'ethereum', 'web3', 'AI-native'],
   authors: [{ name: 'Eternity Team' }],
   icons: {
-    icon: { url: '/favicon.svg', type: 'image/svg+xml' },
-    apple: '/images/loho_purple.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     title: 'Eternity | AI-Native Crypto Wallet',

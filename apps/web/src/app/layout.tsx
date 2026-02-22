@@ -12,7 +12,12 @@ export const metadata: Metadata = {
   title: 'Eternity — AI-Native Wallet',
   description: 'AI-native crypto wallet. No addresses. No fear. Just you and your AI.',
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
     apple: '/apple-touch-icon.png',
   },
   appleWebApp: {
