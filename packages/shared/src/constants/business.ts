@@ -5,7 +5,7 @@
  * BusinessFactory contract address on Sepolia testnet.
  * Set after deployment via: pnpm --filter @e-y/contracts deploy:sepolia
  */
-export const BUSINESS_FACTORY_ADDRESS = '0xA5cD5585963f2d76EB4ea22C92E5e78c6dAEEaC1' as const;
+export const BUSINESS_FACTORY_ADDRESS = '0xD4d654F8Ccf513BE830e34E9Cba5c43038474922' as const;
 
 export const BUSINESS_TOKEN_ABI = [
   {
