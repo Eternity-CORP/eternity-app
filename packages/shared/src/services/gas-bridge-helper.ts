@@ -8,8 +8,8 @@ import { findNetworksWithBalance, getCheapestNetwork } from './routing-helpers';
 import { SUPPORTED_NETWORKS, type NetworkId } from '../config/multi-network';
 
 export interface GasBridgeSuggestion {
-  fromNetwork: string;
-  toNetwork: string;
+  fromNetwork: NetworkId;
+  toNetwork: NetworkId;
   amount: string;
   nativeSymbol: string;
 }
@@ -19,11 +19,11 @@ export interface GasBridgeSuggestion {
  * Returns null if no source network has the native token.
  */
 export function suggestGasBridge(
-  targetNetwork: string,
+  targetNetwork: NetworkId,
   shortfallAmount: string,
   aggregatedBalances: AggregatedTokenBalance[],
 ): GasBridgeSuggestion | null {
-  const nativeSymbol = SUPPORTED_NETWORKS[targetNetwork as NetworkId]?.nativeCurrency?.symbol;
+  const nativeSymbol = SUPPORTED_NETWORKS[targetNetwork]?.nativeCurrency?.symbol;
   if (!nativeSymbol) return null;
 
   const networksWithBalance = findNetworksWithBalance(aggregatedBalances, nativeSymbol)

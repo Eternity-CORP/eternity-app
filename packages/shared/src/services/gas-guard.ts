@@ -3,12 +3,14 @@
  * No ethers dependency. Accepts pre-fetched values.
  */
 
+import type { NetworkId } from '../config/multi-network';
+
 export interface GasGuardResult {
   sufficient: boolean;
   nativeBalance: string;
   estimatedGasCostEth: string;
   estimatedGasCostUsd: number;
-  networkId: string;
+  networkId: NetworkId;
   nativeSymbol: string;
   shortfall: string;
 }
@@ -17,7 +19,7 @@ export interface GasGuardResult {
  * Check if user has enough native token to cover gas on a network.
  */
 export function checkGasAvailability(
-  networkId: string,
+  networkId: NetworkId,
   nativeSymbol: string,
   nativeBalance: string,
   estimatedGasCostEth: string,

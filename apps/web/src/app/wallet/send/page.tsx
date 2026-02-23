@@ -142,8 +142,8 @@ function SendContent() {
       return
     }
 
-    const runGasGuard = (networkId: string, gasEstimateValue: string) => {
-      const networkConfig = SUPPORTED_NETWORKS[networkId as NetworkId]
+    const runGasGuard = (networkId: NetworkId, gasEstimateValue: string) => {
+      const networkConfig = SUPPORTED_NETWORKS[networkId]
       const nativeSymbol = networkConfig?.nativeCurrency?.symbol || 'ETH'
 
       // Find native balance on the sending network
@@ -395,12 +395,12 @@ function SendContent() {
               {gasGuard && !gasGuard.sufficient && (
                 <div className="px-4 py-3 rounded-xl mb-4" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                   <p className="text-sm" style={{ color: '#ef4444' }}>
-                    Insufficient {gasGuard.nativeSymbol} for gas on {SUPPORTED_NETWORKS[gasGuard.networkId as NetworkId]?.name || gasGuard.networkId}.
+                    Insufficient {gasGuard.nativeSymbol} for gas on {SUPPORTED_NETWORKS[gasGuard.networkId]?.name || gasGuard.networkId}.
                     {' '}Need ~{parseFloat(gasGuard.estimatedGasCostEth).toFixed(6)} {gasGuard.nativeSymbol}, have {parseFloat(gasGuard.nativeBalance).toFixed(6)}.
                   </p>
                   {gasBridgeSuggestion && (
                     <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
-                      Tip: Bridge {gasBridgeSuggestion.amount} {gasBridgeSuggestion.nativeSymbol} from {SUPPORTED_NETWORKS[gasBridgeSuggestion.fromNetwork as NetworkId]?.name || gasBridgeSuggestion.fromNetwork} to cover gas.
+                      Tip: Bridge {gasBridgeSuggestion.amount} {gasBridgeSuggestion.nativeSymbol} from {SUPPORTED_NETWORKS[gasBridgeSuggestion.fromNetwork]?.name || gasBridgeSuggestion.fromNetwork} to cover gas.
                     </p>
                   )}
                 </div>

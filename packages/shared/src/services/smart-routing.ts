@@ -4,6 +4,7 @@
  * The calling platform code fetches bridge quotes if the result requires it.
  */
 
+import type { NetworkId } from '../config/multi-network';
 import type { AggregatedTokenBalance } from '../types/network-balance';
 import { findNetworksWithSufficientBalance } from '../types/network-balance';
 import { getCheapestNetwork, findNetworksWithBalance } from './routing-helpers';
@@ -12,11 +13,11 @@ export type SmartRouteType = 'direct' | 'bridge' | 'consolidation' | 'insufficie
 
 export interface SmartRoute {
   type: SmartRouteType;
-  fromNetwork: string;
-  toNetwork: string;
+  fromNetwork: NetworkId;
+  toNetwork: NetworkId;
   amount: string;
   symbol: string;
-  sources?: { networkId: string; amount: string }[];
+  sources?: { networkId: NetworkId; amount: string }[];
   message: string;
 }
 
@@ -24,7 +25,7 @@ export interface SmartRoutingParams {
   aggregatedBalances: AggregatedTokenBalance[];
   symbol: string;
   amount: string;
-  recipientPreferredNetwork: string | null;
+  recipientPreferredNetwork: NetworkId | null;
 }
 
 /**
@@ -37,7 +38,7 @@ export function determineSendRoute(params: SmartRoutingParams): SmartRoute {
   const amountNum = parseFloat(amount);
 
   if (isNaN(amountNum) || amountNum <= 0) {
-    return { type: 'insufficient', fromNetwork: '', toNetwork: '', amount, symbol: upper, message: 'Invalid amount' };
+    return { type: 'insufficient', fromNetwork: 'ethereum', toNetwork: 'ethereum', amount, symbol: upper, message: 'Invalid amount' };
   }
 
   const sufficientNetworks = findNetworksWithSufficientBalance(aggregatedBalances, upper, amount);
@@ -46,7 +47,7 @@ export function determineSendRoute(params: SmartRoutingParams): SmartRoute {
     // Check if consolidation would work
     const networksWithBalance = findNetworksWithBalance(aggregatedBalances, upper);
     if (networksWithBalance.length > 1) {
-      const target = recipientPreferredNetwork || (getCheapestNetwork(networksWithBalance.map(n => n.networkId)) as string);
+      const target = recipientPreferredNetwork || getCheapestNetwork(networksWithBalance.map(n => n.networkId)) || 'ethereum';
       return {
         type: 'consolidation',
         fromNetwork: networksWithBalance[0].networkId,
@@ -57,10 +58,10 @@ export function determineSendRoute(params: SmartRoutingParams): SmartRoute {
         message: 'Consolidation needed from multiple networks',
       };
     }
-    return { type: 'insufficient', fromNetwork: '', toNetwork: '', amount, symbol: upper, message: `Insufficient ${upper} balance` };
+    return { type: 'insufficient', fromNetwork: 'ethereum', toNetwork: 'ethereum', amount, symbol: upper, message: `Insufficient ${upper} balance` };
   }
 
-  const target = recipientPreferredNetwork || (getCheapestNetwork(sufficientNetworks) as string);
+  const target = recipientPreferredNetwork || getCheapestNetwork(sufficientNetworks) || 'ethereum';
 
   // Direct on target?
   if (sufficientNetworks.includes(target)) {
@@ -75,7 +76,7 @@ export function determineSendRoute(params: SmartRoutingParams): SmartRoute {
   }
 
   // Bridge from cheapest source to target
-  const source = getCheapestNetwork(sufficientNetworks) as string;
+  const source = getCheapestNetwork(sufficientNetworks) || 'ethereum';
   return {
     type: 'bridge',
     fromNetwork: source,

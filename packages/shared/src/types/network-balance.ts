@@ -108,7 +108,7 @@ export function aggregateBalances(
 export function getBestNetworkForToken(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
-): { networkId: string; balance: string } | null {
+): { networkId: NetworkId; balance: string } | null {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase(),
   );
@@ -118,7 +118,7 @@ export function getBestNetworkForToken(
     parseFloat(current.balance) > parseFloat(prev.balance) ? current : prev,
   );
 
-  return { networkId: best.networkId, balance: best.balance };
+  return { networkId: best.networkId as NetworkId, balance: best.balance };
 }
 
 /**
@@ -128,7 +128,7 @@ export function findNetworksWithSufficientBalance(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
   amount: string,
-): string[] {
+): NetworkId[] {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase(),
   );
@@ -137,5 +137,5 @@ export function findNetworksWithSufficientBalance(
   const requiredAmount = parseFloat(amount);
   return token.networks
     .filter((n) => parseFloat(n.balance) >= requiredAmount)
-    .map((n) => n.networkId);
+    .map((n) => n.networkId as NetworkId);
 }

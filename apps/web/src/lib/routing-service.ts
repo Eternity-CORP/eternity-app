@@ -8,6 +8,7 @@
 import {
   type NetworkId,
   type AggregatedTokenBalance,
+  type SmartRouteType,
   NETWORK_TO_CHAIN_ID,
   SUPPORTED_NETWORKS,
   fetchBridgeQuote,
@@ -20,10 +21,8 @@ import {
   type BridgeCostLevel,
 } from '@e-y/shared'
 
-export type RouteType = 'direct' | 'bridge' | 'consolidation' | 'insufficient'
-
 export interface RoutingResult {
-  type: RouteType
+  type: SmartRouteType
   fromNetwork: NetworkId
   toNetwork: NetworkId
   amount: string
@@ -70,8 +69,8 @@ export async function calculateTransferRoute(
   if (route.type === 'insufficient') {
     return {
       type: 'insufficient',
-      fromNetwork: (route.fromNetwork as NetworkId) || 'ethereum',
-      toNetwork: (route.toNetwork as NetworkId) || recipientPreferredNetwork || 'ethereum',
+      fromNetwork: route.fromNetwork,
+      toNetwork: route.toNetwork,
       amount,
       symbol: upperSymbol,
       bridgeQuote: null,
@@ -83,11 +82,11 @@ export async function calculateTransferRoute(
 
   // Direct — return immediately (no bridge quote needed)
   if (route.type === 'direct') {
-    const networkName = SUPPORTED_NETWORKS[route.fromNetwork as NetworkId]?.name || route.fromNetwork
+    const networkName = SUPPORTED_NETWORKS[route.fromNetwork]?.name || route.fromNetwork
     return {
       type: 'direct',
-      fromNetwork: route.fromNetwork as NetworkId,
-      toNetwork: route.toNetwork as NetworkId,
+      fromNetwork: route.fromNetwork,
+      toNetwork: route.toNetwork,
       amount,
       symbol: upperSymbol,
       bridgeQuote: null,
@@ -101,8 +100,8 @@ export async function calculateTransferRoute(
   if (route.type === 'consolidation') {
     return {
       type: 'consolidation',
-      fromNetwork: route.fromNetwork as NetworkId,
-      toNetwork: route.toNetwork as NetworkId,
+      fromNetwork: route.fromNetwork,
+      toNetwork: route.toNetwork,
       amount,
       symbol: upperSymbol,
       bridgeQuote: null,
@@ -113,8 +112,8 @@ export async function calculateTransferRoute(
   }
 
   // Bridge — fetch bridge quote
-  const sourceNetwork = route.fromNetwork as NetworkId
-  const targetNetwork = route.toNetwork as NetworkId
+  const sourceNetwork = route.fromNetwork
+  const targetNetwork = route.toNetwork
 
   const fromTokenAddress = getTokenAddressForBridge(upperSymbol, sourceNetwork)
   const toTokenAddress = getTokenAddressForBridge(upperSymbol, targetNetwork)

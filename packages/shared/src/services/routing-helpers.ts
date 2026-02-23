@@ -20,12 +20,12 @@ import type { AggregatedTokenBalance } from '../types/network-balance';
 /**
  * Get the cheapest network from a list (based on gas ranking).
  */
-export function getCheapestNetwork(networks: string[]): string | null {
+export function getCheapestNetwork(networks: NetworkId[]): NetworkId | null {
   if (networks.length === 0) return null;
 
   return networks.reduce((cheapest, current) => {
-    const cheapestRank = NETWORK_GAS_RANKING[cheapest as NetworkId] ?? 99;
-    const currentRank = NETWORK_GAS_RANKING[current as NetworkId] ?? 99;
+    const cheapestRank = NETWORK_GAS_RANKING[cheapest] ?? 99;
+    const currentRank = NETWORK_GAS_RANKING[current] ?? 99;
     return currentRank < cheapestRank ? current : cheapest;
   });
 }
@@ -36,7 +36,7 @@ export function getCheapestNetwork(networks: string[]): string | null {
 export function findNetworksWithBalance(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
-): { networkId: string; balance: string }[] {
+): { networkId: NetworkId; balance: string }[] {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase(),
   );
@@ -44,7 +44,7 @@ export function findNetworksWithBalance(
 
   return token.networks
     .filter((n) => parseFloat(n.balance) > 0)
-    .map((n) => ({ networkId: n.networkId, balance: n.balance }));
+    .map((n) => ({ networkId: n.networkId as NetworkId, balance: n.balance }));
 }
 
 // ============================================
@@ -100,7 +100,7 @@ export function getTokenDecimals(
 export function getTokenBalanceOnNetwork(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
-  networkId: string,
+  networkId: NetworkId,
 ): { balance: string; usdValue: number } | null {
   const token = aggregatedBalances.find(
     (t) => t.symbol.toUpperCase() === symbol.toUpperCase(),
@@ -120,7 +120,7 @@ export function hasSufficientBalance(
   aggregatedBalances: AggregatedTokenBalance[],
   symbol: string,
   amount: string,
-  networkId: string,
+  networkId: NetworkId,
 ): boolean {
   const balance = getTokenBalanceOnNetwork(aggregatedBalances, symbol, networkId);
   if (!balance) return false;
@@ -137,10 +137,10 @@ export function hasSufficientBalance(
  */
 export function getTokenAddressForNetwork(
   symbol: string,
-  networkId: string,
+  networkId: NetworkId,
 ): string {
   const upperSymbol = symbol.toUpperCase();
-  const network = SUPPORTED_NETWORKS[networkId as NetworkId];
+  const network = SUPPORTED_NETWORKS[networkId];
 
   if (
     upperSymbol === 'ETH' ||
@@ -150,7 +150,7 @@ export function getTokenAddressForNetwork(
     return NATIVE_TOKEN_ADDRESS;
   }
 
-  return COMMON_TOKENS[upperSymbol]?.[networkId as NetworkId] ?? upperSymbol;
+  return COMMON_TOKENS[upperSymbol]?.[networkId] ?? upperSymbol;
 }
 
 // ============================================
@@ -159,11 +159,11 @@ export function getTokenAddressForNetwork(
 
 interface RouteLike {
   type: string;
-  fromNetwork: string;
-  toNetwork: string;
+  fromNetwork: NetworkId;
+  toNetwork: NetworkId;
   token?: string;
   bridgeQuote?: { totalFeeUsd: number; estimatedTime: number } | null;
-  sources?: { network: string; amount: string; bridgeQuote?: { totalFeeUsd: number; estimatedTime: number } | null }[];
+  sources?: { network: NetworkId; amount: string; bridgeQuote?: { totalFeeUsd: number; estimatedTime: number } | null }[];
 }
 
 /**
@@ -219,8 +219,8 @@ export function getRouteEstimatedTime(route: RouteLike): number {
  * Format a route into a human-readable description.
  */
 export function formatRouteDescription(route: RouteLike): string {
-  const fromName = SUPPORTED_NETWORKS[route.fromNetwork as NetworkId]?.name || route.fromNetwork;
-  const toName = SUPPORTED_NETWORKS[route.toNetwork as NetworkId]?.name || route.toNetwork;
+  const fromName = SUPPORTED_NETWORKS[route.fromNetwork]?.name || route.fromNetwork;
+  const toName = SUPPORTED_NETWORKS[route.toNetwork]?.name || route.toNetwork;
 
   switch (route.type) {
     case 'direct':
@@ -232,7 +232,7 @@ export function formatRouteDescription(route: RouteLike): string {
     case 'consolidation':
       if (route.sources && route.sources.length > 1) {
         const sourceNames = route.sources
-          .map((s) => SUPPORTED_NETWORKS[s.network as NetworkId]?.shortName || s.network)
+          .map((s) => SUPPORTED_NETWORKS[s.network]?.shortName || s.network)
           .join(', ');
         return `Consolidate from ${sourceNames} to ${toName}`;
       }

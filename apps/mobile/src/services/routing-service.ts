@@ -124,7 +124,7 @@ export async function calculateTransferRoute(
   }
 
   if (route.type === 'direct') {
-    const bestNetwork = route.fromNetwork as NetworkId;
+    const bestNetwork = route.fromNetwork;
     logger.info('Direct transfer on network', { bestNetwork });
 
     // Check if there are multiple sufficient networks (for consolidation option)
@@ -140,8 +140,8 @@ export async function calculateTransferRoute(
   }
 
   if (route.type === 'bridge') {
-    const sourceNetwork = route.fromNetwork as NetworkId;
-    const preferredNetwork = route.toNetwork as NetworkId;
+    const sourceNetwork = route.fromNetwork;
+    const preferredNetwork = route.toNetwork;
     const tokenAddress = getTokenAddressForBridge(token, sourceNetwork);
     const destTokenAddress = getTokenAddressForBridge(token, preferredNetwork);
 
@@ -180,27 +180,27 @@ export async function calculateTransferRoute(
 
   // Consolidation — fetch bridge quotes per source
   if (route.type === 'consolidation') {
-    const targetNetwork = route.toNetwork as NetworkId;
+    const targetNetwork = route.toNetwork;
     const sources: { network: NetworkId; amount: string; bridgeQuote?: BridgeQuote }[] = [];
 
     if (route.sources) {
       for (const source of route.sources) {
         if (source.networkId === targetNetwork) {
-          sources.push({ network: source.networkId as NetworkId, amount: source.amount });
+          sources.push({ network: source.networkId, amount: source.amount });
         } else {
           const tokenAddress = getTokenAddressForBridge(token, source.networkId);
           const destTokenAddress = getTokenAddressForBridge(token, targetNetwork);
 
           if (!tokenAddress || !destTokenAddress) {
             // Token not bridgeable from this source — skip bridge, include as direct
-            sources.push({ network: source.networkId as NetworkId, amount: source.amount });
+            sources.push({ network: source.networkId, amount: source.amount });
           } else {
             const sourceAmountWei = toWei(source.amount, decimals);
 
             const bridgeQuote = await getBridgeQuote(
-              source.networkId as NetworkId, targetNetwork, tokenAddress, destTokenAddress, sourceAmountWei, fromAddress, toAddress,
+              source.networkId, targetNetwork, tokenAddress, destTokenAddress, sourceAmountWei, fromAddress, toAddress,
             );
-            sources.push({ network: source.networkId as NetworkId, amount: source.amount, bridgeQuote: bridgeQuote ?? undefined });
+            sources.push({ network: source.networkId, amount: source.amount, bridgeQuote: bridgeQuote ?? undefined });
           }
         }
       }
@@ -230,7 +230,7 @@ export async function calculateTransferRoute(
  * available on the given network (i.e. getTokenAddressForNetwork
  * returns just the symbol instead of a 0x address).
  */
-function getTokenAddressForBridge(symbol: string, networkId: string): string | null {
+function getTokenAddressForBridge(symbol: string, networkId: NetworkId): string | null {
   const addr = getTokenAddressForNetwork(symbol, networkId);
   if (addr === symbol.toUpperCase()) return null;
   return addr;
