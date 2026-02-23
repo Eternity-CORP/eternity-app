@@ -2,28 +2,54 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount } from '@/contexts/account-context'
-import { fetchTransactionHistory, truncateAddress, type TransactionHistoryItem } from '@e-y/shared'
+import {
+  fetchTransactionHistory,
+  fetchMultiChainTransactionHistory,
+  truncateAddress,
+  buildMultiNetworkRpcUrls,
+  TIER1_NETWORK_IDS,
+  SUPPORTED_NETWORKS,
+  type TransactionHistoryItem,
+  type NetworkId,
+} from '@e-y/shared'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
+const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
+
 export default function HistoryPage() {
   useAuthGuard()
-  const { address, network } = useAccount()
+  const { address, network, currentAccount } = useAccount()
   const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([])
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
 
   useEffect(() => {
     if (!address) return
     loadTransactions(address)
-  }, [address])
+  }, [address, currentAccount?.type])
 
   const loadTransactions = async (addr: string) => {
     setStatus('loading')
     try {
-      const alchemyUrl = network.rpcUrl
-      const txs = await fetchTransactionHistory(alchemyUrl, addr)
-      setTransactions(txs)
+      const isReal = currentAccount?.type === 'real'
+
+      if (isReal && ALCHEMY_KEY) {
+        // Multi-chain: fetch from all 5 networks in parallel
+        const rpcUrls = buildMultiNetworkRpcUrls(ALCHEMY_KEY)
+        const networks = TIER1_NETWORK_IDS.map(id => ({
+          networkId: id,
+          alchemyUrl: rpcUrls[id].alchemyUrl,
+        }))
+        const txs = await fetchMultiChainTransactionHistory(networks, addr, 20)
+        setTransactions(txs)
+      } else {
+        // Single-chain: test/business accounts
+        const alchemyUrl = network.rpcUrl
+        const txs = await fetchTransactionHistory(alchemyUrl, addr)
+        setTransactions(txs)
+      }
+
       setStatus('succeeded')
     } catch {
       setTransactions([])
@@ -79,11 +105,16 @@ export default function HistoryPage() {
               {transactions.map((tx) => {
                 const isSent = tx.from.toLowerCase() === address.toLowerCase()
                 const otherAddress = isSent ? tx.to : tx.from
+                const netConfig = tx.networkId ? SUPPORTED_NETWORKS[tx.networkId as NetworkId] : null
+                const explorerBase = netConfig?.blockExplorer || ''
+                const txUrl = explorerBase
+                  ? `${explorerBase}/tx/${tx.hash}`
+                  : network.explorerTxUrl(tx.hash)
 
                 return (
                   <a
-                    key={tx.hash}
-                    href={network.explorerTxUrl(tx.hash)}
+                    key={`${tx.hash}-${tx.networkId || 'default'}`}
+                    href={txUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-between p-5 hover:bg-white/3 transition-colors"
@@ -107,7 +138,18 @@ export default function HistoryPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
+                          {netConfig && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/5 text-[10px] text-white/50">
+                              <span
+                                className="w-1.5 h-1.5 rounded-full inline-block"
+                                style={{ backgroundColor: netConfig.color }}
+                              />
+                              {netConfig.shortName}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-white/40">
                           {isSent ? 'To' : 'From'} {formatAddress(otherAddress)}
                         </p>

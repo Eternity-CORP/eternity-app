@@ -7,7 +7,16 @@ import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
-import { fetchTransactionHistory, type TransactionHistoryItem, SUPPORTED_NETWORKS, type NetworkId, formatUsd } from '@e-y/shared'
+import {
+  fetchTransactionHistory,
+  fetchMultiChainTransactionHistory,
+  type TransactionHistoryItem,
+  SUPPORTED_NETWORKS,
+  TIER1_NETWORK_IDS,
+  buildMultiNetworkRpcUrls,
+  type NetworkId,
+  formatUsd,
+} from '@e-y/shared'
 import PriceChart from '@/components/PriceChart'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
@@ -50,12 +59,26 @@ export default function TokenDetailPage() {
       return
     }
 
-    const alchemyNetwork = currentAccount?.type === 'test' ? 'eth-sepolia' : 'eth-mainnet'
-    const alchemyUrl = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_KEY}`
+    const isReal = currentAccount?.type === 'real'
 
-    fetchTransactionHistory(alchemyUrl, address, 10)
-      .then((txs) => { setTransactions(txs); setTxStatus('succeeded') })
-      .catch(() => { setTransactions([]); setTxStatus('failed') })
+    if (isReal) {
+      // Multi-chain: fetch from all 5 networks
+      const rpcUrls = buildMultiNetworkRpcUrls(ALCHEMY_KEY)
+      const networks = TIER1_NETWORK_IDS.map(id => ({
+        networkId: id,
+        alchemyUrl: rpcUrls[id].alchemyUrl,
+      }))
+      fetchMultiChainTransactionHistory(networks, address, 10)
+        .then((txs) => { setTransactions(txs); setTxStatus('succeeded') })
+        .catch(() => { setTransactions([]); setTxStatus('failed') })
+    } else {
+      // Single-chain: test/business
+      const alchemyNetwork = 'eth-sepolia'
+      const alchemyUrl = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_KEY}`
+      fetchTransactionHistory(alchemyUrl, address, 10)
+        .then((txs) => { setTransactions(txs); setTxStatus('succeeded') })
+        .catch(() => { setTransactions([]); setTxStatus('failed') })
+    }
   }, [address, currentAccount?.type])
 
   // Get token data from balance context
@@ -200,10 +223,11 @@ export default function TokenDetailPage() {
                   const isSent = tx.direction === 'sent'
                   const addr = isSent ? tx.to : tx.from
                   const shortAddr = `${addr.slice(0, 6)}...${addr.slice(-4)}`
+                  const txNetConfig = tx.networkId ? SUPPORTED_NETWORKS[tx.networkId as NetworkId] : null
 
                   return (
                     <div
-                      key={tx.hash}
+                      key={`${tx.hash}-${tx.networkId || 'default'}`}
                       className="flex items-center justify-between p-4 hover:bg-white/3 transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -225,7 +249,18 @@ export default function TokenDetailPage() {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
+                            {txNetConfig && (
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/5 text-[10px] text-white/50">
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full inline-block"
+                                  style={{ backgroundColor: txNetConfig.color }}
+                                />
+                                {txNetConfig.shortName}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-white/40">
                             {isSent ? `To ${shortAddr}` : `From ${shortAddr}`}
                           </p>
