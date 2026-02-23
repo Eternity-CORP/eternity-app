@@ -6,9 +6,10 @@
 
 import type { SwapToken, SwapParams, SwapTransactionRequest } from '../types/swap';
 import { LIFI_API_URL, NATIVE_TOKEN_ADDRESS, POPULAR_TOKEN_SYMBOLS } from '../constants/swap';
-import { DEFAULT_SLIPPAGE } from '../constants/swap-settings';
+import { DEFAULT_SLIPPAGE, SWAP_GAS_LIMIT_FALLBACK } from '../constants/swap-settings';
+import { getNetworkByChainId } from '../config/multi-network';
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- LI.FI API responses are untyped */
+const REQUEST_TIMEOUT = 20_000; // 20 seconds, same as bridge-service
 
 /**
  * Raw quote response from the shared service.
@@ -27,7 +28,17 @@ export interface RawSwapQuoteResponse {
   gasCostUSD: string;
   transactionRequest: SwapTransactionRequest;
   /** Raw LI.FI response for extended parsing (route steps, etc.) */
-  raw: Record<string, any>;
+  raw: Record<string, unknown>;
+}
+
+/** Shape of a single token entry from LI.FI /tokens endpoint */
+interface LifiTokenEntry {
+  address?: string;
+  symbol?: string;
+  decimals?: number;
+  name?: string;
+  logoURI?: string;
+  priceUSD?: string;
 }
 
 /**
@@ -41,16 +52,16 @@ export async function fetchTokens(chainId: number): Promise<SwapToken[]> {
       throw new Error(`Failed to fetch tokens: ${response.statusText}`);
     }
 
-    const data: any = await response.json();
-    const tokens: any[] = data.tokens[chainId] || [];
+    const data = (await response.json()) as Record<string, Record<string, LifiTokenEntry[]>>;
+    const tokens: LifiTokenEntry[] = data?.tokens?.[String(chainId)] || [];
 
     return tokens.map((token) => ({
-      address: token.address as string,
-      symbol: token.symbol as string,
-      decimals: token.decimals as number,
-      name: token.name as string,
-      logoURI: token.logoURI as string | undefined,
-      priceUSD: token.priceUSD as string | undefined,
+      address: token.address ?? '',
+      symbol: token.symbol ?? '',
+      decimals: token.decimals ?? 18,
+      name: token.name ?? '',
+      logoURI: token.logoURI,
+      priceUSD: token.priceUSD,
     }));
   } catch (error: unknown) {
     console.error('Failed to fetch tokens:', error);
@@ -99,74 +110,94 @@ export async function fetchSwapQuote(params: SwapParams): Promise<RawSwapQuoteRe
     slippage: slippage.toString(),
   });
 
-  const response = await fetch(`${LIFI_API_URL}/quote?${queryParams}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-  if (!response.ok) {
-    const error: any = await response.json().catch(() => ({ message: response.statusText }));
-    throw new Error(error.message || 'Failed to get swap quote');
+  let response: Response;
+  try {
+    response = await fetch(`${LIFI_API_URL}/quote?${queryParams}`, {
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  const data: any = await response.json();
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({ message: response.statusText })) as Record<string, unknown>;
+    throw new Error((errorBody?.message as string) || 'Failed to get swap quote');
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+
+  // Safe accessors for deeply nested LI.FI response
+  const action = (data?.action ?? {}) as Record<string, unknown>;
+  const actionFromToken = (action?.fromToken ?? {}) as Record<string, unknown>;
+  const actionToToken = (action?.toToken ?? {}) as Record<string, unknown>;
+  const estimate = (data?.estimate ?? {}) as Record<string, unknown>;
+  const gasCosts = (Array.isArray(estimate?.gasCosts) ? estimate.gasCosts : []) as Record<string, unknown>[];
+  const txRequest = (data?.transactionRequest ?? {}) as Record<string, unknown>;
 
   const fromToken: SwapToken = {
-    address: data.action.fromToken.address,
-    symbol: data.action.fromToken.symbol,
-    decimals: data.action.fromToken.decimals,
-    name: data.action.fromToken.name,
-    logoURI: data.action.fromToken.logoURI,
-    priceUSD: data.action.fromToken.priceUSD,
+    address: (actionFromToken?.address as string) ?? '',
+    symbol: (actionFromToken?.symbol as string) ?? '',
+    decimals: (actionFromToken?.decimals as number) ?? 18,
+    name: (actionFromToken?.name as string) ?? '',
+    logoURI: actionFromToken?.logoURI as string | undefined,
+    priceUSD: actionFromToken?.priceUSD as string | undefined,
   };
 
   const toToken: SwapToken = {
-    address: data.action.toToken.address,
-    symbol: data.action.toToken.symbol,
-    decimals: data.action.toToken.decimals,
-    name: data.action.toToken.name,
-    logoURI: data.action.toToken.logoURI,
-    priceUSD: data.action.toToken.priceUSD,
+    address: (actionToToken?.address as string) ?? '',
+    symbol: (actionToToken?.symbol as string) ?? '',
+    decimals: (actionToToken?.decimals as number) ?? 18,
+    name: (actionToToken?.name as string) ?? '',
+    logoURI: actionToToken?.logoURI as string | undefined,
+    priceUSD: actionToToken?.priceUSD as string | undefined,
   };
 
   return {
-    id: data.id || `quote-${Date.now()}`,
+    id: (data?.id as string) || `quote-${Date.now()}`,
     fromToken,
     toToken,
     fromAmount: params.fromAmount,
-    toAmount: data.estimate.toAmount,
-    toAmountMin: data.estimate.toAmountMin,
-    priceImpact: data.estimate.priceImpact || '0',
-    estimatedGas: data.estimate.gasCosts?.[0]?.amount || '0',
-    gasCostUSD: data.estimate.gasCosts?.[0]?.amountUSD || '0',
+    toAmount: (estimate?.toAmount as string) ?? '0',
+    toAmountMin: (estimate?.toAmountMin as string) ?? '0',
+    priceImpact: (estimate?.priceImpact as string) || '0',
+    estimatedGas: (gasCosts[0]?.amount as string) || '0',
+    gasCostUSD: (gasCosts[0]?.amountUSD as string) || '0',
     transactionRequest: {
-      to: data.transactionRequest.to,
-      data: data.transactionRequest.data,
-      value: data.transactionRequest.value || '0',
-      gasLimit: data.transactionRequest.gasLimit || '500000',
-      gasPrice: data.transactionRequest.gasPrice,
-      chainId: data.transactionRequest.chainId,
+      to: (txRequest?.to as string) ?? '',
+      data: (txRequest?.data as string) ?? '',
+      value: (txRequest?.value as string) || '0',
+      gasLimit: (txRequest?.gasLimit as string) || SWAP_GAS_LIMIT_FALLBACK,
+      gasPrice: txRequest?.gasPrice as string | undefined,
+      chainId: (txRequest?.chainId as number | undefined) ?? params.fromChainId,
     },
     raw: data,
   };
 }
 
 /**
- * Build a native token object for a given chain
+ * Build a native token object for a given chain.
+ * Uses SUPPORTED_NETWORKS config instead of a hardcoded map.
  */
 export function buildNativeToken(chainId: number): SwapToken {
-  const chainInfo: Record<number, { symbol: string; name: string }> = {
-    1: { symbol: 'ETH', name: 'Ethereum' },
+  const network = getNetworkByChainId(chainId);
+
+  // Fallback for chains not in SUPPORTED_NETWORKS (e.g. Sepolia testnet)
+  const TESTNET_INFO: Record<number, { symbol: string; name: string }> = {
     11155111: { symbol: 'ETH', name: 'Sepolia ETH' },
-    137: { symbol: 'MATIC', name: 'Polygon' },
-    42161: { symbol: 'ETH', name: 'Arbitrum ETH' },
-    8453: { symbol: 'ETH', name: 'Base ETH' },
-    10: { symbol: 'ETH', name: 'Optimism ETH' },
   };
 
-  const info = chainInfo[chainId] || { symbol: 'ETH', name: 'Native Token' };
+  const symbol = network?.nativeCurrency?.symbol ?? TESTNET_INFO[chainId]?.symbol ?? 'ETH';
+  const name = network
+    ? `${network.name} ${network.nativeCurrency.symbol}`
+    : TESTNET_INFO[chainId]?.name ?? 'Native Token';
 
   return {
     address: NATIVE_TOKEN_ADDRESS,
-    symbol: info.symbol,
-    decimals: 18,
-    name: info.name,
+    symbol,
+    decimals: network?.nativeCurrency?.decimals ?? 18,
+    name,
   };
 }

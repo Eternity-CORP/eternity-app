@@ -7,6 +7,12 @@ import type { AggregatedTokenBalance } from '../types/network-balance';
 import { findNetworksWithBalance, getCheapestNetwork } from './routing-helpers';
 import { SUPPORTED_NETWORKS, type NetworkId } from '../config/multi-network';
 
+/** Safety multiplier for bridge amount (bridge 2x the shortfall) */
+const GAS_BRIDGE_SAFETY_MULTIPLIER = 2;
+
+/** Minimum gas bridge amount to avoid dust transfers */
+const MIN_GAS_BRIDGE_AMOUNT = 0.001;
+
 export interface GasBridgeSuggestion {
   fromNetwork: NetworkId;
   toNetwork: NetworkId;
@@ -34,9 +40,8 @@ export function suggestGasBridge(
   const sourceNetwork = getCheapestNetwork(networksWithBalance.map(n => n.networkId));
   if (!sourceNetwork) return null;
 
-  // Bridge 2x the shortfall as safety margin, minimum 0.001
   const shortfall = parseFloat(shortfallAmount) || 0;
-  const bridgeAmount = Math.max(shortfall * 2, 0.001).toFixed(6);
+  const bridgeAmount = Math.max(shortfall * GAS_BRIDGE_SAFETY_MULTIPLIER, MIN_GAS_BRIDGE_AMOUNT).toFixed(6);
 
   return {
     fromNetwork: sourceNetwork,

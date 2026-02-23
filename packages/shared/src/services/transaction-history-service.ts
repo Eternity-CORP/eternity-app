@@ -92,43 +92,39 @@ export async function fetchTransactionHistory(
 
     if (receivedData.result?.transfers) {
       for (const t of receivedData.result.transfers) {
-        if (t.value) {
-          transactions.push({
-            hash: t.hash,
-            from: t.from,
-            to: t.to,
-            amount: Number(t.value).toFixed(6),
-            token: t.asset || 'ETH',
-            direction: 'received',
-            status: 'confirmed',
-            blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
-            timestamp: t.metadata?.blockTimestamp
-              ? new Date(t.metadata.blockTimestamp).getTime()
-              : Date.now(),
-            createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
-          });
-        }
+        transactions.push({
+          hash: t.hash,
+          from: t.from,
+          to: t.to,
+          amount: Number(t.value ?? 0).toFixed(6),
+          token: t.asset || 'ETH',
+          direction: 'received',
+          status: 'confirmed',
+          blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
+          timestamp: t.metadata?.blockTimestamp
+            ? new Date(t.metadata.blockTimestamp).getTime()
+            : Date.now(),
+          createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
+        });
       }
     }
 
     if (sentData.result?.transfers) {
       for (const t of sentData.result.transfers) {
-        if (t.value) {
-          transactions.push({
-            hash: t.hash,
-            from: t.from,
-            to: t.to,
-            amount: Number(t.value).toFixed(6),
-            token: t.asset || 'ETH',
-            direction: 'sent',
-            status: 'confirmed',
-            blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
-            timestamp: t.metadata?.blockTimestamp
-              ? new Date(t.metadata.blockTimestamp).getTime()
-              : Date.now(),
-            createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
-          });
-        }
+        transactions.push({
+          hash: t.hash,
+          from: t.from,
+          to: t.to,
+          amount: Number(t.value ?? 0).toFixed(6),
+          token: t.asset || 'ETH',
+          direction: 'sent',
+          status: 'confirmed',
+          blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
+          timestamp: t.metadata?.blockTimestamp
+            ? new Date(t.metadata.blockTimestamp).getTime()
+            : Date.now(),
+          createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
+        });
       }
     }
 

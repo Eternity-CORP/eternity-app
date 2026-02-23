@@ -47,6 +47,15 @@ export function determineSendRoute(params: SmartRoutingParams): SmartRoute {
     // Check if consolidation would work
     const networksWithBalance = findNetworksWithBalance(aggregatedBalances, upper);
     if (networksWithBalance.length > 1) {
+      // Verify total balance across all networks is sufficient
+      const totalBalance = networksWithBalance.reduce(
+        (sum, n) => sum + parseFloat(n.balance),
+        0,
+      );
+      if (totalBalance < amountNum) {
+        return { type: 'insufficient', fromNetwork: 'ethereum', toNetwork: 'ethereum', amount, symbol: upper, message: `Insufficient ${upper} balance across all networks` };
+      }
+
       const target = recipientPreferredNetwork || getCheapestNetwork(networksWithBalance.map(n => n.networkId)) || 'ethereum';
       return {
         type: 'consolidation',

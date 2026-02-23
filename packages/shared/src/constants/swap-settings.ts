@@ -27,3 +27,6 @@ export const SWAP_DEADLINE_SECONDS = 20 * 60;
 
 /** Quote refresh interval (30 seconds) */
 export const QUOTE_REFRESH_INTERVAL = 30_000;
+
+/** Default gas limit fallback for swap transactions when quote doesn't provide one */
+export const SWAP_GAS_LIMIT_FALLBACK = '500000';
