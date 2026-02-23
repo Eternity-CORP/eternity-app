@@ -22,6 +22,8 @@ import {
   fetchSwapQuote,
   formatTokenAmount as sharedFormatTokenAmount,
   parseTokenAmount as sharedParseTokenAmount,
+  getCachedQuote,
+  setCachedQuote,
 } from '@e-y/shared';
 
 export type { SwapToken, SwapQuote, SwapRoute, SwapStep, SwapParams };
@@ -58,9 +60,14 @@ export function getNativeToken(networkId: NetworkId): SwapToken {
 }
 
 /**
- * Get swap quote from LI.FI
+ * Get swap quote from LI.FI.
+ * Results are cached for 30 seconds to avoid re-fetching on every keystroke.
  */
 export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
+  const cacheKey = params as unknown as Record<string, unknown>;
+  const cached = getCachedQuote<SwapQuote>(cacheKey);
+  if (cached) return cached;
+
   const raw = await fetchSwapQuote(params);
 
   // Calculate exchange rate
@@ -85,7 +92,7 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
     toAmount: (step.estimate as Record<string, unknown>)?.toAmount as string,
   })) || [];
 
-  return {
+  const quote: SwapQuote = {
     id: raw.id,
     fromToken: raw.fromToken,
     toToken: raw.toToken,
@@ -103,6 +110,9 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
     },
     transactionRequest: raw.transactionRequest,
   };
+
+  setCachedQuote(cacheKey, quote);
+  return quote;
 }
 
 /**
