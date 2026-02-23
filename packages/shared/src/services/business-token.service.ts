@@ -28,6 +28,14 @@ export interface TokenHolder {
   percent: number;
 }
 
+export interface VestingScheduleInfo {
+  totalAmount: number;
+  startTime: number;
+  cliffEnd: number;
+  vestingEnd: number;
+  released: number;
+}
+
 // ============================================
 // Internal helpers
 // ============================================
@@ -119,4 +127,114 @@ export async function getAllHolders(
 
   // Filter out zero-balance addresses
   return holders.filter((h) => h.balance > 0);
+}
+
+// ============================================
+// Vesting functions
+// ============================================
+
+/**
+ * Get the vesting schedule for a beneficiary.
+ * Returns null if no vesting schedule exists (totalAmount === 0).
+ */
+export async function getVestingSchedule(
+  contractFactory: ContractFactory,
+  tokenAddress: string,
+  provider: unknown,
+  beneficiary: string,
+): Promise<VestingScheduleInfo | null> {
+  const contract = contractFactory(tokenAddress, BUSINESS_TOKEN_ABI, provider);
+
+  const result = (await contract['vestingSchedules'](beneficiary)) as {
+    totalAmount: bigint;
+    startTime: bigint;
+    cliffEnd: bigint;
+    vestingEnd: bigint;
+    released: bigint;
+  };
+
+  const totalAmount = Number(result.totalAmount);
+  if (totalAmount === 0) return null;
+
+  return {
+    totalAmount,
+    startTime: Number(result.startTime),
+    cliffEnd: Number(result.cliffEnd),
+    vestingEnd: Number(result.vestingEnd),
+    released: Number(result.released),
+  };
+}
+
+/**
+ * Get the amount of tokens that are currently releasable for a beneficiary.
+ */
+export async function getReleasable(
+  contractFactory: ContractFactory,
+  tokenAddress: string,
+  provider: unknown,
+  beneficiary: string,
+): Promise<number> {
+  const contract = contractFactory(tokenAddress, BUSINESS_TOKEN_ABI, provider);
+  const amount = (await contract['releasable'](beneficiary)) as bigint;
+  return Number(amount);
+}
+
+/**
+ * Get the amount of tokens that are currently locked for a beneficiary.
+ */
+export async function getLocked(
+  contractFactory: ContractFactory,
+  tokenAddress: string,
+  provider: unknown,
+  beneficiary: string,
+): Promise<number> {
+  const contract = contractFactory(tokenAddress, BUSINESS_TOKEN_ABI, provider);
+  const amount = (await contract['locked'](beneficiary)) as bigint;
+  return Number(amount);
+}
+
+/**
+ * Release vested tokens for the caller (msg.sender is the beneficiary).
+ */
+export async function releaseVestedTokens(
+  contractFactory: ContractFactory,
+  tokenAddress: string,
+  signer: unknown,
+): Promise<{ txHash: string }> {
+  const contract = contractFactory(tokenAddress, BUSINESS_TOKEN_ABI, signer);
+
+  const tx = (await contract['release']()) as {
+    hash: string;
+    wait(): Promise<unknown>;
+  };
+
+  await tx.wait();
+
+  return { txHash: tx.hash };
+}
+
+/**
+ * Set a vesting schedule for a beneficiary (only callable by owner).
+ * @param cliffDuration  - cliff period in seconds
+ * @param vestingDuration - total vesting period in seconds (includes cliff)
+ */
+export async function setVesting(
+  contractFactory: ContractFactory,
+  tokenAddress: string,
+  signer: unknown,
+  beneficiary: string,
+  totalAmount: number,
+  cliffDuration: number,
+  vestingDuration: number,
+): Promise<{ txHash: string }> {
+  const contract = contractFactory(tokenAddress, BUSINESS_TOKEN_ABI, signer);
+
+  const tx = (await contract['setVesting'](beneficiary, totalAmount, cliffDuration, vestingDuration)) as {
+    hash: string;
+    wait(): Promise<unknown>;
+  };
+
+  await tx.wait();
+
+  return { txHash: tx.hash };
 }
