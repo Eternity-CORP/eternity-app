@@ -13,7 +13,9 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { setSelectedToken } from '@/src/store/slices/send-slice';
 import { selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
+import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
 import { formatUsdValue } from '@/src/services/balance-service';
+import { SUPPORTED_NETWORKS, type NetworkId, formatUsd, formatBalance } from '@e-y/shared';
 import { fetchPriceChartData, fetchPriceChartByContract, type PriceChartData, type PricePoint } from '@/src/services/price-chart-service';
 import { truncateAddress } from '@/src/utils/format';
 import { TokenIcon } from '@/src/components/TokenIcon';
@@ -105,6 +107,9 @@ export default function TokenDetailsScreen() {
     selectTransactionsForAddress(state, currentAccount?.address || null)
   );
 
+  // Multi-network aggregated balances for network breakdown
+  const aggregatedBalances = useAppSelector(selectAggregatedBalances);
+
   const [chartData, setChartData] = useState<PriceChartData | null>(null);
   const [chartLoading, setChartLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
@@ -115,6 +120,14 @@ export default function TokenDetailsScreen() {
   const token = useMemo(() => {
     return balance.balances.find((b) => b.symbol === symbol);
   }, [balance.balances, symbol]);
+
+  // Get per-network breakdown from aggregated balances
+  const activeNetworks = useMemo(() => {
+    const tokenData = aggregatedBalances.find(
+      (t) => t.symbol.toUpperCase() === (symbol || '').toUpperCase()
+    );
+    return (tokenData?.networks || []).filter((n) => parseFloat(n.balance) > 0);
+  }, [aggregatedBalances, symbol]);
 
   // Filter transactions for this token
   const tokenTransactions = useMemo(() => {
@@ -235,6 +248,39 @@ export default function TokenDetailsScreen() {
             </View>
           )}
         </View>
+
+        {/* Network Breakdown — show when token exists on multiple networks */}
+        {activeNetworks.length > 1 && (
+          <View style={[styles.networkBreakdown, { backgroundColor: dynamicTheme.colors.surface }]}>
+            <Text style={[styles.networkBreakdownTitle, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
+              NETWORK BREAKDOWN
+            </Text>
+            {activeNetworks.map((n) => {
+              const net = SUPPORTED_NETWORKS[n.networkId as NetworkId];
+              return (
+                <View
+                  key={n.networkId}
+                  style={[styles.networkRow, { borderBottomColor: dynamicTheme.colors.buttonSecondaryBorder }]}
+                >
+                  <View style={styles.networkRowLeft}>
+                    <View style={[styles.networkDot, { backgroundColor: net?.color || '#666' }]} />
+                    <Text style={[styles.networkName, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
+                      {net?.name || n.networkId}
+                    </Text>
+                  </View>
+                  <View style={styles.networkRowRight}>
+                    <Text style={[styles.networkBalance, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
+                      {formatBalance(n.balance)}
+                    </Text>
+                    <Text style={[styles.networkUsd, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
+                      {formatUsd(n.usdValue)}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* Price Chart */}
         <View style={[styles.chartSection, { backgroundColor: dynamicTheme.colors.surface }]}>
@@ -505,6 +551,50 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xs,
   },
   priceChangeText: {
+    // Color set inline
+  },
+  // Network Breakdown
+  networkBreakdown: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.sm,
+  },
+  networkBreakdownTitle: {
+    letterSpacing: 1,
+    fontWeight: '600',
+    marginBottom: theme.spacing.xs,
+  },
+  networkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.buttonSecondaryBorder,
+  },
+  networkRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    flex: 1,
+  },
+  networkDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  networkName: {
+    fontWeight: '500',
+  },
+  networkRowRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  networkBalance: {
+    fontWeight: '500',
+  },
+  networkUsd: {
     // Color set inline
   },
   // Chart Section
