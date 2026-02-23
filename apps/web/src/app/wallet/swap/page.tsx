@@ -22,6 +22,10 @@ import {
   TIER1_NETWORK_IDS,
   NETWORK_TO_CHAIN_ID,
   type NetworkId,
+  SLIPPAGE_OPTIONS,
+  SLIPPAGE_LABELS,
+  DEFAULT_SLIPPAGE,
+  PRICE_IMPACT_WARNING_THRESHOLD,
 } from '@e-y/shared'
 
 export default function SwapPage() {
@@ -46,6 +50,7 @@ export default function SwapPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
+  const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE)
   const [showFromTokens, setShowFromTokens] = useState(false)
   const [showToTokens, setShowToTokens] = useState(false)
 
@@ -113,6 +118,7 @@ export default function SwapPage() {
         toToken: toToken.address,
         fromAmount: amount,
         fromAddress: address,
+        slippage,
       })
       setQuote(q)
     } catch (err) {
@@ -122,7 +128,7 @@ export default function SwapPage() {
     } finally {
       setQuoteLoading(false)
     }
-  }, [fromToken, toToken, fromAmount, address, fromNetworkId, toNetworkId])
+  }, [fromToken, toToken, fromAmount, address, fromNetworkId, toNetworkId, slippage])
 
   useEffect(() => {
     const timeout = setTimeout(fetchQuote, 500)
@@ -274,6 +280,25 @@ export default function SwapPage() {
                   ? `${SUPPORTED_NETWORKS[fromNetworkId].name} -> ${SUPPORTED_NETWORKS[toNetworkId].name} via LI.FI`
                   : `Swaps on ${SUPPORTED_NETWORKS[fromNetworkId].name} via LI.FI`}
               </p>
+            </div>
+
+            {/* Slippage selector */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs" style={{ color: 'var(--muted)' }}>Slippage:</span>
+              {SLIPPAGE_OPTIONS.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => setSlippage(opt)}
+                  className="text-xs px-2.5 py-1 rounded-lg transition-colors"
+                  style={{
+                    background: slippage === opt ? 'rgba(255,255,255,0.15)' : 'transparent',
+                    border: `1px solid ${slippage === opt ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
+                    color: slippage === opt ? 'white' : 'var(--muted)',
+                  }}
+                >
+                  {SLIPPAGE_LABELS[opt]}
+                </button>
+              ))}
             </div>
 
             {/* From section: Network + Token */}
@@ -440,6 +465,15 @@ export default function SwapPage() {
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Price impact warning */}
+            {quote && parseFloat(quote.priceImpact) / 100 > PRICE_IMPACT_WARNING_THRESHOLD && (
+              <div className="p-3 rounded-lg mb-3" style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                <p className="text-xs" style={{ color: '#eab308' }}>
+                  High price impact: {parseFloat(quote.priceImpact).toFixed(2)}%. Consider reducing the amount or using a different route.
+                </p>
               </div>
             )}
 
