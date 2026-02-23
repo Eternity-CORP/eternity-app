@@ -1,6 +1,7 @@
 /**
  * Swap Screen
  * Token swap interface using LI.FI DEX aggregator
+ * Supports cross-chain swaps with network selection
  */
 
 import React, { useState, useEffect } from 'react';
@@ -14,6 +15,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -26,6 +28,8 @@ import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import {
+  setFromNetwork,
+  setToNetwork,
   setFromToken,
   setToToken,
   setFromAmount,
@@ -48,7 +52,7 @@ import {
   NATIVE_TOKEN_ADDRESS,
 } from '@/src/services/swap-service';
 import { getProvider } from '@/src/services/network-service';
-import { SUPPORTED_NETWORKS } from '@/src/constants/networks';
+import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, type NetworkId } from '@/src/constants/networks';
 import TokenSelector from './token-selector';
 
 export default function SwapScreen() {
@@ -66,6 +70,8 @@ export default function SwapScreen() {
   const [showToTokenSelector, setShowToTokenSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [slippageInput, setSlippageInput] = useState(swap.slippage.toString());
+
+  const isCrossChain = swap.fromNetworkId !== swap.toNetworkId;
 
   // Load tokens on mount
   useEffect(() => {
@@ -154,6 +160,16 @@ export default function SwapScreen() {
     dispatch(swapTokens());
   };
 
+  const handleFromNetworkChange = (networkId: NetworkId) => {
+    if (networkId === swap.fromNetworkId) return;
+    dispatch(setFromNetwork(networkId));
+  };
+
+  const handleToNetworkChange = (networkId: NetworkId) => {
+    if (networkId === swap.toNetworkId) return;
+    dispatch(setToNetwork(networkId));
+  };
+
   const handleApprove = async () => {
     if (!swap.fromToken || !wallet.mnemonic) return;
 
@@ -232,8 +248,9 @@ export default function SwapScreen() {
     if (swap.quoteError) return 'Unable to swap';
     if (!swap.fromToken || !swap.toToken) return 'Select tokens';
     if (!swap.fromAmount) return 'Enter amount';
+    if (!swap.quote && isCrossChain) return 'Cross-chain Swap';
     if (!swap.quote) return 'Swap';
-    return 'Swap';
+    return isCrossChain ? 'Cross-chain Swap' : 'Swap';
   };
 
   const isButtonDisabled = () => {
@@ -243,6 +260,50 @@ export default function SwapScreen() {
     if (swap.needsApproval) return false;
     return !canSwap;
   };
+
+  // Network selector chips
+  const NetworkChips = ({
+    selectedId,
+    onChange,
+    label,
+  }: {
+    selectedId: NetworkId;
+    onChange: (id: NetworkId) => void;
+    label: string;
+  }) => (
+    <View style={styles.networkChipsContainer}>
+      <Text style={[styles.networkChipsLabel, { color: dynamicTheme.colors.textSecondary }]}>{label}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.networkChipsRow}>
+        {TIER1_NETWORK_IDS.map((id) => {
+          const net = SUPPORTED_NETWORKS[id];
+          const isSelected = id === selectedId;
+          return (
+            <Pressable
+              key={id}
+              onPress={() => onChange(id)}
+              style={[
+                styles.networkChip,
+                {
+                  backgroundColor: isSelected ? net.color + '25' : 'transparent',
+                  borderColor: isSelected ? net.color + '60' : dynamicTheme.colors.border,
+                },
+              ]}
+            >
+              <View style={[styles.networkDot, { backgroundColor: net.color }]} />
+              <Text
+                style={[
+                  styles.networkChipText,
+                  { color: isSelected ? net.color : dynamicTheme.colors.textSecondary },
+                ]}
+              >
+                {net.shortName}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
@@ -266,6 +327,16 @@ export default function SwapScreen() {
       />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        {/* Cross-chain indicator */}
+        {isCrossChain && (
+          <View style={styles.crossChainBadge}>
+            <Ionicons name="git-branch-outline" size={14} color="#3388FF" />
+            <Text style={styles.crossChainText}>
+              Cross-chain ({SUPPORTED_NETWORKS[swap.fromNetworkId].shortName} {'->'} {SUPPORTED_NETWORKS[swap.toNetworkId].shortName})
+            </Text>
+          </View>
+        )}
+
         {/* Settings Panel */}
         {showSettings && (
           <View style={[styles.settingsPanel, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
@@ -309,7 +380,9 @@ export default function SwapScreen() {
 
         {/* From Token */}
         <View style={[styles.tokenCard, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
-          <Text style={[styles.tokenLabel, { color: dynamicTheme.colors.textSecondary }]}>From</Text>
+          <NetworkChips selectedId={swap.fromNetworkId} onChange={handleFromNetworkChange} label="From network" />
+
+          <Text style={[styles.tokenLabel, { color: dynamicTheme.colors.textSecondary }]}>You pay</Text>
           <View style={styles.tokenRow}>
             <TouchableOpacity
               style={[styles.tokenSelector, { backgroundColor: dynamicTheme.colors.background }]}
@@ -344,7 +417,9 @@ export default function SwapScreen() {
 
         {/* To Token */}
         <View style={[styles.tokenCard, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
-          <Text style={[styles.tokenLabel, { color: dynamicTheme.colors.textSecondary }]}>To</Text>
+          <NetworkChips selectedId={swap.toNetworkId} onChange={handleToNetworkChange} label="To network" />
+
+          <Text style={[styles.tokenLabel, { color: dynamicTheme.colors.textSecondary }]}>You receive</Text>
           <View style={styles.tokenRow}>
             <TouchableOpacity
               style={[styles.tokenSelector, { backgroundColor: dynamicTheme.colors.background }]}
@@ -402,6 +477,23 @@ export default function SwapScreen() {
                 {swap.toToken?.symbol}
               </Text>
             </View>
+            {/* Route info for cross-chain */}
+            {isCrossChain && swap.quote.route && swap.quote.route.totalDuration > 0 && (
+              <View style={styles.quoteRow}>
+                <Text style={[styles.quoteLabel, { color: dynamicTheme.colors.textSecondary }]}>Est. Time</Text>
+                <Text style={[styles.quoteValue, { color: dynamicTheme.colors.textPrimary }]}>
+                  ~{Math.ceil(swap.quote.route.totalDuration / 60)} min
+                </Text>
+              </View>
+            )}
+            {isCrossChain && swap.quote.route && swap.quote.route.steps.length > 1 && (
+              <View style={styles.quoteRow}>
+                <Text style={[styles.quoteLabel, { color: dynamicTheme.colors.textSecondary }]}>Route</Text>
+                <Text style={[styles.quoteValue, { color: dynamicTheme.colors.textPrimary }]} numberOfLines={1}>
+                  {swap.quote.route.steps.map((s) => s.toolDetails.name).join(' -> ')}
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -467,6 +559,54 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
+  },
+  crossChainBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(51, 136, 255, 0.12)',
+    marginBottom: 12,
+  },
+  crossChainText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#3388FF',
+  },
+  networkChipsContainer: {
+    marginBottom: 12,
+  },
+  networkChipsLabel: {
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: theme.colors.textSecondary,
+    marginBottom: 6,
+  },
+  networkChipsRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  networkChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 5,
+  },
+  networkDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  networkChipText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   settingsPanel: {
     backgroundColor: theme.colors.surface,
@@ -610,6 +750,7 @@ const styles = StyleSheet.create({
   quoteValue: {
     fontSize: 14,
     color: theme.colors.textPrimary,
+    flexShrink: 1,
   },
   quoteValueWarning: {
     color: theme.colors.warning,
