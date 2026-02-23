@@ -14,7 +14,7 @@ import { resetContacts, loadContactsThunk } from '@/src/store/slices/contacts-sl
 import { checkAndScanThunk, dismissTokenAlert, snoozeTokenAlert } from '@/src/store/slices/scanning-slice';
 import { dismissSuggestion } from '@/src/store/slices/ai-slice';
 import { saveAccounts } from '@/src/services/wallet-service';
-import { formatUsdValue } from '@/src/services/balance-service';
+import { formatUsd } from '@e-y/shared';
 import { fetchAllNetworkBalances } from '@/src/services/network-service';
 import { getUsernameByAddress } from '@/src/services/username-service';
 import { useAutoScheduledPayments } from '@/src/hooks/useAutoScheduledPayments';
@@ -299,7 +299,7 @@ export default function HomeScreen() {
     saveAccounts(data);
   }, [dispatch]);
 
-  const totalBalance = formatUsdValue(balance.totalUsdValue);
+  const totalBalance = formatUsd(balance.totalUsdValue);
   const scheduledPendingCount = scheduled.payments.filter(p => p.status === 'pending').length;
 
   return (

@@ -23,14 +23,20 @@ export function formatUsd(value: number): string {
 }
 
 /**
- * Format a crypto balance for display with a maximum number of decimal places.
- * Trims trailing zeros.
+ * Format a crypto balance for display.
+ * - >= 1000: locale-formatted with up to 2 decimals
+ * - >= 1: fixed to maxDecimals (default 4), trailing zeros trimmed
+ * - > 0 but < 1: fixed to 6 decimals, trailing zeros trimmed
+ * - very small (below threshold): shows "<0.0001"
+ * - 0 or NaN: "0"
  */
 export function formatBalance(balance: string, maxDecimals: number = 4): string {
   const num = parseFloat(balance);
   if (isNaN(num) || num === 0) return '0';
-  if (num < 1 / Math.pow(10, maxDecimals)) return `<${(1 / Math.pow(10, maxDecimals)).toFixed(maxDecimals)}`;
-  return num.toFixed(maxDecimals).replace(/\.?0+$/, '');
+  if (num >= 1000) return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  if (num >= 1) return num.toFixed(maxDecimals).replace(/\.?0+$/, '');
+  if (num < 1 / Math.pow(10, 6)) return `<${(1 / Math.pow(10, 6)).toFixed(6)}`;
+  return num.toFixed(6).replace(/\.?0+$/, '');
 }
 
 /**
@@ -61,6 +67,34 @@ export function formatTokenAmount(amount: string, decimals: number, maxDecimals:
   });
 
   return isNeg ? `-${result}` : result;
+}
+
+/**
+ * Format a transaction timestamp for display.
+ * Produces "Jan 5, 12:30 PM" style output.
+ */
+export function formatTransactionDate(timestamp: number | string): string {
+  const d = new Date(typeof timestamp === 'string' ? timestamp : timestamp);
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * Build a block-explorer URL for a transaction, token, or address.
+ * Uses the blockExplorer field from SUPPORTED_NETWORKS.
+ * Falls back to etherscan.io for unknown network IDs.
+ */
+export function getExplorerUrl(
+  blockExplorerBase: string,
+  hash: string,
+  type: 'tx' | 'token' | 'address' = 'tx',
+): string {
+  const base = blockExplorerBase.replace(/\/+$/, '');
+  return `${base}/${type}/${hash}`;
 }
 
 /**

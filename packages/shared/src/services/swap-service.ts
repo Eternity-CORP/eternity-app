@@ -178,6 +178,22 @@ export async function fetchSwapQuote(params: SwapParams): Promise<RawSwapQuoteRe
 }
 
 /**
+ * Check if it's a cross-chain swap (different chain IDs).
+ */
+export function isCrossChainSwap(fromChainId: number, toChainId: number): boolean {
+  return fromChainId !== toChainId;
+}
+
+/**
+ * Get human-readable chain name by chain ID.
+ * Uses SUPPORTED_NETWORKS; falls back to "Chain {id}" for unknown chains.
+ */
+export function getChainName(chainId: number): string {
+  const network = getNetworkByChainId(chainId);
+  return network?.name || `Chain ${chainId}`;
+}
+
+/**
  * Build a native token object for a given chain.
  * Uses SUPPORTED_NETWORKS config instead of a hardcoded map.
  */

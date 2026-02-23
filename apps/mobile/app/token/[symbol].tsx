@@ -14,7 +14,6 @@ import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { setSelectedToken } from '@/src/store/slices/send-slice';
 import { selectTransactionsForAddress } from '@/src/store/slices/transaction-slice';
 import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
-import { formatUsdValue } from '@/src/services/balance-service';
 import { SUPPORTED_NETWORKS, type NetworkId, formatUsd, formatBalance } from '@e-y/shared';
 import { fetchPriceChartData, fetchPriceChartByContract, type PriceChartData, type PricePoint } from '@/src/services/price-chart-service';
 import { truncateAddress } from '@/src/utils/format';
@@ -231,7 +230,7 @@ export default function TokenDetailsScreen() {
             {token.balance} {token.symbol}
           </Text>
           <Text style={[styles.balanceUsd, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
-            ≈ {token.usdValue ? formatUsdValue(token.usdValue) : '$0.00'}
+            ≈ {token.usdValue ? formatUsd(token.usdValue) : '$0.00'}
           </Text>
 
           {/* Price Change */}

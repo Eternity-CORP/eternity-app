@@ -16,9 +16,11 @@ import {
   buildMultiNetworkRpcUrls,
   type NetworkId,
   formatUsd,
+  formatTransactionDate,
 } from '@e-y/shared'
 import PriceChart from '@/components/PriceChart'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
+import { ALCHEMY_KEY } from '@/lib/config'
 
 const TOKEN_META: Record<string, { name: string; color: string; icon: string }> = {
   ETH: { name: 'Ethereum', color: '#627EEA', icon: 'E' },
@@ -31,12 +33,6 @@ const TOKEN_META: Record<string, { name: string; color: string; icon: string }> 
   MATIC: { name: 'Polygon', color: '#8247E5', icon: 'M' },
   WBTC: { name: 'Wrapped Bitcoin', color: '#F7931A', icon: 'B' },
   AAVE: { name: 'Aave', color: '#B6509E', icon: 'A' },
-}
-
-const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
-
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function TokenDetailPage() {
@@ -273,7 +269,7 @@ export default function TokenDetailPage() {
                         <p className={`text-sm font-semibold ${isSent ? 'text-white/50' : 'text-[#22c55e]'}`}>
                           {isSent ? '-' : '+'}{parseFloat(tx.amount).toFixed(4)} {tx.token}
                         </p>
-                        <p className="text-xs text-white/40">{formatDate(tx.timestamp)}</p>
+                        <p className="text-xs text-white/40">{formatTransactionDate(tx.timestamp)}</p>
                       </div>
                     </div>
                   )

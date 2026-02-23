@@ -5,10 +5,9 @@ import {
   getAccountNetworkMode,
   type SimpleNetworkConfig,
 } from '@e-y/shared'
+import { ALCHEMY_KEY } from './config'
 
 export type NetworkConfig = SimpleNetworkConfig
-
-const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
 
 const NETWORKS = buildNetworks(ALCHEMY_KEY)
 const MULTI_NETWORKS = buildMultiNetworkConfigs(ALCHEMY_KEY)

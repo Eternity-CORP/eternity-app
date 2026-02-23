@@ -9,14 +9,14 @@ import {
   buildMultiNetworkRpcUrls,
   TIER1_NETWORK_IDS,
   SUPPORTED_NETWORKS,
+  formatTransactionDate,
   type TransactionHistoryItem,
   type NetworkId,
 } from '@e-y/shared'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
-
-const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
+import { ALCHEMY_KEY } from '@/lib/config'
 
 export default function HistoryPage() {
   useAuthGuard()
@@ -58,10 +58,6 @@ export default function HistoryPage() {
   }
 
   const formatAddress = truncateAddress
-  const formatDate = (date: string) => {
-    const d = new Date(date)
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-  }
 
   return (
     <div className="min-h-screen relative z-[2]">
@@ -160,7 +156,7 @@ export default function HistoryPage() {
                         {isSent ? '-' : '+'}{tx.amount} {tx.token}
                       </p>
                       <p className="text-sm text-white/40">
-                        {formatDate(tx.createdAt)}
+                        {formatTransactionDate(tx.createdAt)}
                       </p>
                     </div>
                   </a>

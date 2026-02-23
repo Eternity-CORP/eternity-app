@@ -24,6 +24,8 @@ import {
   parseTokenAmount as sharedParseTokenAmount,
   getCachedQuote,
   setCachedQuote,
+  isCrossChainSwap as sharedIsCrossChainSwap,
+  getChainName as sharedGetChainName,
 } from '@e-y/shared';
 
 export type { SwapToken, SwapQuote, SwapRoute, SwapStep, SwapParams };
@@ -179,20 +181,11 @@ export async function executeSwap(
 export const formatTokenAmount = sharedFormatTokenAmount;
 export const parseTokenAmount = sharedParseTokenAmount;
 
-/**
- * Check if it's a cross-chain swap
- */
-export function isCrossChainSwap(fromChainId: number, toChainId: number): boolean {
-  return fromChainId !== toChainId;
-}
+/** @deprecated Use isCrossChainSwap from @e-y/shared directly */
+export const isCrossChainSwap = sharedIsCrossChainSwap;
 
-/**
- * Get chain name by ID
- */
-export function getChainName(chainId: number): string {
-  const network = Object.values(SUPPORTED_NETWORKS).find((n) => n.chainId === chainId);
-  return network?.name || `Chain ${chainId}`;
-}
+/** @deprecated Use getChainName from @e-y/shared directly */
+export const getChainName = sharedGetChainName;
 
 // Export native token address constant
 export { NATIVE_TOKEN_ADDRESS };

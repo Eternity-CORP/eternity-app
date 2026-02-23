@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
 import { generateAvatarColors } from '@/src/utils/avatar';
-import { formatUsdValue } from '@/src/services/balance-service';
+import { formatUsd } from '@e-y/shared';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import type { Account, AccountType } from '@/src/store/slices/wallet-slice';
@@ -249,7 +249,7 @@ export function AccountSelectorSheet({
                   const accountIndex = accounts.findIndex(a => a.id === account.id);
                   const isSelected = accountIndex === currentAccountIndex;
                   const isBusiness = account.type === 'business';
-                  const accountBalance = formatUsdValue(accountBalances[account.address] ?? 0);
+                  const accountBalance = formatUsd(accountBalances[account.address] ?? 0);
 
                   if (editingAccountIndex === account.accountIndex) {
                     return (

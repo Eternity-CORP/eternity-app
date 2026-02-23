@@ -18,7 +18,6 @@ export {
   getTokenIconUrl,
   formatTokenBalance,
   calculateTotalUsdValue,
-  formatUsdValue,
   type TokenBalance,
 } from './balance-service';
 

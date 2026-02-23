@@ -13,6 +13,7 @@ import TokenSelector from '@/components/TokenSelector'
 import BridgeBanner from '@/components/BridgeBanner'
 import BridgeProgress from '@/components/BridgeProgress'
 import { sendOnNetwork, estimateGasOnNetwork } from '@/lib/send-service'
+import { ALCHEMY_KEY } from '@/lib/config'
 import { calculateTransferRoute, type RoutingResult } from '@/lib/routing-service'
 import { executeBridgeWithRetry } from '@/lib/bridge-service'
 import BackButton from '@/components/BackButton'
@@ -238,7 +239,7 @@ function SendContent() {
 
     try {
       const sourceNet = SUPPORTED_NETWORKS[route.fromNetwork]
-      const rpcUrl = sourceNet.rpcUrlTemplate.replace('{apiKey}', process.env.NEXT_PUBLIC_ALCHEMY_KEY || '')
+      const rpcUrl = sourceNet.rpcUrlTemplate.replace('{apiKey}', ALCHEMY_KEY)
       const provider = new ethers.JsonRpcProvider(rpcUrl)
 
       const { txHash, result } = await executeBridgeWithRetry(

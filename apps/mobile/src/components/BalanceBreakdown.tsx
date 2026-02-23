@@ -23,7 +23,7 @@ import { theme } from '@/src/constants/theme';
 import { NetworkId, getNetworkConfig } from '@/src/constants/networks';
 import { NetworkBadge, NetworkDot } from './NetworkBadge';
 import { TokenIcon } from './TokenIcon';
-import { formatUsdValue } from '@/src/services/balance-service';
+import { formatUsd } from '@e-y/shared';
 
 export interface NetworkBalance {
   networkId: NetworkId;
@@ -140,7 +140,7 @@ export function BalanceBreakdown({
             {formattedBalance}
           </Text>
           <Text style={[styles.usdValue, theme.typography.caption]}>
-            {formatUsdValue(totalUsdValue)}
+            {formatUsd(totalUsdValue)}
           </Text>
         </View>
 
@@ -225,7 +225,7 @@ function NetworkBalanceRow({
           {formattedBalance}
         </Text>
         <Text style={[styles.networkUsdValue, theme.typography.caption]}>
-          {formatUsdValue(usdValue)}
+          {formatUsd(usdValue)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -277,7 +277,7 @@ export function BalanceCompact({
           {formattedBalance}
         </Text>
         <Text style={[styles.compactUsd, theme.typography.caption]}>
-          {formatUsdValue(totalUsdValue)}
+          {formatUsd(totalUsdValue)}
         </Text>
       </View>
     </View>

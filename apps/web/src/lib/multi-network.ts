@@ -19,8 +19,7 @@ import {
   fetchTokenPricesBySymbol,
   applyPricesToBalances,
 } from '@e-y/shared'
-
-const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_KEY || ''
+import { ALCHEMY_KEY } from './config'
 const REQUEST_TIMEOUT = 15000
 
 // Provider cache

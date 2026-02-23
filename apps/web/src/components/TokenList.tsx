@@ -2,16 +2,8 @@
 
 import Link from 'next/link'
 import { useBalance } from '@/contexts/balance-context'
-import { SUPPORTED_NETWORKS, type NetworkId, formatUsd } from '@e-y/shared'
+import { SUPPORTED_NETWORKS, type NetworkId, formatUsd, formatBalance } from '@e-y/shared'
 import { TOKEN_COLORS } from '@/constants/tokens'
-
-function formatBalance(balance: string): string {
-  const num = parseFloat(balance)
-  if (num >= 1000) return num.toLocaleString('en-US', { maximumFractionDigits: 2 })
-  if (num >= 1) return num.toFixed(4)
-  if (num > 0) return num.toFixed(6)
-  return '0'
-}
 
 function SkeletonRow() {
   return (
