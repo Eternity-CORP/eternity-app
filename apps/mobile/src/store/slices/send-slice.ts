@@ -5,7 +5,7 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { ethers, isAddress } from 'ethers';
-import { NATIVE_TOKEN_ADDRESS } from '@e-y/shared';
+import { NATIVE_TOKEN_ADDRESS, type GasGuardResult } from '@e-y/shared';
 import { sendTransaction, estimateGas, validateAddress, type GasEstimate } from '@/src/services/send-service';
 import { switchAccountAction } from './wallet-slice';
 import { getRpcUrl, type NetworkId } from '@/src/constants/networks';
@@ -87,6 +87,9 @@ export interface SendState {
   // Scheduled payment context
   scheduledPaymentId: string | null;
 
+  // Gas guard
+  gasGuardResult: GasGuardResult | null;
+
   // Recipient's network preferences
   recipientPreferences: {
     defaultNetwork: NetworkId | null;
@@ -110,6 +113,7 @@ const initialState: SendState = {
   splitBillId: null,
   splitParticipantAddress: null,
   scheduledPaymentId: null,
+  gasGuardResult: null,
   recipientPreferences: null,
   recipientPreferencesStatus: 'idle',
   recipientPreferencesError: null,
@@ -481,6 +485,9 @@ const sendSlice = createSlice({
       }
       state.sendError = null;
     },
+    setGasGuardResult: (state, action: PayloadAction<GasGuardResult | null>) => {
+      state.gasGuardResult = action.payload;
+    },
     clearRecipientPreferences: (state) => {
       state.recipientPreferences = null;
       state.recipientPreferencesStatus = 'idle';
@@ -551,6 +558,7 @@ export const {
   setSplitBillContext,
   setScheduledPaymentContext,
   validateRecipient,
+  setGasGuardResult,
   clearRecipientPreferences,
 } = sendSlice.actions;
 

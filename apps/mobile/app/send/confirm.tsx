@@ -10,10 +10,11 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { selectAggregatedBalances } from '@/src/store/slices/balance-slice';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
-import { estimateGasThunk, sendTransactionThunk, executeSmartSendThunk } from '@/src/store/slices/send-slice';
+import { estimateGasThunk, sendTransactionThunk, executeSmartSendThunk, setGasGuardResult } from '@/src/store/slices/send-slice';
 import { resetBridge } from '@/src/store/slices/bridge-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { checkGasAvailability, SUPPORTED_NETWORKS as SHARED_NETWORKS } from '@e-y/shared';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { BridgeCostBanner, ConsolidationBanner } from '@/src/components';
@@ -82,6 +83,39 @@ export default function ConfirmScreen() {
       }));
     }
   }, [currentAccount?.address, send.recipient, send.amount, tokenAddress, dispatch]);
+
+  // Run gas guard check after gas estimation succeeds
+  useEffect(() => {
+    if (send.gasEstimateStatus !== 'succeeded' || !send.gasEstimate) {
+      dispatch(setGasGuardResult(null));
+      return;
+    }
+
+    const networkId = routingResult?.route?.fromNetwork || 'ethereum';
+    const networkConfig = SHARED_NETWORKS[networkId as keyof typeof SHARED_NETWORKS];
+    const nativeSymbol = networkConfig?.nativeCurrency?.symbol || 'ETH';
+
+    // Find native token balance on the sending network
+    const nativeToken = aggregatedBalances.find(
+      t => t.symbol.toUpperCase() === nativeSymbol.toUpperCase()
+    );
+    const nativeOnNetwork = nativeToken?.networks.find(n => n.networkId === networkId);
+    const nativeBalance = nativeOnNetwork?.balance || '0';
+
+    // Derive native token USD price from balance data
+    const nativeTokenPriceUsd = nativeOnNetwork && parseFloat(nativeOnNetwork.balance) > 0
+      ? nativeOnNetwork.usdValue / parseFloat(nativeOnNetwork.balance)
+      : 0;
+
+    const guardResult = checkGasAvailability(
+      networkId,
+      nativeSymbol,
+      nativeBalance,
+      send.gasEstimate.totalGasCost,
+      nativeTokenPriceUsd,
+    );
+    dispatch(setGasGuardResult(guardResult));
+  }, [send.gasEstimateStatus, send.gasEstimate, aggregatedBalances, routingResult, dispatch]);
 
   // Calculate transfer route for cross-network sends
   useEffect(() => {
@@ -214,7 +248,8 @@ export default function ConfirmScreen() {
   const bridgeFee = routingResult?.route ? getRouteTotalFees(routingResult.route) : 0;
   const totalCostUsd = totalAmountUsd + gasCostUsd + bridgeFee;
 
-  const canConfirm = send.gasEstimateStatus === 'succeeded' && send.sendStatus !== 'loading';
+  const gasGuardFailed = send.gasGuardResult != null && !send.gasGuardResult.sufficient;
+  const canConfirm = send.gasEstimateStatus === 'succeeded' && send.sendStatus !== 'loading' && !gasGuardFailed;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
@@ -393,6 +428,18 @@ export default function ConfirmScreen() {
           <View style={[styles.routingCard, { backgroundColor: dynamicTheme.colors.surface }]}>
             <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Calculating optimal route...
+            </Text>
+          </View>
+        )}
+
+        {/* Gas Guard Warning */}
+        {send.gasGuardResult && !send.gasGuardResult.sufficient && (
+          <View style={[styles.warningCard, { backgroundColor: dynamicTheme.colors.error + '15', borderColor: dynamicTheme.colors.error + '30' }]}>
+            <FontAwesome name="exclamation-triangle" size={16} color={dynamicTheme.colors.error} />
+            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.error, flex: 1, marginLeft: 8 }]}>
+              Insufficient {send.gasGuardResult.nativeSymbol} for gas.
+              {' '}Need ~{parseFloat(send.gasGuardResult.estimatedGasCostEth).toFixed(6)} {send.gasGuardResult.nativeSymbol},
+              {' '}have {parseFloat(send.gasGuardResult.nativeBalance).toFixed(6)}.
             </Text>
           </View>
         )}
