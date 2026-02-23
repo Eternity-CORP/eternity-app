@@ -12,7 +12,7 @@ import Navigation from '@/components/Navigation'
 import TokenSelector from '@/components/TokenSelector'
 import BridgeBanner from '@/components/BridgeBanner'
 import BridgeProgress from '@/components/BridgeProgress'
-import { sendNativeToken, sendErc20Token, estimateGas as estimateGasFn } from '@/lib/send-service'
+import { sendOnNetwork, estimateGasOnNetwork } from '@/lib/send-service'
 import { calculateTransferRoute, type RoutingResult } from '@/lib/routing-service'
 import { executeBridgeWithRetry } from '@/lib/bridge-service'
 import BackButton from '@/components/BackButton'
@@ -25,7 +25,7 @@ function SendContent() {
   const prefillToken = searchParams.get('token')
 
   useAuthGuard()
-  const { wallet, address, network } = useAccount()
+  const { wallet, address } = useAccount()
   const { aggregatedBalances } = useBalance()
 
   const [recipient, setRecipient] = useState(prefillTo || '')
@@ -140,18 +140,21 @@ function SendContent() {
 
     const doEstimate = async () => {
       try {
-        const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+        // Use route's network when available, otherwise fall back to default
+        const networkId = route?.fromNetwork || 'ethereum'
         const isNative = selectedToken === 'ETH' || (primaryNetwork?.contractAddress === 'native')
         const tokenInfo = !isNative && primaryNetwork
           ? { address: primaryNetwork.contractAddress, decimals: tokenData?.decimals || 18 }
           : undefined
 
-        const estimate = await estimateGasFn(provider, address, resolvedAddress, amount, tokenInfo)
+        const estimate = await estimateGasOnNetwork(networkId, address, resolvedAddress, amount, tokenInfo)
         setGasEstimate(estimate.totalGasCost)
       } catch (err) {
         console.error('Gas estimation failed, falling back to basic estimate:', err)
         try {
-          const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+          const { getProvider } = await import('@/lib/multi-network')
+          const networkId = route?.fromNetwork || 'ethereum'
+          const provider = getProvider(networkId)
           const feeData = await provider.getFeeData()
           const gasLimit = BigInt(21000)
           const gasCost = gasLimit * (feeData.gasPrice || BigInt(0))
@@ -164,7 +167,7 @@ function SendContent() {
     }
 
     doEstimate()
-  }, [resolvedAddress, amount, selectedToken, network.rpcUrl, address])
+  }, [resolvedAddress, amount, selectedToken, address, route])
 
   const handleSend = async () => {
     if (!wallet || !resolvedAddress || !amount) return
@@ -173,28 +176,16 @@ function SendContent() {
     setError('')
 
     try {
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const networkId = route?.fromNetwork || 'ethereum'
       const isNative = selectedToken === 'ETH' || (primaryNetwork?.contractAddress === 'native')
+      const tokenInfo = !isNative && primaryNetwork
+        ? { address: primaryNetwork.contractAddress, decimals: tokenData?.decimals || 18 }
+        : undefined
 
-      let txHash: string
-
-      if (isNative) {
-        txHash = await sendNativeToken(wallet, provider, resolvedAddress, amount)
-      } else if (primaryNetwork) {
-        txHash = await sendErc20Token(
-          wallet,
-          provider,
-          resolvedAddress,
-          amount,
-          primaryNetwork.contractAddress,
-          tokenData?.decimals || 18,
-        )
-      } else {
-        throw new Error('Token not found in your balances')
-      }
+      const txHash = await sendOnNetwork(wallet, networkId, resolvedAddress, amount, tokenInfo)
 
       setStatus('succeeded')
-      router.push(`/wallet/send/success?hash=${txHash}`)
+      router.push(`/wallet/send/success?hash=${txHash}&network=${networkId}`)
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
       setError(errorMessage.includes('insufficient') ? 'Insufficient balance' : errorMessage)

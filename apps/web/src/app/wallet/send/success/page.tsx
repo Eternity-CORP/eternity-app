@@ -7,12 +7,21 @@ import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import ShardMerge from '@/components/animations/ShardMerge'
 import { useAccount } from '@/contexts/account-context'
+import { SUPPORTED_NETWORKS, type NetworkId } from '@e-y/shared'
+import { getNetworkById } from '@/lib/network'
 
 function SuccessContent() {
   const searchParams = useSearchParams()
-  const { network } = useAccount()
+  const { network: accountNetwork } = useAccount()
   const hash = searchParams.get('hash')
+  const networkParam = searchParams.get('network') as NetworkId | null
   const [animDone, setAnimDone] = useState(false)
+
+  // Use the specific network from the URL param, fall back to account default
+  const network = networkParam ? getNetworkById(networkParam) : accountNetwork
+  const networkDisplayName = networkParam
+    ? SUPPORTED_NETWORKS[networkParam]?.name || network.name
+    : network.name
 
   const shortHash = hash ? `${hash.slice(0, 10)}...${hash.slice(-8)}` : ''
   const explorerUrl = hash ? network.explorerTxUrl(hash) : ''
@@ -60,7 +69,7 @@ function SuccessContent() {
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full py-4 rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
                 >
-                  View on {network.name} Explorer
+                  View on {networkDisplayName} Explorer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
                     <polyline points="15 3 21 3 21 9"/>
