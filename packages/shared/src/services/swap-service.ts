@@ -6,6 +6,7 @@
 
 import type { SwapToken, SwapParams, SwapTransactionRequest } from '../types/swap';
 import { LIFI_API_URL, NATIVE_TOKEN_ADDRESS, POPULAR_TOKEN_SYMBOLS } from '../constants/swap';
+import { DEFAULT_SLIPPAGE } from '../constants/swap-settings';
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- LI.FI API responses are untyped */
 
@@ -85,7 +86,8 @@ export async function fetchPopularTokens(
  * Returns raw data so each app can enrich it (e.g. exchange rate via ethers.formatUnits).
  */
 export async function fetchSwapQuote(params: SwapParams): Promise<RawSwapQuoteResponse> {
-  const slippage = params.slippage || 0.5;
+  // Slippage as decimal fraction (e.g. 0.005 = 0.5%)
+  const slippage = params.slippage ?? DEFAULT_SLIPPAGE;
 
   const queryParams = new URLSearchParams({
     fromChain: params.fromChainId.toString(),
@@ -94,7 +96,7 @@ export async function fetchSwapQuote(params: SwapParams): Promise<RawSwapQuoteRe
     toToken: params.toToken,
     fromAmount: params.fromAmount,
     fromAddress: params.fromAddress,
-    slippage: (slippage / 100).toString(),
+    slippage: slippage.toString(),
   });
 
   const response = await fetch(`${LIFI_API_URL}/quote?${queryParams}`);

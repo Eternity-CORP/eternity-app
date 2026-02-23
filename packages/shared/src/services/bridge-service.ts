@@ -5,9 +5,9 @@
  */
 
 import { LIFI_API_URL } from '../constants/swap';
+import { DEFAULT_SLIPPAGE } from '../constants/swap-settings';
 
 const REQUEST_TIMEOUT = 20000;
-const DEFAULT_SLIPPAGE = 0.005;
 
 // ============================================
 // Types

@@ -13,6 +13,7 @@ import {
   SwapParams,
 } from '@/src/services/swap-service';
 import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
+import { DEFAULT_SLIPPAGE } from '@e-y/shared';
 
 export type SwapStatus = 'idle' | 'loading' | 'quoting' | 'approving' | 'swapping' | 'succeeded' | 'failed';
 
@@ -37,7 +38,7 @@ interface SwapState {
   tokensLoading: boolean;
 
   // Settings
-  slippage: number; // Percentage (0.5 = 0.5%)
+  slippage: number; // Decimal fraction (0.005 = 0.5%)
 
   // Transaction state
   status: SwapStatus;
@@ -61,7 +62,7 @@ const initialState: SwapState = {
   availableFromTokens: [],
   availableToTokens: [],
   tokensLoading: false,
-  slippage: 0.5,
+  slippage: DEFAULT_SLIPPAGE,
   status: 'idle',
   error: null,
   txHash: null,

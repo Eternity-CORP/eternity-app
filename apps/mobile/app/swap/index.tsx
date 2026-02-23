@@ -33,6 +33,7 @@ import {
   setFromToken,
   setToToken,
   setFromAmount,
+  setSlippage,
   swapTokens,
   fetchTokensThunk,
   fetchQuoteThunk,
@@ -53,6 +54,11 @@ import {
 } from '@/src/services/swap-service';
 import { getProvider } from '@/src/services/network-service';
 import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, type NetworkId } from '@/src/constants/networks';
+import {
+  SLIPPAGE_OPTIONS,
+  SLIPPAGE_LABELS,
+  PRICE_IMPACT_WARNING_THRESHOLD,
+} from '@e-y/shared';
 import TokenSelector from './token-selector';
 
 export default function SwapScreen() {
@@ -68,8 +74,6 @@ export default function SwapScreen() {
 
   const [showFromTokenSelector, setShowFromTokenSelector] = useState(false);
   const [showToTokenSelector, setShowToTokenSelector] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [slippageInput, setSlippageInput] = useState(swap.slippage.toString());
 
   const isCrossChain = swap.fromNetworkId !== swap.toNetworkId;
 
@@ -318,11 +322,6 @@ export default function SwapScreen() {
               <Ionicons name="arrow-back" size={24} color={dynamicTheme.colors.textPrimary} />
             </TouchableOpacity>
           ),
-          headerRight: () => (
-            <TouchableOpacity onPress={() => setShowSettings(!showSettings)}>
-              <Ionicons name="settings-outline" size={24} color={dynamicTheme.colors.textPrimary} />
-            </TouchableOpacity>
-          ),
         }}
       />
 
@@ -337,46 +336,31 @@ export default function SwapScreen() {
           </View>
         )}
 
-        {/* Settings Panel */}
-        {showSettings && (
-          <View style={[styles.settingsPanel, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
-            <Text style={[styles.settingsTitle, { color: dynamicTheme.colors.textSecondary }]}>Slippage Tolerance</Text>
-            <View style={styles.slippageOptions}>
-              {[0.5, 1, 2].map((value) => (
-                <TouchableOpacity
-                  key={value}
-                  style={[
-                    styles.slippageButton,
-                    { backgroundColor: dynamicTheme.colors.background, borderColor: dynamicTheme.colors.border },
-                    swap.slippage === value && styles.slippageButtonActive,
-                  ]}
-                  onPress={() => {
-                    setSlippageInput(value.toString());
-                    dispatch(setFromAmount(swap.fromAmount)); // Trigger re-quote
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.slippageButtonText,
-                      { color: dynamicTheme.colors.textSecondary },
-                      swap.slippage === value && styles.slippageButtonTextActive,
-                    ]}
-                  >
-                    {value}%
-                  </Text>
-                </TouchableOpacity>
-              ))}
-              <TextInput
-                style={[styles.slippageInput, { backgroundColor: dynamicTheme.colors.background, borderColor: dynamicTheme.colors.border, color: dynamicTheme.colors.textPrimary }]}
-                value={slippageInput}
-                onChangeText={setSlippageInput}
-                keyboardType="decimal-pad"
-                placeholder="Custom"
-                placeholderTextColor={dynamicTheme.colors.textSecondary}
-              />
-            </View>
-          </View>
-        )}
+        {/* Slippage selector */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Text style={{ fontSize: 12, color: dynamicTheme.colors.textSecondary }}>Slippage:</Text>
+          {SLIPPAGE_OPTIONS.map((opt) => {
+            const isSelected = swap.slippage === opt;
+            return (
+              <Pressable
+                key={opt}
+                onPress={() => dispatch(setSlippage(opt))}
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 8,
+                  backgroundColor: isSelected ? 'rgba(255,255,255,0.12)' : 'transparent',
+                  borderWidth: 1,
+                  borderColor: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Text style={{ fontSize: 12, color: isSelected ? '#fff' : dynamicTheme.colors.textSecondary }}>
+                  {SLIPPAGE_LABELS[opt]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
         {/* From Token */}
         <View style={[styles.tokenCard, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}>
@@ -497,6 +481,24 @@ export default function SwapScreen() {
           </View>
         )}
 
+        {/* Price impact warning */}
+        {swap.quote && parseFloat(swap.quote.priceImpact) / 100 > PRICE_IMPACT_WARNING_THRESHOLD && (
+          <View
+            style={{
+              backgroundColor: 'rgba(234, 179, 8, 0.1)',
+              borderWidth: 1,
+              borderColor: 'rgba(234, 179, 8, 0.3)',
+              borderRadius: 12,
+              padding: 12,
+              marginTop: 12,
+            }}
+          >
+            <Text style={{ fontSize: 12, color: '#eab308' }}>
+              High price impact: {parseFloat(swap.quote.priceImpact).toFixed(2)}%. Consider reducing the amount or using a different route.
+            </Text>
+          </View>
+        )}
+
         {/* Error Message */}
         {swap.quoteError && (
           <View style={[styles.errorContainer, { backgroundColor: dynamicTheme.colors.error + '15' }]}>
@@ -607,53 +609,6 @@ const styles = StyleSheet.create({
   networkChipText: {
     fontSize: 12,
     fontWeight: '500',
-  },
-  settingsPanel: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  settingsTitle: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-    marginBottom: 12,
-  },
-  slippageOptions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  slippageButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  slippageButtonActive: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.accent,
-  },
-  slippageButtonText: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
-  },
-  slippageButtonTextActive: {
-    color: '#fff',
-  },
-  slippageInput: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    color: theme.colors.textPrimary,
-    textAlign: 'center',
   },
   tokenCard: {
     backgroundColor: theme.colors.surface,
