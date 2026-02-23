@@ -24,10 +24,18 @@ import {
   getTreasuryBalance,
   getProposalCount,
   getProposal,
+  getVestingSchedule,
+  getReleasable,
+  getLocked,
+  releaseVestedTokens,
+  type VestingScheduleInfo,
 } from '@e-y/shared'
 import { indexToProposalStatus, indexToProposalType } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { loadAndDecrypt } from '@e-y/storage'
+import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import Navigation from '@/components/Navigation'
+import ConfirmModal from '@/components/shared/ConfirmModal'
 
 // --------------------------------------------------
 // Types
@@ -208,6 +216,14 @@ export default function BusinessDashboardPage() {
   const [error, setError] = useState('')
   const [showDepositInfo, setShowDepositInfo] = useState(false)
 
+  // Vesting state
+  const [vestingInfo, setVestingInfo] = useState<VestingScheduleInfo | null>(null)
+  const [releasableAmount, setReleasableAmount] = useState(0)
+  const [lockedAmount, setLockedAmount] = useState(0)
+  const [releasing, setReleasing] = useState(false)
+  const [showRelease, setShowRelease] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
+
   // Contract factory helper
   const contractFactory: ContractFactory = (addr, abi, signerOrProvider) =>
     new ethers.Contract(addr, abi as ethers.InterfaceAbi, signerOrProvider as ethers.ContractRunner) as unknown as EthersLikeContract
@@ -298,6 +314,22 @@ export default function BusinessDashboardPage() {
           setProposals(displayProposals)
         }
 
+        // 4. Load vesting info for current user
+        try {
+          const [vesting, releasable, locked] = await Promise.all([
+            getVestingSchedule(contractFactory, biz.contractAddress, provider, address),
+            getReleasable(contractFactory, biz.contractAddress, provider, address),
+            getLocked(contractFactory, biz.contractAddress, provider, address),
+          ])
+          if (!cancelled) {
+            setVestingInfo(vesting)
+            setReleasableAmount(releasable)
+            setLockedAmount(locked)
+          }
+        } catch {
+          // Vesting not configured — ignore
+        }
+
         setStatus('succeeded')
       } catch (err) {
         if (cancelled) return
@@ -309,7 +341,28 @@ export default function BusinessDashboardPage() {
 
     load()
     return () => { cancelled = true }
-  }, [businessId, address, network.rpcUrl])
+  }, [businessId, address, network.rpcUrl, reloadKey])
+
+  // --------------------------------------------------
+  // Release vested tokens handler
+  // --------------------------------------------------
+
+  const handleRelease = async (password: string) => {
+    if (!business || !currentAccount) return
+    setReleasing(true)
+    try {
+      const mnemonic = await loadAndDecrypt(password)
+      const signerWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
+      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const signer = signerWallet.connect(provider)
+      await releaseVestedTokens(contractFactory, business.contractAddress, signer)
+      // Trigger data reload
+      setReloadKey(k => k + 1)
+    } finally {
+      setReleasing(false)
+      setShowRelease(false)
+    }
+  }
 
   // --------------------------------------------------
   // Computed values
@@ -687,9 +740,79 @@ export default function BusinessDashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Vesting Status */}
+            {vestingInfo && (
+              <div className="glass-card rounded-2xl p-5 sm:col-span-2">
+                <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Vesting Status</h3>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-white/40">Total Vesting</span>
+                    <span className="text-sm text-white font-medium">{vestingInfo.totalAmount} shares</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-white/40">Released</span>
+                    <span className="text-sm text-[#22c55e] font-medium">{vestingInfo.released} shares</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-white/40">Locked</span>
+                    <span className="text-sm text-[#f59e0b] font-medium">{lockedAmount} shares</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-white/40">Releasable Now</span>
+                    <span className="text-sm text-[#3388FF] font-medium">{releasableAmount} shares</span>
+                  </div>
+
+                  {/* Timeline */}
+                  <div className="bg-white/3 border border-white/8 rounded-xl p-3 mt-2">
+                    <div className="flex items-center justify-between text-[10px] text-white/30">
+                      <span>Cliff: {new Date(vestingInfo.cliffEnd * 1000).toLocaleDateString()}</span>
+                      <span>End: {new Date(vestingInfo.vestingEnd * 1000).toLocaleDateString()}</span>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-2 bg-white/8 rounded-full overflow-hidden mt-2">
+                      <div
+                        className="h-full bg-[#3388FF] rounded-full transition-all"
+                        style={{
+                          width: `${vestingInfo.totalAmount > 0 ? Math.min(((vestingInfo.totalAmount - lockedAmount) / vestingInfo.totalAmount) * 100, 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Release button */}
+                  {releasableAmount > 0 && (
+                    <button
+                      onClick={() => setShowRelease(true)}
+                      disabled={releasing}
+                      className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 transition-colors disabled:opacity-40"
+                    >
+                      {releasing ? 'Releasing...' : `Release ${releasableAmount} shares`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      {/* Release Vesting Confirm Modal */}
+      {showRelease && (
+        <ConfirmModal
+          title="Release Vested Tokens"
+          summary={`Release ${releasableAmount} shares`}
+          details={[
+            { label: 'Releasable', value: `${releasableAmount} shares` },
+            { label: 'Already Released', value: `${vestingInfo?.released ?? 0} shares` },
+            { label: 'Total Vesting', value: `${vestingInfo?.totalAmount ?? 0} shares` },
+          ]}
+          confirmLabel="Release"
+          onConfirm={handleRelease}
+          onCancel={() => setShowRelease(false)}
+        />
+      )}
     </div>
   )
 }
