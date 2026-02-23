@@ -361,6 +361,23 @@ function SendContent() {
                 </div>
               )}
 
+              {/* Bridge Info Banner */}
+              {route?.type === 'bridge' && (
+                <div className="p-4 rounded-xl mb-4" style={{ background: 'rgba(51, 136, 255, 0.08)', border: '1px solid rgba(51, 136, 255, 0.2)' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SUPPORTED_NETWORKS[route.fromNetwork]?.color }} />
+                    <span className="text-sm">{SUPPORTED_NETWORKS[route.fromNetwork]?.name}</span>
+                    <span style={{ color: 'var(--muted)' }}>&rarr;</span>
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: SUPPORTED_NETWORKS[route.toNetwork]?.color }} />
+                    <span className="text-sm">{SUPPORTED_NETWORKS[route.toNetwork]?.name}</span>
+                  </div>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                    Your tokens will be bridged first, then sent to the recipient.
+                    {route.bridgeQuote && ` Fee: ~$${route.bridgeQuote.totalFeeUsd?.toFixed(2)}. Time: ${route.estimatedTime || '~2 min'}.`}
+                  </p>
+                </div>
+              )}
+
               {/* Route Loading */}
               {routeLoading && (
                 <div className="flex items-center gap-2 px-1 mb-4">
