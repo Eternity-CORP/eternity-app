@@ -6,12 +6,14 @@
 import { createSlice, createAsyncThunk, createSelector, PayloadAction } from '@reduxjs/toolkit';
 import {
   fetchTransactionHistory,
+  fetchMultiChainHistory,
   fetchTransactionDetails,
   type Transaction,
   type TransactionDetails,
   type TransactionStatus,
 } from '@/src/services/transaction-service';
 import { transactionSocket, type TransactionStatusUpdate } from '@/src/services/transaction-socket';
+import type { AccountType } from '@e-y/shared';
 
 interface TransactionState {
   // Store transactions per address
@@ -33,13 +35,16 @@ const initialState: TransactionState = {
 };
 
 /**
- * Fetch transaction history for an address
+ * Fetch transaction history for an address.
+ * Real accounts use multi-chain (all 5 networks); test/business use single-chain.
  */
 export const fetchTransactionsThunk = createAsyncThunk(
   'transaction/fetchHistory',
-  async (address: string) => {
-    const transactions = await fetchTransactionHistory(address, 20);
-    return transactions;
+  async ({ address, accountType }: { address: string; accountType?: AccountType }) => {
+    if (accountType === 'real') {
+      return await fetchMultiChainHistory(address, 20);
+    }
+    return await fetchTransactionHistory(address, 20);
   }
 );
 
@@ -100,10 +105,10 @@ const transactionSlice = createSlice({
       .addCase(fetchTransactionsThunk.pending, (state, action) => {
         state.status = 'loading';
         state.error = null;
-        state.currentAddress = action.meta.arg; // Store address being fetched
+        state.currentAddress = action.meta.arg.address; // Store address being fetched
       })
       .addCase(fetchTransactionsThunk.fulfilled, (state, action) => {
-        const address = action.meta.arg;
+        const address = action.meta.arg.address;
         state.transactionsByAddress[address] = action.payload;
         state.currentAddress = address;
         state.status = 'succeeded';

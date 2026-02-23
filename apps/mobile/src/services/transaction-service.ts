@@ -7,8 +7,12 @@
  */
 
 import { formatEther } from 'ethers';
-import { fetchTransactionHistory as sharedFetchHistory } from '@e-y/shared';
+import {
+  fetchTransactionHistory as sharedFetchHistory,
+  fetchMultiChainTransactionHistory as sharedFetchMultiChain,
+} from '@e-y/shared';
 import { getProvider } from './balance-service';
+import { TIER1_NETWORK_IDS, getAlchemyUrl } from '@/src/constants/networks';
 
 export type TransactionDirection = 'sent' | 'received';
 export type TransactionStatus = 'pending' | 'confirmed' | 'failed';
@@ -26,6 +30,7 @@ export interface Transaction {
   blockNumber?: number;
   timestamp: number;
   createdAt: string;
+  networkId?: string; // which network this tx is on
 }
 
 export interface TransactionDetails extends Transaction {
@@ -183,4 +188,35 @@ export async function fetchTransactionDetails(
     console.error('Error fetching transaction details:', error);
     throw new Error('Failed to fetch transaction details');
   }
+}
+
+/**
+ * Fetch transaction history across all Tier 1 networks (for real accounts).
+ * Uses shared multi-chain fetcher with mobile Alchemy URLs.
+ */
+export async function fetchMultiChainHistory(
+  address: string,
+  limit: number = 20,
+): Promise<Transaction[]> {
+  const networks = TIER1_NETWORK_IDS.map(id => ({
+    networkId: id,
+    alchemyUrl: getAlchemyUrl(id),
+  }));
+
+  const items = await sharedFetchMultiChain(networks, address, limit);
+
+  // Map shared TransactionHistoryItem to mobile Transaction
+  return items.map(item => ({
+    hash: item.hash,
+    from: item.from,
+    to: item.to,
+    amount: item.amount,
+    token: item.token,
+    direction: item.direction,
+    status: item.status,
+    blockNumber: item.blockNumber,
+    timestamp: item.timestamp,
+    createdAt: item.createdAt,
+    networkId: item.networkId,
+  }));
 }

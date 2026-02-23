@@ -119,6 +119,7 @@ export {
 // Transaction Service
 export {
   fetchTransactionHistory,
+  fetchMultiChainHistory,
   fetchTransactionDetails,
   type Transaction,
   type TransactionDetails,

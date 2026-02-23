@@ -78,7 +78,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (currentAccount?.address && currentAccountType) {
       dispatch(fetchMultiNetworkBalancesThunk({ address: currentAccount.address, accountType: currentAccountType }));
-      dispatch(fetchTransactionsThunk(currentAccount.address));
+      dispatch(fetchTransactionsThunk({ address: currentAccount.address, accountType: currentAccountType }));
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
       dispatch(loadPendingSplitsThunk(currentAccount.address));
       dispatch(resetContacts());
@@ -116,7 +116,7 @@ export default function HomeScreen() {
   const onRefresh = useCallback(() => {
     if (currentAccount?.address && currentAccountType) {
       dispatch(fetchMultiNetworkBalancesThunk({ address: currentAccount.address, accountType: currentAccountType }));
-      dispatch(fetchTransactionsThunk(currentAccount.address));
+      dispatch(fetchTransactionsThunk({ address: currentAccount.address, accountType: currentAccountType }));
       dispatch(loadScheduledPaymentsThunk(currentAccount.address));
       dispatch(loadPendingSplitsThunk(currentAccount.address));
     }

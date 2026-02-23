@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useEffect, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectCurrentAccountType } from '@/src/store/slices/wallet-slice';
 import {
   fetchTransactionsThunk,
   selectTransactionsForAddress,
@@ -19,6 +19,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { SUPPORTED_NETWORKS, type NetworkId } from '@/src/constants/networks';
 
 export default function TransactionsScreen() {
   const { theme: dynamicTheme } = useTheme();
@@ -26,19 +27,20 @@ export default function TransactionsScreen() {
   const wallet = useAppSelector((state) => state.wallet);
   const transactionState = useAppSelector((state) => state.transaction);
   const currentAccount = getCurrentAccount(wallet);
+  const currentAccountType = useAppSelector(selectCurrentAccountType);
   const transactions = useAppSelector((state) => selectTransactionsForAddress(state, currentAccount?.address || null));
 
   // Load transactions when screen mounts or account changes
   useEffect(() => {
     if (currentAccount?.address) {
-      dispatch(fetchTransactionsThunk(currentAccount.address));
+      dispatch(fetchTransactionsThunk({ address: currentAccount.address, accountType: currentAccountType || undefined }));
     }
 
     // Cleanup on unmount
     return () => {
       unsubscribeFromAllTransactions();
     };
-  }, [currentAccount?.address, dispatch]);
+  }, [currentAccount?.address, currentAccountType, dispatch]);
 
   // Subscribe to real-time updates for pending transactions
   useEffect(() => {
@@ -54,9 +56,9 @@ export default function TransactionsScreen() {
   // Pull to refresh
   const onRefresh = useCallback(() => {
     if (currentAccount?.address) {
-      dispatch(fetchTransactionsThunk(currentAccount.address));
+      dispatch(fetchTransactionsThunk({ address: currentAccount.address, accountType: currentAccountType || undefined }));
     }
-  }, [currentAccount?.address, dispatch]);
+  }, [currentAccount?.address, currentAccountType, dispatch]);
 
   const handleTransactionPress = (txHash: string) => {
     router.push(`/transaction/${txHash}`);
@@ -110,10 +112,11 @@ export default function TransactionsScreen() {
               const txColor = isReceived ? dynamicTheme.colors.success : dynamicTheme.colors.error;
               const statusColor = tx.status === 'confirmed' ? dynamicTheme.colors.success :
                                   tx.status === 'pending' ? '#FFA500' : dynamicTheme.colors.error;
+              const netConfig = tx.networkId ? SUPPORTED_NETWORKS[tx.networkId as NetworkId] : null;
 
               return (
               <TouchableOpacity
-                key={tx.hash}
+                key={`${tx.hash}-${tx.networkId || 'default'}`}
                 style={[styles.transactionItem, { backgroundColor: dynamicTheme.colors.surface }]}
                 onPress={() => handleTransactionPress(tx.hash)}
                 activeOpacity={0.7}
@@ -127,9 +130,19 @@ export default function TransactionsScreen() {
                 </View>
 
                 <View style={styles.transactionInfo}>
-                  <Text style={[styles.transactionType, { color: dynamicTheme.colors.textPrimary }]}>
-                    {isReceived ? 'Received' : 'Sent'}
-                  </Text>
+                  <View style={styles.typeRow}>
+                    <Text style={[styles.transactionType, { color: dynamicTheme.colors.textPrimary }]}>
+                      {isReceived ? 'Received' : 'Sent'}
+                    </Text>
+                    {netConfig && (
+                      <View style={[styles.networkBadge, { backgroundColor: netConfig.color + '18' }]}>
+                        <View style={[styles.networkDot, { backgroundColor: netConfig.color }]} />
+                        <Text style={[styles.networkName, { color: netConfig.color }]}>
+                          {netConfig.shortName}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                   <Text style={[styles.transactionDate, { color: dynamicTheme.colors.textTertiary }]}>
                     {new Date(tx.timestamp).toLocaleDateString('ru-RU')} • {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
@@ -199,9 +212,31 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   transactionType: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  networkBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  networkDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  networkName: {
+    fontSize: 10,
+    fontWeight: '600',
   },
   transactionDate: {
     fontSize: 12,
