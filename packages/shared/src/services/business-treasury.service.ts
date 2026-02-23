@@ -287,3 +287,21 @@ export async function getVotingPeriod(
   const period = (await contract['votingPeriod']()) as bigint;
   return Number(period);
 }
+
+// ============================================
+// Dividend helpers
+// ============================================
+
+/**
+ * ABI types for encoding DISTRIBUTE_DIVIDENDS proposal data.
+ * Usage with ethers: coder.encode(DIVIDEND_PROPOSAL_ABI_TYPES, [totalAmountWei, holdersArray])
+ */
+export const DIVIDEND_PROPOSAL_ABI_TYPES = ['uint256', 'address[]'] as const;
+
+/**
+ * Decoded dividend proposal data from on-chain bytes.
+ */
+export interface DecodedDividendData {
+  totalAmount: string; // wei string — caller formats with ethers.formatEther
+  holders: string[];
+}
