@@ -14,7 +14,7 @@ import { estimateGasThunk, sendTransactionThunk, executeSmartSendThunk, setGasGu
 import { resetBridge } from '@/src/store/slices/bridge-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
-import { checkGasAvailability, SUPPORTED_NETWORKS as SHARED_NETWORKS } from '@e-y/shared';
+import { checkGasAvailability, suggestGasBridge, SUPPORTED_NETWORKS as SHARED_NETWORKS } from '@e-y/shared';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { BridgeCostBanner, ConsolidationBanner } from '@/src/components';
@@ -251,6 +251,11 @@ export default function ConfirmScreen() {
   const gasGuardFailed = send.gasGuardResult != null && !send.gasGuardResult.sufficient;
   const canConfirm = send.gasEstimateStatus === 'succeeded' && send.sendStatus !== 'loading' && !gasGuardFailed;
 
+  // Gas bridge suggestion when gas guard fails
+  const gasBridgeSuggestion = send.gasGuardResult && !send.gasGuardResult.sufficient
+    ? suggestGasBridge(send.gasGuardResult.networkId, send.gasGuardResult.shortfall, aggregatedBalances)
+    : null;
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader title="Confirm" />
@@ -436,11 +441,19 @@ export default function ConfirmScreen() {
         {send.gasGuardResult && !send.gasGuardResult.sufficient && (
           <View style={[styles.warningCard, { backgroundColor: dynamicTheme.colors.error + '15', borderColor: dynamicTheme.colors.error + '30' }]}>
             <FontAwesome name="exclamation-triangle" size={16} color={dynamicTheme.colors.error} />
-            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.error, flex: 1, marginLeft: 8 }]}>
-              Insufficient {send.gasGuardResult.nativeSymbol} for gas.
-              {' '}Need ~{parseFloat(send.gasGuardResult.estimatedGasCostEth).toFixed(6)} {send.gasGuardResult.nativeSymbol},
-              {' '}have {parseFloat(send.gasGuardResult.nativeBalance).toFixed(6)}.
-            </Text>
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Text style={[theme.typography.caption, { color: dynamicTheme.colors.error }]}>
+                Insufficient {send.gasGuardResult.nativeSymbol} for gas.
+                {' '}Need ~{parseFloat(send.gasGuardResult.estimatedGasCostEth).toFixed(6)} {send.gasGuardResult.nativeSymbol},
+                {' '}have {parseFloat(send.gasGuardResult.nativeBalance).toFixed(6)}.
+              </Text>
+              {gasBridgeSuggestion && (
+                <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textSecondary, marginTop: 4 }]}>
+                  Tip: Bridge {gasBridgeSuggestion.amount} {gasBridgeSuggestion.nativeSymbol} from{' '}
+                  {SHARED_NETWORKS[gasBridgeSuggestion.fromNetwork as keyof typeof SHARED_NETWORKS]?.name || gasBridgeSuggestion.fromNetwork} to cover gas.
+                </Text>
+              )}
+            </View>
           </View>
         )}
 
