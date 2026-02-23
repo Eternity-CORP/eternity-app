@@ -14,6 +14,12 @@ interface IBusinessToken {
         uint256 amount
     ) external;
     function setTransferPolicy(uint8 newPolicy) external;
+    function setVesting(
+        address beneficiary,
+        uint256 totalAmount,
+        uint256 cliffDuration,
+        uint256 vestingDuration
+    ) external;
 }
 
 contract BusinessTreasury is ReentrancyGuard {
@@ -108,6 +114,18 @@ contract BusinessTreasury is ReentrancyGuard {
         if (initialized) revert AlreadyInitialized();
         token = IBusinessToken(tokenAddress);
         initialized = true;
+    }
+
+    /// @notice Called by the factory to set up vesting during business creation.
+    function setupVesting(
+        address beneficiary,
+        uint256 totalAmount,
+        uint256 cliffDuration,
+        uint256 vestingDuration
+    ) external {
+        if (msg.sender != factory) revert OnlyFactory();
+        if (!initialized) revert NotInitialized();
+        token.setVesting(beneficiary, totalAmount, cliffDuration, vestingDuration);
     }
 
     receive() external payable {

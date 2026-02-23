@@ -22,6 +22,9 @@ contract BusinessFactory {
         TransferPolicy transferPolicy;
         uint256 quorumBps;
         uint256 votingPeriod;
+        bool vestingEnabled;
+        uint256 cliffDuration;      // seconds (0 if no vesting)
+        uint256 vestingDuration;    // seconds (0 if no vesting)
     }
 
     Business[] public businesses;
@@ -65,6 +68,18 @@ contract BusinessFactory {
 
         // 3. Initialize treasury with the token address (solves chicken-and-egg)
         treasury.initialize(address(token));
+
+        // 4. Set up vesting for each founder if enabled
+        if (params.vestingEnabled) {
+            for (uint256 i = 0; i < params.founders.length; i++) {
+                treasury.setupVesting(
+                    params.founders[i],
+                    params.shares[i],
+                    params.cliffDuration,
+                    params.vestingDuration
+                );
+            }
+        }
 
         treasuryAddress = address(treasury);
         tokenAddress = address(token);

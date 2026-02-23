@@ -29,6 +29,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0, // FREE
         quorumBps: 5100,
         votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
       const receipt = await tx.wait();
 
@@ -53,6 +56,9 @@ describe("BusinessFactory", function () {
           transferPolicy: 0,
           quorumBps: 5100,
           votingPeriod: 172800,
+          vestingEnabled: false,
+          cliffDuration: 0,
+          vestingDuration: 0,
         })
       ).to.emit(factory, "BusinessCreated");
     });
@@ -67,6 +73,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0,
         quorumBps: 5100,
         votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
 
       const business = await factory.getBusiness(0);
@@ -91,6 +100,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0,
         quorumBps: 100,
         votingPeriod: 3600,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
 
       const business = await factory.getBusiness(0);
@@ -115,6 +127,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0,
         quorumBps: 5100,
         votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
 
       const business = await factory.getBusiness(0);
@@ -136,6 +151,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0,
         quorumBps: 5100,
         votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
 
       await factory.connect(owner).createBusiness({
@@ -147,6 +165,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0,
         quorumBps: 5100,
         votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
 
       const ownerBusinesses = await factory.getBusinessesByOwner(
@@ -178,6 +199,9 @@ describe("BusinessFactory", function () {
         transferPolicy: 0,
         quorumBps: 5100,
         votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
       });
 
       const business = await factory.getBusiness(0);
@@ -240,6 +264,98 @@ describe("BusinessFactory", function () {
       await token.connect(owner).transfer(bob.address, 5);
       expect(await token.balanceOf(bob.address)).to.equal(5);
       expect(await token.balanceOf(owner.address)).to.equal(55);
+    });
+  });
+
+  describe("Auto-Vesting at Creation", function () {
+    const CLIFF_DURATION = 3600; // 1 hour
+    const VESTING_DURATION = 7200; // 2 hours
+
+    it("should set vesting for all founders when vestingEnabled is true", async function () {
+      await factory.connect(owner).createBusiness({
+        name: "Vested Corp",
+        symbol: "VEST",
+        totalSupply: 100,
+        founders: [owner.address, alice.address],
+        shares: [60, 40],
+        transferPolicy: 0,
+        quorumBps: 5100,
+        votingPeriod: 172800,
+        vestingEnabled: true,
+        cliffDuration: CLIFF_DURATION,
+        vestingDuration: VESTING_DURATION,
+      });
+
+      const business = await factory.getBusiness(0);
+      const token = await ethers.getContractAt(
+        "BusinessToken",
+        business.tokenAddress
+      );
+
+      // Verify vesting was set for owner
+      const ownerSchedule = await token.vestingSchedules(owner.address);
+      expect(ownerSchedule.totalAmount).to.equal(60);
+
+      // Verify vesting was set for alice
+      const aliceSchedule = await token.vestingSchedules(alice.address);
+      expect(aliceSchedule.totalAmount).to.equal(40);
+    });
+
+    it("should NOT set vesting when vestingEnabled is false", async function () {
+      await factory.connect(owner).createBusiness({
+        name: "No Vest Corp",
+        symbol: "NOVST",
+        totalSupply: 100,
+        founders: [owner.address, alice.address],
+        shares: [60, 40],
+        transferPolicy: 0,
+        quorumBps: 5100,
+        votingPeriod: 172800,
+        vestingEnabled: false,
+        cliffDuration: 0,
+        vestingDuration: 0,
+      });
+
+      const business = await factory.getBusiness(0);
+      const token = await ethers.getContractAt(
+        "BusinessToken",
+        business.tokenAddress
+      );
+
+      // No vesting should be set
+      const ownerSchedule = await token.vestingSchedules(owner.address);
+      expect(ownerSchedule.totalAmount).to.equal(0);
+    });
+
+    it("should lock tokens after creation with vesting", async function () {
+      await factory.connect(owner).createBusiness({
+        name: "Locked Corp",
+        symbol: "LOCK",
+        totalSupply: 100,
+        founders: [owner.address, alice.address],
+        shares: [60, 40],
+        transferPolicy: 0,
+        quorumBps: 5100,
+        votingPeriod: 172800,
+        vestingEnabled: true,
+        cliffDuration: CLIFF_DURATION,
+        vestingDuration: VESTING_DURATION,
+      });
+
+      const business = await factory.getBusiness(0);
+      const token = await ethers.getContractAt(
+        "BusinessToken",
+        business.tokenAddress
+      );
+
+      // All tokens should be locked (before cliff)
+      expect(await token.locked(owner.address)).to.equal(60);
+      expect(await token.locked(alice.address)).to.equal(40);
+
+      // Transfer should fail (all tokens locked)
+      await expect(
+        token.connect(owner).transfer(bob.address, 1)
+      ).to.be.revertedWithCustomError(token, "InsufficientUnlockedBalance");
     });
   });
 });
