@@ -17,5 +17,6 @@ export * from './business-factory.service';
 export * from './business-token.service';
 export * from './business-treasury.service';
 export * from './gas-guard';
+export * from './gas-bridge-helper';
 export * from './smart-routing';
 export * from './quote-cache';
