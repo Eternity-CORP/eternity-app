@@ -1,20 +1,34 @@
 'use client'
 
-import dynamic from 'next/dynamic'
+import { Header } from '@/components/ui/Header'
+import { TimelineIndicator } from '@/components/ui/TimelineIndicator'
+import { Hero } from '@/components/sections/Hero'
+import { Problem } from '@/components/sections/Problem'
+import { Solution } from '@/components/sections/Solution'
+import { Showcase } from '@/components/sections/Showcase'
+import { Roadmap } from '@/components/sections/Roadmap'
+import { CTA } from '@/components/sections/CTA'
+import { Footer } from '@/components/sections/Footer'
 import { PageWrapper } from '@/components/PageWrapper'
 import { WarpProvider } from '@/components/animations/WarpTransition'
-
-// Dynamic import to avoid SSR issues with Three.js / R3F
-const ShardLanding = dynamic(
-  () => import('@/components/ShardLanding').then((mod) => mod.ShardLanding),
-  { ssr: false }
-)
 
 export default function Home() {
   return (
     <PageWrapper>
       <WarpProvider>
-        <ShardLanding />
+        <main className="relative">
+          <Header />
+          <TimelineIndicator />
+          <div id="hero">
+            <Hero />
+          </div>
+          <Problem />
+          <Solution />
+          <Showcase />
+          <Roadmap />
+          <CTA />
+          <Footer />
+        </main>
       </WarpProvider>
     </PageWrapper>
   )
