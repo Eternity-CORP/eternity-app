@@ -16,3 +16,4 @@ export * from './contacts-service';
 export * from './business-factory.service';
 export * from './business-token.service';
 export * from './business-treasury.service';
+export * from './gas-guard';
