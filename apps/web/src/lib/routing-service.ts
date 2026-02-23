@@ -15,6 +15,7 @@ import {
   formatBridgeTime,
   getTokenAddressForNetwork,
   determineSendRoute,
+  parseTokenAmount,
   type BridgeQuoteResult,
   type BridgeCostLevel,
 } from '@e-y/shared'
@@ -133,10 +134,9 @@ export async function calculateTransferRoute(
     }
   }
 
-  const amountNum = parseFloat(amount)
   const tokenData = aggregatedBalances.find((t) => t.symbol.toUpperCase() === upperSymbol)
   const decimals = tokenData?.decimals || 18
-  const rawAmount = BigInt(Math.floor(amountNum * 10 ** decimals)).toString()
+  const rawAmount = parseTokenAmount(amount, decimals)
 
   const quote = await fetchBridgeQuote({
     fromChainId: NETWORK_TO_CHAIN_ID[sourceNetwork],
@@ -163,7 +163,8 @@ export async function calculateTransferRoute(
     }
   }
 
-  const costLevel = checkBridgeCostLevel(amountNum * (tokenData?.totalUsdValue || 0) / parseFloat(tokenData?.totalBalance || '1'), quote.totalFeeUsd)
+  const amountUsd = parseFloat(amount) * (tokenData?.totalUsdValue || 0) / parseFloat(tokenData?.totalBalance || '1')
+  const costLevel = checkBridgeCostLevel(amountUsd, quote.totalFeeUsd)
   const estimatedTime = formatBridgeTime(quote.estimatedTime)
 
   return {

@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ethers } from 'ethers';
+import { deriveWalletFromMnemonic } from '@e-y/crypto';
 
 import { theme } from '@/src/constants/theme';
 import { useTheme } from '@/src/contexts';
@@ -181,7 +182,7 @@ export default function SwapScreen() {
 
     try {
       const provider = getProvider(swap.fromNetworkId);
-      const walletInstance = ethers.Wallet.fromPhrase(wallet.mnemonic).connect(provider);
+      const walletInstance = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
 
       const spender = await getLiFiContractAddress(
         SUPPORTED_NETWORKS[swap.fromNetworkId].chainId
@@ -210,7 +211,7 @@ export default function SwapScreen() {
 
     try {
       const provider = getProvider(swap.fromNetworkId);
-      const walletInstance = ethers.Wallet.fromPhrase(wallet.mnemonic).connect(provider);
+      const walletInstance = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
 
       const tx = await executeSwap(swap.quote, walletInstance);
       dispatch(setSwapTxHash(tx.hash));

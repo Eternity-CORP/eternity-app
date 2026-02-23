@@ -142,8 +142,20 @@ export async function calculateTransferRoute(
   if (route.type === 'bridge') {
     const sourceNetwork = route.fromNetwork as NetworkId;
     const preferredNetwork = route.toNetwork as NetworkId;
-    const tokenAddress = getTokenAddressForNetwork(token, sourceNetwork);
-    const destTokenAddress = getTokenAddressForNetwork(token, preferredNetwork);
+    const tokenAddress = getTokenAddressForBridge(token, sourceNetwork);
+    const destTokenAddress = getTokenAddressForBridge(token, preferredNetwork);
+
+    // If the token is not bridgeable on either network, fall back to direct
+    if (!tokenAddress || !destTokenAddress) {
+      logger.info('Token not bridgeable, falling back to direct transfer', { sourceNetwork });
+      return {
+        canSend: true,
+        route: { type: 'direct', fromNetwork: sourceNetwork, toNetwork: sourceNetwork, amount, token },
+        showBridgeCost: false,
+        showConsolidationOption: false,
+        showAlternative: false,
+      };
+    }
 
     const bridgeQuote = await getBridgeQuote(sourceNetwork, preferredNetwork, tokenAddress, destTokenAddress, amountWei, fromAddress, toAddress);
 
@@ -176,14 +188,20 @@ export async function calculateTransferRoute(
         if (source.networkId === targetNetwork) {
           sources.push({ network: source.networkId as NetworkId, amount: source.amount });
         } else {
-          const tokenAddress = getTokenAddressForNetwork(token, source.networkId);
-          const destTokenAddress = getTokenAddressForNetwork(token, targetNetwork);
-          const sourceAmountWei = toWei(source.amount, decimals);
+          const tokenAddress = getTokenAddressForBridge(token, source.networkId);
+          const destTokenAddress = getTokenAddressForBridge(token, targetNetwork);
 
-          const bridgeQuote = await getBridgeQuote(
-            source.networkId as NetworkId, targetNetwork, tokenAddress, destTokenAddress, sourceAmountWei, fromAddress, toAddress,
-          );
-          sources.push({ network: source.networkId as NetworkId, amount: source.amount, bridgeQuote: bridgeQuote ?? undefined });
+          if (!tokenAddress || !destTokenAddress) {
+            // Token not bridgeable from this source — skip bridge, include as direct
+            sources.push({ network: source.networkId as NetworkId, amount: source.amount });
+          } else {
+            const sourceAmountWei = toWei(source.amount, decimals);
+
+            const bridgeQuote = await getBridgeQuote(
+              source.networkId as NetworkId, targetNetwork, tokenAddress, destTokenAddress, sourceAmountWei, fromAddress, toAddress,
+            );
+            sources.push({ network: source.networkId as NetworkId, amount: source.amount, bridgeQuote: bridgeQuote ?? undefined });
+          }
         }
       }
     }
@@ -201,6 +219,21 @@ export async function calculateTransferRoute(
 
   // Fallback (should not reach here)
   return { canSend: false, error: `Insufficient ${token} balance to send ${amount}`, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
+}
+
+// ============================================
+// Bridgeability check
+// ============================================
+
+/**
+ * Get token address for bridge, returning null if the token is not
+ * available on the given network (i.e. getTokenAddressForNetwork
+ * returns just the symbol instead of a 0x address).
+ */
+function getTokenAddressForBridge(symbol: string, networkId: string): string | null {
+  const addr = getTokenAddressForNetwork(symbol, networkId);
+  if (addr === symbol.toUpperCase()) return null;
+  return addr;
 }
 
 // Re-export shared helpers for backward compatibility

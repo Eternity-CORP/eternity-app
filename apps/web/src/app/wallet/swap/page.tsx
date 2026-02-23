@@ -27,6 +27,7 @@ import {
   DEFAULT_SLIPPAGE,
   PRICE_IMPACT_WARNING_THRESHOLD,
 } from '@e-y/shared'
+import { getProvider } from '@/lib/multi-network'
 
 export default function SwapPage() {
   const { isReady } = useAuthGuard()
@@ -174,7 +175,7 @@ export default function SwapPage() {
     setSuccess('')
 
     try {
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const provider = getProvider(fromNetworkId)
       const connectedWallet = wallet.connect(provider)
 
       const tx = await executeSwap(quote, connectedWallet)
