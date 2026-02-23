@@ -40,12 +40,20 @@ import {
   indexToProposalType,
   isQuorumReached,
   createApiClient,
+  getVestingSchedule,
+  getReleasable,
+  getLocked,
+  releaseVestedTokens,
+  type VestingScheduleInfo,
   type BusinessWallet,
   type BusinessActivity,
   type ContractFactory,
   type EthersLikeContract,
   type EthersLikeProvider,
 } from '@e-y/shared';
+
+import { getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { getTestnetProvider } from '@/src/services/network-service';
 
 // --------------------------------------------------
 // Types
@@ -254,6 +262,10 @@ export function BusinessDashboardScreen() {
   const [error, setError] = useState('');
   const [showDepositInfo, setShowDepositInfo] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [vestingInfo, setVestingInfo] = useState<VestingScheduleInfo | null>(null);
+  const [releasableAmount, setReleasableAmount] = useState(0);
+  const [lockedAmount, setLockedAmount] = useState(0);
+  const [releasing, setReleasing] = useState(false);
 
   // Contract factory
   const contractFactory: ContractFactory = useCallback(
@@ -351,6 +363,20 @@ export function BusinessDashboardScreen() {
         setProposals(displayProposals);
       }
 
+      // Load vesting data for current user
+      try {
+        const [vesting, releasable, locked] = await Promise.all([
+          getVestingSchedule(contractFactory, biz.contractAddress, provider, address),
+          getReleasable(contractFactory, biz.contractAddress, provider, address),
+          getLocked(contractFactory, biz.contractAddress, provider, address),
+        ]);
+        setVestingInfo(vesting);
+        setReleasableAmount(releasable);
+        setLockedAmount(locked);
+      } catch {
+        // Vesting not configured — ignore
+      }
+
       setStatus('succeeded');
     } catch (err) {
       console.error('Failed to load business:', err);
@@ -381,6 +407,35 @@ export function BusinessDashboardScreen() {
     await Clipboard.setStringAsync(business.treasuryAddress);
     Alert.alert('Copied', 'Treasury address copied to clipboard');
   }, [business]);
+
+  // --------------------------------------------------
+  // Release vested tokens
+  // --------------------------------------------------
+
+  const handleRelease = useCallback(async () => {
+    if (!business || !wallet.mnemonic || !currentAccount) return;
+    Alert.alert('Release Tokens', `Release ${releasableAmount} vested tokens?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Release',
+        onPress: async () => {
+          setReleasing(true);
+          try {
+            const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, currentAccount.accountIndex);
+            const provider = getTestnetProvider('sepolia');
+            const signer = hdWallet.connect(provider);
+            await releaseVestedTokens(contractFactory, business.contractAddress, signer);
+            Alert.alert('Success', 'Tokens released successfully.');
+            await loadData();
+          } catch (err) {
+            Alert.alert('Error', err instanceof Error ? err.message : 'Failed to release tokens');
+          } finally {
+            setReleasing(false);
+          }
+        },
+      },
+    ]);
+  }, [business, wallet.mnemonic, currentAccount, releasableAmount, loadData, contractFactory]);
 
   // --------------------------------------------------
   // Loading state
@@ -689,7 +744,7 @@ export function BusinessDashboardScreen() {
         </View>
 
         {/* ============ Settings ============ */}
-        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 40 }]}>
+        <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border, marginBottom: vestingInfo ? 12 : 40 }]}>
           <Text style={[styles.sectionTitle, { color: c.textTertiary }]}>SETTINGS</Text>
 
           <SettingsRow
@@ -731,6 +786,78 @@ export function BusinessDashboardScreen() {
             showBorder={false}
           />
         </View>
+
+        {/* ============ Vesting Status ============ */}
+        {vestingInfo && (
+          <View style={[styles.card, { backgroundColor: c.surface, borderColor: c.border, marginBottom: 40 }]}>
+            <Text style={[styles.sectionTitle, { color: c.textTertiary }]}>VESTING STATUS</Text>
+
+            <View style={styles.settingsRow}>
+              <Text style={[styles.settingsLabel, { color: c.textTertiary }]}>Total Vesting</Text>
+              <Text style={[styles.settingsValue, { color: c.textSecondary }]}>
+                {vestingInfo.totalAmount} shares
+              </Text>
+            </View>
+            <View style={styles.settingsRow}>
+              <Text style={[styles.settingsLabel, { color: c.textTertiary }]}>Released</Text>
+              <Text style={[styles.settingsValue, { color: '#22C55E' }]}>
+                {vestingInfo.released} shares
+              </Text>
+            </View>
+            <View style={styles.settingsRow}>
+              <Text style={[styles.settingsLabel, { color: c.textTertiary }]}>Locked</Text>
+              <Text style={[styles.settingsValue, { color: '#F59E0B' }]}>
+                {lockedAmount} shares
+              </Text>
+            </View>
+            <View style={styles.settingsRow}>
+              <Text style={[styles.settingsLabel, { color: c.textTertiary }]}>Releasable Now</Text>
+              <Text style={[styles.settingsValue, { color: '#3388FF' }]}>
+                {releasableAmount} shares
+              </Text>
+            </View>
+
+            {/* Timeline */}
+            <View style={styles.vestingTimeline}>
+              <View style={styles.vestingTimelineLabels}>
+                <Text style={styles.vestingTimelineText}>
+                  Cliff: {new Date(vestingInfo.cliffEnd * 1000).toLocaleDateString()}
+                </Text>
+                <Text style={styles.vestingTimelineText}>
+                  End: {new Date(vestingInfo.vestingEnd * 1000).toLocaleDateString()}
+                </Text>
+              </View>
+              {/* Progress bar */}
+              <View style={styles.vestingBarBg}>
+                <View
+                  style={[
+                    styles.vestingBarFill,
+                    {
+                      width: `${vestingInfo.totalAmount > 0 ? Math.min(((vestingInfo.totalAmount - lockedAmount) / vestingInfo.totalAmount) * 100, 100) : 0}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+
+            {/* Release button */}
+            {releasableAmount > 0 && (
+              <TouchableOpacity
+                style={styles.releaseButton}
+                onPress={handleRelease}
+                disabled={releasing}
+              >
+                {releasing ? (
+                  <ActivityIndicator color="#000" size="small" />
+                ) : (
+                  <Text style={styles.releaseButtonText}>
+                    Release {releasableAmount} shares
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -923,6 +1050,47 @@ const styles = StyleSheet.create({
   },
   settingsLabel: { fontSize: 12 },
   settingsValue: { fontSize: 12 },
+
+  // Vesting
+  vestingTimeline: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+  },
+  vestingTimelineLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  vestingTimelineText: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.3)',
+  },
+  vestingBarBg: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 3,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  vestingBarFill: {
+    height: '100%',
+    backgroundColor: '#3388FF',
+    borderRadius: 3,
+  },
+  releaseButton: {
+    marginTop: 12,
+    backgroundColor: '#3388FF',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  releaseButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 
   // Empty
   emptySection: { alignItems: 'center', paddingVertical: 24 },
