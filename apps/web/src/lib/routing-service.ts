@@ -1,7 +1,8 @@
 /**
  * Web Routing Service
  * Determines the optimal transfer route: direct, bridge, or consolidation.
- * Uses shared bridge API for quotes, local logic for route selection.
+ * Uses shared determineSendRoute for the decision engine, then fetches
+ * bridge quotes locally when needed.
  */
 
 import {
@@ -9,12 +10,11 @@ import {
   type AggregatedTokenBalance,
   NETWORK_TO_CHAIN_ID,
   SUPPORTED_NETWORKS,
-  findNetworksWithSufficientBalance,
   fetchBridgeQuote,
   checkBridgeCostLevel,
   formatBridgeTime,
-  getCheapestNetwork,
   getTokenAddressForNetwork,
+  determineSendRoute,
   type BridgeQuoteResult,
   type BridgeCostLevel,
 } from '@e-y/shared'
@@ -37,6 +37,9 @@ export interface RoutingResult {
 /**
  * Calculate optimal transfer route.
  *
+ * Uses shared determineSendRoute for the pure decision logic, then
+ * fetches bridge quotes only when the route requires bridging.
+ *
  * @param aggregatedBalances - Token balances across all networks
  * @param symbol - Token symbol to send
  * @param amount - Amount to send (human-readable)
@@ -52,52 +55,66 @@ export async function calculateTransferRoute(
   fromAddress: string,
   toAddress: string,
 ): Promise<RoutingResult> {
-  const upperSymbol = symbol.toUpperCase()
-  const amountNum = parseFloat(amount)
-
-  // Find networks where sender has enough balance
-  const sufficientNetworks = findNetworksWithSufficientBalance(
+  // Use shared decision engine
+  const route = determineSendRoute({
     aggregatedBalances,
-    upperSymbol,
+    symbol,
     amount,
-  ) as NetworkId[]
+    recipientPreferredNetwork,
+  })
 
-  if (sufficientNetworks.length === 0) {
+  const upperSymbol = route.symbol
+
+  // Insufficient — return immediately
+  if (route.type === 'insufficient') {
     return {
       type: 'insufficient',
-      fromNetwork: 'ethereum',
-      toNetwork: recipientPreferredNetwork || 'ethereum',
+      fromNetwork: (route.fromNetwork as NetworkId) || 'ethereum',
+      toNetwork: (route.toNetwork as NetworkId) || recipientPreferredNetwork || 'ethereum',
       amount,
       symbol: upperSymbol,
       bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '',
-      message: 'Insufficient balance on any single network',
+      message: route.message,
     }
   }
 
-  // Target network: recipient preference or cheapest available
-  const targetNetwork = recipientPreferredNetwork || (getCheapestNetwork(sufficientNetworks) as NetworkId)
-
-  // Can sender send directly on the target network?
-  if (sufficientNetworks.includes(targetNetwork)) {
+  // Direct — return immediately (no bridge quote needed)
+  if (route.type === 'direct') {
+    const networkName = SUPPORTED_NETWORKS[route.fromNetwork as NetworkId]?.name || route.fromNetwork
     return {
       type: 'direct',
-      fromNetwork: targetNetwork,
-      toNetwork: targetNetwork,
+      fromNetwork: route.fromNetwork as NetworkId,
+      toNetwork: route.toNetwork as NetworkId,
       amount,
       symbol: upperSymbol,
       bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '~15 sec',
-      message: `Direct transfer on ${SUPPORTED_NETWORKS[targetNetwork].name}`,
+      message: `Direct transfer on ${networkName}`,
     }
   }
 
-  // Need a bridge: pick cheapest source network
-  const sourceNetwork = getCheapestNetwork(sufficientNetworks) as NetworkId
+  // Consolidation — return without bridge quotes (caller handles)
+  if (route.type === 'consolidation') {
+    return {
+      type: 'consolidation',
+      fromNetwork: route.fromNetwork as NetworkId,
+      toNetwork: route.toNetwork as NetworkId,
+      amount,
+      symbol: upperSymbol,
+      bridgeQuote: null,
+      costLevel: 'none',
+      estimatedTime: '',
+      message: route.message,
+    }
+  }
 
-  // Get token addresses for bridge
+  // Bridge — fetch bridge quote
+  const sourceNetwork = route.fromNetwork as NetworkId
+  const targetNetwork = route.toNetwork as NetworkId
+
   const fromTokenAddress = getTokenAddressForBridge(upperSymbol, sourceNetwork)
   const toTokenAddress = getTokenAddressForBridge(upperSymbol, targetNetwork)
 
@@ -116,7 +133,7 @@ export async function calculateTransferRoute(
     }
   }
 
-  // Fetch bridge quote
+  const amountNum = parseFloat(amount)
   const tokenData = aggregatedBalances.find((t) => t.symbol.toUpperCase() === upperSymbol)
   const decimals = tokenData?.decimals || 18
   const rawAmount = BigInt(Math.floor(amountNum * 10 ** decimals)).toString()
