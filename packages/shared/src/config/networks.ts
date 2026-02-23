@@ -1,4 +1,5 @@
 import type { AccountType } from '../types/wallet';
+import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, type NetworkId, type MultiNetworkConfig } from './multi-network';
 
 export interface SimpleNetworkConfig {
   name: string;
@@ -57,3 +58,35 @@ export const CHAIN_IDS = {
   BASE: 8453,
   OPTIMISM: 10,
 } as const;
+
+export type AccountNetworkMode = 'single' | 'multi';
+
+/**
+ * Determine network mode for an account type.
+ * Real accounts use multi-network (5 chains), test/business are single-network (Sepolia).
+ */
+export function getAccountNetworkMode(accountType: AccountType): AccountNetworkMode {
+  return accountType === 'real' ? 'multi' : 'single';
+}
+
+/**
+ * Build multi-network configs for real accounts.
+ * Returns SimpleNetworkConfig for each mainnet chain.
+ */
+export function buildMultiNetworkConfigs(alchemyKey: string): Record<NetworkId, SimpleNetworkConfig> {
+  const result = {} as Record<NetworkId, SimpleNetworkConfig>;
+  for (const id of TIER1_NETWORK_IDS) {
+    const net = SUPPORTED_NETWORKS[id];
+    const rpcUrl = net.rpcUrlTemplate.replace('{apiKey}', alchemyKey);
+    result[id] = {
+      name: net.name,
+      chainId: net.chainId,
+      rpcUrl,
+      explorerUrl: net.blockExplorer,
+      explorerTxUrl: (hash: string) => `${net.blockExplorer}/tx/${hash}`,
+      explorerAddressUrl: (address: string) => `${net.blockExplorer}/address/${address}`,
+      symbol: net.nativeCurrency.symbol,
+    };
+  }
+  return result;
+}
