@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
+import { SUPPORTED_NETWORKS, type NetworkId } from '@/src/constants/networks';
+import type { AggregatedTokenBalance } from '@/src/services/network-service';
 
 interface TokenBalance {
   token: string;
@@ -17,9 +19,10 @@ interface TokenBalance {
 interface TokensListProps {
   balances: TokenBalance[];
   isLoading: boolean;
+  aggregatedBalances?: AggregatedTokenBalance[];
 }
 
-export function TokensList({ balances, isLoading }: TokensListProps) {
+export function TokensList({ balances, isLoading, aggregatedBalances }: TokensListProps) {
   const { theme: dynamicTheme, isDark } = useTheme();
 
   return (
@@ -45,6 +48,25 @@ export function TokensList({ balances, isLoading }: TokensListProps) {
             <Text style={[styles.tokenBalanceUsd, { color: dynamicTheme.colors.textSecondary }]}>
               ${token.usdValue?.toFixed(2) || '0.00'}
             </Text>
+            {aggregatedBalances && (() => {
+              const agg = aggregatedBalances.find(a => a.symbol === token.symbol);
+              if (!agg) return null;
+              const activeNetworks = agg.networks.filter(n => parseFloat(n.balance) > 0);
+              if (activeNetworks.length <= 1) return null;
+              return (
+                <View style={styles.networkDots}>
+                  {activeNetworks.map(n => (
+                    <View
+                      key={n.networkId}
+                      style={[
+                        styles.networkDot,
+                        { backgroundColor: SUPPORTED_NETWORKS[n.networkId as NetworkId]?.color || '#666' },
+                      ]}
+                    />
+                  ))}
+                </View>
+              );
+            })()}
           </View>
         </TouchableOpacity>
       ))}
@@ -103,6 +125,17 @@ const styles = StyleSheet.create({
   tokenBalanceUsd: {
     ...theme.typography.caption,
     color: theme.colors.textSecondary,
+  },
+  networkDots: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 3,
+    marginTop: 3,
+  },
+  networkDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   emptyState: {
     alignItems: 'center',

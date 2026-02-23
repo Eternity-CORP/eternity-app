@@ -349,6 +349,7 @@ export default function HomeScreen() {
         <TokensList
           balances={balance.balances}
           isLoading={balance.status === 'loading'}
+          aggregatedBalances={balance.aggregatedBalances}
         />
       </ScrollView>
 
