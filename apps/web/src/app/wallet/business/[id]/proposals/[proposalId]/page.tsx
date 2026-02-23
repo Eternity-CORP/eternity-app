@@ -123,6 +123,14 @@ function decodeProposalData(type: ProposalType, data: string): Record<string, st
         const [title, description] = coder.decode(['string', 'string'], data)
         return { Title: title as string, Description: description as string }
       }
+      case 'DISTRIBUTE_DIVIDENDS': {
+        const [totalAmount, holders] = coder.decode(['uint256', 'address[]'], data)
+        return {
+          'Total Amount': `${ethers.formatEther(totalAmount as bigint)} ETH`,
+          'Recipients': `${(holders as string[]).length} holders`,
+          'Holders': (holders as string[]).map((h: string) => `${h.slice(0, 6)}...${h.slice(-4)}`).join(', '),
+        }
+      }
       default:
         return {}
     }
