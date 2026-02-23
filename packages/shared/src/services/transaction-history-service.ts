@@ -15,6 +15,7 @@ export interface TransactionHistoryItem {
   blockNumber?: number;
   timestamp: number;
   createdAt: string;
+  networkId?: string; // which network this tx is on
 }
 
 /**
@@ -144,4 +145,37 @@ export async function fetchTransactionHistory(
   } catch {
     return [];
   }
+}
+
+/**
+ * Fetch transaction history from multiple Alchemy URLs.
+ * Returns merged + sorted results.
+ */
+export async function fetchMultiChainTransactionHistory(
+  networks: { networkId: string; alchemyUrl: string }[],
+  address: string,
+  limitPerNetwork: number = 10,
+): Promise<TransactionHistoryItem[]> {
+  const results = await Promise.allSettled(
+    networks.map(async ({ networkId, alchemyUrl }) => {
+      const items = await fetchTransactionHistory(alchemyUrl, address, limitPerNetwork);
+      return items.map(item => ({ ...item, networkId }));
+    }),
+  );
+
+  const allItems: TransactionHistoryItem[] = [];
+  for (const result of results) {
+    if (result.status === 'fulfilled') {
+      allItems.push(...result.value);
+    }
+  }
+
+  // Sort by timestamp descending (newest first)
+  allItems.sort((a, b) => {
+    const timeA = typeof a.timestamp === 'number' ? a.timestamp : new Date(a.timestamp || 0).getTime();
+    const timeB = typeof b.timestamp === 'number' ? b.timestamp : new Date(b.timestamp || 0).getTime();
+    return timeB - timeA;
+  });
+
+  return allItems;
 }
