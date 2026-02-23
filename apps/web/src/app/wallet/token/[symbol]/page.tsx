@@ -159,32 +159,35 @@ export default function TokenDetailPage() {
             </div>
           </div>
 
-          {/* Per-Network Breakdown */}
-          {networks.length > 1 && (
-            <div className="glass-card rounded-2xl p-5 mb-4">
-              <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Network Breakdown</h2>
-              <div className="space-y-2">
-                {networks.map((n) => {
-                  const netConfig = SUPPORTED_NETWORKS[n.networkId as NetworkId]
-                  return (
-                    <div key={n.networkId} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: netConfig?.color || '#888' }}
-                        />
-                        <span className="text-sm text-white/70">{netConfig?.name || n.networkId}</span>
+          {/* Per-Network Breakdown — show only networks with positive balance */}
+          {(() => {
+            const activeNetworks = networks.filter(n => parseFloat(n.balance) > 0)
+            return activeNetworks.length > 1 ? (
+              <div className="glass-card rounded-2xl p-5 mb-4">
+                <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Network Breakdown</h2>
+                <div className="space-y-2">
+                  {activeNetworks.map((n) => {
+                    const netConfig = SUPPORTED_NETWORKS[n.networkId as NetworkId]
+                    return (
+                      <div key={n.networkId} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: netConfig?.color || '#888' }}
+                          />
+                          <span className="text-sm font-medium text-white/70">{netConfig?.name || n.networkId}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-medium text-white">{parseFloat(n.balance).toFixed(4)}</span>
+                          <span className="text-xs text-white/40 ml-2">{formatUsd(n.usdValue)}</span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-sm font-medium text-white">{parseFloat(n.balance).toFixed(4)}</span>
-                        <span className="text-xs text-white/40 ml-2">{formatUsd(n.usdValue)}</span>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            ) : null
+          })()}
 
           {/* Price Chart */}
           <div className="mb-4">
