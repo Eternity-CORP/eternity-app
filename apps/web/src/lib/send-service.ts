@@ -5,6 +5,8 @@
 
 import { ethers, Contract, Transaction, parseEther, parseUnits, formatEther } from 'ethers'
 import { ERC20_TRANSFER_ABI, type GasEstimate } from '@e-y/shared'
+import type { NetworkId } from '@e-y/shared'
+import { getProvider } from './multi-network'
 
 const ERC20_ABI = ERC20_TRANSFER_ABI as unknown as string[]
 
@@ -120,4 +122,39 @@ export async function estimateGas(
     totalGasCost: totalGasCostEth,
     totalGasCostUsd,
   }
+}
+
+/**
+ * Send a token on a specific network.
+ * Resolves provider internally from the networkId.
+ */
+export async function sendOnNetwork(
+  wallet: ethers.HDNodeWallet,
+  networkId: NetworkId,
+  to: string,
+  amount: string,
+  token?: { address: string; decimals: number },
+): Promise<string> {
+  const provider = getProvider(networkId)
+  const connectedWallet = wallet.connect(provider)
+
+  if (token) {
+    return sendErc20Token(connectedWallet, provider, to, amount, token.address, token.decimals)
+  }
+  return sendNativeToken(connectedWallet, provider, to, amount)
+}
+
+/**
+ * Estimate gas on a specific network.
+ */
+export async function estimateGasOnNetwork(
+  networkId: NetworkId,
+  from: string,
+  to: string,
+  amount: string,
+  token?: { address: string; decimals: number },
+  ethPrice?: number,
+): Promise<GasEstimate> {
+  const provider = getProvider(networkId)
+  return estimateGas(provider, from, to, amount, token, ethPrice)
 }

@@ -31,7 +31,7 @@ const rpcUrls = buildMultiNetworkRpcUrls(ALCHEMY_KEY)
 let priceCache: { prices: Record<string, number>; timestamp: number } | null = null
 const PRICE_CACHE_DURATION = 60_000
 
-function getProvider(networkId: NetworkId): JsonRpcProvider {
+export function getProvider(networkId: NetworkId): JsonRpcProvider {
   if (!providers[networkId]) {
     providers[networkId] = new JsonRpcProvider(rpcUrls[networkId].rpcUrl)
   }
