@@ -41,6 +41,7 @@ interface ProposalTypeOption {
 
 const PROPOSAL_TYPES: ProposalTypeOption[] = [
   { value: 'WITHDRAW_ETH', label: 'Withdraw ETH', description: 'Send ETH from treasury to an address' },
+  { value: 'DISTRIBUTE_DIVIDENDS', label: 'Distribute Dividends', description: 'Distribute treasury ETH to all holders proportionally' },
   { value: 'TRANSFER_SHARES', label: 'Transfer Shares', description: 'Transfer ownership shares between addresses' },
   { value: 'CHANGE_SETTINGS', label: 'Change Settings', description: 'Update quorum or voting period' },
   { value: 'CUSTOM', label: 'Custom', description: 'Off-chain governance proposal' },
@@ -65,6 +66,13 @@ function typeIcon(t: ProposalType) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      )
+    case 'DISTRIBUTE_DIVIDENDS':
+      return (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v12M6 12h12" />
         </svg>
       )
     default:
@@ -109,6 +117,11 @@ export default function CreateProposalPage() {
   const [newQuorum, setNewQuorum] = useState('')
   const [newVotingPeriod, setNewVotingPeriod] = useState('')
 
+  // DISTRIBUTE_DIVIDENDS fields
+  const [dividendAmount, setDividendAmount] = useState('')
+  const [dividendHolders, setDividendHolders] = useState<string[]>([])
+  const [loadingHolders, setLoadingHolders] = useState(false)
+
   // CUSTOM fields
   const [customTitle, setCustomTitle] = useState('')
   const [customDescription, setCustomDescription] = useState('')
@@ -128,6 +141,8 @@ export default function CreateProposalPage() {
         return ethers.isAddress(sharesFrom) && ethers.isAddress(sharesTo) && parseInt(sharesAmount) > 0
       case 'CHANGE_SETTINGS':
         return parseInt(newQuorum) > 0 && parseInt(newQuorum) <= 10000 && parseInt(newVotingPeriod) > 0
+      case 'DISTRIBUTE_DIVIDENDS':
+        return parseFloat(dividendAmount) > 0 && dividendHolders.length > 0
       case 'CUSTOM':
         return customTitle.trim().length >= 3
       default:
@@ -136,7 +151,7 @@ export default function CreateProposalPage() {
   }, [
     selectedType, ethRecipient, ethAmount,
     sharesFrom, sharesTo, sharesAmount, newQuorum,
-    newVotingPeriod, customTitle,
+    newVotingPeriod, dividendAmount, dividendHolders, customTitle,
   ])
 
   // Build ABI-encoded data
@@ -163,6 +178,13 @@ export default function CreateProposalPage() {
               [BigInt(newQuorum || '0'), BigInt(newVotingPeriod || '0')],
             ),
           )
+        case 'DISTRIBUTE_DIVIDENDS':
+          return ethers.getBytes(
+            coder.encode(
+              ['uint256', 'address[]'],
+              [ethers.parseEther(dividendAmount || '0'), dividendHolders],
+            ),
+          )
         case 'CUSTOM':
           return ethers.getBytes(
             coder.encode(['string', 'string'], [customTitle, customDescription]),
@@ -176,7 +198,7 @@ export default function CreateProposalPage() {
   }, [
     selectedType, ethRecipient, ethAmount,
     sharesFrom, sharesTo, sharesAmount, newQuorum,
-    newVotingPeriod, customTitle, customDescription,
+    newVotingPeriod, dividendAmount, dividendHolders, customTitle, customDescription,
   ])
 
   // Get proposal title for metadata
@@ -188,6 +210,8 @@ export default function CreateProposalPage() {
         return `Transfer ${sharesAmount} shares from ${shortenAddress(sharesFrom)} to ${shortenAddress(sharesTo)}`
       case 'CHANGE_SETTINGS':
         return `Change settings: quorum ${newQuorum} bps, period ${newVotingPeriod}s`
+      case 'DISTRIBUTE_DIVIDENDS':
+        return `Distribute ${dividendAmount} ETH as dividends to ${dividendHolders.length} holders`
       case 'CUSTOM':
         return customTitle
       default:
@@ -195,7 +219,8 @@ export default function CreateProposalPage() {
     }
   }, [
     selectedType, ethAmount, ethRecipient,
-    sharesAmount, sharesFrom, sharesTo, newQuorum, newVotingPeriod, customTitle,
+    sharesAmount, sharesFrom, sharesTo, newQuorum, newVotingPeriod,
+    dividendAmount, dividendHolders, customTitle,
   ])
 
   const handleConfirmSubmit = async (password: string) => {
@@ -338,6 +363,61 @@ export default function CreateProposalPage() {
                         step="0.0001"
                         className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
                       />
+                    </div>
+                  </>
+                )}
+
+                {selectedType === 'DISTRIBUTE_DIVIDENDS' && (
+                  <>
+                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                        Total ETH to Distribute
+                      </label>
+                      <input
+                        type="number"
+                        value={dividendAmount}
+                        onChange={(e) => setDividendAmount(e.target.value)}
+                        placeholder="0.0"
+                        step="0.0001"
+                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                      />
+                    </div>
+                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs text-white/40 uppercase tracking-wide">
+                          Holders
+                        </label>
+                        <button
+                          onClick={async () => {
+                            setLoadingHolders(true)
+                            try {
+                              const biz = await getBusiness(apiClient, businessId)
+                              const members = biz.members ?? []
+                              const addresses = members.map((m) => m.address)
+                              setDividendHolders(addresses)
+                            } catch {
+                              // fallback: use current user address
+                              setDividendHolders([address])
+                            } finally {
+                              setLoadingHolders(false)
+                            }
+                          }}
+                          disabled={loadingHolders}
+                          className="text-xs text-[#3388FF] hover:text-[#3388FF]/80 transition-colors"
+                        >
+                          {loadingHolders ? 'Loading...' : 'Load holders'}
+                        </button>
+                      </div>
+                      {dividendHolders.length === 0 ? (
+                        <p className="text-xs text-white/25">Click &quot;Load holders&quot; to fetch all business members</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {dividendHolders.map((h, i) => (
+                            <p key={i} className="text-xs text-white/60 font-mono">{shortenAddress(h)}</p>
+                          ))}
+                          <p className="text-[10px] text-white/25 mt-1">{dividendHolders.length} holders will receive dividends</p>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -487,6 +567,19 @@ export default function CreateProposalPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">Amount</span>
                       <span className="text-sm text-white font-bold">{ethAmount} ETH</span>
+                    </div>
+                  </div>
+                )}
+
+                {selectedType === 'DISTRIBUTE_DIVIDENDS' && (
+                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">Total Amount</span>
+                      <span className="text-sm text-white font-bold">{dividendAmount} ETH</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">Recipients</span>
+                      <span className="text-xs text-white">{dividendHolders.length} holders</span>
                     </div>
                   </div>
                 )}
