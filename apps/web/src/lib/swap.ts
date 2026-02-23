@@ -16,6 +16,8 @@ import {
   buildNativeToken,
   formatTokenAmount,
   parseTokenAmount,
+  getCachedQuote,
+  setCachedQuote,
 } from '@e-y/shared'
 
 export type { SwapToken, SwapQuote, SwapParams }
@@ -35,16 +37,21 @@ export function getNativeToken(chainId: number): SwapToken {
 }
 
 /**
- * Get swap quote from LI.FI (enriched with exchange rate)
+ * Get swap quote from LI.FI (enriched with exchange rate).
+ * Results are cached for 30 seconds to avoid re-fetching on every keystroke.
  */
 export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
+  const cacheKey = params as unknown as Record<string, unknown>
+  const cached = getCachedQuote<SwapQuote>(cacheKey)
+  if (cached) return cached
+
   const raw = await fetchSwapQuote(params)
 
   const fromAmountDecimal = parseFloat(ethers.formatUnits(params.fromAmount, raw.fromToken.decimals))
   const toAmountDecimal = parseFloat(ethers.formatUnits(raw.toAmount, raw.toToken.decimals))
   const exchangeRate = fromAmountDecimal > 0 ? (toAmountDecimal / fromAmountDecimal).toString() : '0'
 
-  return {
+  const quote: SwapQuote = {
     id: raw.id,
     fromToken: raw.fromToken,
     toToken: raw.toToken,
@@ -57,6 +64,9 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
     gasCostUSD: raw.gasCostUSD,
     transactionRequest: raw.transactionRequest,
   }
+
+  setCachedQuote(cacheKey, quote)
+  return quote
 }
 
 /**
