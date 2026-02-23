@@ -86,22 +86,28 @@ export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
     overlay.style.transition = `clip-path ${EXPAND_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1)`
     overlay.style.clipPath = `circle(${radius}px at ${cx}px ${cy}px)`
 
-    // When fully expanded, switch actual theme and kill overlay
-    const timer = setTimeout(() => {
+    // Switch theme slightly before animation ends so DOM is ready
+    const switchTimer = setTimeout(() => {
       setTheme(nextTheme)
+    }, EXPAND_DURATION - 80)
 
-      // Small delay so the DOM updates, then remove overlay
-      requestAnimationFrame(() => {
-        overlay.style.transition = 'none'
-        overlay.style.opacity = '0'
+    // After circle fully covers screen, fade out the overlay smoothly
+    const fadeTimer = setTimeout(() => {
+      overlay.style.transition = 'opacity 300ms ease-out'
+      overlay.style.opacity = '0'
+
+      setTimeout(() => {
         overlay.style.clipPath = ''
         overlay.style.backdropFilter = ''
         ;(overlay.style as Record<string, string>).webkitBackdropFilter = ''
         isAnimatingRef.current = false
-      })
+      }, 300)
     }, EXPAND_DURATION)
 
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(switchTimer)
+      clearTimeout(fadeTimer)
+    }
   }, [theme])
 
   const value = { theme, toggleTheme, isDark: theme === 'dark' }
