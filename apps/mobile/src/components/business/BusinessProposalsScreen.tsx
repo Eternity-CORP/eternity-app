@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { Contract, formatEther } from 'ethers';
+import { AbiCoder, Contract, formatEther, getBytes, parseEther } from 'ethers';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { useAppSelector } from '@/src/store/hooks';
@@ -66,6 +66,7 @@ type ViewMode = 'list' | 'create';
 
 const PROPOSAL_TYPE_OPTIONS: { value: ProposalType; label: string }[] = [
   { value: 'WITHDRAW_ETH', label: 'Withdraw ETH' },
+  { value: 'DISTRIBUTE_DIVIDENDS', label: 'Distribute Dividends' },
   { value: 'TRANSFER_SHARES', label: 'Transfer Shares' },
   { value: 'CHANGE_SETTINGS', label: 'Change Settings' },
   { value: 'CUSTOM', label: 'Custom' },
@@ -112,6 +113,8 @@ function typeBadgeColor(type: ProposalType): string {
       return '#F59E0B';
     case 'WITHDRAW_TOKEN':
       return '#3388FF';
+    case 'DISTRIBUTE_DIVIDENDS':
+      return '#00E5FF';
     case 'TRANSFER_SHARES':
       return '#8B5CF6';
     case 'CHANGE_SETTINGS':
@@ -338,7 +341,45 @@ export default function BusinessProposalsScreen() {
       const signer = hdWallet.connect(provider);
 
       // Encode proposal data based on type
-      const dataBytes = new Uint8Array(0);
+      const coder = AbiCoder.defaultAbiCoder();
+      let dataBytes: Uint8Array;
+      try {
+        switch (createType) {
+          case 'WITHDRAW_ETH':
+            dataBytes = getBytes(
+              coder.encode(['address', 'uint256'], [createRecipient || signerAccount.address, parseEther(createAmount || '0')]),
+            );
+            break;
+          case 'DISTRIBUTE_DIVIDENDS': {
+            // Load holders from business members
+            const biz = await getBusiness(apiClient, businessId);
+            const holders = (biz.members ?? []).map((m: { address: string }) => m.address);
+            dataBytes = getBytes(
+              coder.encode(['uint256', 'address[]'], [parseEther(createAmount || '0'), holders]),
+            );
+            break;
+          }
+          case 'TRANSFER_SHARES':
+            dataBytes = getBytes(
+              coder.encode(['address', 'address', 'uint256'], [signerAccount.address, createRecipient || signerAccount.address, BigInt(createAmount || '0')]),
+            );
+            break;
+          case 'CHANGE_SETTINGS':
+            dataBytes = getBytes(
+              coder.encode(['uint256', 'uint256'], [BigInt(createAmount || '5100'), BigInt('86400')]),
+            );
+            break;
+          case 'CUSTOM':
+            dataBytes = getBytes(
+              coder.encode(['string', 'string'], [createTitle, createDescription]),
+            );
+            break;
+          default:
+            dataBytes = new Uint8Array(0);
+        }
+      } catch {
+        dataBytes = new Uint8Array(0);
+      }
 
       const result = await createProposalOnChain(
         ethersContractFactory,
@@ -547,7 +588,7 @@ export default function BusinessProposalsScreen() {
 
   const renderCreateForm = () => {
     const needsAmountField =
-      createType === 'WITHDRAW_ETH' || createType === 'WITHDRAW_TOKEN' || createType === 'TRANSFER_SHARES';
+      createType === 'WITHDRAW_ETH' || createType === 'WITHDRAW_TOKEN' || createType === 'TRANSFER_SHARES' || createType === 'DISTRIBUTE_DIVIDENDS';
     const needsRecipientField =
       createType === 'WITHDRAW_ETH' || createType === 'WITHDRAW_TOKEN' || createType === 'TRANSFER_SHARES';
 
