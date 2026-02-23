@@ -2,16 +2,15 @@
  * Routing Service
  * Determines optimal transfer path based on user balances and recipient preferences.
  *
+ * Uses shared determineSendRoute for the pure decision logic, then fetches
+ * bridge quotes locally when needed. Keeps ethers-specific toWei helper.
+ *
  * Pure helpers (getCheapestNetwork, findNetworksWithBalance, getTotalBalance, etc.)
- * are delegated to @e-y/shared. This file keeps the main orchestrator
- * and ethers-specific toWei helper.
+ * are delegated to @e-y/shared.
  */
 
 import {
   type AggregatedTokenBalance,
-  findNetworksWithSufficientBalance,
-  getCheapestNetwork,
-  findNetworksWithBalance,
   getTotalBalance,
   calculateUsdValue,
   getTokenDecimals,
@@ -20,7 +19,7 @@ import {
   getRouteEstimatedTime,
   formatRouteDescription,
   routeRequiresConfirmation,
-  hasSufficientBalance,
+  determineSendRoute,
 } from '@e-y/shared';
 import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 import { createLogger } from '@/src/utils/logger';
@@ -83,7 +82,10 @@ function toWei(amount: string, decimals: number): string {
 // ============================================
 
 /**
- * Calculate optimal transfer route
+ * Calculate optimal transfer route.
+ *
+ * Uses shared determineSendRoute for the pure decision logic, then
+ * enriches the result with bridge quotes and mobile-specific fields.
  */
 export async function calculateTransferRoute(
   aggregatedBalances: AggregatedTokenBalance[],
@@ -105,60 +107,41 @@ export async function calculateTransferRoute(
     return { canSend: false, error: `Insufficient ${token} balance. You have ${totalBalance.toFixed(6)} ${token}`, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
   }
 
-  const sufficientNetworks = findNetworksWithSufficientBalance(aggregatedBalances, token, amount) as NetworkId[];
+  // Use shared decision engine
+  const route = determineSendRoute({
+    aggregatedBalances,
+    symbol: token,
+    amount,
+    recipientPreferredNetwork,
+  });
+
   const decimals = getTokenDecimals(aggregatedBalances, token);
   const amountWei = toWei(amount, decimals);
 
-  // CASE 1: No recipient preference
-  if (!recipientPreferredNetwork) {
-    if (sufficientNetworks.length > 0) {
-      const bestNetwork = getCheapestNetwork(sufficientNetworks) as NetworkId;
-      logger.info('Direct transfer on cheapest network', { bestNetwork });
-
-      return {
-        canSend: true,
-        route: { type: 'direct', fromNetwork: bestNetwork, toNetwork: bestNetwork, amount, token },
-        showBridgeCost: false,
-        showConsolidationOption: sufficientNetworks.length > 1,
-        showAlternative: false,
-      };
-    }
-
-    const networksWithBalance = findNetworksWithBalance(aggregatedBalances, token);
-    if (networksWithBalance.length > 1) {
-      const targetNetwork = getCheapestNetwork(networksWithBalance.map((n) => n.networkId)) as NetworkId;
-      const sources = networksWithBalance.map((n) => ({ network: n.networkId as NetworkId, amount: n.balance }));
-      logger.info('Consolidation needed', { targetNetwork, sources });
-
-      return {
-        canSend: true,
-        route: { type: 'consolidation', fromNetwork: sources[0].network, toNetwork: targetNetwork, amount, token, sources },
-        showBridgeCost: true,
-        showConsolidationOption: true,
-        showAlternative: false,
-      };
-    }
-
-    return { canSend: false, error: `Insufficient ${token} balance across all networks`, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
+  // Handle each route type
+  if (route.type === 'insufficient') {
+    return { canSend: false, error: route.message, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
   }
 
-  // CASE 2: Recipient has a preferred network
-  const preferredNetwork = recipientPreferredNetwork;
+  if (route.type === 'direct') {
+    const bestNetwork = route.fromNetwork as NetworkId;
+    logger.info('Direct transfer on network', { bestNetwork });
 
-  if (hasSufficientBalance(aggregatedBalances, token, amount, preferredNetwork)) {
-    logger.info('Direct transfer to preferred network', { preferredNetwork });
+    // Check if there are multiple sufficient networks (for consolidation option)
+    const showConsolidationOption = !recipientPreferredNetwork && route.fromNetwork === route.toNetwork;
 
     return {
       canSend: true,
-      route: { type: 'direct', fromNetwork: preferredNetwork, toNetwork: preferredNetwork, amount, token },
+      route: { type: 'direct', fromNetwork: bestNetwork, toNetwork: bestNetwork, amount, token },
       showBridgeCost: false,
-      showConsolidationOption: false,
+      showConsolidationOption,
       showAlternative: false,
     };
   }
 
-  if (sufficientNetworks.length > 0) {
-    const sourceNetwork = getCheapestNetwork(sufficientNetworks) as NetworkId;
+  if (route.type === 'bridge') {
+    const sourceNetwork = route.fromNetwork as NetworkId;
+    const preferredNetwork = route.toNetwork as NetworkId;
     const tokenAddress = getTokenAddressForNetwork(token, sourceNetwork);
     const destTokenAddress = getTokenAddressForNetwork(token, preferredNetwork);
 
@@ -183,38 +166,40 @@ export async function calculateTransferRoute(
     };
   }
 
-  // Need consolidation + possibly bridging
-  const networksWithBalance = findNetworksWithBalance(aggregatedBalances, token);
-
-  if (networksWithBalance.length > 1) {
+  // Consolidation — fetch bridge quotes per source
+  if (route.type === 'consolidation') {
+    const targetNetwork = route.toNetwork as NetworkId;
     const sources: { network: NetworkId; amount: string; bridgeQuote?: BridgeQuote }[] = [];
 
-    for (const source of networksWithBalance) {
-      if (source.networkId === preferredNetwork) {
-        sources.push({ network: source.networkId as NetworkId, amount: source.balance });
-      } else {
-        const tokenAddress = getTokenAddressForNetwork(token, source.networkId);
-        const destTokenAddress = getTokenAddressForNetwork(token, preferredNetwork);
-        const sourceAmountWei = toWei(source.balance, decimals);
+    if (route.sources) {
+      for (const source of route.sources) {
+        if (source.networkId === targetNetwork) {
+          sources.push({ network: source.networkId as NetworkId, amount: source.amount });
+        } else {
+          const tokenAddress = getTokenAddressForNetwork(token, source.networkId);
+          const destTokenAddress = getTokenAddressForNetwork(token, targetNetwork);
+          const sourceAmountWei = toWei(source.amount, decimals);
 
-        const bridgeQuote = await getBridgeQuote(
-          source.networkId as NetworkId, preferredNetwork, tokenAddress, destTokenAddress, sourceAmountWei, fromAddress, toAddress,
-        );
-        sources.push({ network: source.networkId as NetworkId, amount: source.balance, bridgeQuote: bridgeQuote ?? undefined });
+          const bridgeQuote = await getBridgeQuote(
+            source.networkId as NetworkId, targetNetwork, tokenAddress, destTokenAddress, sourceAmountWei, fromAddress, toAddress,
+          );
+          sources.push({ network: source.networkId as NetworkId, amount: source.amount, bridgeQuote: bridgeQuote ?? undefined });
+        }
       }
     }
 
-    logger.info('Consolidation + bridge needed', { preferredNetwork, sources });
+    logger.info('Consolidation needed', { targetNetwork, sources });
 
     return {
       canSend: true,
-      route: { type: 'consolidation', fromNetwork: sources[0].network, toNetwork: preferredNetwork, amount, token, sources },
+      route: { type: 'consolidation', fromNetwork: sources[0]?.network || targetNetwork, toNetwork: targetNetwork, amount, token, sources },
       showBridgeCost: true,
       showConsolidationOption: true,
       showAlternative: false,
     };
   }
 
+  // Fallback (should not reach here)
   return { canSend: false, error: `Insufficient ${token} balance to send ${amount}`, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
 }
 
