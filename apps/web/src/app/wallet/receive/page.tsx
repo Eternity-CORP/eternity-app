@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAccount } from '@/contexts/account-context'
+import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, type NetworkId } from '@e-y/shared'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function ReceivePage() {
   useAuthGuard()
-  const { address, network } = useAccount()
+  const { address, network, currentAccount } = useAccount()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -47,6 +48,33 @@ export default function ReceivePage() {
               <p className="text-xs text-white/40 uppercase tracking-wide mb-2">Your address</p>
               <p className="font-mono text-sm text-white/50 break-all leading-relaxed">{address}</p>
             </div>
+
+            {/* Network hints — real accounts work on all EVM chains */}
+            {currentAccount?.type === 'real' && (
+              <div className="mb-4 text-center">
+                <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                  Same address works on all networks
+                </p>
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {TIER1_NETWORK_IDS.map((id) => {
+                    const net = SUPPORTED_NETWORKS[id]
+                    return (
+                      <span
+                        key={id}
+                        className="text-[10px] px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: net.color + '20',
+                          color: net.color,
+                          border: `1px solid ${net.color}40`,
+                        }}
+                      >
+                        {net.shortName}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Copy button */}
             <button
