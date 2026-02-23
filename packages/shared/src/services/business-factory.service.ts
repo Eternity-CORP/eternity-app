@@ -84,6 +84,15 @@ export async function createBusiness(
   const founders = params.founders.map((f) => f.address);
   const shares = params.founders.map((f) => f.shares);
 
+  // Convert vesting config from months to seconds
+  const vestingEnabled = params.vestingEnabled && !!params.vestingConfig;
+  const cliffSeconds = vestingEnabled
+    ? (params.vestingConfig!.cliffMonths * 30 * 24 * 3600)
+    : 0;
+  const vestingSeconds = vestingEnabled
+    ? (params.vestingConfig!.durationMonths * 30 * 24 * 3600)
+    : 0;
+
   // Ethers v6: tuple struct must be passed as an array (positional),
   // NOT as a plain object (which ethers interprets as tx overrides).
   const tupleParam = [
@@ -95,6 +104,9 @@ export async function createBusiness(
     transferPolicyToIndex(params.transferPolicy),
     params.quorumThreshold,
     params.votingPeriod,
+    vestingEnabled,
+    cliffSeconds,
+    vestingSeconds,
   ];
 
   const tx = (await contract['createBusiness'](tupleParam)) as {

@@ -1211,6 +1211,34 @@ export const BUSINESS_TREASURY_ABI = [
     "type": "error"
   },
   {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "totalAmount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cliffDuration",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "vestingDuration",
+        "type": "uint256"
+      }
+    ],
+    "name": "setupVesting",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "stateMutability": "payable",
     "type": "receive"
   }
@@ -1341,6 +1369,21 @@ export const BUSINESS_FACTORY_ABI = [
           {
             "internalType": "uint256",
             "name": "votingPeriod",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "vestingEnabled",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "cliffDuration",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "vestingDuration",
             "type": "uint256"
           }
         ],
