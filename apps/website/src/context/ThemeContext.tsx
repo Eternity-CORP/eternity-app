@@ -6,7 +6,7 @@ type Theme = 'light' | 'dark'
 
 interface ThemeContextType {
   theme: Theme
-  toggleTheme: (x?: number, y?: number) => void
+  toggleTheme: () => void
   isDark: boolean
 }
 
@@ -23,7 +23,7 @@ interface ThemeProviderProps {
   children: ReactNode
 }
 
-const TRANSITION_DURATION = 600
+const EXPAND_DURATION = 700
 
 export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
   const [theme, setTheme] = useState<Theme>('light')
@@ -53,7 +53,7 @@ export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
     localStorage.setItem('theme', theme)
   }, [theme, mounted])
 
-  const toggleTheme = useCallback((x?: number, y?: number) => {
+  const toggleTheme = useCallback(() => {
     if (isAnimatingRef.current) return
     const overlay = overlayRef.current
     if (!overlay) {
@@ -62,18 +62,19 @@ export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
     }
 
     const nextTheme = theme === 'light' ? 'dark' : 'light'
-    const cx = x ?? window.innerWidth / 2
-    const cy = y ?? 0
 
-    // Calculate radius to cover entire screen from click point
-    const maxX = Math.max(cx, window.innerWidth - cx)
-    const maxY = Math.max(cy, window.innerHeight - cy)
-    const radius = Math.sqrt(maxX * maxX + maxY * maxY)
+    // Center of screen — "old TV" style
+    const cx = window.innerWidth / 2
+    const cy = window.innerHeight / 2
+    const radius = Math.sqrt(cx * cx + cy * cy)
 
     isAnimatingRef.current = true
 
-    // Set overlay color to the NEXT theme's background
-    overlay.style.background = nextTheme === 'dark' ? '#000000' : '#ffffff'
+    // The overlay inverts everything underneath it as it expands
+    // Content stays visible, just color-flipped inside the circle
+    overlay.style.backdropFilter = 'invert(1)'
+    ;(overlay.style as Record<string, string>).webkitBackdropFilter = 'invert(1)'
+    overlay.style.background = 'transparent'
     overlay.style.clipPath = `circle(0px at ${cx}px ${cy}px)`
     overlay.style.opacity = '1'
     overlay.style.transition = 'none'
@@ -81,30 +82,26 @@ export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
     // Force reflow
     overlay.offsetHeight
 
-    // Expand circle
-    overlay.style.transition = `clip-path ${TRANSITION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`
+    // Expand from center — like turning on an old TV
+    overlay.style.transition = `clip-path ${EXPAND_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1)`
     overlay.style.clipPath = `circle(${radius}px at ${cx}px ${cy}px)`
 
-    // Switch actual theme at midpoint so content updates under the overlay
-    const midTimer = setTimeout(() => {
+    // When fully expanded, switch actual theme and kill overlay
+    const timer = setTimeout(() => {
       setTheme(nextTheme)
-    }, TRANSITION_DURATION * 0.35)
 
-    // Fade out overlay after circle fully expanded
-    const endTimer = setTimeout(() => {
-      overlay.style.transition = `opacity 200ms ease-out`
-      overlay.style.opacity = '0'
-
-      setTimeout(() => {
+      // Small delay so the DOM updates, then remove overlay
+      requestAnimationFrame(() => {
+        overlay.style.transition = 'none'
+        overlay.style.opacity = '0'
         overlay.style.clipPath = ''
+        overlay.style.backdropFilter = ''
+        ;(overlay.style as Record<string, string>).webkitBackdropFilter = ''
         isAnimatingRef.current = false
-      }, 200)
-    }, TRANSITION_DURATION)
+      })
+    }, EXPAND_DURATION)
 
-    return () => {
-      clearTimeout(midTimer)
-      clearTimeout(endTimer)
-    }
+    return () => clearTimeout(timer)
   }, [theme])
 
   const value = { theme, toggleTheme, isDark: theme === 'dark' }
