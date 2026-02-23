@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
-import { lookupUsername, getAddressPreferences, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult } from '@e-y/shared'
+import { lookupUsername, getAddressPreferences, checkGasAvailability, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult, type GasGuardResult } from '@e-y/shared'
 import type { AggregatedTokenBalance } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
@@ -44,6 +44,9 @@ function SendContent() {
   const [bridgeStep, setBridgeStep] = useState('')
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatusResult | null>(null)
   const [bridgeTxHash, setBridgeTxHash] = useState<string | null>(null)
+
+  // Gas guard
+  const [gasGuard, setGasGuard] = useState<GasGuardResult | null>(null)
 
   // Get balance for selected token
   const tokenData = aggregatedBalances.find(
@@ -135,7 +138,34 @@ function SendContent() {
   useEffect(() => {
     if (!resolvedAddress || !amount || parseFloat(amount) <= 0) {
       setGasEstimate('')
+      setGasGuard(null)
       return
+    }
+
+    const runGasGuard = (networkId: string, gasEstimateValue: string) => {
+      const networkConfig = SUPPORTED_NETWORKS[networkId as NetworkId]
+      const nativeSymbol = networkConfig?.nativeCurrency?.symbol || 'ETH'
+
+      // Find native balance on the sending network
+      const nativeToken = aggregatedBalances.find(
+        t => t.symbol.toUpperCase() === nativeSymbol.toUpperCase()
+      )
+      const nativeOnNetwork = nativeToken?.networks.find(n => n.networkId === networkId)
+      const nativeBalance = nativeOnNetwork?.balance || '0'
+
+      // Use USD value ratio to derive approximate native token price
+      const nativeTokenPriceUsd = nativeOnNetwork && parseFloat(nativeOnNetwork.balance) > 0
+        ? nativeOnNetwork.usdValue / parseFloat(nativeOnNetwork.balance)
+        : 0
+
+      const guardResult = checkGasAvailability(
+        networkId,
+        nativeSymbol,
+        nativeBalance,
+        gasEstimateValue,
+        nativeTokenPriceUsd,
+      )
+      setGasGuard(guardResult)
     }
 
     const doEstimate = async () => {
@@ -149,6 +179,7 @@ function SendContent() {
 
         const estimate = await estimateGasOnNetwork(networkId, address, resolvedAddress, amount, tokenInfo)
         setGasEstimate(estimate.totalGasCost)
+        runGasGuard(networkId, estimate.totalGasCost)
       } catch (err) {
         console.error('Gas estimation failed, falling back to basic estimate:', err)
         try {
@@ -158,16 +189,19 @@ function SendContent() {
           const feeData = await provider.getFeeData()
           const gasLimit = BigInt(21000)
           const gasCost = gasLimit * (feeData.gasPrice || BigInt(0))
-          setGasEstimate(ethers.formatEther(gasCost))
+          const gasCostEth = ethers.formatEther(gasCost)
+          setGasEstimate(gasCostEth)
+          runGasGuard(networkId, gasCostEth)
         } catch (fallbackErr) {
           console.error('Fallback gas estimation also failed:', fallbackErr)
           setGasEstimate('')
+          setGasGuard(null)
         }
       }
     }
 
     doEstimate()
-  }, [resolvedAddress, amount, selectedToken, address, route])
+  }, [resolvedAddress, amount, selectedToken, address, route, aggregatedBalances])
 
   const handleSend = async () => {
     if (!wallet || !resolvedAddress || !amount) return
@@ -335,6 +369,16 @@ function SendContent() {
                 </div>
               )}
 
+              {/* Gas Guard Warning */}
+              {gasGuard && !gasGuard.sufficient && (
+                <div className="px-4 py-3 rounded-xl mb-4" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                  <p className="text-sm" style={{ color: '#ef4444' }}>
+                    Insufficient {gasGuard.nativeSymbol} for gas on {SUPPORTED_NETWORKS[gasGuard.networkId as NetworkId]?.name || gasGuard.networkId}.
+                    {' '}Need ~{parseFloat(gasGuard.estimatedGasCostEth).toFixed(6)} {gasGuard.nativeSymbol}, have {parseFloat(gasGuard.nativeBalance).toFixed(6)}.
+                  </p>
+                </div>
+              )}
+
               {/* Bridge Banner */}
               {showBridgeBanner && (
                 <BridgeBanner
@@ -356,7 +400,7 @@ function SendContent() {
               {isDirect && (
                 <button
                   onClick={handleSend}
-                  disabled={!isValid || loading}
+                  disabled={!isValid || loading || (gasGuard != null && !gasGuard.sufficient)}
                   className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 >
                   {loading ? 'Sending...' : `Send ${selectedToken}`}
