@@ -105,27 +105,22 @@ export default function TokenList() {
                   </p>
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-white/40">{token.name}</span>
-                    {/* Network dots */}
-                    {token.networks.length > 1 && (
-                      <div className="flex -space-x-1">
-                        {token.networks.slice(0, 3).map((n) => {
+                    {/* Network dots — show which chains hold this token */}
+                    <div className="flex gap-0.5">
+                      {token.networks
+                        .filter((n) => parseFloat(n.balance) > 0)
+                        .map((n) => {
                           const netConfig = SUPPORTED_NETWORKS[n.networkId as NetworkId]
                           return netConfig ? (
                             <span
                               key={n.networkId}
-                              className="w-2.5 h-2.5 rounded-full border border-black"
+                              className="w-1.5 h-1.5 rounded-full inline-block"
                               style={{ backgroundColor: netConfig.color }}
-                              title={netConfig.name}
+                              title={`${netConfig.name}: ${n.balance}`}
                             />
                           ) : null
                         })}
-                        {token.networks.length > 3 && (
-                          <span className="text-[10px] text-white/30 ml-1">
-                            +{token.networks.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
