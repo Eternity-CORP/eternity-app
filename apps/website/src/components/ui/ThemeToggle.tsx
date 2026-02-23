@@ -2,16 +2,24 @@
 
 import { motion } from 'framer-motion'
 import { useTheme } from '@/context/ThemeContext'
+import type { MouseEvent } from 'react'
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
 
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = rect.left + rect.width / 2
+    const y = rect.top + rect.height / 2
+    toggleTheme(x, y)
+  }
+
   return (
     <motion.button
-      onClick={toggleTheme}
+      onClick={handleClick}
       className="relative w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300"
-      style={{ 
+      style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)'
       }}
