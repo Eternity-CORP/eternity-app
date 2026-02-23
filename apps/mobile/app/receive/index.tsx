@@ -11,13 +11,14 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import QRCode from 'react-native-qrcode-svg';
 import { useAppSelector } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectCurrentAccountType } from '@/src/store/slices/wallet-slice';
 import { getUsernameByAddress } from '@/src/services/username-service';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS } from '@/src/constants/networks';
 
 type Tab = 'address' | 'qr';
 
@@ -25,6 +26,7 @@ export default function ReceiveScreen() {
   const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const currentAccount = getCurrentAccount(wallet);
+  const accountType = useAppSelector(selectCurrentAccountType);
   const [activeTab, setActiveTab] = useState<Tab>('address');
   const [username, setUsername] = useState<string | null>(null);
 
@@ -146,6 +148,27 @@ export default function ReceiveScreen() {
               </TouchableOpacity>
             </View>
 
+            {accountType === 'real' && (
+              <View style={styles.networkHints}>
+                <Text style={[styles.networkHintsLabel, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
+                  Same address works on all networks
+                </Text>
+                <View style={styles.networkChips}>
+                  {TIER1_NETWORK_IDS.map(id => {
+                    const net = SUPPORTED_NETWORKS[id];
+                    return (
+                      <View
+                        key={id}
+                        style={[styles.networkChip, { backgroundColor: net.color + '20', borderColor: net.color + '40' }]}
+                      >
+                        <Text style={[styles.networkChipText, { color: net.color }]}>{net.shortName}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
             {!username && (
               <TouchableOpacity
                 style={[styles.claimUsernameButton, { borderColor: dynamicTheme.colors.buttonPrimary }]}
@@ -176,6 +199,27 @@ export default function ReceiveScreen() {
                 Scan this QR code to send tokens to this address
               </Text>
             </View>
+
+            {accountType === 'real' && (
+              <View style={styles.networkHints}>
+                <Text style={[styles.networkHintsLabel, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
+                  Same address works on all networks
+                </Text>
+                <View style={styles.networkChips}>
+                  {TIER1_NETWORK_IDS.map(id => {
+                    const net = SUPPORTED_NETWORKS[id];
+                    return (
+                      <View
+                        key={id}
+                        style={[styles.networkChip, { backgroundColor: net.color + '20', borderColor: net.color + '40' }]}
+                      >
+                        <Text style={[styles.networkChipText, { color: net.color }]}>{net.shortName}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             <View style={styles.addressPreview}>
               <Text style={[styles.addressPreviewText, theme.typography.caption, { color: dynamicTheme.colors.textTertiary }]}>
@@ -325,5 +369,28 @@ const styles = StyleSheet.create({
   },
   shareButtonText: {
     color: theme.colors.textPrimary,
+  },
+  // Network hints
+  networkHints: {
+    alignItems: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  networkHintsLabel: {
+    marginBottom: theme.spacing.sm,
+  },
+  networkChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  networkChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  networkChipText: {
+    fontSize: 11,
   },
 });
