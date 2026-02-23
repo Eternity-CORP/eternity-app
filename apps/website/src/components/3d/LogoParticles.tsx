@@ -228,12 +228,12 @@ function ParticleSystem({
       new THREE.Color('#FFFFFF'),
     ]
     const lightPalette = [
-      new THREE.Color('#1A1A2E'),
-      new THREE.Color('#1A1A2E'),
-      new THREE.Color('#16213E'),
-      new THREE.Color('#0F0F23'),
-      new THREE.Color('#1E1E3A'),
-      new THREE.Color('#121228'),
+      new THREE.Color('#2D2D5E'),
+      new THREE.Color('#2D2D5E'),
+      new THREE.Color('#253565'),
+      new THREE.Color('#1E2850'),
+      new THREE.Color('#353570'),
+      new THREE.Color('#2A2458'),
     ]
 
     const darkColors = new Float32Array(PARTICLE_COUNT * 3)
