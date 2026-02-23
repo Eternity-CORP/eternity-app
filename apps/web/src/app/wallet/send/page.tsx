@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
-import { lookupUsername, getAddressPreferences, checkGasAvailability, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult, type GasGuardResult } from '@e-y/shared'
+import { lookupUsername, getAddressPreferences, checkGasAvailability, suggestGasBridge, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult, type GasGuardResult } from '@e-y/shared'
 import type { AggregatedTokenBalance } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
@@ -288,6 +288,11 @@ function SendContent() {
   const showBridgeProgress = bridging
   const isDirect = !route || route.type === 'direct'
 
+  // Gas bridge suggestion when gas guard fails
+  const gasBridgeSuggestion = gasGuard && !gasGuard.sufficient
+    ? suggestGasBridge(gasGuard.networkId, gasGuard.shortfall, aggregatedBalances)
+    : null
+
   return (
     <div className="min-h-screen relative z-[2]">
       <Navigation />
@@ -393,6 +398,11 @@ function SendContent() {
                     Insufficient {gasGuard.nativeSymbol} for gas on {SUPPORTED_NETWORKS[gasGuard.networkId as NetworkId]?.name || gasGuard.networkId}.
                     {' '}Need ~{parseFloat(gasGuard.estimatedGasCostEth).toFixed(6)} {gasGuard.nativeSymbol}, have {parseFloat(gasGuard.nativeBalance).toFixed(6)}.
                   </p>
+                  {gasBridgeSuggestion && (
+                    <p className="text-xs mt-2" style={{ color: 'var(--muted)' }}>
+                      Tip: Bridge {gasBridgeSuggestion.amount} {gasBridgeSuggestion.nativeSymbol} from {SUPPORTED_NETWORKS[gasBridgeSuggestion.fromNetwork as NetworkId]?.name || gasBridgeSuggestion.fromNetwork} to cover gas.
+                    </p>
+                  )}
                 </div>
               )}
 
