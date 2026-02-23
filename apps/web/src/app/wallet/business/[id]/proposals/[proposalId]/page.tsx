@@ -545,6 +545,7 @@ export default function ProposalDetailPage() {
             { label: 'Network', value: network.name },
           ]}
           confirmLabel="Vote For"
+          animationType="seal"
           onConfirm={(pwd) => handleVote(pwd, true)}
           onCancel={() => setShowVoteFor(false)}
         />
@@ -562,6 +563,7 @@ export default function ProposalDetailPage() {
             { label: 'Network', value: network.name },
           ]}
           confirmLabel="Vote Against"
+          animationType="seal"
           onConfirm={(pwd) => handleVote(pwd, false)}
           onCancel={() => setShowVoteAgainst(false)}
         />

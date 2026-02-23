@@ -374,6 +374,7 @@ export default function UsernamePage() {
           title={modalProps.title}
           summary={modalProps.summary}
           details={modalProps.details}
+          animationType="seal"
           onConfirm={handleConfirmSubmit}
           onCancel={handleModalCancel}
         />

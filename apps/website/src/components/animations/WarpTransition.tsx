@@ -3,41 +3,96 @@
 import { useState, useCallback, useEffect, useRef, createContext, useContext } from 'react'
 import type { ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTheme } from '@/context/ThemeContext'
-import { LOGO_VIEWBOX, LOGO_PATHS, DRAW_ORDER, GLASS_PATHS, measurePathLength } from './logoPathData'
 
 const APP_URL = 'https://e-y-app.vercel.app'
-const DURATION = 4500
+const PARTICLE_COUNT = 300
+const ANIMATION_DURATION = 1400 // 1.4s total
 
-/* ---- Easings ---- */
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+// Animation phases (normalized 0-1)
+const PHASE = {
+  PULL_END: 0.65,       // 0-0.91s: particles accelerate toward center
+  COLLAPSE_END: 0.85,   // 0.91-1.19s: everything converges to point
+  BLACKOUT_END: 1.0,    // 1.19-1.4s: fade to black
 }
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3)
+
+interface Particle {
+  angle: number        // radial position angle
+  radius: number       // starting distance from center (0-1, normalized)
+  speed: number        // individual speed multiplier
+  size: number         // particle size
+  hue: number          // color hue
+  saturation: number   // color saturation
+  lightness: number    // color lightness
+  trail: number        // trail length multiplier
 }
-/* ---- Context ---- */
+
+function generateParticles(): Particle[] {
+  return Array.from({ length: PARTICLE_COUNT }, () => {
+    const colorRoll = Math.random()
+    let hue: number, saturation: number, lightness: number
+    if (colorRoll < 0.45) {
+      // Purple family (#7c3aed range)
+      hue = 260 + Math.random() * 20
+      saturation = 70 + Math.random() * 20
+      lightness = 55 + Math.random() * 15
+    } else if (colorRoll < 0.85) {
+      // Blue family (#3b82f6 range)
+      hue = 210 + Math.random() * 20
+      saturation = 75 + Math.random() * 20
+      lightness = 55 + Math.random() * 20
+    } else {
+      // White/bright accent
+      hue = 230 + Math.random() * 40
+      saturation = 20 + Math.random() * 30
+      lightness = 85 + Math.random() * 10
+    }
+
+    return {
+      angle: Math.random() * Math.PI * 2,
+      radius: 0.3 + Math.random() * 0.7, // start from mid-to-edge
+      speed: 0.5 + Math.random() * 1.0,
+      size: 1 + Math.random() * 2.5,
+      hue,
+      saturation,
+      lightness,
+      trail: 0.3 + Math.random() * 0.7,
+    }
+  })
+}
+
+// Easing helpers
+function easeInQuad(t: number) { return t * t }
+function easeInCubic(t: number) { return t * t * t }
+function easeInQuart(t: number) { return t * t * t * t }
+function easeOutCubic(t: number) { return 1 - Math.pow(1 - t, 3) }
+
+// Map a value from one phase range to 0-1
+function phaseProgress(progress: number, start: number, end: number) {
+  if (progress < start) return 0
+  if (progress > end) return 1
+  return (progress - start) / (end - start)
+}
+
+// --- Context ---
 const WarpContext = createContext<{ startWarp: () => void }>({ startWarp: () => {} })
 
 export function useWarp() {
   return useContext(WarpContext)
 }
 
-/* ---- Provider ---- */
+// --- Provider: wraps the page, renders overlay once ---
 export function WarpProvider({ children }: { children: ReactNode }) {
   const [isWarping, setIsWarping] = useState(false)
+  const [particles] = useState<Particle[]>(generateParticles)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   const startTimeRef = useRef<number>(0)
-  const { isDark } = useTheme()
-  const isDarkRef = useRef(isDark)
-  isDarkRef.current = isDark
 
   const startWarp = useCallback(() => {
     setIsWarping(true)
     setTimeout(() => {
       window.location.href = APP_URL
-    }, DURATION)
+    }, ANIMATION_DURATION + 200) // small buffer after animation ends
   }, [])
 
   useEffect(() => {
@@ -48,331 +103,154 @@ export function WarpProvider({ children }: { children: ReactNode }) {
     if (!ctx) return
 
     const dpr = window.devicePixelRatio || 1
-    const w = window.innerWidth
-    const h = window.innerHeight
-    canvas.width = w * dpr
-    canvas.height = h * dpr
-    canvas.style.width = w + 'px'
-    canvas.style.height = h + 'px'
+    canvas.width = window.innerWidth * dpr
+    canvas.height = window.innerHeight * dpr
+    canvas.style.width = window.innerWidth + 'px'
+    canvas.style.height = window.innerHeight + 'px'
     ctx.scale(dpr, dpr)
 
+    const w = window.innerWidth
+    const h = window.innerHeight
     const cx = w / 2
     const cy = h / 2
-
-    // Scale logo to fit ~180px wide, centered
-    const logoScale = 180 / LOGO_VIEWBOX.width
-    const logoW = LOGO_VIEWBOX.width * logoScale
-    const logoH = LOGO_VIEWBOX.height * logoScale
-    const logoX = cx - logoW / 2
-    const logoY = cy - logoH / 2
-
-    // Prepare Path2D objects and measure lengths
-    const pathEntries = DRAW_ORDER.map((key) => {
-      const d = LOGO_PATHS[key]
-      return {
-        key,
-        path2d: new Path2D(d),
-        length: measurePathLength(d),
-        d,
-      }
-    })
-
-    const glassPaths = GLASS_PATHS.map((key) => ({
-      key,
-      path2d: new Path2D(LOGO_PATHS[key]),
-    }))
-
+    const maxRadius = Math.sqrt(cx * cx + cy * cy)
     startTimeRef.current = performance.now()
 
     const animate = (now: number) => {
       const elapsed = now - startTimeRef.current
-      const progress = Math.min(elapsed / DURATION, 1)
-      const dark = isDarkRef.current
+      const progress = Math.min(elapsed / ANIMATION_DURATION, 1)
 
-      // Clear with theme background
-      ctx.fillStyle = dark ? '#000000' : '#ffffff'
+      const pullP = phaseProgress(progress, 0, PHASE.PULL_END)
+      const collapseP = phaseProgress(progress, PHASE.PULL_END, PHASE.COLLAPSE_END)
+      const blackoutP = phaseProgress(progress, PHASE.COLLAPSE_END, PHASE.BLACKOUT_END)
+
+      // Dark background
+      ctx.fillStyle = '#0a0a1a'
       ctx.fillRect(0, 0, w, h)
 
-      // Set transform to position + scale logo
-      ctx.save()
-      ctx.translate(logoX, logoY)
-      ctx.scale(logoScale, logoScale)
+      // --- Radial distortion rings (chromatic aberration feel) ---
+      if (pullP > 0.1) {
+        const ringIntensity = pullP < 0.8
+          ? easeInQuad((pullP - 0.1) / 0.7)
+          : 1.0 - easeInCubic(collapseP)
+        const ringCount = 6
+        for (let r = 0; r < ringCount; r++) {
+          const baseRadius = maxRadius * (0.3 + r * 0.12) * (1 - easeInCubic(pullP) * 0.6 - collapseP * 0.35)
+          if (baseRadius < 2) continue
+          const alpha = ringIntensity * 0.12 * (1 - r / ringCount)
 
-      /*
-       * PHASES:
-       * 0.00-0.27  DRAW      -- stroke-dashoffset reveals logo contour
-       * 0.27-0.44  FILL      -- gradient wipe fills the interior
-       * 0.44-0.71  BREATH    -- logo pulses, glow, text appears
-       * 0.71-0.85  UN-FILL   -- reverse of FILL (wipe top→bottom, stroke reappears)
-       * 0.85-0.96  UN-DRAW   -- reverse of DRAW (stroke retracts, glow fades)
-       * 0.96-1.00  FADE      -- clean fade to background → redirect
-       */
+          // Red channel offset (outward)
+          ctx.beginPath()
+          ctx.arc(cx, cy, baseRadius + 3, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(255, 80, 80, ${alpha * 0.7})`
+          ctx.lineWidth = 1.5
+          ctx.stroke()
 
-      // ========================
-      // PHASE 1: DRAW (0-0.27)
-      // ========================
-      if (progress < 0.27) {
-        const drawP = progress / 0.27
-        const eased = easeInOutCubic(drawP)
+          // Blue/purple channel (inward)
+          ctx.beginPath()
+          ctx.arc(cx, cy, Math.max(baseRadius - 3, 1), 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(124, 58, 237, ${alpha})`
+          ctx.lineWidth = 1.5
+          ctx.stroke()
 
-        // Each path draws sequentially with overlap
-        const pathCount = pathEntries.length
-        const overlapFactor = 0.3
-        const segmentDuration = 1 / (pathCount * (1 - overlapFactor) + overlapFactor)
-
-        for (let i = 0; i < pathCount; i++) {
-          const entry = pathEntries[i]
-          const segStart = i * segmentDuration * (1 - overlapFactor)
-          const segEnd = segStart + segmentDuration
-          const segP = Math.max(0, Math.min(1, (eased - segStart) / (segEnd - segStart)))
-
-          if (segP <= 0) continue
-
-          const revealLen = entry.length * segP
-          const dashOffset = entry.length - revealLen
-
-          ctx.save()
-          ctx.setLineDash([entry.length])
-          ctx.lineDashOffset = dashOffset
-
-          // Neon glow (outer)
-          ctx.strokeStyle = dark
-            ? `rgba(51, 136, 255, ${0.3 * segP})`
-            : `rgba(0, 80, 220, ${0.15 * segP})`
-          ctx.lineWidth = 8
-          ctx.filter = 'blur(6px)'
-          ctx.stroke(entry.path2d)
-
-          // Main stroke
-          ctx.filter = 'none'
-          const gradient = ctx.createLinearGradient(0, 0, LOGO_VIEWBOX.width, 0)
-          gradient.addColorStop(0, '#3388FF')
-          gradient.addColorStop(1, '#00E5FF')
-          ctx.strokeStyle = gradient
-          ctx.lineWidth = 2
-          ctx.stroke(entry.path2d)
-
-          ctx.restore()
+          // Core ring
+          ctx.beginPath()
+          ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2)
+          ctx.strokeStyle = `rgba(59, 130, 246, ${alpha * 0.5})`
+          ctx.lineWidth = 1
+          ctx.stroke()
         }
       }
 
-      // ========================
-      // PHASE 2: FILL (0.27-0.44)
-      // ========================
-      if (progress >= 0.27 && progress < 0.44) {
-        const fillP = (progress - 0.27) / 0.17
-        const eased = easeOutCubic(fillP)
+      // --- Edge vignette with chromatic aberration ---
+      const vignetteStrength = 0.3 + easeInQuad(pullP) * 0.5 + collapseP * 0.2
+      // Purple-tinted vignette
+      const vGrad = ctx.createRadialGradient(cx, cy, maxRadius * 0.15, cx, cy, maxRadius)
+      vGrad.addColorStop(0, 'rgba(0, 0, 0, 0)')
+      vGrad.addColorStop(0.5, 'rgba(0, 0, 0, 0)')
+      vGrad.addColorStop(0.75, `rgba(40, 10, 80, ${vignetteStrength * 0.3})`)
+      vGrad.addColorStop(1, `rgba(0, 0, 0, ${vignetteStrength})`)
+      ctx.fillStyle = vGrad
+      ctx.fillRect(0, 0, w, h)
 
-        // Draw full stroke (fading out)
-        const strokeAlpha = 1 - eased
-        if (strokeAlpha > 0.01) {
-          const gradient = ctx.createLinearGradient(0, 0, LOGO_VIEWBOX.width, 0)
-          gradient.addColorStop(0, `rgba(51, 136, 255, ${strokeAlpha})`)
-          gradient.addColorStop(1, `rgba(0, 229, 255, ${strokeAlpha})`)
-          ctx.strokeStyle = gradient
-          ctx.lineWidth = 2
-          for (const entry of pathEntries) {
-            ctx.stroke(entry.path2d)
-          }
+      // --- Particles accelerating toward center ---
+      for (const particle of particles) {
+        // Current radius: starts at initial position, moves toward 0
+        const pullEase = easeInCubic(pullP)
+        const collapseEase = easeInQuart(collapseP)
+        const radiusFraction = particle.radius * (1 - pullEase * 0.85) * (1 - collapseEase)
+        const currentRadius = radiusFraction * maxRadius
+
+        if (currentRadius < 1 && collapseP > 0) continue // already at center
+
+        const px = cx + Math.cos(particle.angle) * currentRadius
+        const py = cy + Math.sin(particle.angle) * currentRadius
+
+        // Trail: line from current position toward where particle was
+        const trailRadius = currentRadius + particle.trail * 30 * (pullEase + collapseEase * 2)
+        const trailX = cx + Math.cos(particle.angle) * Math.min(trailRadius, maxRadius)
+        const trailY = cy + Math.sin(particle.angle) * Math.min(trailRadius, maxRadius)
+
+        // Alpha: particles get brighter as they accelerate, then fade at collapse
+        const moveAlpha = Math.min(pullP * 2, 1)
+        const fadeAlpha = 1 - collapseP * 0.8
+        const alpha = moveAlpha * fadeAlpha * (0.4 + particle.speed * 0.4)
+
+        // Size increases slightly as particles compress
+        const size = particle.size * (1 + pullEase * 0.5)
+
+        // Draw trail
+        if (pullP > 0.15) {
+          const trailGrad = ctx.createLinearGradient(trailX, trailY, px, py)
+          trailGrad.addColorStop(0, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, 0)`)
+          trailGrad.addColorStop(1, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${alpha * 0.6})`)
+          ctx.beginPath()
+          ctx.moveTo(trailX, trailY)
+          ctx.lineTo(px, py)
+          ctx.strokeStyle = trailGrad
+          ctx.lineWidth = size * 0.6
+          ctx.lineCap = 'round'
+          ctx.stroke()
         }
 
-        // Fill with clip mask (wipe from bottom to top)
-        const wipeY = LOGO_VIEWBOX.height * (1 - eased)
-        ctx.save()
+        // Draw particle head
         ctx.beginPath()
-        ctx.rect(0, wipeY, LOGO_VIEWBOX.width, LOGO_VIEWBOX.height - wipeY)
-        ctx.clip()
-
-        const fillColor = dark ? '#ffffff' : '#1a1a1a'
-        for (const entry of pathEntries) {
-          ctx.fillStyle = fillColor
-          ctx.fill(entry.path2d)
-        }
-
-        // Glass overlays
-        for (const glass of glassPaths) {
-          ctx.fillStyle = dark
-            ? 'rgba(177, 172, 172, 0.15)'
-            : 'rgba(177, 172, 172, 0.2)'
-          ctx.fill(glass.path2d)
-        }
-
-        ctx.restore()
+        ctx.arc(px, py, size, 0, Math.PI * 2)
+        ctx.fillStyle = `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${alpha})`
+        ctx.fill()
       }
 
-      // ========================
-      // PHASE 3: BREATH (0.44-0.71)
-      // ========================
-      if (progress >= 0.44 && progress < 0.71) {
-        const breathP = (progress - 0.44) / 0.27
+      // --- Central glow: grows as particles converge ---
+      const glowIntensity = easeInQuad(pullP) * 0.6 + collapseP * 0.4
+      const glowSize = 20 + glowIntensity * 180
+      const coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowSize)
+      coreGlow.addColorStop(0, `rgba(124, 58, 237, ${glowIntensity * 0.8})`)   // purple core
+      coreGlow.addColorStop(0.3, `rgba(59, 130, 246, ${glowIntensity * 0.5})`) // blue mid
+      coreGlow.addColorStop(0.6, `rgba(99, 102, 241, ${glowIntensity * 0.2})`) // indigo
+      coreGlow.addColorStop(1, 'rgba(0, 0, 0, 0)')
+      ctx.fillStyle = coreGlow
+      ctx.fillRect(0, 0, w, h)
 
-        // Breath: scale pulse 1 -> 1.06 -> 1
-        const breathCurve = Math.sin(breathP * Math.PI) * 0.06
-        const scale = 1 + breathCurve
+      // --- Collapse: bright flash at center point ---
+      if (collapseP > 0.3) {
+        const flashP = (collapseP - 0.3) / 0.7
+        const flashEase = easeOutCubic(flashP)
+        const flashSize = 5 + flashEase * 60
+        const flashAlpha = flashEase * 0.9
 
-        ctx.save()
-        // Apply breath scale around logo center
-        const lcx = LOGO_VIEWBOX.width / 2
-        const lcy = LOGO_VIEWBOX.height / 2
-        ctx.translate(lcx, lcy)
-        ctx.scale(scale, scale)
-        ctx.translate(-lcx, -lcy)
-
-        // Draw filled logo
-        const fillColor = dark ? '#ffffff' : '#1a1a1a'
-        for (const entry of pathEntries) {
-          ctx.fillStyle = fillColor
-          ctx.fill(entry.path2d)
-        }
-        for (const glass of glassPaths) {
-          ctx.fillStyle = dark
-            ? 'rgba(177, 172, 172, 0.15)'
-            : 'rgba(177, 172, 172, 0.2)'
-          ctx.fill(glass.path2d)
-        }
-
-        ctx.restore()
+        const flashGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, flashSize)
+        flashGrad.addColorStop(0, `rgba(255, 255, 255, ${flashAlpha})`)
+        flashGrad.addColorStop(0.3, `rgba(139, 92, 246, ${flashAlpha * 0.7})`)
+        flashGrad.addColorStop(0.7, `rgba(59, 130, 246, ${flashAlpha * 0.3})`)
+        flashGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
+        ctx.fillStyle = flashGrad
+        ctx.fillRect(0, 0, w, h)
       }
 
-      // ========================
-      // PHASE 4a: UN-FILL (0.71-0.85) — reverse of Phase 2
-      // ========================
-      if (progress >= 0.71 && progress < 0.85) {
-        const unfillP = (progress - 0.71) / 0.14
-        const eased = easeInOutCubic(unfillP)
-
-        // Fill shrinks from top to bottom (reverse of bottom→top)
-        const wipeY = LOGO_VIEWBOX.height * eased
-        if (wipeY < LOGO_VIEWBOX.height) {
-          ctx.save()
-          ctx.beginPath()
-          ctx.rect(0, wipeY, LOGO_VIEWBOX.width, LOGO_VIEWBOX.height - wipeY)
-          ctx.clip()
-
-          const fillColor = dark ? '#ffffff' : '#1a1a1a'
-          for (const entry of pathEntries) {
-            ctx.fillStyle = fillColor
-            ctx.fill(entry.path2d)
-          }
-
-          // Glass overlays fade with fill
-          for (const glass of glassPaths) {
-            ctx.fillStyle = dark
-              ? `rgba(177, 172, 172, ${0.15 * (1 - eased)})`
-              : `rgba(177, 172, 172, ${0.2 * (1 - eased)})`
-            ctx.fill(glass.path2d)
-          }
-
-          ctx.restore()
-        }
-
-        // Stroke reappears (reverse of fading out)
-        const strokeAlpha = eased
-        if (strokeAlpha > 0.01) {
-          const gradient = ctx.createLinearGradient(0, 0, LOGO_VIEWBOX.width, 0)
-          gradient.addColorStop(0, `rgba(51, 136, 255, ${strokeAlpha})`)
-          gradient.addColorStop(1, `rgba(0, 229, 255, ${strokeAlpha})`)
-          ctx.strokeStyle = gradient
-          ctx.lineWidth = 2
-          for (const entry of pathEntries) {
-            ctx.stroke(entry.path2d)
-          }
-        }
-      }
-
-      // ========================
-      // PHASE 4b: UN-DRAW (0.85-0.96) — reverse of Phase 1
-      // ========================
-      if (progress >= 0.85 && progress < 0.96) {
-        const undrawP = (progress - 0.85) / 0.11
-        const eased = easeInOutCubic(undrawP)
-
-        // Paths retract in reverse order
-        const pathCount = pathEntries.length
-        const overlapFactor = 0.3
-        const segmentDuration = 1 / (pathCount * (1 - overlapFactor) + overlapFactor)
-
-        for (let i = 0; i < pathCount; i++) {
-          // Reverse order: last path retracts first
-          const ri = pathCount - 1 - i
-          const entry = pathEntries[ri]
-          const segStart = i * segmentDuration * (1 - overlapFactor)
-          const segEnd = segStart + segmentDuration
-          const segP = Math.max(0, Math.min(1, (eased - segStart) / (segEnd - segStart)))
-
-          // segP goes 0→1, so reveal = 1→0 (retracting)
-          const revealFraction = 1 - segP
-          if (revealFraction <= 0) continue
-
-          const revealLen = entry.length * revealFraction
-          const dashOffset = entry.length - revealLen
-
-          ctx.save()
-          ctx.setLineDash([entry.length])
-          ctx.lineDashOffset = dashOffset
-
-          // Neon glow (fading with retraction)
-          ctx.strokeStyle = dark
-            ? `rgba(51, 136, 255, ${0.3 * revealFraction})`
-            : `rgba(0, 80, 220, ${0.15 * revealFraction})`
-          ctx.lineWidth = 8
-          ctx.filter = 'blur(6px)'
-          ctx.stroke(entry.path2d)
-
-          // Main stroke
-          ctx.filter = 'none'
-          const gradient = ctx.createLinearGradient(0, 0, LOGO_VIEWBOX.width, 0)
-          gradient.addColorStop(0, '#3388FF')
-          gradient.addColorStop(1, '#00E5FF')
-          ctx.strokeStyle = gradient
-          ctx.lineWidth = 2
-          ctx.stroke(entry.path2d)
-
-          ctx.restore()
-        }
-      }
-
-      // Restore from logo transform
-      ctx.restore()
-
-      // ---- Radial glow (below logo, in screen space) ----
-      if (progress >= 0.20 && progress < 0.90) {
-        let glowAlpha: number
-        if (progress < 0.44) {
-          glowAlpha = ((progress - 0.20) / 0.24) * 0.3 // fade in
-        } else if (progress < 0.71) {
-          const breathP = (progress - 0.44) / 0.27
-          glowAlpha = 0.3 + Math.sin(breathP * Math.PI) * 0.2 // pulse
-        } else {
-          // Fade out during reverse phases
-          glowAlpha = 0.3 * (1 - (progress - 0.71) / 0.19)
-        }
-        glowAlpha = Math.max(0, Math.min(1, glowAlpha))
-
-        if (glowAlpha > 0.01) {
-          const glowGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 200)
-          if (dark) {
-            glowGrad.addColorStop(0, `rgba(51, 136, 255, ${glowAlpha})`)
-            glowGrad.addColorStop(0.5, `rgba(0, 229, 255, ${glowAlpha * 0.3})`)
-            glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)')
-          } else {
-            glowGrad.addColorStop(0, `rgba(0, 80, 220, ${glowAlpha * 0.5})`)
-            glowGrad.addColorStop(0.5, `rgba(0, 80, 220, ${glowAlpha * 0.15})`)
-            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)')
-          }
-          ctx.fillStyle = glowGrad
-          ctx.beginPath()
-          ctx.arc(cx, cy, 200, 0, Math.PI * 2)
-          ctx.fill()
-        }
-      }
-
-      // ---- PHASE 4c: FADE (0.96-1.00) — clean fade to background ----
-      if (progress >= 0.96) {
-        const fadeP = (progress - 0.96) / 0.04
-        ctx.fillStyle = dark
-          ? `rgba(0, 0, 0, ${fadeP})`
-          : `rgba(255, 255, 255, ${fadeP})`
+      // --- Blackout: fade to black ---
+      if (blackoutP > 0) {
+        const blackAlpha = easeInQuad(blackoutP)
+        ctx.fillStyle = `rgba(0, 0, 0, ${blackAlpha})`
         ctx.fillRect(0, 0, w, h)
       }
 
@@ -386,7 +264,7 @@ export function WarpProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelAnimationFrame(animationRef.current)
     }
-  }, [isWarping])
+  }, [isWarping, particles])
 
   return (
     <WarpContext.Provider value={{ startWarp }}>
@@ -400,36 +278,14 @@ export function WarpProvider({ children }: { children: ReactNode }) {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.15 }}
           >
-            <canvas ref={canvasRef} className="absolute inset-0" />
+            {/* Dark backdrop */}
+            <div className="absolute inset-0 bg-[#0a0a1a]" />
 
-            {/* "ETERNITY" text -- appears during Breath phase */}
-            <motion.div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{
-                opacity: [0, 0, 0, 1, 1, 0],
-                y: [10, 10, 10, 0, 0, 0],
-              }}
-              transition={{
-                duration: DURATION / 1000,
-                times: [0, 0.40, 0.48, 0.55, 0.68, 0.75],
-                ease: 'easeOut',
-              }}
-            >
-              {/* Position below logo center */}
-              <span
-                className="absolute text-sm md:text-base font-medium tracking-[0.3em] uppercase select-none"
-                style={{
-                  top: '50%',
-                  marginTop: '120px',
-                  color: isDarkRef.current
-                    ? 'rgba(255, 255, 255, 0.5)'
-                    : 'rgba(0, 0, 0, 0.35)',
-                }}
-              >
-                ETERNITY
-              </span>
-            </motion.div>
+            {/* Shard pull canvas */}
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0"
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -437,3 +293,27 @@ export function WarpProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// --- "Launch App" button (uses context) ---
+export function WarpTransition() {
+  const { startWarp } = useWarp()
+
+  return (
+    <button
+      onClick={startWarp}
+      className="group relative inline-flex items-center justify-center gap-2 px-7 py-3 text-base font-medium rounded-full transition-all duration-300 bg-transparent border dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-black border-black text-black hover:bg-black hover:text-white"
+    >
+      <span className="relative z-10 flex items-center gap-2">
+        Launch App
+        <svg
+          className="w-4 h-4 transition-transform group-hover:translate-x-1"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </span>
+    </button>
+  )
+}
