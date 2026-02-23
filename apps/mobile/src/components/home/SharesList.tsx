@@ -104,7 +104,7 @@ export function SharesList() {
         <TouchableOpacity
           key={s.businessId}
           style={[styles.shareItem, { backgroundColor: dynamicTheme.colors.surface }]}
-          onPress={() => router.push(`/business/${s.businessId}`)}
+          onPress={() => router.push(`/business/${s.businessId}` as any)}
           activeOpacity={0.7}
         >
           <View style={[styles.iconCircle, { backgroundColor: '#3388FF20' }]}>

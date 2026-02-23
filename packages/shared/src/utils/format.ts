@@ -74,7 +74,11 @@ export function parseTokenAmount(amount: string, decimals: number): string {
   try {
     if (!amount || amount === '0') return '0';
 
-    const parts = amount.split('.');
+    const trimmed = amount.trim();
+    // Validate input is a valid numeric string (digits, optional single decimal point)
+    if (!/^\d+(\.\d+)?$/.test(trimmed)) return '0';
+
+    const parts = trimmed.split('.');
     const whole = parts[0] || '0';
     let fraction = (parts[1] || '').slice(0, decimals); // trim excess precision
     fraction = fraction.padEnd(decimals, '0');

@@ -248,7 +248,7 @@ export function BusinessDashboardScreen() {
   // Redirect away if user switches to a non-business account
   useEffect(() => {
     if (currentAccount && currentAccount.type !== 'business') {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)' as any);
     }
   }, [currentAccount]);
 

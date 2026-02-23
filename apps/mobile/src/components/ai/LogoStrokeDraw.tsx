@@ -21,6 +21,7 @@ import Animated, {
   Easing,
   interpolate,
   useDerivedValue,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { LOGO_VIEWBOX, LOGO_PATHS, DRAW_ORDER } from '@e-y/shared';
 
@@ -46,8 +47,8 @@ interface StrokePathProps {
   pathKey: keyof typeof LOGO_PATHS;
   index: number;
   pathCount: number;
-  drawProgress: Animated.SharedValue<number>;
-  breathAlpha: Animated.SharedValue<number>;
+  drawProgress: SharedValue<number>;
+  breathAlpha: SharedValue<number>;
   isGlow?: boolean;
 }
 

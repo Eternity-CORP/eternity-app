@@ -517,7 +517,7 @@ export function BusinessCreateScreen() {
             <View style={styles.successActions}>
               <Pressable
                 style={[styles.secondaryButton, { borderColor: colors.border }]}
-                onPress={() => router.replace('/(tabs)')}
+                onPress={() => router.replace('/(tabs)' as any)}
               >
                 <Text style={[styles.secondaryButtonText, { color: colors.textPrimary }]}>
                   Back to Wallet
@@ -525,7 +525,7 @@ export function BusinessCreateScreen() {
               </Pressable>
               <Pressable
                 style={[styles.primaryButton, { backgroundColor: colors.buttonPrimary }]}
-                onPress={() => router.replace('/business/dashboard')}
+                onPress={() => router.replace('/business/dashboard' as any)}
               >
                 <Text style={[styles.primaryButtonText, { color: colors.buttonPrimaryText }]}>
                   View Business

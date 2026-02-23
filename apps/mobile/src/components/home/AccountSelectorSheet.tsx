@@ -203,7 +203,7 @@ export function AccountSelectorSheet({
               onPress={() => {
                 onHideAddWalletMenu();
                 onClose();
-                router.push('/business/create');
+                router.push('/business/create' as any);
               }}
             >
               <View style={[styles.addWalletIcon, { backgroundColor: '#3388FF' + '20' }]}>
@@ -290,7 +290,7 @@ export function AccountSelectorSheet({
                             onStartEditing(account.accountIndex, account.label || '');
                           } else if (isBusiness && account.businessId) {
                             onClose();
-                            router.push(`/business/${account.businessId}`);
+                            router.push(`/business/${account.businessId}` as any);
                           } else {
                             onSwitchAccount(account.address);
                           }
