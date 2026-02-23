@@ -17,14 +17,25 @@ import {
   formatTokenAmount,
   NATIVE_TOKEN_ADDRESS,
 } from '@/lib/swap'
-
-const CHAIN_ID = 1 // Mainnet for swap (LI.FI doesn't support Sepolia)
+import {
+  SUPPORTED_NETWORKS,
+  TIER1_NETWORK_IDS,
+  NETWORK_TO_CHAIN_ID,
+  type NetworkId,
+} from '@e-y/shared'
 
 export default function SwapPage() {
   const { isReady } = useAuthGuard()
   const { wallet, address, network } = useAccount()
 
-  const [tokens, setTokens] = useState<SwapToken[]>([])
+  // Network state
+  const [fromNetworkId, setFromNetworkId] = useState<NetworkId>('base')
+  const [toNetworkId, setToNetworkId] = useState<NetworkId>('base')
+
+  // Token lists per chain
+  const [fromTokens, setFromTokens] = useState<SwapToken[]>([])
+  const [toTokens, setToTokens] = useState<SwapToken[]>([])
+
   const [fromToken, setFromToken] = useState<SwapToken | null>(null)
   const [toToken, setToToken] = useState<SwapToken | null>(null)
   const [fromAmount, setFromAmount] = useState('')
@@ -38,26 +49,49 @@ export default function SwapPage() {
   const [showFromTokens, setShowFromTokens] = useState(false)
   const [showToTokens, setShowToTokens] = useState(false)
 
-  // Load tokens when logged in
+  const isCrossChain = fromNetworkId !== toNetworkId
+
+  // Load tokens for "from" chain
   useEffect(() => {
     if (!isReady) return
-    loadTokens()
-  }, [isReady])
+    loadFromTokens()
+  }, [isReady, fromNetworkId])
 
-  const loadTokens = async () => {
-    const popular = await getPopularTokens(CHAIN_ID)
-    const native = getNativeToken(CHAIN_ID)
+  // Load tokens for "to" chain
+  useEffect(() => {
+    if (!isReady) return
+    loadToTokens()
+  }, [isReady, toNetworkId])
 
-    // Add native token at start if not present
+  const loadFromTokens = async () => {
+    const chainId = NETWORK_TO_CHAIN_ID[fromNetworkId]
+    const popular = await getPopularTokens(chainId)
+    const native = getNativeToken(chainId)
+
     const hasNative = popular.some(t => t.address === NATIVE_TOKEN_ADDRESS)
     const allTokens = hasNative ? popular : [native, ...popular]
 
-    setTokens(allTokens)
+    setFromTokens(allTokens)
 
     // Default selection
-    if (allTokens.length >= 2) {
+    if (allTokens.length >= 1) {
       setFromToken(allTokens[0])
-      setToToken(allTokens.find(t => t.symbol === 'USDC') || allTokens[1])
+    }
+  }
+
+  const loadToTokens = async () => {
+    const chainId = NETWORK_TO_CHAIN_ID[toNetworkId]
+    const popular = await getPopularTokens(chainId)
+    const native = getNativeToken(chainId)
+
+    const hasNative = popular.some(t => t.address === NATIVE_TOKEN_ADDRESS)
+    const allTokens = hasNative ? popular : [native, ...popular]
+
+    setToTokens(allTokens)
+
+    // Default selection
+    if (allTokens.length >= 1) {
+      setToToken(allTokens.find(t => t.symbol === 'USDC') || allTokens[allTokens.length > 1 ? 1 : 0])
     }
   }
 
@@ -73,8 +107,8 @@ export default function SwapPage() {
     try {
       const amount = parseTokenAmount(fromAmount, fromToken.decimals)
       const q = await getSwapQuote({
-        fromChainId: CHAIN_ID,
-        toChainId: CHAIN_ID,
+        fromChainId: NETWORK_TO_CHAIN_ID[fromNetworkId],
+        toChainId: NETWORK_TO_CHAIN_ID[toNetworkId],
         fromToken: fromToken.address,
         toToken: toToken.address,
         fromAmount: amount,
@@ -88,7 +122,7 @@ export default function SwapPage() {
     } finally {
       setQuoteLoading(false)
     }
-  }, [fromToken, toToken, fromAmount, address])
+  }, [fromToken, toToken, fromAmount, address, fromNetworkId, toNetworkId])
 
   useEffect(() => {
     const timeout = setTimeout(fetchQuote, 500)
@@ -96,11 +130,34 @@ export default function SwapPage() {
   }, [fetchQuote])
 
   const handleSwapTokens = () => {
-    const temp = fromToken
+    const tempNetwork = fromNetworkId
+    const tempToken = fromToken
+    const tempTokens = fromTokens
+
+    setFromNetworkId(toNetworkId)
+    setToNetworkId(tempNetwork)
     setFromToken(toToken)
-    setToToken(temp)
+    setToToken(tempToken)
+    setFromTokens(toTokens)
+    setToTokens(tempTokens)
     setFromAmount('')
     setQuote(null)
+  }
+
+  const handleFromNetworkChange = (networkId: NetworkId) => {
+    if (networkId === fromNetworkId) return
+    setFromNetworkId(networkId)
+    setFromToken(null)
+    setQuote(null)
+    setError('')
+  }
+
+  const handleToNetworkChange = (networkId: NetworkId) => {
+    if (networkId === toNetworkId) return
+    setToNetworkId(networkId)
+    setToToken(null)
+    setQuote(null)
+    setError('')
   }
 
   const handleSwap = async () => {
@@ -129,7 +186,7 @@ export default function SwapPage() {
   }
 
   const selectFromToken = (token: SwapToken) => {
-    if (token.address === toToken?.address) {
+    if (token.address === toToken?.address && fromNetworkId === toNetworkId) {
       setToToken(fromToken)
     }
     setFromToken(token)
@@ -138,13 +195,52 @@ export default function SwapPage() {
   }
 
   const selectToToken = (token: SwapToken) => {
-    if (token.address === fromToken?.address) {
+    if (token.address === fromToken?.address && fromNetworkId === toNetworkId) {
       setFromToken(toToken)
     }
     setToToken(token)
     setShowToTokens(false)
     setQuote(null)
   }
+
+  // Network selector chip component
+  const NetworkChips = ({
+    selectedId,
+    onChange,
+    label,
+  }: {
+    selectedId: NetworkId
+    onChange: (id: NetworkId) => void
+    label: string
+  }) => (
+    <div className="mb-2">
+      <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">{label}</label>
+      <div className="flex flex-wrap gap-1.5">
+        {TIER1_NETWORK_IDS.map((id) => {
+          const net = SUPPORTED_NETWORKS[id]
+          const isSelected = id === selectedId
+          return (
+            <button
+              key={id}
+              onClick={() => onChange(id)}
+              className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
+              style={{
+                backgroundColor: isSelected ? net.color + '20' : 'transparent',
+                borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
+                color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+              }}
+            >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full mr-1.5"
+                style={{ backgroundColor: net.color }}
+              />
+              {net.shortName}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen relative z-[2]">
@@ -154,17 +250,36 @@ export default function SwapPage() {
         <div className="w-full max-w-[420px]">
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white text-center mb-8">Swap</h1>
+            <h1 className="text-xl font-semibold text-white text-center mb-6">Swap</h1>
 
-            {/* Mainnet Notice */}
+            {/* Cross-chain indicator */}
+            {isCrossChain && (
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div
+                  className="text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5"
+                  style={{ background: 'rgba(51, 136, 255, 0.12)', color: '#3388FF' }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 12h16M12 4l8 8-8 8" />
+                  </svg>
+                  Cross-chain (bridge + swap)
+                </div>
+              </div>
+            )}
+
+            {/* Multi-network notice */}
             <div className="bg-white/3 border border-white/8 rounded-xl p-3 mb-4">
               <p className="text-xs text-white/40 text-center">
-                Swaps use Ethereum Mainnet via LI.FI
+                {isCrossChain
+                  ? `${SUPPORTED_NETWORKS[fromNetworkId].name} -> ${SUPPORTED_NETWORKS[toNetworkId].name} via LI.FI`
+                  : `Swaps on ${SUPPORTED_NETWORKS[fromNetworkId].name} via LI.FI`}
               </p>
             </div>
 
-            {/* From Token */}
+            {/* From section: Network + Token */}
             <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-2">
+              <NetworkChips selectedId={fromNetworkId} onChange={handleFromNetworkChange} label="From network" />
+
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs text-white/40 uppercase tracking-wide">You pay</label>
               </div>
@@ -194,7 +309,7 @@ export default function SwapPage() {
               {/* From Token Dropdown */}
               {showFromTokens && (
                 <div className="mt-3 max-h-[200px] overflow-y-auto space-y-1">
-                  {tokens.map((token) => (
+                  {fromTokens.map((token) => (
                     <button
                       key={token.address}
                       onClick={() => selectFromToken(token)}
@@ -215,7 +330,7 @@ export default function SwapPage() {
               )}
             </div>
 
-            {/* Swap Button */}
+            {/* Swap direction button */}
             <div className="flex justify-center -my-1 relative z-10">
               <button
                 onClick={handleSwapTokens}
@@ -228,8 +343,10 @@ export default function SwapPage() {
               </button>
             </div>
 
-            {/* To Token */}
+            {/* To section: Network + Token */}
             <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
+              <NetworkChips selectedId={toNetworkId} onChange={handleToNetworkChange} label="To network" />
+
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs text-white/40 uppercase tracking-wide">You receive</label>
               </div>
@@ -260,7 +377,7 @@ export default function SwapPage() {
               {/* To Token Dropdown */}
               {showToTokens && (
                 <div className="mt-3 max-h-[200px] overflow-y-auto space-y-1">
-                  {tokens.map((token) => (
+                  {toTokens.map((token) => (
                     <button
                       key={token.address}
                       onClick={() => selectToToken(token)}
@@ -302,6 +419,27 @@ export default function SwapPage() {
                   <span className="text-white/40">Network Fee</span>
                   <span className="text-white">${parseFloat(quote.gasCostUSD).toFixed(2)}</span>
                 </div>
+                {/* Route info for cross-chain */}
+                {isCrossChain && quote.route && (
+                  <>
+                    {quote.route.totalDuration > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/40">Estimated Time</span>
+                        <span className="text-white">
+                          ~{Math.ceil(quote.route.totalDuration / 60)} min
+                        </span>
+                      </div>
+                    )}
+                    {quote.route.steps.length > 1 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/40">Route Steps</span>
+                        <span className="text-white">
+                          {quote.route.steps.map(s => s.toolDetails.name).join(' -> ')}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
@@ -325,7 +463,13 @@ export default function SwapPage() {
               disabled={!quote || swapStatus === 'loading' || quoteLoading}
               className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
-              {swapStatus === 'loading' ? 'Swapping...' : quoteLoading ? 'Getting quote...' : 'Swap'}
+              {swapStatus === 'loading'
+                ? 'Swapping...'
+                : quoteLoading
+                  ? 'Getting quote...'
+                  : isCrossChain
+                    ? 'Cross-chain Swap'
+                    : 'Swap'}
             </button>
           </div>
         </div>
