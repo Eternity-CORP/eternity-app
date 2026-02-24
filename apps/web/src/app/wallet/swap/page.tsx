@@ -28,6 +28,7 @@ import {
   SLIPPAGE_LABELS,
   DEFAULT_SLIPPAGE,
   PRICE_IMPACT_WARNING_THRESHOLD,
+  formatErrorMessage,
 } from '@e-y/shared'
 import { getProvider } from '@/lib/multi-network'
 
@@ -130,7 +131,7 @@ export default function SwapPage() {
       setQuote(q)
     } catch (err) {
       console.error('Quote error:', err)
-      setError(err instanceof Error ? err.message : 'Failed to get quote')
+      setError(formatErrorMessage(err, 'Failed to get swap quote'))
       setQuote(null)
     } finally {
       setQuoteLoading(false)
@@ -204,7 +205,7 @@ export default function SwapPage() {
       setApprovalStatus('approved')
     } catch (err) {
       console.error('Approval failed:', err)
-      setError(err instanceof Error ? err.message : 'Token approval failed')
+      setError(formatErrorMessage(err, 'Token approval failed'))
       setApprovalStatus('idle')
     }
   }
@@ -262,7 +263,7 @@ export default function SwapPage() {
       setSwapStatus('succeeded')
     } catch (err) {
       console.error('Swap error:', err)
-      setError(err instanceof Error ? err.message : 'Swap failed')
+      setError(formatErrorMessage(err, 'Swap failed. Please try again.'))
       setSwapStatus('failed')
     }
   }
@@ -378,7 +379,7 @@ export default function SwapPage() {
             </div>
 
             {/* From section: Network + Token */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-2">
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4">
               <NetworkChips selectedId={fromNetworkId} onChange={handleFromNetworkChange} label="From network" />
 
               <div className="flex items-center justify-between mb-2">
@@ -432,7 +433,7 @@ export default function SwapPage() {
             </div>
 
             {/* Swap direction button */}
-            <div className="flex justify-center -my-1 relative z-10">
+            <div className="flex justify-center my-3 relative z-10">
               <button
                 onClick={handleSwapTokens}
                 className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-white hover:border-white/15 transition-colors"
@@ -445,7 +446,7 @@ export default function SwapPage() {
             </div>
 
             {/* To section: Network + Token */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-5">
               <NetworkChips selectedId={toNetworkId} onChange={handleToNetworkChange} label="To network" />
 
               <div className="flex items-center justify-between mb-2">
@@ -501,7 +502,7 @@ export default function SwapPage() {
 
             {/* Quote Details */}
             {quote && (
-              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4 space-y-2">
+              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-5 space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-white/40">Rate</span>
                   <span className="text-white">
@@ -555,7 +556,12 @@ export default function SwapPage() {
 
             {/* Error */}
             {error && (
-              <div className="px-4 py-3 bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl mb-4">
+              <div className="flex items-start gap-2.5 px-4 py-3 bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl mb-5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
                 <p className="text-[#f87171] text-sm">{error}</p>
               </div>
             )}

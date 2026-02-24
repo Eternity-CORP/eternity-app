@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
-import { lookupUsername, getAddressPreferences, checkGasAvailability, suggestGasBridge, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult, type GasGuardResult } from '@e-y/shared'
+import { lookupUsername, getAddressPreferences, checkGasAvailability, suggestGasBridge, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult, type GasGuardResult, formatErrorMessage } from '@e-y/shared'
 import type { AggregatedTokenBalance } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { useAccount } from '@/contexts/account-context'
@@ -223,8 +223,7 @@ function SendContent() {
       setStatus('succeeded')
       router.push(`/wallet/send/success?hash=${txHash}&network=${networkId}`)
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
-      setError(errorMessage.includes('insufficient') ? 'Insufficient balance' : errorMessage)
+      setError(formatErrorMessage(err, 'Transaction failed'))
       setStatus('failed')
     }
   }
@@ -260,7 +259,7 @@ function SendContent() {
         setBridgeStatus(result)
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message || 'Bridge failed'
+      const msg = formatErrorMessage(err, 'Bridge failed')
       setError(msg)
       setBridgeStatus({ status: 'FAILED', message: msg })
     }
