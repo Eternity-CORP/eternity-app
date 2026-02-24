@@ -26,7 +26,7 @@ function SendContent() {
   const prefillToken = searchParams.get('token')
 
   useAuthGuard()
-  const { wallet, address } = useAccount()
+  const { wallet, address, currentAccount } = useAccount()
   const { aggregatedBalances } = useBalance()
 
   const [recipient, setRecipient] = useState(prefillTo || '')
@@ -316,6 +316,19 @@ function SendContent() {
           ) : (
             <div className="glass-card gradient-border rounded-2xl p-6">
               <h1 className="text-xl font-semibold text-white text-center mb-8">Send</h1>
+
+              {/* Testnet Info */}
+              {currentAccount?.type === 'test' && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-4" style={{
+                  backgroundColor: 'rgba(251, 191, 36, 0.08)',
+                  border: '1px solid rgba(251, 191, 36, 0.2)'
+                }}>
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: '#fbbf24' }} />
+                  <p className="text-xs" style={{ color: 'rgba(251, 191, 36, 0.8)' }}>
+                    Sending on Sepolia testnet
+                  </p>
+                </div>
+              )}
 
               {/* Recipient */}
               <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">

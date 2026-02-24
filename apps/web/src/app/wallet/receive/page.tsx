@@ -29,6 +29,21 @@ export default function ReceivePage() {
           <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-8">Receive</h1>
 
+            {/* Testnet Warning */}
+            {currentAccount?.type === 'test' && (
+              <div className="mb-6 px-4 py-3 rounded-xl" style={{
+                backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                border: '1px solid rgba(251, 191, 36, 0.3)'
+              }}>
+                <p className="text-sm font-medium" style={{ color: '#fbbf24' }}>
+                  Testnet Address (Sepolia)
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'rgba(251, 191, 36, 0.7)' }}>
+                  This is a testnet (Sepolia) address. Only send Sepolia test tokens here. Real mainnet tokens sent to this address will not appear in this account.
+                </p>
+              </div>
+            )}
+
             {/* QR Code */}
             <div className="flex justify-center mb-6">
               <div className="p-4 bg-white rounded-xl">

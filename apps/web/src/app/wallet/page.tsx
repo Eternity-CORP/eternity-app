@@ -70,6 +70,21 @@ export default function WalletDashboard() {
 
       <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
+          {/* Testnet Warning Banner */}
+          {currentAccount?.type === 'test' && (
+            <div className="mb-4 px-4 py-3 rounded-xl" style={{
+              backgroundColor: 'rgba(251, 191, 36, 0.1)',
+              border: '1px solid rgba(251, 191, 36, 0.3)'
+            }}>
+              <p className="text-sm font-medium" style={{ color: '#fbbf24' }}>
+                Testnet Account (Sepolia)
+              </p>
+              <p className="text-xs mt-1" style={{ color: 'rgba(251, 191, 36, 0.7)' }}>
+                This is a test network. Do not send real tokens here — they will not be visible. Switch to a Real account for mainnet.
+              </p>
+            </div>
+          )}
+
           {/* Main Card */}
           <div className="glass-card gradient-border rounded-2xl p-6">
             {/* Total Balance */}

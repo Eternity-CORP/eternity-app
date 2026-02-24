@@ -9,6 +9,7 @@ import type { AiSuggestion } from '@/src/services/ai-service';
 import { theme } from '@/src/constants/theme';
 
 interface BannerSectionProps {
+  isTestAccount: boolean;
   pendingSplitsCount: number;
   firstSplitId: string | undefined;
   scheduledPendingCount: number;
@@ -24,6 +25,7 @@ interface BannerSectionProps {
 }
 
 export function BannerSection({
+  isTestAccount,
   pendingSplitsCount,
   firstSplitId,
   scheduledPendingCount,
@@ -39,6 +41,19 @@ export function BannerSection({
 }: BannerSectionProps) {
   return (
     <>
+      {/* Testnet Warning Banner */}
+      {isTestAccount && (
+        <View style={styles.testnetBanner}>
+          <FontAwesome name="exclamation-triangle" size={14} color="#fbbf24" />
+          <View style={styles.testnetBannerText}>
+            <Text style={styles.testnetTitle}>Testnet Account (Sepolia)</Text>
+            <Text style={styles.testnetSubtitle}>
+              Do not send real tokens here — they will not be visible. Switch to a Real account for mainnet.
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Pending Split Banner */}
       {pendingSplitsCount > 0 && firstSplitId && (
         <TouchableOpacity
@@ -142,5 +157,30 @@ const styles = StyleSheet.create({
   },
   aiSuggestionsSection: {
     marginTop: theme.spacing.md,
+  },
+  testnetBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  testnetBannerText: {
+    flex: 1,
+  },
+  testnetTitle: {
+    ...theme.typography.caption,
+    color: '#fbbf24',
+    fontWeight: '600',
+  },
+  testnetSubtitle: {
+    ...theme.typography.caption,
+    color: 'rgba(251, 191, 36, 0.7)',
+    fontSize: 11,
+    marginTop: 2,
   },
 });

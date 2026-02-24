@@ -322,6 +322,7 @@ export default function HomeScreen() {
         }
       >
         <BannerSection
+          isTestAccount={isTestAccount}
           pendingSplitsCount={split.pendingSplits.length}
           firstSplitId={split.pendingSplits[0]?.id}
           scheduledPendingCount={scheduledPendingCount}

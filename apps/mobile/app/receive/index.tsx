@@ -115,6 +115,19 @@ export default function ReceiveScreen() {
 
       </View>
 
+      {/* Testnet Warning */}
+      {accountType === 'test' && (
+        <View style={styles.testnetBanner}>
+          <FontAwesome name="exclamation-triangle" size={14} color="#fbbf24" />
+          <View style={styles.testnetBannerText}>
+            <Text style={styles.testnetTitle}>Testnet Address (Sepolia)</Text>
+            <Text style={styles.testnetSubtitle}>
+              Only send Sepolia test tokens here. Real mainnet tokens sent to this address will not appear in this account.
+            </Text>
+          </View>
+        </View>
+      )}
+
       <View style={styles.container}>
         {/* Address Tab */}
         {activeTab === 'address' && (
@@ -392,5 +405,31 @@ const styles = StyleSheet.create({
   },
   networkChipText: {
     fontSize: 11,
+  },
+  testnetBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing.md,
+    gap: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+  },
+  testnetBannerText: {
+    flex: 1,
+  },
+  testnetTitle: {
+    ...theme.typography.caption,
+    color: '#fbbf24',
+    fontWeight: '600',
+  },
+  testnetSubtitle: {
+    ...theme.typography.caption,
+    color: 'rgba(251, 191, 36, 0.7)',
+    fontSize: 11,
+    marginTop: 2,
   },
 });
