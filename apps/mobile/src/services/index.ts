@@ -270,6 +270,7 @@ export {
   type TransferRoute,
   type RoutingResult,
 } from './routing-service';
+export type { RoutingResult as SharedRoutingResult } from '@e-y/shared';
 
 // Preferences Service (Network preferences by address)
 export {

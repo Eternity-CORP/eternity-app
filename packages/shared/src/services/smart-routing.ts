@@ -29,6 +29,57 @@ export interface SmartRoutingParams {
 }
 
 /**
+ * Minimal bridge quote shape shared between platforms.
+ * Platform-specific bridge quote types (BridgeQuoteResult, BridgeQuote)
+ * are assignable to this since they have at least totalFeeUsd and estimatedTime.
+ */
+export interface BridgeQuoteLike {
+  totalFeeUsd: number;
+  estimatedTime: number;
+}
+
+/**
+ * Unified RoutingResult type used by both web and mobile.
+ * Produced by the platform calculateTransferRoute after enriching
+ * the pure SmartRoute with bridge quotes and UI flags.
+ */
+export interface RoutingResult {
+  type: SmartRouteType;
+  fromNetwork: NetworkId;
+  toNetwork: NetworkId;
+  amount: string;
+  symbol: string;
+  message: string;
+  estimatedTime: string;
+
+  // Bridge info (only for bridge/consolidation routes)
+  bridgeQuote?: BridgeQuoteLike;
+  bridgeFeeUsd?: number;
+  costLevel: string; // 'none' | 'low' | 'warning' | 'expensive'
+
+  // Derived boolean helpers
+  canSend: boolean;
+  needsBridge: boolean;
+
+  // Consolidation sources
+  sources?: {
+    network: NetworkId;
+    amount: string;
+    bridgeQuote?: BridgeQuoteLike;
+  }[];
+
+  // Alternative route suggestion (e.g. send on source network to skip bridge)
+  showAlternative?: boolean;
+  alternative?: {
+    description: string;
+    network: NetworkId;
+  };
+
+  // Gas savings hint (direct routes)
+  gasSavings?: string;
+}
+
+/**
  * Determine optimal send route. Pure function — no async, no bridge quotes.
  * Returns the route type and relevant networks.
  */

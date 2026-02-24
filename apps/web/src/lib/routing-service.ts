@@ -8,7 +8,6 @@
 import {
   type NetworkId,
   type AggregatedTokenBalance,
-  type SmartRouteType,
   NETWORK_TO_CHAIN_ID,
   SUPPORTED_NETWORKS,
   fetchBridgeQuote,
@@ -18,21 +17,10 @@ import {
   determineSendRoute,
   parseTokenAmount,
   type BridgeQuoteResult,
-  type BridgeCostLevel,
+  type RoutingResult,
 } from '@e-y/shared'
 
-export interface RoutingResult {
-  type: SmartRouteType
-  fromNetwork: NetworkId
-  toNetwork: NetworkId
-  amount: string
-  symbol: string
-  bridgeQuote: BridgeQuoteResult | null
-  costLevel: BridgeCostLevel
-  estimatedTime: string
-  gasSavings?: string
-  message: string
-}
+export type { RoutingResult }
 
 /**
  * Calculate optimal transfer route.
@@ -73,10 +61,11 @@ export async function calculateTransferRoute(
       toNetwork: route.toNetwork,
       amount,
       symbol: upperSymbol,
-      bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '',
       message: route.message,
+      canSend: false,
+      needsBridge: false,
     }
   }
 
@@ -89,10 +78,11 @@ export async function calculateTransferRoute(
       toNetwork: route.toNetwork,
       amount,
       symbol: upperSymbol,
-      bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '~15 sec',
       message: `Direct transfer on ${networkName}`,
+      canSend: true,
+      needsBridge: false,
     }
   }
 
@@ -104,10 +94,11 @@ export async function calculateTransferRoute(
       toNetwork: route.toNetwork,
       amount,
       symbol: upperSymbol,
-      bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '',
       message: route.message,
+      canSend: true,
+      needsBridge: true,
     }
   }
 
@@ -126,10 +117,11 @@ export async function calculateTransferRoute(
       toNetwork: sourceNetwork,
       amount,
       symbol: upperSymbol,
-      bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '~15 sec',
       message: `Direct transfer on ${SUPPORTED_NETWORKS[sourceNetwork].name} (token not bridgeable)`,
+      canSend: true,
+      needsBridge: false,
     }
   }
 
@@ -155,10 +147,11 @@ export async function calculateTransferRoute(
       toNetwork: sourceNetwork,
       amount,
       symbol: upperSymbol,
-      bridgeQuote: null,
       costLevel: 'none',
       estimatedTime: '~15 sec',
       message: `Direct transfer on ${SUPPORTED_NETWORKS[sourceNetwork].name} (bridge unavailable)`,
+      canSend: true,
+      needsBridge: false,
     }
   }
 
@@ -173,9 +166,12 @@ export async function calculateTransferRoute(
     amount,
     symbol: upperSymbol,
     bridgeQuote: quote,
+    bridgeFeeUsd: quote.totalFeeUsd,
     costLevel,
     estimatedTime,
     message: `Bridge from ${SUPPORTED_NETWORKS[sourceNetwork].name} to ${SUPPORTED_NETWORKS[targetNetwork].name}`,
+    canSend: true,
+    needsBridge: true,
   }
 }
 

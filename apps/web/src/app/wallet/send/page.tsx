@@ -15,7 +15,7 @@ import BridgeProgress from '@/components/BridgeProgress'
 import { sendOnNetwork, estimateGasOnNetwork } from '@/lib/send-service'
 import { ALCHEMY_KEY } from '@/lib/config'
 import { calculateTransferRoute, type RoutingResult } from '@/lib/routing-service'
-import { executeBridgeWithRetry } from '@/lib/bridge-service'
+import { executeBridgeWithRetry, type BridgeQuoteResult } from '@/lib/bridge-service'
 import BackButton from '@/components/BackButton'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 
@@ -243,7 +243,7 @@ function SendContent() {
       const provider = new ethers.JsonRpcProvider(rpcUrl)
 
       const { txHash, result } = await executeBridgeWithRetry(
-        route.bridgeQuote,
+        route.bridgeQuote as BridgeQuoteResult,
         wallet,
         provider,
         (step) => setBridgeStep(step),
@@ -379,7 +379,7 @@ function SendContent() {
                   </div>
                   <p className="text-xs" style={{ color: 'var(--muted)' }}>
                     Your tokens will be bridged first, then sent to the recipient.
-                    {route.bridgeQuote && ` Fee: ~$${route.bridgeQuote.totalFeeUsd?.toFixed(2)}. Time: ${route.estimatedTime || '~2 min'}.`}
+                    {route.bridgeFeeUsd != null && ` Fee: ~$${route.bridgeFeeUsd.toFixed(2)}. Time: ${route.estimatedTime || '~2 min'}.`}
                   </p>
                 </div>
               )}

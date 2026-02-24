@@ -11,6 +11,7 @@
 
 import {
   type AggregatedTokenBalance,
+  type RoutingResult,
   getTotalBalance,
   calculateUsdValue,
   getTokenDecimals,
@@ -27,43 +28,19 @@ import {
   getBridgeQuote,
   checkBridgeCostLevel,
   BridgeQuote,
-  BridgeCostLevel,
 } from './bridge-service';
 import { parseUnits } from 'ethers';
 
 const logger = createLogger('RoutingService');
 
-// ============================================
-// Types (reference mobile-specific BridgeQuote)
-// ============================================
+/**
+ * TransferRoute is a backward-compatible alias for RoutingResult.
+ * Mobile send-slice and other callers reference this type for the
+ * route object passed to executeSmartSendThunk.
+ */
+export type TransferRoute = RoutingResult;
 
-export interface TransferRoute {
-  type: 'direct' | 'bridge' | 'consolidation';
-  fromNetwork: NetworkId;
-  toNetwork: NetworkId;
-  amount: string;
-  token: string;
-  bridgeQuote?: BridgeQuote;
-  bridgeCostLevel?: BridgeCostLevel;
-  sources?: {
-    network: NetworkId;
-    amount: string;
-    bridgeQuote?: BridgeQuote;
-  }[];
-  alternative?: {
-    description: string;
-    network: NetworkId;
-  };
-}
-
-export interface RoutingResult {
-  canSend: boolean;
-  route?: TransferRoute;
-  error?: string;
-  showBridgeCost: boolean;
-  showConsolidationOption: boolean;
-  showAlternative: boolean;
-}
+export type { RoutingResult };
 
 // ============================================
 // Ethers helper (stays in mobile)
@@ -99,12 +76,21 @@ export async function calculateTransferRoute(
 
   const requestedAmount = parseFloat(amount);
   if (isNaN(requestedAmount) || requestedAmount <= 0) {
-    return { canSend: false, error: 'Invalid amount', showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
+    return {
+      type: 'insufficient', fromNetwork: 'ethereum', toNetwork: 'ethereum',
+      amount, symbol: token, message: 'Invalid amount',
+      costLevel: 'none', estimatedTime: '', canSend: false, needsBridge: false,
+    };
   }
 
   const totalBalance = parseFloat(getTotalBalance(aggregatedBalances, token));
   if (totalBalance < requestedAmount) {
-    return { canSend: false, error: `Insufficient ${token} balance. You have ${totalBalance.toFixed(6)} ${token}`, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
+    return {
+      type: 'insufficient', fromNetwork: 'ethereum', toNetwork: 'ethereum',
+      amount, symbol: token,
+      message: `Insufficient ${token} balance. You have ${totalBalance.toFixed(6)} ${token}`,
+      costLevel: 'none', estimatedTime: '', canSend: false, needsBridge: false,
+    };
   }
 
   // Use shared decision engine
@@ -120,22 +106,23 @@ export async function calculateTransferRoute(
 
   // Handle each route type
   if (route.type === 'insufficient') {
-    return { canSend: false, error: route.message, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
+    return {
+      type: 'insufficient', fromNetwork: route.fromNetwork, toNetwork: route.toNetwork,
+      amount, symbol: route.symbol, message: route.message,
+      costLevel: 'none', estimatedTime: '', canSend: false, needsBridge: false,
+    };
   }
 
   if (route.type === 'direct') {
     const bestNetwork = route.fromNetwork;
     logger.info('Direct transfer on network', { bestNetwork });
 
-    // Check if there are multiple sufficient networks (for consolidation option)
-    const showConsolidationOption = !recipientPreferredNetwork && route.fromNetwork === route.toNetwork;
-
     return {
-      canSend: true,
-      route: { type: 'direct', fromNetwork: bestNetwork, toNetwork: bestNetwork, amount, token },
-      showBridgeCost: false,
-      showConsolidationOption,
-      showAlternative: false,
+      type: 'direct', fromNetwork: bestNetwork, toNetwork: bestNetwork,
+      amount, symbol: route.symbol,
+      message: `Direct transfer on ${SUPPORTED_NETWORKS[bestNetwork]?.name || bestNetwork}`,
+      costLevel: 'none', estimatedTime: '~15 sec',
+      canSend: true, needsBridge: false,
     };
   }
 
@@ -149,11 +136,11 @@ export async function calculateTransferRoute(
     if (!tokenAddress || !destTokenAddress) {
       logger.info('Token not bridgeable, falling back to direct transfer', { sourceNetwork });
       return {
-        canSend: true,
-        route: { type: 'direct', fromNetwork: sourceNetwork, toNetwork: sourceNetwork, amount, token },
-        showBridgeCost: false,
-        showConsolidationOption: false,
-        showAlternative: false,
+        type: 'direct', fromNetwork: sourceNetwork, toNetwork: sourceNetwork,
+        amount, symbol: route.symbol,
+        message: `Direct transfer on ${SUPPORTED_NETWORKS[sourceNetwork]?.name || sourceNetwork} (token not bridgeable)`,
+        costLevel: 'none', estimatedTime: '~15 sec',
+        canSend: true, needsBridge: false,
       };
     }
 
@@ -162,19 +149,23 @@ export async function calculateTransferRoute(
     const amountUsd = calculateUsdValue(aggregatedBalances, token, requestedAmount);
     const bridgeCostLevel = bridgeQuote ? checkBridgeCostLevel(amountUsd, bridgeQuote.totalFeeUsd) : 'none';
 
-    const showAlternative = bridgeCostLevel === 'expensive' || bridgeCostLevel === 'warning';
-    const alternative = showAlternative
-      ? { description: `Send on ${SUPPORTED_NETWORKS[sourceNetwork]?.name || sourceNetwork} instead (no bridge fee)`, network: sourceNetwork }
+    const showAlt = bridgeCostLevel === 'expensive' || bridgeCostLevel === 'warning';
+    const alternative = showAlt
+      ? { description: `Send on ${SUPPORTED_NETWORKS[sourceNetwork]?.name || sourceNetwork} instead (no bridge fee)`, network: sourceNetwork as NetworkId }
       : undefined;
 
-    logger.info('Bridge transfer needed', { sourceNetwork, preferredNetwork, bridgeCostLevel, showAlternative });
+    logger.info('Bridge transfer needed', { sourceNetwork, preferredNetwork, bridgeCostLevel, showAlternative: showAlt });
 
     return {
-      canSend: true,
-      route: { type: 'bridge', fromNetwork: sourceNetwork, toNetwork: preferredNetwork, amount, token, bridgeQuote: bridgeQuote ?? undefined, bridgeCostLevel, alternative },
-      showBridgeCost: true,
-      showConsolidationOption: false,
-      showAlternative,
+      type: 'bridge', fromNetwork: sourceNetwork, toNetwork: preferredNetwork,
+      amount, symbol: route.symbol,
+      message: `Bridge from ${SUPPORTED_NETWORKS[sourceNetwork]?.name || sourceNetwork} to ${SUPPORTED_NETWORKS[preferredNetwork]?.name || preferredNetwork}`,
+      costLevel: bridgeCostLevel,
+      estimatedTime: bridgeQuote ? `~${Math.ceil(bridgeQuote.estimatedTime / 60)} min` : '',
+      bridgeQuote: bridgeQuote ?? undefined,
+      bridgeFeeUsd: bridgeQuote?.totalFeeUsd,
+      canSend: true, needsBridge: true,
+      showAlternative: showAlt, alternative,
     };
   }
 
@@ -209,16 +200,24 @@ export async function calculateTransferRoute(
     logger.info('Consolidation needed', { targetNetwork, sources });
 
     return {
-      canSend: true,
-      route: { type: 'consolidation', fromNetwork: sources[0]?.network || targetNetwork, toNetwork: targetNetwork, amount, token, sources },
-      showBridgeCost: true,
-      showConsolidationOption: true,
-      showAlternative: false,
+      type: 'consolidation',
+      fromNetwork: sources[0]?.network || targetNetwork,
+      toNetwork: targetNetwork,
+      amount, symbol: route.symbol,
+      message: 'Consolidation needed from multiple networks',
+      costLevel: 'none', estimatedTime: '',
+      canSend: true, needsBridge: true,
+      sources,
     };
   }
 
   // Fallback (should not reach here)
-  return { canSend: false, error: `Insufficient ${token} balance to send ${amount}`, showBridgeCost: false, showConsolidationOption: false, showAlternative: false };
+  return {
+    type: 'insufficient', fromNetwork: 'ethereum', toNetwork: 'ethereum',
+    amount, symbol: token,
+    message: `Insufficient ${token} balance to send ${amount}`,
+    costLevel: 'none', estimatedTime: '', canSend: false, needsBridge: false,
+  };
 }
 
 // ============================================

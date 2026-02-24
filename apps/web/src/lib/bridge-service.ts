@@ -17,7 +17,7 @@ import {
   sleep,
 } from '@e-y/shared'
 
-export type { BridgeErrorCode, BridgeError }
+export type { BridgeQuoteResult, BridgeErrorCode, BridgeError }
 
 const MAX_UINT256 = '115792089237316195423570985008687907853269984665640564039457584007913129639935'
 const STATUS_POLL_INTERVAL = 5000

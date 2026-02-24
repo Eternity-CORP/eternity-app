@@ -26,6 +26,7 @@ import {
   getRouteTotalFees,
   type RoutingResult,
 } from '@/src/services/routing-service';
+import type { BridgeQuote, BridgeCostLevel } from '@/src/services/bridge-service';
 import type { NetworkId } from '@/src/constants/networks';
 
 export default function ConfirmScreen() {
@@ -91,7 +92,7 @@ export default function ConfirmScreen() {
       return;
     }
 
-    const networkId = routingResult?.route?.fromNetwork || 'ethereum';
+    const networkId = routingResult?.fromNetwork || 'ethereum';
     const networkConfig = SHARED_NETWORKS[networkId as keyof typeof SHARED_NETWORKS];
     const nativeSymbol = networkConfig?.nativeCurrency?.symbol || 'ETH';
 
@@ -171,8 +172,7 @@ export default function ConfirmScreen() {
     }
 
     // Check if bridge/consolidation is needed
-    const route = routingResult?.route;
-    const needsBridge = route && (route.type === 'bridge' || route.type === 'consolidation');
+    const needsBridge = routingResult && routingResult.needsBridge;
 
     if (needsBridge) {
       // Navigate to bridging screen first
@@ -181,7 +181,7 @@ export default function ConfirmScreen() {
       // Execute smart send with bridge
       await dispatch(executeSmartSendThunk({
         wallet: hdWallet,
-        route,
+        route: routingResult,
         recipient: send.recipient,
         amount: send.amount,
         token: tokenAddress,
@@ -218,7 +218,7 @@ export default function ConfirmScreen() {
 
   // Handler for sending without bridge (alternative network)
   const handleSendAlternative = useCallback(() => {
-    const alternativeNetwork = routingResult?.route?.alternative?.network;
+    const alternativeNetwork = routingResult?.alternative?.network;
     if (!alternativeNetwork) return;
 
     Alert.alert(
@@ -245,7 +245,7 @@ export default function ConfirmScreen() {
   const gasCostUsd = send.gasEstimate ? send.gasEstimate.totalGasCostUsd : 0;
 
   // Include bridge/consolidation fees in total
-  const bridgeFee = routingResult?.route ? getRouteTotalFees(routingResult.route) : 0;
+  const bridgeFee = routingResult ? getRouteTotalFees(routingResult) : 0;
   const totalCostUsd = totalAmountUsd + gasCostUsd + bridgeFee;
 
   const gasGuardFailed = send.gasGuardResult != null && !send.gasGuardResult.sufficient;
@@ -406,23 +406,23 @@ export default function ConfirmScreen() {
         </View>
 
         {/* Bridge Cost Banner - shown when bridging is needed */}
-        {routingResult?.route?.type === 'bridge' && routingResult.route.bridgeQuote && (
+        {routingResult?.type === 'bridge' && routingResult.bridgeQuote && (
           <BridgeCostBanner
-            recipientNetwork={routingResult.route.toNetwork}
-            senderNetwork={routingResult.route.fromNetwork}
-            bridgeQuote={routingResult.route.bridgeQuote}
-            costLevel={routingResult.route.bridgeCostLevel || 'none'}
-            alternativeNetwork={routingResult.route.alternative?.network}
+            recipientNetwork={routingResult.toNetwork}
+            senderNetwork={routingResult.fromNetwork}
+            bridgeQuote={routingResult.bridgeQuote as BridgeQuote}
+            costLevel={(routingResult.costLevel || 'none') as BridgeCostLevel}
+            alternativeNetwork={routingResult.alternative?.network}
             onSendWithoutBridge={routingResult.showAlternative ? handleSendAlternative : undefined}
           />
         )}
 
         {/* Consolidation Banner - shown when collecting from multiple networks */}
-        {routingResult?.route?.type === 'consolidation' && routingResult.route.sources && (
+        {routingResult?.type === 'consolidation' && routingResult.sources && (
           <ConsolidationBanner
-            sources={routingResult.route.sources}
+            sources={routingResult.sources}
             token={send.selectedToken}
-            estimatedFee={getRouteTotalFees(routingResult.route)}
+            estimatedFee={getRouteTotalFees(routingResult)}
             onCollectFromBoth={handleConfirm}
             onSendMax={handleSendMax}
           />

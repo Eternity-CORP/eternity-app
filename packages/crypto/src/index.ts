@@ -6,3 +6,4 @@ export * from './wallet/generate';
 export * from './wallet/derive';
 export * from './signing';
 export * from './validation';
+export * from './erc20-helpers';

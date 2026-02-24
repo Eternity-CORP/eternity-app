@@ -2,9 +2,11 @@
  * Swap Service
  * DEX aggregator integration using LI.FI API
  * Supports same-chain and cross-chain swaps
+ *
+ * ERC-20 helpers (checkAllowance, getApprovalData, executeSwap)
+ * are imported from @e-y/crypto — single source of truth.
  */
 
-import { ethers } from 'ethers';
 import { NetworkId, SUPPORTED_NETWORKS } from '@/src/constants/networks';
 import {
   type SwapToken,
@@ -15,8 +17,6 @@ import {
   type SwapTransactionRequest,
   NATIVE_TOKEN_ADDRESS,
   LIFI_CONTRACT_ADDRESSES,
-  ERC20_ALLOWANCE_ABI,
-  ERC20_APPROVE_ABI,
   fetchTokens as sharedFetchTokens,
   fetchPopularTokens as sharedFetchPopularTokens,
   fetchSwapQuote,
@@ -26,7 +26,11 @@ import {
   setCachedQuote,
   isCrossChainSwap as sharedIsCrossChainSwap,
   getChainName as sharedGetChainName,
+  calculateExchangeRate,
 } from '@e-y/shared';
+
+// Re-export ERC-20 helpers from @e-y/crypto
+export { checkAllowance, getApprovalData, executeSwap } from '@e-y/crypto';
 
 export type { SwapToken, SwapQuote, SwapRoute, SwapStep, SwapParams };
 
@@ -72,10 +76,11 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
 
   const raw = await fetchSwapQuote(params);
 
-  // Calculate exchange rate
-  const fromAmountDecimal = parseFloat(ethers.formatUnits(params.fromAmount, raw.fromToken.decimals));
-  const toAmountDecimal = parseFloat(ethers.formatUnits(raw.toAmount, raw.toToken.decimals));
-  const exchangeRate = fromAmountDecimal > 0 ? (toAmountDecimal / fromAmountDecimal).toString() : '0';
+  // Calculate exchange rate using shared pure function (no ethers dependency)
+  const exchangeRate = calculateExchangeRate(
+    params.fromAmount, raw.fromToken.decimals,
+    raw.toAmount, raw.toToken.decimals,
+  );
 
   // Build route steps from raw response
   const rawData = raw.raw as any;
@@ -118,63 +123,10 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
 }
 
 /**
- * Check if token approval is needed
- */
-export async function checkAllowance(
-  tokenAddress: string,
-  ownerAddress: string,
-  spenderAddress: string,
-  provider: ethers.Provider
-): Promise<bigint> {
-  if (tokenAddress === NATIVE_TOKEN_ADDRESS) {
-    return ethers.MaxUint256; // Native token doesn't need approval
-  }
-
-  const contract = new ethers.Contract(tokenAddress, ERC20_ALLOWANCE_ABI as unknown as string[], provider);
-  const allowance = await contract.allowance(ownerAddress, spenderAddress);
-
-  return allowance;
-}
-
-/**
- * Get approval transaction data
- */
-export async function getApprovalData(
-  tokenAddress: string,
-  spenderAddress: string,
-  amount: string
-): Promise<{ to: string; data: string }> {
-  const erc20Interface = new ethers.Interface(ERC20_APPROVE_ABI as unknown as string[]);
-  const data = erc20Interface.encodeFunctionData('approve', [spenderAddress, amount]);
-
-  return {
-    to: tokenAddress,
-    data,
-  };
-}
-
-/**
  * Get the LI.FI contract address for approvals
  */
 export async function getLiFiContractAddress(chainId: number): Promise<string> {
   return LIFI_CONTRACT_ADDRESSES[chainId] || LIFI_CONTRACT_ADDRESSES[1];
-}
-
-/**
- * Execute swap transaction
- */
-export async function executeSwap(
-  quote: SwapQuote,
-  signer: ethers.Signer
-): Promise<ethers.TransactionResponse> {
-  const tx = await signer.sendTransaction({
-    to: quote.transactionRequest.to,
-    data: quote.transactionRequest.data,
-    value: quote.transactionRequest.value,
-    gasLimit: quote.transactionRequest.gasLimit,
-  });
-
-  return tx;
 }
 
 // Re-export shared format utilities

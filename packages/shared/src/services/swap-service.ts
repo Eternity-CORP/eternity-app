@@ -194,6 +194,46 @@ export function getChainName(chainId: number): string {
 }
 
 /**
+ * Calculate exchange rate from raw token amounts (in smallest units).
+ * Pure JS — no ethers dependency.
+ *
+ * @param fromAmount - Amount sent in smallest units (e.g. wei)
+ * @param fromDecimals - Decimals of the from token
+ * @param toAmount - Amount received in smallest units
+ * @param toDecimals - Decimals of the to token
+ * @returns Human-readable exchange rate string (e.g. "1234.56")
+ */
+export function calculateExchangeRate(
+  fromAmount: string,
+  fromDecimals: number,
+  toAmount: string,
+  toDecimals: number,
+): string {
+  if (!fromAmount || fromAmount === '0') return '0';
+
+  // Convert smallest-unit strings to decimal numbers using pure math
+  const fromNum = parseSmallestUnits(fromAmount, fromDecimals);
+  const toNum = parseSmallestUnits(toAmount, toDecimals);
+
+  if (fromNum === 0) return '0';
+  return (toNum / fromNum).toString();
+}
+
+/**
+ * Convert a smallest-unit amount string to a decimal number.
+ * E.g. parseSmallestUnits("1500000", 6) => 1.5
+ */
+function parseSmallestUnits(amount: string, decimals: number): number {
+  if (!amount || amount === '0') return 0;
+
+  const padded = amount.padStart(decimals + 1, '0');
+  const whole = padded.slice(0, padded.length - decimals) || '0';
+  const fraction = padded.slice(padded.length - decimals);
+
+  return parseFloat(`${whole}.${fraction}`);
+}
+
+/**
  * Build a native token object for a given chain.
  * Uses SUPPORTED_NETWORKS config instead of a hardcoded map.
  */

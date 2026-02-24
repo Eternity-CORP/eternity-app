@@ -15,7 +15,6 @@ export default function BridgeBanner({ route, onProceed, onCancel, loading }: Br
 
   const fromNet = SUPPORTED_NETWORKS[route.fromNetwork]
   const toNet = SUPPORTED_NETWORKS[route.toNetwork]
-  const quote = route.bridgeQuote
 
   const isExpensive = route.costLevel === 'expensive'
   const isWarning = route.costLevel === 'warning'
@@ -44,12 +43,12 @@ export default function BridgeBanner({ route, onProceed, onCancel, loading }: Br
       </div>
 
       {/* Fee & Time */}
-      {quote && (
+      {route.bridgeFeeUsd != null && (
         <div className="flex items-center justify-between text-xs mb-3">
           <div>
             <span className="text-white/40">Fee: </span>
             <span className={`font-medium ${isExpensive ? 'text-[#EF4444]' : isWarning ? 'text-[#F59E0B]' : 'text-white/70'}`}>
-              ${quote.totalFeeUsd.toFixed(2)}
+              ${route.bridgeFeeUsd.toFixed(2)}
             </span>
           </div>
           <div>

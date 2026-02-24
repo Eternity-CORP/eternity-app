@@ -17,6 +17,7 @@ import {
   checkBridgeAllowance,
   approveBridgeToken,
   NETWORK_TO_CHAIN_ID,
+  type BridgeQuote,
   type BridgeQuoteParams,
   type BridgeError,
 } from '@/src/services/bridge-service';
@@ -239,7 +240,8 @@ export const executeBridgeSendThunk = createAsyncThunk(
   async (params: BridgeSendParams, { dispatch }) => {
     const { wallet, route, recipient, token } = params;
 
-    if (!route.bridgeQuote) {
+    const quote = route.bridgeQuote as BridgeQuote | undefined;
+    if (!quote) {
       throw new Error('Bridge quote not available');
     }
 
@@ -255,7 +257,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
     let needsApproval = false;
     if (!isNativeToken) {
       const allowance = await checkBridgeAllowance(token, wallet.address, provider);
-      const amountBigInt = BigInt(route.bridgeQuote.fromAmount);
+      const amountBigInt = BigInt(quote.fromAmount);
       needsApproval = allowance < amountBigInt;
     }
 
@@ -263,7 +265,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
     const steps = createBridgeSteps(route, needsApproval);
     dispatch(startBridge({
       steps,
-      estimatedTime: route.bridgeQuote.estimatedTime,
+      estimatedTime: quote.estimatedTime,
     }));
 
     let stepIndex = 0;
@@ -274,7 +276,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
         dispatch(updateStep({ index: stepIndex, status: 'active' }));
         dispatch(setProgress(10));
 
-        const approveTx = await approveBridgeToken(token, BigInt(route.bridgeQuote!.fromAmount), signer);
+        const approveTx = await approveBridgeToken(token, BigInt(quote.fromAmount), signer);
         dispatch(setApproveTxHash(approveTx.hash));
         await approveTx.wait();
 
@@ -291,7 +293,7 @@ export const executeBridgeSendThunk = createAsyncThunk(
         toNetwork: route.toNetwork,
         fromToken: token,
         toToken: token,
-        amount: route.bridgeQuote.fromAmount,
+        amount: quote.fromAmount,
         fromAddress: wallet.address,
         toAddress: recipient,
       };
@@ -364,7 +366,10 @@ export const executeConsolidationSendThunk = createAsyncThunk(
     // Can optimize to parallel later
     const steps = createBridgeSteps(route, false);
     const totalEstimatedTime = route.sources.reduce(
-      (sum, s) => sum + (s.bridgeQuote?.estimatedTime || 0),
+      (sum, s) => {
+        const q = s.bridgeQuote as BridgeQuote | undefined;
+        return sum + (q?.estimatedTime || 0);
+      },
       0
     );
 
@@ -379,7 +384,8 @@ export const executeConsolidationSendThunk = createAsyncThunk(
     try {
       // Execute each bridge
       for (const source of route.sources) {
-        if (!source.bridgeQuote) continue;
+        const sourceQuote = source.bridgeQuote as BridgeQuote | undefined;
+        if (!sourceQuote) continue;
 
         dispatch(updateStep({ index: stepIndex, status: 'active' }));
         const progressPerBridge = 60 / route.sources.length;
@@ -394,7 +400,7 @@ export const executeConsolidationSendThunk = createAsyncThunk(
           toNetwork: route.toNetwork,
           fromToken: token,
           toToken: token,
-          amount: source.bridgeQuote.fromAmount,
+          amount: sourceQuote.fromAmount,
           fromAddress: wallet.address,
           toAddress: recipient,
         };
