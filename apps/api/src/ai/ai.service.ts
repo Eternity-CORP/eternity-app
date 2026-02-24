@@ -145,6 +145,7 @@ export class AiService {
     toolName: string,
     args: Record<string, unknown>,
     userAddress: string,
+    context?: { accountType?: string },
   ): Promise<ToolResult> {
     const handler = this.toolHandlers.get(toolName);
 
@@ -159,6 +160,7 @@ export class AiService {
       return await handler.execute({
         userAddress,
         ...args,
+        ...(context?.accountType ? { accountType: context.accountType } : {}),
       });
     } catch (error) {
       this.logger.error(`Tool ${toolName} execution failed`, error);
@@ -175,6 +177,7 @@ export class AiService {
   async executeToolCalls(
     toolCalls: ToolCall[],
     userAddress: string,
+    context?: { accountType?: string },
   ): Promise<{ name: string; result: ToolResult }[]> {
     const results: { name: string; result: ToolResult }[] = [];
 
@@ -183,6 +186,7 @@ export class AiService {
         call.name,
         call.arguments,
         userAddress,
+        context,
       );
       results.push({ name: call.name, result });
     }

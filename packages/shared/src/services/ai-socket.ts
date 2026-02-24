@@ -28,7 +28,7 @@ export interface AiSocketCallbacks {
 }
 
 export interface AiSocketService {
-  subscribe(address: string, contacts?: AiContact[]): void;
+  subscribe(address: string, contacts?: AiContact[], accountType?: string): void;
   unsubscribe(): void;
   sendMessage(content: string): void;
   addResponseToHistory(content: string): void;
@@ -74,10 +74,10 @@ export function createAiSocketService(socket: SocketLike): AiSocketService {
   });
 
   return {
-    subscribe(address: string, contacts?: AiContact[]): void {
+    subscribe(address: string, contacts?: AiContact[], accountType?: string): void {
       userAddress = address.toLowerCase();
       if (socket.connected) {
-        socket.emit(AI_EVENTS.SUBSCRIBE, { address: userAddress, contacts });
+        socket.emit(AI_EVENTS.SUBSCRIBE, { address: userAddress, contacts, accountType });
       }
     },
 

@@ -79,17 +79,19 @@ class AiSocketServiceWrapper {
   private isConnecting = false;
   private userAddress: string | null = null;
   private userContacts: AiContact[] | undefined;
+  private userAccountType: string | undefined;
 
   /**
    * Connect to the AI WebSocket server
    */
-  connect(address: string, contacts?: AiContact[]): Promise<void> {
+  connect(address: string, contacts?: AiContact[], accountType?: string): Promise<void> {
     this.userContacts = contacts;
+    this.userAccountType = accountType;
 
     if (this.socket?.connected) {
       if (address && address !== this.userAddress) {
         this.userAddress = address;
-        this.sharedService?.subscribe(address, contacts);
+        this.sharedService?.subscribe(address, contacts, accountType);
       }
       return Promise.resolve();
     }
@@ -126,7 +128,7 @@ class AiSocketServiceWrapper {
         this.isConnecting = false;
 
         if (this.userAddress) {
-          this.sharedService?.subscribe(this.userAddress, this.userContacts);
+          this.sharedService?.subscribe(this.userAddress, this.userContacts, this.userAccountType);
         }
 
         this.callbacks.onConnect?.();
@@ -147,7 +149,7 @@ class AiSocketServiceWrapper {
       this.socket.on('reconnect', () => {
         log.info('Reconnected to AI WebSocket');
         if (this.userAddress) {
-          this.sharedService?.subscribe(this.userAddress, this.userContacts);
+          this.sharedService?.subscribe(this.userAddress, this.userContacts, this.userAccountType);
         }
       });
 

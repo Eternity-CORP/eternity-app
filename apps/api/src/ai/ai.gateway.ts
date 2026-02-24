@@ -41,6 +41,7 @@ export interface ChatPayload {
 export interface SubscribePayload {
   address: string;
   contacts?: AiContact[];
+  accountType?: 'test' | 'real' | 'business';
 }
 
 // Alias for consistency with existing code
@@ -66,6 +67,9 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Map of socket ID -> user's saved contacts (for recipient resolution)
   private socketToContacts = new Map<string, AiContact[]>();
 
+  // Map of socket ID -> user's account type (test/real/business)
+  private socketToAccountType = new Map<string, string>();
+
   @WebSocketServer()
   server: Server;
 
@@ -81,10 +85,17 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   /**
    * Build system prompt with user-specific context
    */
-  private getSystemPrompt(userAddress: string, contacts?: AiContact[]): string {
+  private getSystemPrompt(userAddress: string, contacts?: AiContact[], accountType?: string): string {
+    // Determine effective network from user's account type (fallback to env NETWORK)
+    const effectiveNetwork = accountType === 'real' || accountType === 'business'
+      ? 'mainnet'
+      : accountType === 'test'
+        ? 'sepolia'
+        : this.network;
+
     return buildSystemPrompt({
       userAddress,
-      network: this.network,
+      network: effectiveNetwork,
       contacts,
     });
   }
@@ -101,6 +112,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (address) {
       this.socketToAddress.delete(client.id);
       this.socketToContacts.delete(client.id);
+      this.socketToAccountType.delete(client.id);
 
       const sockets = this.addressToSockets.get(address);
       if (sockets) {
@@ -151,10 +163,15 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.socketToContacts.set(client.id, data.contacts);
     }
 
+    // Store account type for network selection (defaults to env NETWORK if not provided)
+    if (data.accountType) {
+      this.socketToAccountType.set(client.id, data.accountType);
+    }
+
     // Join room for targeted messages
     client.join(`ai:${address}`);
 
-    this.logger.log(`Client ${client.id} subscribed to AI for ${address} (${data.contacts?.length || 0} contacts)`);
+    this.logger.log(`Client ${client.id} subscribed to AI for ${address} (${data.contacts?.length || 0} contacts, accountType: ${data.accountType || 'default'})`);
 
     return { success: true, address };
   }
@@ -244,17 +261,23 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const contacts = this.socketToContacts.get(client.id);
-    const systemPrompt = this.getSystemPrompt(userAddress, contacts);
+    const accountType = this.socketToAccountType.get(client.id);
+    const systemPrompt = this.getSystemPrompt(userAddress, contacts, accountType);
 
     // Try local intent parser first (saves LLM tokens)
     const parsedIntent = this.intentParser.parse(sanitizedContent);
     if (parsedIntent) {
       // Handle receive_address intent directly — no tool needed, we have the address
       if (parsedIntent.tool === 'receive_address') {
+        const effectiveNetwork = accountType === 'real' || accountType === 'business'
+          ? 'mainnet'
+          : accountType === 'test'
+            ? 'sepolia'
+            : this.network;
         const followUpMessages: ChatMessage[] = [
           ...historyMessages,
           { role: 'user' as const, content: sanitizedContent },
-          { role: 'user' as const, content: `[SYSTEM: The user's wallet address is ${userAddress} on the ${this.network} network. Provide it to them clearly.]` },
+          { role: 'user' as const, content: `[SYSTEM: The user's wallet address is ${userAddress} on the ${effectiveNetwork} network. Provide it to them clearly.]` },
         ];
 
         const followUp = await this.aiService.chat({
@@ -271,7 +294,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       try {
         const toolResult = await this.aiService.executeTool(
           parsedIntent.tool,
-          { ...parsedIntent.args, userAddress },
+          { ...parsedIntent.args, userAddress, accountType },
           userAddress,
         );
 
@@ -377,6 +400,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
           const toolResults = await this.aiService.executeToolCalls(
             response.toolCalls,
             userAddress,
+            { accountType },
           );
 
           for (const result of toolResults) {

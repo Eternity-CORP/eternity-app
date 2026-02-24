@@ -240,6 +240,7 @@ export interface AiContact {
 export interface AiSubscribePayload {
   address: string;
   contacts?: AiContact[];
+  accountType?: 'test' | 'real' | 'business';
 }
 
 // ============================================

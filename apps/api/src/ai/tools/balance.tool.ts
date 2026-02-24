@@ -9,6 +9,7 @@ import { BalanceServiceAi } from '../services';
 
 interface BalanceParams extends ToolParams {
   token?: string;
+  accountType?: string;
 }
 
 @Injectable()
@@ -36,7 +37,7 @@ export class BalanceTool implements AIToolHandler {
   };
 
   async execute(params: BalanceParams): Promise<ToolResult> {
-    const { userAddress, token } = params;
+    const { userAddress, token, accountType } = params;
 
     if (!userAddress) {
       return {
@@ -45,10 +46,10 @@ export class BalanceTool implements AIToolHandler {
       };
     }
 
-    this.logger.debug(`Getting balance for ${userAddress}, token: ${token}`);
+    this.logger.debug(`Getting balance for ${userAddress}, token: ${token}, accountType: ${accountType || 'default'}`);
 
     try {
-      const result = await this.balanceService.getBalances(userAddress, token);
+      const result = await this.balanceService.getBalances(userAddress, token, accountType);
 
       if (token && result.balances.length === 0) {
         return {

@@ -62,8 +62,14 @@ export class BalanceServiceAi {
     return this.providers[rpcUrl];
   }
 
-  private getNetworksToQuery(): NetworkTarget[] {
-    if (this.isTestnet) {
+  private getNetworksToQuery(accountType?: string): NetworkTarget[] {
+    // Use accountType to determine networks: 'real'/'business' = mainnet, 'test' = sepolia
+    // Falls back to env NETWORK if accountType is not provided (backward compat)
+    const useTestnet = accountType
+      ? accountType === 'test'
+      : this.isTestnet;
+
+    if (useTestnet) {
       const alchemyUrl = `https://eth-sepolia.g.alchemy.com/v2/${this.alchemyApiKey}`;
       return [{
         id: 'sepolia',
@@ -157,11 +163,13 @@ export class BalanceServiceAi {
 
   /**
    * Get all balances for an address across all supported networks
+   * @param accountType - Optional account type override ('test' | 'real' | 'business').
+   *   If provided, overrides the env NETWORK setting for network selection.
    */
-  async getBalances(address: string, tokenFilter?: string): Promise<BalanceResult> {
-    this.logger.debug(`Fetching multi-network balances for ${address}`);
+  async getBalances(address: string, tokenFilter?: string, accountType?: string): Promise<BalanceResult> {
+    this.logger.debug(`Fetching multi-network balances for ${address} (accountType: ${accountType || 'default'})`);
 
-    const networks = this.getNetworksToQuery();
+    const networks = this.getNetworksToQuery(accountType);
 
     // Fetch prices for common tokens
     const prices = await fetchTokenPricesBySymbol([

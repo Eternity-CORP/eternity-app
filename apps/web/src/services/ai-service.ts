@@ -37,13 +37,15 @@ class WebAiSocketService {
   private pendingCallbacks: Record<string, any> = {}
   private userAddress = ''
   private userContacts: AiContact[] | undefined
+  private userAccountType: string | undefined
 
-  connect(address: string, contacts?: AiContact[]): void {
+  connect(address: string, contacts?: AiContact[], accountType?: string): void {
     if (this.socket?.connected && this.userAddress === address) return
 
     this.disconnect()
     this.userAddress = address
     this.userContacts = contacts
+    this.userAccountType = accountType
 
     this.socket = io(`${API_BASE_URL}/ai`, {
       transports: ['websocket'],
@@ -60,7 +62,7 @@ class WebAiSocketService {
     }
 
     this.socket.on('connect', () => {
-      this.service?.subscribe(this.userAddress, this.userContacts)
+      this.service?.subscribe(this.userAddress, this.userContacts, this.userAccountType)
       this.localCallbacks.onConnect?.()
     })
 

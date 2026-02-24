@@ -81,6 +81,10 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     const { accounts, currentAccountIndex } = state.wallet;
     return accounts[currentAccountIndex]?.address || null;
   });
+  const accountType = useAppSelector((state) => {
+    const { accounts, currentAccountIndex } = state.wallet;
+    return accounts[currentAccountIndex]?.type || 'test';
+  });
   const savedContacts = useAppSelector((state) => state.contacts.contacts);
   const aiState = useAppSelector((state) => state.ai);
 
@@ -119,7 +123,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
       const aiContacts = savedContacts.length > 0
         ? contactsToAiFormat(savedContacts)
         : undefined;
-      await aiSocket.connect(walletAddress, aiContacts);
+      await aiSocket.connect(walletAddress, aiContacts, accountType);
     } catch (err) {
       dispatch(
         setError({
@@ -128,7 +132,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
         }),
       );
     }
-  }, [walletAddress, savedContacts, dispatch]);
+  }, [walletAddress, savedContacts, accountType, dispatch]);
 
   // Disconnect from AI service
   const disconnect = useCallback(() => {
