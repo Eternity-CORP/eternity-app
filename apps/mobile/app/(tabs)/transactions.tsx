@@ -144,7 +144,7 @@ export default function TransactionsScreen() {
                     )}
                   </View>
                   <Text style={[styles.transactionDate, { color: dynamicTheme.colors.textTertiary }]}>
-                    {new Date(tx.timestamp).toLocaleDateString('ru-RU')} • {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(tx.timestamp).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' })} • {new Date(tx.timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
 

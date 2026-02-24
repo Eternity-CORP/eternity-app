@@ -16,11 +16,21 @@ import {
   getTokenAddressForNetwork,
   determineSendRoute,
   parseTokenAmount,
+  getRouteEstimatedTime,
   type BridgeQuoteResult,
   type RoutingResult,
 } from '@e-y/shared'
 
 export type { RoutingResult }
+
+/**
+ * Format seconds into a human-readable estimated time string.
+ */
+function formatEstimatedSeconds(seconds: number): string {
+  if (seconds <= 0) return '~15 sec'
+  if (seconds < 60) return `~${seconds} sec`
+  return `~${Math.ceil(seconds / 60)} min`
+}
 
 /**
  * Calculate optimal transfer route.
@@ -72,6 +82,7 @@ export async function calculateTransferRoute(
   // Direct — return immediately (no bridge quote needed)
   if (route.type === 'direct') {
     const networkName = SUPPORTED_NETWORKS[route.fromNetwork]?.name || route.fromNetwork
+    const directSeconds = getRouteEstimatedTime({ type: 'direct', fromNetwork: route.fromNetwork, toNetwork: route.toNetwork })
     return {
       type: 'direct',
       fromNetwork: route.fromNetwork,
@@ -79,7 +90,7 @@ export async function calculateTransferRoute(
       amount,
       symbol: upperSymbol,
       costLevel: 'none',
-      estimatedTime: '~15 sec',
+      estimatedTime: formatEstimatedSeconds(directSeconds),
       message: `Direct transfer on ${networkName}`,
       canSend: true,
       needsBridge: false,
@@ -111,6 +122,7 @@ export async function calculateTransferRoute(
 
   if (!fromTokenAddress || !toTokenAddress) {
     // Token not available on one of the networks — fall back to direct on source
+    const fallbackSeconds = getRouteEstimatedTime({ type: 'direct', fromNetwork: sourceNetwork, toNetwork: sourceNetwork })
     return {
       type: 'direct',
       fromNetwork: sourceNetwork,
@@ -118,7 +130,7 @@ export async function calculateTransferRoute(
       amount,
       symbol: upperSymbol,
       costLevel: 'none',
-      estimatedTime: '~15 sec',
+      estimatedTime: formatEstimatedSeconds(fallbackSeconds),
       message: `Direct transfer on ${SUPPORTED_NETWORKS[sourceNetwork].name} (token not bridgeable)`,
       canSend: true,
       needsBridge: false,
@@ -141,6 +153,7 @@ export async function calculateTransferRoute(
 
   if (!quote) {
     // Bridge unavailable — direct on source
+    const noBridgeSeconds = getRouteEstimatedTime({ type: 'direct', fromNetwork: sourceNetwork, toNetwork: sourceNetwork })
     return {
       type: 'direct',
       fromNetwork: sourceNetwork,
@@ -148,7 +161,7 @@ export async function calculateTransferRoute(
       amount,
       symbol: upperSymbol,
       costLevel: 'none',
-      estimatedTime: '~15 sec',
+      estimatedTime: formatEstimatedSeconds(noBridgeSeconds),
       message: `Direct transfer on ${SUPPORTED_NETWORKS[sourceNetwork].name} (bridge unavailable)`,
       canSend: true,
       needsBridge: false,

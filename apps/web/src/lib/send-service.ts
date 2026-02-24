@@ -13,16 +13,19 @@ const ERC20_ABI = ERC20_TRANSFER_ABI as unknown as string[]
 export type { GasEstimate }
 
 /**
- * Send native token (ETH/MATIC)
+ * Send native token (ETH/MATIC).
+ * Accepts either a connected wallet (Signer) or an unconnected HDNodeWallet + provider.
+ * When called from sendOnNetwork the wallet is already connected — the inner
+ * .connect() is skipped via the provider-is-null check.
  */
 export async function sendNativeToken(
   wallet: ethers.HDNodeWallet,
-  provider: ethers.JsonRpcProvider,
+  provider: ethers.JsonRpcProvider | null,
   to: string,
   amount: string,
 ): Promise<string> {
-  const connectedWallet = wallet.connect(provider)
-  const tx = await connectedWallet.sendTransaction({
+  const signer = provider && !wallet.provider ? wallet.connect(provider) : wallet
+  const tx = await signer.sendTransaction({
     to,
     value: parseEther(amount),
   })
@@ -30,18 +33,19 @@ export async function sendNativeToken(
 }
 
 /**
- * Send ERC-20 token
+ * Send ERC-20 token.
+ * Same connect-once semantics as sendNativeToken.
  */
 export async function sendErc20Token(
   wallet: ethers.HDNodeWallet,
-  provider: ethers.JsonRpcProvider,
+  provider: ethers.JsonRpcProvider | null,
   to: string,
   amount: string,
   tokenAddress: string,
   decimals: number,
 ): Promise<string> {
-  const connectedWallet = wallet.connect(provider)
-  const contract = new Contract(tokenAddress, ERC20_ABI, connectedWallet)
+  const signer = provider && !wallet.provider ? wallet.connect(provider) : wallet
+  const contract = new Contract(tokenAddress, ERC20_ABI, signer)
   const amountInUnits = parseUnits(amount, decimals)
   const tx = await contract.transfer(to, amountInUnits)
   return tx.hash
@@ -139,9 +143,9 @@ export async function sendOnNetwork(
   const connectedWallet = wallet.connect(provider)
 
   if (token) {
-    return sendErc20Token(connectedWallet, provider, to, amount, token.address, token.decimals)
+    return sendErc20Token(connectedWallet, null, to, amount, token.address, token.decimals)
   }
-  return sendNativeToken(connectedWallet, provider, to, amount)
+  return sendNativeToken(connectedWallet, null, to, amount)
 }
 
 /**

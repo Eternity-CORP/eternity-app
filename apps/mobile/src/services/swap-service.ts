@@ -14,7 +14,6 @@ import {
   type SwapRoute,
   type SwapStep,
   type SwapParams,
-  type SwapTransactionRequest,
   NATIVE_TOKEN_ADDRESS,
   LIFI_CONTRACT_ADDRESSES,
   fetchTokens as sharedFetchTokens,
@@ -33,9 +32,6 @@ import {
 export { checkAllowance, getApprovalData, executeSwap } from '@e-y/crypto';
 
 export type { SwapToken, SwapQuote, SwapRoute, SwapStep, SwapParams };
-
-/** @deprecated Use SwapTransactionRequest from @e-y/shared */
-export type TransactionRequest = SwapTransactionRequest;
 
 /**
  * Get list of available tokens for a chain
@@ -125,7 +121,7 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuote> {
 /**
  * Get the LI.FI contract address for approvals
  */
-export async function getLiFiContractAddress(chainId: number): Promise<string> {
+export function getLiFiContractAddress(chainId: number): string {
   return LIFI_CONTRACT_ADDRESSES[chainId] || LIFI_CONTRACT_ADDRESSES[1];
 }
 

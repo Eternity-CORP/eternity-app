@@ -4,7 +4,7 @@
  * Supports cross-chain swaps with network selection
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -141,7 +141,7 @@ export default function SwapScreen() {
 
       try {
         const provider = getProvider(swap.fromNetworkId);
-        const spender = await getLiFiContractAddress(
+        const spender = getLiFiContractAddress(
           SUPPORTED_NETWORKS[swap.fromNetworkId].chainId
         );
         const allowance = await checkAllowance(
@@ -184,7 +184,7 @@ export default function SwapScreen() {
       const provider = getProvider(swap.fromNetworkId);
       const walletInstance = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
 
-      const spender = await getLiFiContractAddress(
+      const spender = getLiFiContractAddress(
         SUPPORTED_NETWORKS[swap.fromNetworkId].chainId
       );
       const { to, data } = await getApprovalData(
@@ -338,24 +338,23 @@ export default function SwapScreen() {
         )}
 
         {/* Slippage selector */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Text style={{ fontSize: 12, color: dynamicTheme.colors.textSecondary }}>Slippage:</Text>
+        <View style={styles.slippageRow}>
+          <Text style={[styles.slippageLabel, { color: dynamicTheme.colors.textSecondary }]}>Slippage:</Text>
           {SLIPPAGE_OPTIONS.map((opt) => {
             const isSelected = swap.slippage === opt;
             return (
               <Pressable
                 key={opt}
                 onPress={() => dispatch(setSlippage(opt))}
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 4,
-                  borderRadius: 8,
-                  backgroundColor: isSelected ? 'rgba(255,255,255,0.12)' : 'transparent',
-                  borderWidth: 1,
-                  borderColor: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
-                }}
+                style={[
+                  styles.slippageChip,
+                  {
+                    backgroundColor: isSelected ? 'rgba(255,255,255,0.12)' : 'transparent',
+                    borderColor: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.08)',
+                  },
+                ]}
               >
-                <Text style={{ fontSize: 12, color: isSelected ? '#fff' : dynamicTheme.colors.textSecondary }}>
+                <Text style={[styles.slippageChipText, { color: isSelected ? '#fff' : dynamicTheme.colors.textSecondary }]}>
                   {SLIPPAGE_LABELS[opt]}
                 </Text>
               </Pressable>
@@ -445,7 +444,7 @@ export default function SwapScreen() {
                 style={[
                   styles.quoteValue,
                   { color: dynamicTheme.colors.textPrimary },
-                  parseFloat(swap.quote.priceImpact) > 3 && styles.quoteValueWarning,
+                  parseFloat(swap.quote.priceImpact) / 100 > PRICE_IMPACT_WARNING_THRESHOLD && styles.quoteValueWarning,
                 ]}
               >
                 {parseFloat(swap.quote.priceImpact).toFixed(2)}%
@@ -484,17 +483,8 @@ export default function SwapScreen() {
 
         {/* Price impact warning */}
         {swap.quote && parseFloat(swap.quote.priceImpact) / 100 > PRICE_IMPACT_WARNING_THRESHOLD && (
-          <View
-            style={{
-              backgroundColor: 'rgba(234, 179, 8, 0.1)',
-              borderWidth: 1,
-              borderColor: 'rgba(234, 179, 8, 0.3)',
-              borderRadius: 12,
-              padding: 12,
-              marginTop: 12,
-            }}
-          >
-            <Text style={{ fontSize: 12, color: '#eab308' }}>
+          <View style={styles.priceImpactWarning}>
+            <Text style={styles.priceImpactWarningText}>
               High price impact: {parseFloat(swap.quote.priceImpact).toFixed(2)}%. Consider reducing the amount or using a different route.
             </Text>
           </View>
@@ -746,5 +736,35 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#fff',
+  },
+  slippageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  slippageLabel: {
+    fontSize: 12,
+  },
+  slippageChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  slippageChipText: {
+    fontSize: 12,
+  },
+  priceImpactWarning: {
+    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(234, 179, 8, 0.3)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+  },
+  priceImpactWarningText: {
+    fontSize: 12,
+    color: '#eab308',
   },
 });

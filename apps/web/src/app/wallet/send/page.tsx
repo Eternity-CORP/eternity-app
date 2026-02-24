@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ethers } from 'ethers'
 import { lookupUsername, getAddressPreferences, checkGasAvailability, suggestGasBridge, SUPPORTED_NETWORKS, type NetworkId, type BridgeStatusResult, type GasGuardResult } from '@e-y/shared'
@@ -57,6 +57,15 @@ function SendContent() {
 
   // Get the best network/contract for the selected token
   const primaryNetwork = tokenData?.networks?.[0]
+
+  // Derived token info — used by both gas estimation and handleSend
+  const { isNative, tokenInfo } = useMemo(() => {
+    const native = selectedToken === 'ETH' || (primaryNetwork?.contractAddress === 'native')
+    const info = !native && primaryNetwork
+      ? { address: primaryNetwork.contractAddress, decimals: tokenData?.decimals || 18 }
+      : undefined
+    return { isNative: native, tokenInfo: info }
+  }, [selectedToken, primaryNetwork, tokenData?.decimals])
 
   useEffect(() => {
     const resolve = async () => {
@@ -173,10 +182,6 @@ function SendContent() {
       try {
         // Use route's network when available, otherwise fall back to default
         const networkId = route?.fromNetwork || 'ethereum'
-        const isNative = selectedToken === 'ETH' || (primaryNetwork?.contractAddress === 'native')
-        const tokenInfo = !isNative && primaryNetwork
-          ? { address: primaryNetwork.contractAddress, decimals: tokenData?.decimals || 18 }
-          : undefined
 
         const estimate = await estimateGasOnNetwork(networkId, address, resolvedAddress, amount, tokenInfo)
         setGasEstimate(estimate.totalGasCost)
@@ -212,10 +217,6 @@ function SendContent() {
 
     try {
       const networkId = route?.fromNetwork || 'ethereum'
-      const isNative = selectedToken === 'ETH' || (primaryNetwork?.contractAddress === 'native')
-      const tokenInfo = !isNative && primaryNetwork
-        ? { address: primaryNetwork.contractAddress, decimals: tokenData?.decimals || 18 }
-        : undefined
 
       const txHash = await sendOnNetwork(wallet, networkId, resolvedAddress, amount, tokenInfo)
 
@@ -363,7 +364,7 @@ function SendContent() {
               {gasEstimate && isDirect && (
                 <div className="flex items-center justify-between px-1 mb-4 text-sm">
                   <span className="text-white/40">Network fee</span>
-                  <span className="text-white">{parseFloat(gasEstimate).toFixed(6)} ETH</span>
+                  <span className="text-white">{parseFloat(gasEstimate).toFixed(6)} {SUPPORTED_NETWORKS[route?.fromNetwork || 'ethereum']?.nativeCurrency?.symbol || 'ETH'}</span>
                 </div>
               )}
 
