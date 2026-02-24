@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useAccount } from '@/contexts/account-context'
+import { useBalance } from '@/contexts/balance-context'
 import { truncateAddress } from '@e-y/shared'
 import { getNetwork } from '@/lib/network'
 import type { AccountType } from '@/lib/account-storage'
@@ -35,6 +36,7 @@ export default function AccountSelector() {
     accounts, currentAccount, address, network, logout,
     switchAccount, addAccount, renameAccount, removeAccount, importWallet,
   } = useAccount()
+  const { aggregatedBalances, totalUsdValue: ctxTotalUsd, status: balanceStatus } = useBalance()
 
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<View>('list')
@@ -59,7 +61,20 @@ export default function AccountSelector() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Fetch balances when dropdown opens
+  // For the active real account, derive balance from balance-context (multi-chain aggregated)
+  useEffect(() => {
+    if (!currentAccount || currentAccount.type !== 'real') return
+    if (balanceStatus !== 'succeeded') return
+
+    const ethToken = aggregatedBalances.find(
+      (t) => t.symbol.toUpperCase() === 'ETH',
+    )
+    const totalEth = ethToken ? parseFloat(ethToken.totalBalance).toFixed(4) : '0.0000'
+
+    setBalances((prev) => ({ ...prev, [currentAccount.id]: totalEth }))
+  }, [currentAccount, aggregatedBalances, balanceStatus])
+
+  // Fetch balances for non-current accounts (single-network RPC) when dropdown opens
   useEffect(() => {
     if (!open || accounts.length === 0) return
 
@@ -69,6 +84,9 @@ export default function AccountSelector() {
       const results: Record<string, string> = {}
       await Promise.all(
         accounts.map(async (acc) => {
+          // Skip current real account — its balance comes from balance-context above
+          if (currentAccount && acc.id === currentAccount.id && acc.type === 'real') return
+
           try {
             // Business accounts use testnet to fetch treasury balance
             const net = getNetwork(acc.type === 'business' ? 'test' : acc.type)
@@ -82,12 +100,12 @@ export default function AccountSelector() {
           }
         })
       )
-      if (!cancelled) setBalances(results)
+      if (!cancelled) setBalances((prev) => ({ ...prev, ...results }))
     }
 
     fetchAll()
     return () => { cancelled = true }
-  }, [open, accounts])
+  }, [open, accounts, currentAccount])
 
   // Close on outside click
   useEffect(() => {
