@@ -29,7 +29,7 @@ interface AccountContextValue {
   accounts: Account[]
   currentAccount: Account | null
   uiMode: UiMode
-  login: (mnemonic: string) => Promise<void>
+  login: (mnemonic: string, defaultAccountType?: AccountType) => Promise<void>
   switchAccount: (accountId: string) => Promise<void>
   addAccount: (type: AccountType, label?: string) => Promise<void>
   addBusinessAccount: (businessId: string, label: string, treasuryAddress: string) => void
@@ -54,7 +54,7 @@ const AccountContext = createContext<AccountContextValue>({
   accounts: [],
   currentAccount: null,
   uiMode: 'ai',
-  login: async () => {},
+  login: async (_mnemonic: string, _defaultAccountType?: AccountType) => {},
   switchAccount: async () => {},
   addAccount: async () => {},
   addBusinessAccount: () => { /* noop */ },
@@ -117,10 +117,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(UI_MODE_KEY, mode)
   }, [])
 
-  const login = useCallback(async (mnemonic: string) => {
+  const login = useCallback(async (mnemonic: string, defaultAccountType: AccountType = 'test') => {
     await encryptToSession(mnemonic)
 
-    const accs = ensureDefaultAccount(mnemonic, 'test', getAddressFromMnemonic)
+    const accs = ensureDefaultAccount(mnemonic, defaultAccountType, getAddressFromMnemonic)
 
     const migration = migrateAccountAddresses(accs, mnemonic, getAddressFromMnemonic)
     if (migration.needsSave) {

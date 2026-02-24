@@ -49,7 +49,7 @@ export default function ImportPassword() {
     try {
       await encryptAndSave(mnemonic, password)
       clearTempSession()
-      await login(mnemonic)
+      await login(mnemonic, 'real')
       setStatus('succeeded')
       router.push('/wallet')
     } catch (err) {
