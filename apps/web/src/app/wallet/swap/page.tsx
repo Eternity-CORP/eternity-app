@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { ethers } from 'ethers'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
@@ -13,6 +12,8 @@ import {
   getNativeToken,
   getSwapQuote,
   executeSwap,
+  checkAllowance,
+  getApprovalData,
   parseTokenAmount,
   formatTokenAmount,
   NATIVE_TOKEN_ADDRESS,
@@ -21,6 +22,7 @@ import {
   SUPPORTED_NETWORKS,
   TIER1_NETWORK_IDS,
   NETWORK_TO_CHAIN_ID,
+  LIFI_CONTRACT_ADDRESSES,
   type NetworkId,
   SLIPPAGE_OPTIONS,
   SLIPPAGE_LABELS,
@@ -54,6 +56,10 @@ export default function SwapPage() {
   const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE)
   const [showFromTokens, setShowFromTokens] = useState(false)
   const [showToTokens, setShowToTokens] = useState(false)
+
+  // ERC-20 approval state
+  const [approvalNeeded, setApprovalNeeded] = useState(false)
+  const [approvalStatus, setApprovalStatus] = useState<'idle' | 'approving' | 'approved'>('idle')
 
   const isCrossChain = fromNetworkId !== toNetworkId
 
@@ -136,6 +142,73 @@ export default function SwapPage() {
     return () => clearTimeout(timeout)
   }, [fetchQuote])
 
+  // Check ERC-20 allowance when quote is ready
+  useEffect(() => {
+    const checkApproval = async () => {
+      if (!quote || !fromToken || !address) {
+        setApprovalNeeded(false)
+        return
+      }
+
+      // Native tokens never need approval
+      if (fromToken.address === NATIVE_TOKEN_ADDRESS) {
+        setApprovalNeeded(false)
+        return
+      }
+
+      try {
+        const chainId = NETWORK_TO_CHAIN_ID[fromNetworkId]
+        const spender = LIFI_CONTRACT_ADDRESSES[chainId] || LIFI_CONTRACT_ADDRESSES[1]
+        const provider = getProvider(fromNetworkId)
+
+        const allowance = await checkAllowance(
+          fromToken.address,
+          address,
+          spender,
+          provider,
+        )
+
+        const fromAmountWei = parseTokenAmount(fromAmount, fromToken.decimals)
+        setApprovalNeeded(allowance < BigInt(fromAmountWei))
+        // Reset approval status when re-checking
+        setApprovalStatus('idle')
+      } catch (err) {
+        console.error('Allowance check failed:', err)
+        // If check fails, assume approval needed to be safe
+        setApprovalNeeded(true)
+      }
+    }
+
+    checkApproval()
+  }, [quote, fromToken, fromAmount, fromNetworkId, address])
+
+  const handleApprove = async () => {
+    if (!wallet || !fromToken || !fromAmount) return
+
+    setApprovalStatus('approving')
+    setError('')
+
+    try {
+      const chainId = NETWORK_TO_CHAIN_ID[fromNetworkId]
+      const spender = LIFI_CONTRACT_ADDRESSES[chainId] || LIFI_CONTRACT_ADDRESSES[1]
+      const provider = getProvider(fromNetworkId)
+      const connectedWallet = wallet.connect(provider)
+
+      const fromAmountWei = parseTokenAmount(fromAmount, fromToken.decimals)
+      const { to, data } = getApprovalData(fromToken.address, spender, fromAmountWei)
+
+      const tx = await connectedWallet.sendTransaction({ to, data })
+      await tx.wait()
+
+      setApprovalNeeded(false)
+      setApprovalStatus('approved')
+    } catch (err) {
+      console.error('Approval failed:', err)
+      setError(err instanceof Error ? err.message : 'Token approval failed')
+      setApprovalStatus('idle')
+    }
+  }
+
   const handleSwapTokens = () => {
     const tempNetwork = fromNetworkId
     const tempToken = fromToken
@@ -149,6 +222,8 @@ export default function SwapPage() {
     setToTokens(tempTokens)
     setFromAmount('')
     setQuote(null)
+    setApprovalNeeded(false)
+    setApprovalStatus('idle')
   }
 
   const handleFromNetworkChange = (networkId: NetworkId) => {
@@ -492,10 +567,27 @@ export default function SwapPage() {
               </div>
             )}
 
-            {/* Swap Button */}
+            {/* Approve + Swap Buttons */}
+            {approvalNeeded && quote && (
+              <button
+                onClick={handleApprove}
+                disabled={approvalStatus === 'approving'}
+                className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed mb-3"
+                style={{
+                  background: 'rgba(51, 136, 255, 0.15)',
+                  border: '1px solid rgba(51, 136, 255, 0.4)',
+                  color: '#3388FF',
+                }}
+              >
+                {approvalStatus === 'approving'
+                  ? `Approving ${fromToken?.symbol}...`
+                  : `Approve ${fromToken?.symbol}`}
+              </button>
+            )}
+
             <button
               onClick={handleSwap}
-              disabled={!quote || swapStatus === 'loading' || quoteLoading}
+              disabled={!quote || swapStatus === 'loading' || quoteLoading || approvalNeeded}
               className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
               {swapStatus === 'loading'

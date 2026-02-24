@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { ethers } from 'ethers';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
 
 import { theme } from '@/src/constants/theme';
@@ -187,10 +186,11 @@ export default function SwapScreen() {
       const spender = getLiFiContractAddress(
         SUPPORTED_NETWORKS[swap.fromNetworkId].chainId
       );
-      const { to, data } = await getApprovalData(
+      const fromAmountWei = parseTokenAmount(swap.fromAmount, swap.fromToken.decimals);
+      const { to, data } = getApprovalData(
         swap.fromToken.address,
         spender,
-        ethers.MaxUint256.toString()
+        fromAmountWei,
       );
 
       const tx = await walletInstance.sendTransaction({ to, data });
