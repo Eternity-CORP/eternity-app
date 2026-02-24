@@ -227,7 +227,6 @@ export {
   type SwapRoute,
   type SwapStep,
   type SwapParams,
-  type TransactionRequest,
 } from './swap-service';
 
 // AI Service (Chat with streaming)
