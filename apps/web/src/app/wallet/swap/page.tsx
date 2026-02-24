@@ -34,7 +34,9 @@ import { getProvider } from '@/lib/multi-network'
 
 export default function SwapPage() {
   const { isReady } = useAuthGuard()
-  const { wallet, address, network } = useAccount()
+  const { wallet, address, network, currentAccount } = useAccount()
+
+  const isTestAccount = currentAccount?.type === 'test'
 
   // Network state
   const [fromNetworkId, setFromNetworkId] = useState<NetworkId>('base')
@@ -335,6 +337,33 @@ export default function SwapPage() {
           <div className="glass-card gradient-border rounded-2xl p-6">
             <h1 className="text-xl font-semibold text-white text-center mb-6">Swap</h1>
 
+            {/* Testnet block */}
+            {isTestAccount && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#eab308]/10 flex items-center justify-center">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-white mb-2">Swap unavailable on testnet</h2>
+                <p className="text-sm text-white/50 mb-1">
+                  Token swaps require real DEX liquidity and are only available on mainnet networks.
+                </p>
+                <p className="text-sm text-white/50 mb-6">
+                  Switch to a real account to use swaps and cross-chain bridges.
+                </p>
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-6 py-3 rounded-xl font-medium transition-all bg-white/10 text-white hover:bg-white/15"
+                >
+                  Go back
+                </button>
+              </div>
+            )}
+
+            {!isTestAccount && <>
             {/* Cross-chain indicator */}
             {isCrossChain && (
               <div className="flex items-center justify-center gap-2 mb-4">
@@ -604,6 +633,7 @@ export default function SwapPage() {
                     ? 'Cross-chain Swap'
                     : 'Swap'}
             </button>
+            </>}
           </div>
         </div>
       </main>
