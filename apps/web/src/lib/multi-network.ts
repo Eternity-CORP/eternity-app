@@ -18,6 +18,7 @@ import {
   formatRawTokenBalance,
   fetchTokenPricesBySymbol,
   applyPricesToBalances,
+  getTokenIconUrl,
 } from '@e-y/shared'
 import { ALCHEMY_KEY } from './config'
 const REQUEST_TIMEOUT = 15000
@@ -124,7 +125,7 @@ async function fetchNetworkBalances(
       balanceRaw: tokenData.tokenBalance,
       decimals: metadata.decimals,
       usdValue: 0,
-      iconUrl: undefined,
+      iconUrl: getTokenIconUrl(tokenData.contractAddress, metadata.symbol, networkId),
     })
   }
 

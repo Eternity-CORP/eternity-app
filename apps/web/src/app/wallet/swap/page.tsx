@@ -390,7 +390,19 @@ export default function SwapPage() {
 
             {/* Slippage selector */}
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>Slippage:</span>
+              <div className="relative group">
+                <span className="text-xs flex items-center gap-1 cursor-help" style={{ color: 'var(--muted)' }}>
+                  Slippage
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="opacity-50">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                </span>
+                <div className="absolute bottom-full left-0 mb-2 w-56 p-2.5 rounded-lg bg-[#1a1a1a] border border-white/10 text-xs text-white/70 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg">
+                  Max price change allowed during swap. If the price moves more than this, the transaction is cancelled to protect you.
+                </div>
+              </div>
               {SLIPPAGE_OPTIONS.map(opt => (
                 <button
                   key={opt}

@@ -256,11 +256,48 @@ export function applyPricesToBalances<T extends { symbol: string; balance: strin
 // Utility
 // ============================================
 
+// Well-known token icons by symbol (chain-agnostic)
+const WELL_KNOWN_TOKEN_ICONS: Record<string, string> = {
+  USDT: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xdAC17F958D2ee523a2206206994597C13D831ec7/logo.png',
+  USDC: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48/logo.png',
+  DAI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png',
+  WETH: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png',
+  WBTC: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599/logo.png',
+  LINK: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x514910771AF9Ca656af840dff83E8264EcF986CA/logo.png',
+  UNI: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984/logo.png',
+  AAVE: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9/logo.png',
+  ARB: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/arbitrum/assets/0x912CE59144191C1204E64559FE8253a0e49E6548/logo.png',
+  OP: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/assets/0x4200000000000000000000000000000000000042/logo.png',
+};
+
+const NETWORK_TO_TRUSTWALLET_CHAIN: Record<string, string> = {
+  ethereum: 'ethereum',
+  polygon: 'polygon',
+  arbitrum: 'arbitrum',
+  base: 'base',
+  optimism: 'optimism',
+};
+
 /**
- * Get token icon URL from Trust Wallet Assets
+ * Get token icon URL — first checks well-known symbol map,
+ * then falls back to Trust Wallet Assets CDN by contract address.
  */
-export function getTokenIconUrl(contractAddress: string): string {
-  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${contractAddress}/logo.png`;
+export function getTokenIconUrl(
+  contractAddress: string,
+  symbol?: string,
+  networkId?: string,
+): string {
+  // 1. Well-known symbol lookup (works across all chains)
+  if (symbol) {
+    const upper = symbol.toUpperCase();
+    if (WELL_KNOWN_TOKEN_ICONS[upper]) {
+      return WELL_KNOWN_TOKEN_ICONS[upper];
+    }
+  }
+
+  // 2. Trust Wallet Assets by chain + contract address
+  const chain = networkId ? NETWORK_TO_TRUSTWALLET_CHAIN[networkId] || 'ethereum' : 'ethereum';
+  return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${contractAddress}/logo.png`;
 }
 
 /**
