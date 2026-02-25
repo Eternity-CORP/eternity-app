@@ -19,6 +19,7 @@ import {
   fetchTokenPricesBySymbol,
   applyPricesToBalances,
   getTokenIconUrl,
+  isSpamToken,
 } from '@e-y/shared'
 import { ALCHEMY_KEY } from './config'
 const REQUEST_TIMEOUT = 15000
@@ -115,6 +116,9 @@ async function fetchNetworkBalances(
 
     const balance = formatRawTokenBalance(tokenData.tokenBalance, metadata.decimals)
     if (parseFloat(balance) === 0) continue
+
+    // Filter out spam/scam tokens
+    if (isSpamToken(metadata.symbol, metadata.name)) continue
 
     balances.push({
       networkId,

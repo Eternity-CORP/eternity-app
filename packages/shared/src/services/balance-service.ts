@@ -253,6 +253,40 @@ export function applyPricesToBalances<T extends { symbol: string; balance: strin
 }
 
 // ============================================
+// Spam Detection
+// ============================================
+
+const SPAM_PATTERNS = [
+  /t\.me\//i,
+  /https?:\/\//i,
+  /\.com/i,
+  /\.org/i,
+  /\.io/i,
+  /\.xyz/i,
+  /claim/i,
+  /airdrop/i,
+  /reward/i,
+  /visit/i,
+  /free\s+mint/i,
+  /\.net/i,
+];
+
+/**
+ * Detect spam/scam tokens by checking symbol and name for suspicious patterns.
+ * Spam tokens often have URLs, "claim" language, or abnormally long symbols.
+ */
+export function isSpamToken(symbol: string, name: string): boolean {
+  // Symbol > 10 chars is suspicious
+  if (symbol.length > 10) return true;
+
+  // Symbol contains special characters (parentheses, URLs, etc.)
+  if (/[(){}[\]@#$]/.test(symbol)) return true;
+
+  const combined = `${symbol} ${name}`;
+  return SPAM_PATTERNS.some(pattern => pattern.test(combined));
+}
+
+// ============================================
 // Utility
 // ============================================
 
