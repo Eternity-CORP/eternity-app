@@ -23,6 +23,7 @@ export interface SplitBill {
   recipientAddress?: string;
   totalAmount: string;
   tokenSymbol: string;
+  chainId?: number;
   description?: string;
   participants: SplitParticipant[];
   createdAt: string;
@@ -36,6 +37,7 @@ export interface CreateSplitBillRequest {
   recipientAddress?: string;
   totalAmount: string;
   tokenSymbol: string;
+  chainId?: number;
   description?: string;
   participants: Array<{
     address: string;

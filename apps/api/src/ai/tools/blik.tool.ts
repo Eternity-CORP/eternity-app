@@ -109,6 +109,7 @@ export class BlikGenerateTool implements AIToolHandler {
         undefined, // username resolved by frontend
         amount,
         token.toUpperCase(),
+        11155111, // Default to Sepolia; AI-generated codes use default chain
         'ai', // Socket ID placeholder for AI-generated codes
       );
 

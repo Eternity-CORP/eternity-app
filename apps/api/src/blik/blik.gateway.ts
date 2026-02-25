@@ -64,18 +64,21 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const { amount, tokenSymbol, receiverAddress, receiverUsername } = data;
+      const { amount, tokenSymbol, chainId, receiverAddress, receiverUsername } = data;
 
       if (!amount || !tokenSymbol || !receiverAddress) {
         client.emit('error', { message: 'Missing required fields: amount, tokenSymbol, receiverAddress' });
         return;
       }
 
+      const resolvedChainId = chainId ?? 11155111;
+
       const blikCode = await this.blikService.createCode(
         receiverAddress,
         receiverUsername,
         amount,
         tokenSymbol,
+        resolvedChainId,
         client.id,
       );
 
@@ -84,6 +87,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
         expiresAt: blikCode.expiresAt,
         amount: blikCode.amount,
         tokenSymbol: blikCode.tokenSymbol,
+        chainId: blikCode.chainId,
       };
 
       client.emit(BLIK_EVENTS.CODE_CREATED, response);
@@ -173,6 +177,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
         code: blikCode.code,
         amount: blikCode.amount,
         tokenSymbol: blikCode.tokenSymbol,
+        chainId: blikCode.chainId,
         receiverAddress: blikCode.receiverAddress,
         receiverUsername: blikCode.receiverUsername,
         expiresAt: blikCode.expiresAt,
@@ -195,7 +200,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ) {
     try {
-      const { code, txHash, senderAddress, network } = data;
+      const { code, txHash, senderAddress, network, chainId } = data;
 
       if (!code || !txHash || !senderAddress || !network) {
         client.emit('error', { message: 'Missing required fields: code, txHash, senderAddress, network' });
@@ -219,6 +224,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
           txHash: result.txHash,
           senderAddress: result.senderAddress,
           network: result.network,
+          chainId: chainId ?? result.blikCode.chainId,
         };
         this.server.to(result.blikCode.receiverSocketId).emit(BLIK_EVENTS.PAYMENT_CONFIRMED, confirmedPayload);
       }
@@ -270,6 +276,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
           expiresAt: activeCode.expiresAt,
           amount: activeCode.amount,
           tokenSymbol: activeCode.tokenSymbol,
+          chainId: activeCode.chainId,
         };
         client.emit(BLIK_EVENTS.CODE_CREATED, response);
       }

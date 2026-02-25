@@ -4,6 +4,7 @@ import {
   IsArray,
   ValidateNested,
   IsOptional,
+  IsInt,
   Matches,
   MinLength,
   ArrayMinSize,
@@ -47,6 +48,10 @@ export class CreateSplitDto {
   @IsNotEmpty()
   @MinLength(1)
   tokenSymbol: string;
+
+  @IsInt()
+  @IsOptional()
+  chainId?: number;
 
   @IsString()
   @IsOptional()

@@ -9,6 +9,7 @@ export interface BlikCode {
   code: string;
   amount: string;
   tokenSymbol: string;
+  chainId: number;
   receiverAddress: string;
   receiverUsername?: string;
   status: BlikCodeStatus;
@@ -23,6 +24,7 @@ export interface BlikCode {
 export interface CreateCodePayload {
   amount: string;
   tokenSymbol: string;
+  chainId: number;
   receiverAddress: string;
   receiverUsername?: string;
 }
@@ -41,6 +43,7 @@ export interface CodeCreatedPayload {
   expiresAt: string;
   amount: string;
   tokenSymbol: string;
+  chainId: number;
 }
 
 export interface CodeLookupPayload {
@@ -51,6 +54,7 @@ export interface PaymentConfirmedPayload {
   txHash: string;
   senderAddress: string;
   network: string;
+  chainId: number;
 }
 
 export interface CodeExpiredPayload {
@@ -75,6 +79,7 @@ export interface ConfirmPaymentPayload {
   txHash: string;
   senderAddress: string;
   network: string;
+  chainId: number;
 }
 
 // ============================================
@@ -85,6 +90,7 @@ export interface CodeInfoPayload {
   code: string;
   amount: string;
   tokenSymbol: string;
+  chainId: number;
   receiverAddress: string;
   receiverUsername?: string;
   expiresAt: string;

@@ -16,10 +16,17 @@ import {
   calculateCustomSplitFromPercentages,
   validateCustomAmounts,
   lookupUsername,
+  formatErrorMessage,
+  SUPPORTED_NETWORKS,
+  TIER1_NETWORK_IDS,
+  NETWORK_TO_CHAIN_ID,
+  CHAIN_ID_TO_NETWORK,
+  type NetworkId,
   type SplitBill,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { sendNativeToken } from '@/lib/send-service'
+import { getProvider } from '@/lib/multi-network'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import ConfirmModal from '@/components/shared/ConfirmModal'
@@ -27,6 +34,9 @@ import ConfirmModal from '@/components/shared/ConfirmModal'
 export default function SplitPage() {
   useAuthGuard()
   const { address, network, currentAccount } = useAccount()
+  const isTestAccount = currentAccount?.type === 'test'
+
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkId>('base')
   const [splits, setSplits] = useState<SplitBill[]>([])
   const [pendingSplitsList, setPendingSplitsList] = useState<SplitBill[]>([])
   const [showCreate, setShowCreate] = useState(false)
@@ -39,7 +49,7 @@ export default function SplitPage() {
   const [customAmounts, setCustomAmounts] = useState<string[]>([])
   const [usePercentages, setUsePercentages] = useState(false)
   const [expandedSplitId, setExpandedSplitId] = useState<string | null>(null)
-  const [pendingPayment, setPendingPayment] = useState<{ splitId: string; to: string; amount: string; description: string } | null>(null)
+  const [pendingPayment, setPendingPayment] = useState<{ splitId: string; to: string; amount: string; description: string; chainId?: number } | null>(null)
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [error, setError] = useState('')
@@ -148,12 +158,15 @@ export default function SplitPage() {
         finalTotal = totalAmount || participantAmounts.reduce((acc, a) => acc + parseFloat(a || '0'), 0).toFixed(6)
       }
 
+      const chainId = isTestAccount ? 11155111 : NETWORK_TO_CHAIN_ID[selectedNetwork]
+
       const newSplit = await createSplitBill(apiClient, {
         creatorAddress: address,
         recipientAddress: recipientAddress || undefined,
         totalAmount: finalTotal,
         tokenSymbol: network.symbol,
         description: description || 'Split bill',
+        chainId,
         participants: resolvedAddresses.map((addr, i) => ({
           address: addr,
           amount: participantAmounts[i],
@@ -173,8 +186,7 @@ export default function SplitPage() {
       setSplitType('split_with_me')
       setSubmitStatus('succeeded')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create split'
-      setError(msg)
+      setError(formatErrorMessage(err, 'Failed to create split'))
       setSubmitStatus('failed')
     }
   }
@@ -195,7 +207,19 @@ export default function SplitPage() {
 
     const mnemonic = await loadAndDecrypt(password)
     const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+
+    // Use the correct provider for the split's network, falling back to account network
+    let provider: ethers.JsonRpcProvider
+    if (!isTestAccount && pendingPayment.chainId) {
+      const networkId = CHAIN_ID_TO_NETWORK[pendingPayment.chainId]
+      if (networkId) {
+        provider = getProvider(networkId)
+      } else {
+        provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      }
+    } else {
+      provider = new ethers.JsonRpcProvider(network.rpcUrl)
+    }
 
     const txHash = await sendNativeToken(wallet, provider, pendingPayment.to, String(pendingPayment.amount))
 
@@ -218,7 +242,15 @@ export default function SplitPage() {
     )
 
     setPendingPayment(null)
-  }, [pendingPayment, currentAccount, network, address])
+  }, [pendingPayment, currentAccount, network, address, isTestAccount])
+
+  // Resolve network name from chainId for display
+  const getNetworkLabel = (chainId?: number): string | null => {
+    if (!chainId) return null
+    if (chainId === 11155111) return null // Sepolia is the default for test, don't show
+    const networkId = CHAIN_ID_TO_NETWORK[chainId]
+    return networkId ? SUPPORTED_NETWORKS[networkId].shortName : null
+  }
 
   const canSubmit = splitMode === 'equal'
     ? !!totalAmount && parsedEntries.length > 0
@@ -232,6 +264,13 @@ export default function SplitPage() {
   const paidSplitsFiltered = pendingSplitsList.filter(s =>
     s.participants.some(p => p.address.toLowerCase() === address.toLowerCase() && p.status === 'paid')
   )
+
+  // Modal payment network label
+  const paymentNetworkLabel = pendingPayment?.chainId
+    ? (CHAIN_ID_TO_NETWORK[pendingPayment.chainId]
+        ? SUPPORTED_NETWORKS[CHAIN_ID_TO_NETWORK[pendingPayment.chainId]].name
+        : network.name)
+    : network.name
 
   return (
     <div className="min-h-screen relative z-[2]">
@@ -257,6 +296,34 @@ export default function SplitPage() {
             {/* Create Form */}
             {showCreate && (
               <div className="mb-6 space-y-3">
+                {/* Network Selector (real accounts only) */}
+                {!isTestAccount && (
+                  <div className="mb-4">
+                    <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">Network</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {TIER1_NETWORK_IDS.map((id) => {
+                        const net = SUPPORTED_NETWORKS[id]
+                        const isSelected = id === selectedNetwork
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => setSelectedNetwork(id)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
+                            style={{
+                              backgroundColor: isSelected ? net.color + '20' : 'transparent',
+                              borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
+                              color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                            }}
+                          >
+                            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: net.color }} />
+                            {net.shortName}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/3 border border-white/8 rounded-xl p-4">
                   <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
                     Total Amount {splitMode === 'custom' && !usePercentages ? '(optional)' : ''}
@@ -469,6 +536,7 @@ export default function SplitPage() {
                     const myPart = split.participants.find(
                       p => p.address.toLowerCase() === address.toLowerCase()
                     )
+                    const networkLabel = getNetworkLabel(split.chainId)
                     return (
                       <div
                         key={split.id}
@@ -476,9 +544,16 @@ export default function SplitPage() {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-white font-medium">{myPart?.amount} {network.symbol}</p>
-                          <span className="text-xs px-2 py-1 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">
-                            pending
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {networkLabel && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                                {networkLabel}
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-1 rounded-full bg-[#f59e0b]/10 text-[#f59e0b]">
+                              pending
+                            </span>
+                          </div>
                         </div>
                         <p className="text-sm text-white/50">{split.description}</p>
                         <button
@@ -487,6 +562,7 @@ export default function SplitPage() {
                             to: split.recipientAddress || split.creatorAddress,
                             amount: myPart?.amount || '0',
                             description: split.description || 'Split bill',
+                            chainId: split.chainId,
                           })}
                           className="w-full mt-3 py-2 rounded-lg bg-white text-black text-sm font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
                         >
@@ -508,6 +584,7 @@ export default function SplitPage() {
                     const myPart = split.participants.find(
                       p => p.address.toLowerCase() === address.toLowerCase()
                     )
+                    const networkLabel = getNetworkLabel(split.chainId)
                     return (
                       <div
                         key={split.id}
@@ -515,9 +592,16 @@ export default function SplitPage() {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <p className="text-white font-medium">{myPart?.amount} {network.symbol}</p>
-                          <span className="text-xs px-2 py-1 rounded-full bg-[#22c55e]/15 text-[#22c55e]">
-                            paid
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {networkLabel && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                                {networkLabel}
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-1 rounded-full bg-[#22c55e]/15 text-[#22c55e]">
+                              paid
+                            </span>
+                          </div>
                         </div>
                         <p className="text-sm text-white/50">{split.description}</p>
                       </div>
@@ -537,6 +621,7 @@ export default function SplitPage() {
                     const allPaid = paidCount === split.participants.length
                     const hasPaid = paidCount > 0
                     const isExpanded = expandedSplitId === split.id
+                    const networkLabel = getNetworkLabel(split.chainId)
                     return (
                       <div
                         key={split.id}
@@ -550,6 +635,11 @@ export default function SplitPage() {
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-white font-medium">{split.totalAmount} {network.symbol}</p>
                             <div className="flex items-center gap-2">
+                              {networkLabel && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                                  {networkLabel}
+                                </span>
+                              )}
                               <span className={`text-xs px-2 py-0.5 rounded-full ${allPaid ? 'bg-[#22c55e]/15 text-[#22c55e]' : 'bg-[#3388FF]/10 text-[#3388FF]'}`}>
                                 {allPaid ? 'completed' : `${paidCount}/${split.participants.length} paid`}
                               </span>
@@ -653,7 +743,7 @@ export default function SplitPage() {
           details={[
             { label: 'To', value: `${pendingPayment.to.slice(0, 6)}...${pendingPayment.to.slice(-4)}` },
             { label: 'Memo', value: pendingPayment.description },
-            { label: 'Network', value: network.name },
+            { label: 'Network', value: paymentNetworkLabel },
           ]}
           onConfirm={handlePayConfirm}
           onCancel={() => setPendingPayment(null)}

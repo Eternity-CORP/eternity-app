@@ -23,6 +23,7 @@ interface BlikCodeRow {
   sender_address: string | null;
   amount: string;
   token_symbol: string;
+  chain_id: number | null;
   status: BlikCodeStatus;
   expires_at: string;
   created_at: string;
@@ -107,6 +108,7 @@ export class BlikService implements OnModuleDestroy {
       code: row.code,
       amount: row.amount,
       tokenSymbol: row.token_symbol,
+      chainId: row.chain_id || 11155111,
       receiverAddress: row.receiver_address,
       receiverUsername: row.receiver_username || undefined,
       receiverSocketId: row.receiver_socket_id,
@@ -124,6 +126,7 @@ export class BlikService implements OnModuleDestroy {
     receiverUsername: string | undefined,
     amount: string,
     tokenSymbol: string,
+    chainId: number,
     socketId: string,
   ): Promise<InternalBlikCode> {
     // Check rate limit
@@ -145,6 +148,7 @@ export class BlikService implements OnModuleDestroy {
         receiver_socket_id: socketId,
         amount,
         token_symbol: tokenSymbol,
+        chain_id: chainId,
         status: 'active',
         expires_at: expiresAt,
       })

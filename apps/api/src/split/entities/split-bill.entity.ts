@@ -13,6 +13,7 @@ export interface SplitBill {
   recipientAddress: string | null;
   totalAmount: string;
   tokenSymbol: string;
+  chainId: number | null;
   description: string | null;
   status: SplitBillStatus;
   createdAt: Date;

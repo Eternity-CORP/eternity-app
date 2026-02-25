@@ -21,6 +21,7 @@ interface SplitBillRow {
   recipient_address: string | null;
   total_amount: string;
   token_symbol: string;
+  chain_id: number | null;
   description: string | null;
   status: SplitBillStatus;
   created_at: string;
@@ -61,6 +62,7 @@ export class SplitService {
         recipient_address: dto.recipientAddress?.toLowerCase() || null,
         total_amount: dto.totalAmount,
         token_symbol: dto.tokenSymbol,
+        chain_id: dto.chainId ?? null,
         description: dto.description,
         status: 'active',
       })
@@ -359,6 +361,7 @@ export class SplitService {
       recipientAddress: billData.recipient_address,
       totalAmount: billData.total_amount,
       tokenSymbol: billData.token_symbol,
+      chainId: billData.chain_id,
       description: billData.description,
       status: billData.status,
       createdAt: new Date(billData.created_at),

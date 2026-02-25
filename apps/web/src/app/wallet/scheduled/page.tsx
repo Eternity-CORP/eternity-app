@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { ethers } from 'ethers'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
@@ -10,10 +9,17 @@ import {
   getScheduledPayments,
   createScheduledPayment,
   cancelScheduledPayment,
+  formatErrorMessage,
+  SUPPORTED_NETWORKS,
+  TIER1_NETWORK_IDS,
+  NETWORK_TO_CHAIN_ID,
+  CHAIN_ID_TO_NETWORK,
+  type NetworkId,
   type ScheduledPayment,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { signTransaction } from '@/lib/send-service'
+import { getProvider } from '@/lib/multi-network'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import ConfirmModal from '@/components/shared/ConfirmModal'
@@ -21,6 +27,9 @@ import ConfirmModal from '@/components/shared/ConfirmModal'
 export default function ScheduledPage() {
   useAuthGuard()
   const { address, network, currentAccount } = useAccount()
+  const isTestAccount = currentAccount?.type === 'test'
+
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkId>('base')
   const [payments, setPayments] = useState<ScheduledPayment[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [recipient, setRecipient] = useState('')
@@ -64,10 +73,21 @@ export default function ScheduledPage() {
 
     const mnemonic = await loadAndDecrypt(password)
     const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+
+    // Use the correct provider for the selected network
+    let provider
+    if (!isTestAccount) {
+      provider = getProvider(selectedNetwork)
+    } else {
+      const { ethers } = await import('ethers')
+      provider = new ethers.JsonRpcProvider(network.rpcUrl)
+    }
+
     const connectedWallet = wallet.connect(provider)
 
     const signedData = await signTransaction(connectedWallet, provider, recipient, amount)
+
+    const chainId = isTestAccount ? 11155111 : NETWORK_TO_CHAIN_ID[selectedNetwork]
 
     const newPayment = await createScheduledPayment(apiClient, {
       creatorAddress: address,
@@ -78,7 +98,7 @@ export default function ScheduledPage() {
       signedTransaction: signedData.signedTx,
       estimatedGasPrice: signedData.gasPrice,
       nonce: signedData.nonce,
-      chainId: signedData.chainId,
+      chainId,
     })
 
     setPayments((prev) => [...prev, newPayment])
@@ -89,7 +109,7 @@ export default function ScheduledPage() {
     setScheduledDate('')
     setScheduledTime('')
     setSubmitStatus('succeeded')
-  }, [currentAccount, network, address, recipient, amount, scheduledDate, scheduledTime])
+  }, [currentAccount, network, address, recipient, amount, scheduledDate, scheduledTime, selectedNetwork, isTestAccount])
 
   const handleConfirmCancel = useCallback(() => {
     setShowConfirm(false)
@@ -102,9 +122,22 @@ export default function ScheduledPage() {
         prev.map((p) => (p.id === id ? { ...p, status: 'cancelled' as const } : p)),
       )
     } catch (err) {
-      console.error('Failed to cancel scheduled payment:', err)
+      setError(formatErrorMessage(err, 'Failed to cancel payment'))
     }
   }
+
+  // Resolve network name from chainId for display
+  const getNetworkLabel = (chainId?: number | null): string | null => {
+    if (!chainId) return null
+    if (chainId === 11155111) return null // Sepolia is the default for test, don't show
+    const networkId = CHAIN_ID_TO_NETWORK[chainId]
+    return networkId ? SUPPORTED_NETWORKS[networkId].shortName : null
+  }
+
+  // Resolve confirm modal network name
+  const confirmNetworkName = isTestAccount
+    ? network.name
+    : SUPPORTED_NETWORKS[selectedNetwork].name
 
   const pendingPayments = payments.filter(p => p.status === 'pending')
   const pastPayments = payments.filter(p => p.status !== 'pending')
@@ -133,6 +166,34 @@ export default function ScheduledPage() {
             {/* Create Form */}
             {showCreate && (
               <div className="mb-6 space-y-3">
+                {/* Network Selector (real accounts only) */}
+                {!isTestAccount && (
+                  <div className="mb-4">
+                    <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">Network</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {TIER1_NETWORK_IDS.map((id) => {
+                        const net = SUPPORTED_NETWORKS[id]
+                        const isSelected = id === selectedNetwork
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => setSelectedNetwork(id)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
+                            style={{
+                              backgroundColor: isSelected ? net.color + '20' : 'transparent',
+                              borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
+                              color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                            }}
+                          >
+                            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: net.color }} />
+                            {net.shortName}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/3 border border-white/8 rounded-xl p-4">
                   <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Recipient</label>
                   <input
@@ -206,31 +267,41 @@ export default function ScheduledPage() {
               <div className="mb-6">
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Upcoming</p>
                 <div className="space-y-2">
-                  {pendingPayments.map((payment) => (
-                    <div
-                      key={payment.id}
-                      className="bg-white/3 border border-white/8 rounded-xl p-4 flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="text-white font-medium">{payment.amount} {network.symbol}</p>
-                        <p className="text-xs text-white/40 font-mono truncate max-w-[180px]">
-                          {payment.recipient}
-                        </p>
-                        <p className="text-xs text-white/40 mt-1">
-                          {new Date(payment.scheduledAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCancel(payment.id)}
-                        className="p-2 text-white/40 hover:text-[#f87171] transition-colors"
+                  {pendingPayments.map((payment) => {
+                    const networkLabel = getNetworkLabel(payment.chainId)
+                    return (
+                      <div
+                        key={payment.id}
+                        className="bg-white/3 border border-white/8 rounded-xl p-4 flex items-center justify-between"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18"/>
-                          <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-white font-medium">{payment.amount} {network.symbol}</p>
+                            {networkLabel && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                                {networkLabel}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-white/40 font-mono truncate max-w-[180px]">
+                            {payment.recipient}
+                          </p>
+                          <p className="text-xs text-white/40 mt-1">
+                            {new Date(payment.scheduledAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleCancel(payment.id)}
+                          className="p-2 text-white/40 hover:text-[#f87171] transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -240,26 +311,36 @@ export default function ScheduledPage() {
               <div>
                 <p className="text-xs text-white/40 uppercase tracking-wide mb-3">History</p>
                 <div className="space-y-2">
-                  {pastPayments.map((payment) => (
-                    <div
-                      key={payment.id}
-                      className="bg-white/3 border border-white/8 rounded-xl p-4 opacity-60"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-white font-medium">{payment.amount} {network.symbol}</p>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          payment.status === 'executed'
-                            ? 'bg-[#22c55e]/8 text-[#22c55e]'
-                            : 'bg-[#EF4444]/5 text-[#f87171]'
-                        }`}>
-                          {payment.status}
-                        </span>
+                  {pastPayments.map((payment) => {
+                    const networkLabel = getNetworkLabel(payment.chainId)
+                    return (
+                      <div
+                        key={payment.id}
+                        className="bg-white/3 border border-white/8 rounded-xl p-4 opacity-60"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-medium">{payment.amount} {network.symbol}</p>
+                            {networkLabel && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                                {networkLabel}
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            payment.status === 'executed'
+                              ? 'bg-[#22c55e]/8 text-[#22c55e]'
+                              : 'bg-[#EF4444]/5 text-[#f87171]'
+                          }`}>
+                            {payment.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/40 font-mono truncate mt-1">
+                          {payment.recipient}
+                        </p>
                       </div>
-                      <p className="text-xs text-white/40 font-mono truncate mt-1">
-                        {payment.recipient}
-                      </p>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -286,7 +367,7 @@ export default function ScheduledPage() {
           details={[
             { label: 'Recipient', value: recipient.startsWith('0x') ? `${recipient.slice(0, 6)}...${recipient.slice(-4)}` : recipient },
             { label: 'Scheduled', value: new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString() },
-            { label: 'Network', value: network.name },
+            { label: 'Network', value: confirmNetworkName },
           ]}
           onConfirm={handleConfirmSubmit}
           onCancel={handleConfirmCancel}

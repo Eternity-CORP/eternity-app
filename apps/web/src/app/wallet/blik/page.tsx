@@ -11,7 +11,13 @@ import {
   type CodeCreatedPayload,
   type CodeInfoPayload,
   type CodeNotFoundPayload,
+  SUPPORTED_NETWORKS,
+  TIER1_NETWORK_IDS,
+  NETWORK_TO_CHAIN_ID,
+  type NetworkId,
+  formatErrorMessage,
 } from '@e-y/shared'
+import { getProvider } from '@/lib/multi-network'
 import { API_BASE_URL } from '@/lib/api'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
@@ -22,9 +28,11 @@ type Mode = 'select' | 'request' | 'send'
 export default function BlikPage() {
   const router = useRouter()
   useAuthGuard()
-  const { wallet, address, network } = useAccount()
+  const { wallet, address, network, currentAccount } = useAccount()
 
   const [mode, setMode] = useState<Mode>('select')
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkId>('base')
+  const isTestAccount = currentAccount?.type === 'test'
 
   const [amount, setAmount] = useState('')
   const [createdCode, setCreatedCode] = useState<CodeCreatedPayload | null>(null)
@@ -121,12 +129,18 @@ export default function BlikPage() {
   const handleCreateCode = useCallback(() => {
     if (!amount || parseFloat(amount) <= 0) return
 
+    const chainId = isTestAccount ? 11155111 : NETWORK_TO_CHAIN_ID[selectedNetwork]
+    const tokenSymbol = isTestAccount
+      ? network.symbol
+      : SUPPORTED_NETWORKS[selectedNetwork].nativeCurrency.symbol
+
     blikServiceRef.current?.createCode({
       amount,
-      tokenSymbol: network.symbol,
+      tokenSymbol,
+      chainId,
       receiverAddress: address,
     })
-  }, [amount, network.symbol, address])
+  }, [amount, selectedNetwork, isTestAccount, network.symbol, address])
 
   const handleLookupCode = useCallback(() => {
     if (inputCode.length !== 6) return
@@ -145,7 +159,20 @@ export default function BlikPage() {
     setError('')
 
     try {
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      // Resolve provider from the BLIK code's chainId
+      const codeChainId = foundCode.chainId
+      const networkEntry = Object.entries(SUPPORTED_NETWORKS).find(
+        ([, net]) => net.chainId === codeChainId
+      )
+      const networkId = networkEntry ? (networkEntry[0] as NetworkId) : undefined
+
+      let provider
+      if (networkId) {
+        provider = getProvider(networkId)
+      } else {
+        // Fallback: use current account's network (e.g. Sepolia for test accounts)
+        provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      }
       const connectedWallet = wallet.connect(provider)
 
       const tx = await connectedWallet.sendTransaction({
@@ -155,18 +182,22 @@ export default function BlikPage() {
 
       await tx.wait()
 
+      const netName = networkEntry
+        ? SUPPORTED_NETWORKS[networkEntry[0] as NetworkId].name
+        : network.name
+
       blikServiceRef.current?.confirmPayment({
         code: foundCode.code,
         txHash: tx.hash,
         senderAddress: address,
-        network: network.name,
+        network: netName,
+        chainId: codeChainId,
       })
 
       setSendStatus('succeeded')
-      router.push(`/wallet/send/success?hash=${tx.hash}`)
+      router.push(`/wallet/send/success?hash=${tx.hash}&network=${networkId || ''}`)
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Transaction failed'
-      setError(errorMessage.includes('insufficient') ? 'Insufficient balance' : errorMessage)
+      setError(formatErrorMessage(err, 'Transaction failed'))
       setSendStatus('failed')
     }
   }, [wallet, foundCode, network, address, router])
@@ -230,6 +261,33 @@ export default function BlikPage() {
             {/* Request - Enter Amount */}
             {mode === 'request' && !createdCode && (
               <>
+                {!isTestAccount && (
+                  <div className="mb-4">
+                    <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">Network</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {TIER1_NETWORK_IDS.map((id) => {
+                        const net = SUPPORTED_NETWORKS[id]
+                        const isSelected = id === selectedNetwork
+                        return (
+                          <button
+                            key={id}
+                            onClick={() => setSelectedNetwork(id)}
+                            className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
+                            style={{
+                              backgroundColor: isSelected ? net.color + '20' : 'transparent',
+                              borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
+                              color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                            }}
+                          >
+                            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: net.color }} />
+                            {net.shortName}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
                   <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Amount</label>
                   <div className="flex items-center gap-3 overflow-hidden">
@@ -242,7 +300,9 @@ export default function BlikPage() {
                       className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-white placeholder:text-white/25 focus:outline-none"
                       autoFocus
                     />
-                    <span className="flex-shrink-0 text-lg font-medium text-white/40">{network.symbol}</span>
+                    <span className="flex-shrink-0 text-lg font-medium text-white/40">
+                      {isTestAccount ? network.symbol : SUPPORTED_NETWORKS[selectedNetwork].nativeCurrency.symbol}
+                    </span>
                   </div>
                 </div>
 
@@ -296,7 +356,12 @@ export default function BlikPage() {
                 {codeCopied && (
                   <p className="text-xs text-[#22c55e] mb-1">Copied!</p>
                 )}
-                <p className="text-xl text-white mb-6">{createdCode.amount} {network.symbol}</p>
+                <p className="text-xl text-white mb-2">{createdCode.amount} {createdCode.tokenSymbol}</p>
+                {!isTestAccount && (
+                  <p className="text-xs text-white/40 mb-6">
+                    on {SUPPORTED_NETWORKS[selectedNetwork]?.name || 'Unknown'}
+                  </p>
+                )}
 
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#22c55e]/8 border border-[#22c55e]/20 rounded-full mb-6">
                   <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
@@ -358,7 +423,12 @@ export default function BlikPage() {
             {mode === 'send' && foundCode && (
               <>
                 <div className="text-center mb-6">
-                  <p className="text-4xl font-bold text-white mb-1">{foundCode.amount} {network.symbol}</p>
+                  <p className="text-4xl font-bold text-white mb-1">{foundCode.amount} {foundCode.tokenSymbol}</p>
+                  {foundCode.chainId && foundCode.chainId !== 11155111 && (
+                    <p className="text-xs text-white/30 mb-1">
+                      on {Object.values(SUPPORTED_NETWORKS).find(n => n.chainId === foundCode.chainId)?.name || `Chain ${foundCode.chainId}`}
+                    </p>
+                  )}
                   <p className="text-sm text-white/40 font-mono truncate">{foundCode.receiverAddress}</p>
                 </div>
 
