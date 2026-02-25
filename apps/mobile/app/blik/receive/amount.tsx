@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { receiverStartCreating, receiverCodeCreated, receiverError } from '@/src/store/slices/blik-slice';
 import { blikSocket } from '@/src/services/blik-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
@@ -16,6 +16,7 @@ import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { sanitizeAmountInput } from '@/src/utils/format';
+import { resolveChainId } from '@e-y/shared';
 
 export default function BlikReceiveAmountScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -23,6 +24,7 @@ export default function BlikReceiveAmountScreen() {
   const { theme: dynamicTheme } = useTheme();
   const wallet = useAppSelector((state) => state.wallet);
   const blik = useAppSelector((state) => state.blik);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
   const currentAccount = getCurrentAccount(wallet);
 
   const [amount, setAmount] = useState('');
@@ -70,10 +72,13 @@ export default function BlikReceiveAmountScreen() {
 
     try {
       await blikSocket.connect(currentAccount.address);
+      // Use Sepolia for test accounts; default to Base (8453) for real accounts in this legacy flow
+      const chainId = resolveChainId(isTestAccount, 'base');
       blikSocket.createCode({
         receiverAddress: currentAccount.address,
         amount,
         tokenSymbol: token,
+        chainId,
       });
     } catch (error) {
       dispatch(receiverError('Failed to connect to server'));

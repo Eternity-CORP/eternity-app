@@ -23,6 +23,7 @@ import { TransactionPendingAnimation } from '@/src/components/TransactionPending
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { getNetworkBadge } from '@e-y/shared';
 
 export default function BlikWaitingScreen() {
   const dispatch = useAppDispatch();
@@ -178,6 +179,20 @@ export default function BlikWaitingScreen() {
           {activeCode.amount} {activeCode.tokenSymbol}
         </Text>
 
+        {/* Network Badge */}
+        {activeCode.chainId && (() => {
+          const networkBadge = getNetworkBadge(activeCode.chainId);
+          const networkLabel = networkBadge?.name ?? `Chain ${activeCode.chainId}`;
+          return (
+            <View style={[styles.networkBadge, { backgroundColor: networkBadge ? networkBadge.color + '20' : 'rgba(255,255,255,0.08)', borderColor: networkBadge ? networkBadge.color + '40' : 'rgba(255,255,255,0.1)' }]}>
+              {networkBadge && <View style={[styles.networkDot, { backgroundColor: networkBadge.color }]} />}
+              <Text style={[styles.networkLabel, theme.typography.caption, { color: networkBadge ? networkBadge.color : dynamicTheme.colors.textSecondary }]}>
+                {networkLabel}
+              </Text>
+            </View>
+          );
+        })()}
+
         {/* Countdown */}
         <View style={styles.countdownContainer}>
           <FontAwesome
@@ -258,7 +273,25 @@ const styles = StyleSheet.create({
   },
   amountText: {
     color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+  },
+  networkBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
     marginBottom: theme.spacing.lg,
+  },
+  networkDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  networkLabel: {
+    fontWeight: '500',
   },
   countdownContainer: {
     flexDirection: 'row',

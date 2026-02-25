@@ -12,8 +12,9 @@ import {
   formatErrorMessage,
   SUPPORTED_NETWORKS,
   TIER1_NETWORK_IDS,
-  NETWORK_TO_CHAIN_ID,
   CHAIN_ID_TO_NETWORK,
+  resolveChainId,
+  getNetworkLabel,
   type NetworkId,
   type ScheduledPayment,
 } from '@e-y/shared'
@@ -87,7 +88,7 @@ export default function ScheduledPage() {
 
     const signedData = await signTransaction(connectedWallet, provider, recipient, amount)
 
-    const chainId = isTestAccount ? 11155111 : NETWORK_TO_CHAIN_ID[selectedNetwork]
+    const chainId = resolveChainId(isTestAccount, selectedNetwork)
 
     const newPayment = await createScheduledPayment(apiClient, {
       creatorAddress: address,
@@ -124,14 +125,6 @@ export default function ScheduledPage() {
     } catch (err) {
       setError(formatErrorMessage(err, 'Failed to cancel payment'))
     }
-  }
-
-  // Resolve network name from chainId for display
-  const getNetworkLabel = (chainId?: number | null): string | null => {
-    if (!chainId) return null
-    if (chainId === 11155111) return null // Sepolia is the default for test, don't show
-    const networkId = CHAIN_ID_TO_NETWORK[chainId]
-    return networkId ? SUPPORTED_NETWORKS[networkId].shortName : null
   }
 
   // Resolve confirm modal network name

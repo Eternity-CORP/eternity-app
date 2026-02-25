@@ -21,6 +21,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { getNetworkBadge } from '@e-y/shared';
 
 export default function ScheduledListScreen() {
   const { theme: dynamicTheme } = useTheme();
@@ -59,6 +60,7 @@ export default function ScheduledListScreen() {
   const overduePayments = sortedPayments.filter((p) => new Date(p.scheduledAt).getTime() < Date.now());
   const upcomingPayments = sortedPayments.filter((p) => new Date(p.scheduledAt).getTime() >= Date.now());
 
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader
@@ -94,6 +96,7 @@ export default function ScheduledListScreen() {
                   ? payment.recipientName
                   : truncateAddress(payment.recipient);
               const scheduledDate = new Date(payment.scheduledAt);
+              const networkBadge = getNetworkBadge(payment.chainId);
               return (
                 <TouchableOpacity
                   key={payment.id}
@@ -113,6 +116,11 @@ export default function ScheduledListScreen() {
                     <Text style={[styles.paymentDate, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
                       Was due: {scheduledDate.toLocaleDateString()}
                     </Text>
+                    {networkBadge && (
+                      <Text style={[styles.networkBadgeText, { color: networkBadge.color }]}>
+                        {networkBadge.name}
+                      </Text>
+                    )}
                   </View>
                   <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
                 </TouchableOpacity>
@@ -134,6 +142,7 @@ export default function ScheduledListScreen() {
                   ? payment.recipientName
                   : truncateAddress(payment.recipient);
               const scheduledDate = new Date(payment.scheduledAt);
+              const networkBadge = getNetworkBadge(payment.chainId);
               return (
                 <TouchableOpacity
                   key={payment.id}
@@ -158,6 +167,11 @@ export default function ScheduledListScreen() {
                       {scheduledDate.toLocaleDateString()} at {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       {payment.recurringInterval && ` · ${payment.recurringInterval}`}
                     </Text>
+                    {networkBadge && (
+                      <Text style={[styles.networkBadgeText, { color: networkBadge.color }]}>
+                        {networkBadge.name}
+                      </Text>
+                    )}
                   </View>
                   <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
                 </TouchableOpacity>
@@ -248,6 +262,11 @@ const styles = StyleSheet.create({
   },
   paymentDate: {
     // color set inline
+  },
+  networkBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
   },
   emptyState: {
     alignItems: 'center',

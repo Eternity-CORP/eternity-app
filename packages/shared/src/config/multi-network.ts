@@ -177,6 +177,58 @@ export function getNetworkByChainId(chainId: number): MultiNetworkConfig | undef
   return networkId ? SUPPORTED_NETWORKS[networkId] : undefined;
 }
 
+/** Sepolia testnet chain ID */
+export const SEPOLIA_CHAIN_ID = 11155111;
+
+/**
+ * Get the correct chainId based on account type and selected network.
+ * Test/business accounts always use Sepolia; real accounts use the selected network.
+ */
+export function resolveChainId(isTestAccount: boolean, selectedNetwork?: NetworkId): number {
+  return isTestAccount ? SEPOLIA_CHAIN_ID : NETWORK_TO_CHAIN_ID[selectedNetwork || 'ethereum'];
+}
+
+/**
+ * Get a display-friendly network label from a chainId.
+ * Returns null for Sepolia (testnet default) and unknown chains.
+ */
+export function getNetworkLabel(chainId: number | null | undefined): string | null {
+  if (!chainId || chainId === SEPOLIA_CHAIN_ID) return null;
+  const networkId = CHAIN_ID_TO_NETWORK[chainId];
+  return networkId ? SUPPORTED_NETWORKS[networkId].shortName : null;
+}
+
+/**
+ * Get network badge info (name + color) from a chainId.
+ * Returns null for Sepolia and unknown chains.
+ */
+export function getNetworkBadge(chainId: number | null | undefined): { name: string; color: string } | null {
+  if (!chainId || chainId === SEPOLIA_CHAIN_ID) return null;
+  const networkId = CHAIN_ID_TO_NETWORK[chainId];
+  if (!networkId) return null;
+  const net = SUPPORTED_NETWORKS[networkId];
+  return net ? { name: net.shortName, color: net.color } : null;
+}
+
+/**
+ * Build Onramper fiat on-ramp URL for a wallet address.
+ * Returns null if no address provided.
+ */
+export function buildOnramperUrl(address: string | undefined, apiKey: string): string | null {
+  if (!address) return null;
+  const wallets = TIER1_NETWORK_IDS
+    .map((id) => `${SUPPORTED_NETWORKS[id].shortName.toLowerCase()}:${address}`)
+    .join(',');
+  return `https://buy.onramper.com?apiKey=${apiKey}&defaultCrypto=eth&wallets=${wallets}&mode=buy&darkMode=true`;
+}
+
+/**
+ * Build RPC URL for a single network with an Alchemy API key.
+ */
+export function buildRpcUrl(networkId: NetworkId, alchemyKey: string): string {
+  return SUPPORTED_NETWORKS[networkId].rpcUrlTemplate.replace('{apiKey}', alchemyKey);
+}
+
 /**
  * Build RPC URLs for all networks with an API key
  */

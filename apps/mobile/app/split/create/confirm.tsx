@@ -16,6 +16,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { SUPPORTED_NETWORKS, resolveChainId } from '@e-y/shared';
 
 export default function SplitConfirmScreen() {
   const dispatch = useAppDispatch();
@@ -59,12 +60,16 @@ export default function SplitConfirmScreen() {
         return;
       }
 
+      // Resolve chainId: test accounts use Sepolia, real accounts use the selected network
+      const chainId = resolveChainId(isTestAccount, splitCreate.selectedNetwork);
+
       await dispatch(
         createSplitBillThunk({
           creatorAddress: currentAccount.address,
           totalAmount: splitCreate.totalAmount,
           tokenSymbol: splitCreate.selectedToken,
           description: splitCreate.description || undefined,
+          chainId,
           participants: splitCreate.participants.map((p) => ({
             address: p.address,
             username: p.username,
@@ -153,6 +158,18 @@ export default function SplitConfirmScreen() {
               {getSplitModeText()}
             </Text>
           </View>
+
+          {/* Network row */}
+          {!isTestAccount && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                Network
+              </Text>
+              <Text style={[styles.detailValue, theme.typography.body, { color: SUPPORTED_NETWORKS[splitCreate.selectedNetwork]?.color ?? dynamicTheme.colors.textPrimary }]}>
+                {SUPPORTED_NETWORKS[splitCreate.selectedNetwork]?.name ?? splitCreate.selectedNetwork}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>

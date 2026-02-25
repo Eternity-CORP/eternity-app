@@ -11,7 +11,6 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
 import {
-  senderSetNetwork,
   senderStartConfirming,
   senderPaymentConfirmed,
   senderError,
@@ -27,12 +26,9 @@ import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { truncateAddress } from '@/src/utils/format';
-
-// Available networks
-const NETWORKS = [
-  { id: 'sepolia', name: 'Sepolia Testnet' },
-  { id: 'mainnet', name: 'Ethereum Mainnet' },
-];
+import { getNetworkByChainId, getRpcUrl } from '@/src/constants/networks';
+import { getNetworkLabel } from '@e-y/shared';
+import { JsonRpcProvider } from 'ethers';
 
 export default function BlikConfirmScreen() {
   const { theme: dynamicTheme } = useTheme();
@@ -45,12 +41,14 @@ export default function BlikConfirmScreen() {
 
   const [gasEstimate, setGasEstimate] = useState<GasEstimate | null>(null);
   const [gasEstimateStatus, setGasEstimateStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle');
-  const [showNetworkPicker, setShowNetworkPicker] = useState(false);
   const [showSaveContactModal, setShowSaveContactModal] = useState(false);
   const [contactName, setContactName] = useState('');
 
   const codeInfo = blik.sender.codeInfo;
-  const selectedNetwork = blik.sender.selectedNetwork;
+
+  // Derive network info from the code's chainId
+  const codeNetwork = codeInfo?.chainId ? getNetworkByChainId(codeInfo.chainId) : undefined;
+  const networkDisplayName = getNetworkLabel(codeInfo?.chainId) ?? `Chain ${codeInfo?.chainId ?? ''}`;
 
   // Redirect if no code info
   useEffect(() => {
@@ -193,9 +191,17 @@ export default function BlikConfirmScreen() {
       // Get token address
       const tokenAddress = codeInfo.tokenSymbol === 'ETH' ? 'ETH' : getTokenAddress(codeInfo.tokenSymbol);
 
+      // Build a provider for the code's specific network
+      let connectedWallet = hdWallet;
+      if (codeInfo.chainId && codeNetwork) {
+        const rpcUrl = getRpcUrl(codeNetwork.id);
+        const chainProvider = new JsonRpcProvider(rpcUrl);
+        connectedWallet = hdWallet.connect(chainProvider) as typeof hdWallet;
+      }
+
       // Send transaction
       const txHash = await sendTransaction({
-        wallet: hdWallet,
+        wallet: connectedWallet,
         to: codeInfo.receiverAddress,
         amount: codeInfo.amount,
         token: tokenAddress,
@@ -206,16 +212,16 @@ export default function BlikConfirmScreen() {
         code: codeInfo.code,
         txHash,
         senderAddress: currentAccount.address,
-        network: selectedNetwork,
+        network: codeNetwork?.name ?? 'sepolia',
+        chainId: codeInfo.chainId,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Transaction failed';
       dispatch(senderError(message));
       Alert.alert('Transaction Failed', message);
     }
-  }, [wallet.mnemonic, currentAccount, codeInfo, selectedNetwork, dispatch]);
+  }, [wallet.mnemonic, currentAccount, codeInfo, codeNetwork, dispatch]);
 
-  const selectedNetworkInfo = NETWORKS.find((n) => n.id === selectedNetwork) || NETWORKS[0];
   const canConfirm = gasEstimateStatus === 'succeeded' && blik.sender.status !== 'confirming';
   const isConfirming = blik.sender.status === 'confirming';
 
@@ -278,53 +284,20 @@ export default function BlikConfirmScreen() {
             </Text>
           </View>
 
-          {/* Network Selector */}
-          <TouchableOpacity
-            style={styles.detailRow}
-            onPress={() => setShowNetworkPicker(!showNetworkPicker)}
-          >
+          {/* Network — read-only, derived from code's chainId */}
+          <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
               Network
             </Text>
-            <View style={styles.networkSelector}>
+            <View style={styles.networkBadge}>
+              {codeNetwork && (
+                <View style={[styles.networkDot, { backgroundColor: codeNetwork.color }]} />
+              )}
               <Text style={[styles.detailValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
-                {selectedNetworkInfo.name}
+                {networkDisplayName}
               </Text>
-              <FontAwesome name="chevron-down" size={12} color={dynamicTheme.colors.textSecondary} />
             </View>
-          </TouchableOpacity>
-
-          {showNetworkPicker && (
-            <View style={[styles.networkPicker, { backgroundColor: dynamicTheme.colors.background }]}>
-              {NETWORKS.map((network) => (
-                <TouchableOpacity
-                  key={network.id}
-                  style={[
-                    styles.networkOption,
-                    selectedNetwork === network.id && { backgroundColor: dynamicTheme.colors.surface },
-                  ]}
-                  onPress={() => {
-                    dispatch(senderSetNetwork(network.id));
-                    setShowNetworkPicker(false);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.networkOptionText,
-                      theme.typography.body,
-                      { color: dynamicTheme.colors.textPrimary },
-                      selectedNetwork === network.id && styles.networkOptionTextSelected,
-                    ]}
-                  >
-                    {network.name}
-                  </Text>
-                  {selectedNetwork === network.id && (
-                    <FontAwesome name="check" size={14} color={dynamicTheme.colors.buttonPrimary} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          </View>
 
           {gasEstimateStatus === 'loading' && (
             <View style={styles.detailRow}>
@@ -459,8 +432,9 @@ export default function BlikConfirmScreen() {
 }
 
 /**
- * Get token contract address by symbol
- * TODO: Move to a config or fetch from backend
+ * Get token contract address by symbol.
+ * Returns 'ETH' as a fallback for unknown ERC-20 symbols.
+ * TODO: Replace with network-aware lookup once confirm screen carries networkId.
  */
 function getTokenAddress(symbol: string): string {
   const tokenAddresses: Record<string, string> = {
@@ -525,33 +499,15 @@ const styles = StyleSheet.create({
   detailValue: {
     color: theme.colors.textPrimary,
   },
-  networkSelector: {
+  networkBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
-  networkPicker: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
-  },
-  networkOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-  },
-  networkOptionSelected: {
-    backgroundColor: theme.colors.surface,
-  },
-  networkOptionText: {
-    color: theme.colors.textPrimary,
-  },
-  networkOptionTextSelected: {
-    fontWeight: '600',
+  networkDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   warningCard: {
     flexDirection: 'row',

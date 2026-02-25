@@ -37,6 +37,7 @@ import { signScheduledTransaction } from '@/src/services/scheduled-signing';
 import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
 import type { AnyNetworkId } from '@/src/services/network-service';
+import { getNetworkBadge, CHAIN_ID_TO_NETWORK } from '@e-y/shared';
 
 export default function ScheduledPaymentDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -184,6 +185,11 @@ export default function ScheduledPaymentDetailsScreen() {
         ? TESTNET_NETWORK_IDS[0]
         : TIER1_NETWORK_IDS[0];
 
+      // Resolve network from chainId stored on the payment (backward compat: fall back to default)
+      const paymentNetworkId: AnyNetworkId = payment.chainId
+        ? (CHAIN_ID_TO_NETWORK[payment.chainId] as AnyNetworkId ?? defaultNetwork)
+        : defaultNetwork;
+
       const isNativeToken = payment.tokenSymbol === 'ETH' ||
         payment.tokenSymbol === 'MATIC' ||
         payment.tokenSymbol === 'POL';
@@ -193,16 +199,17 @@ export default function ScheduledPaymentDetailsScreen() {
         (t) => t.symbol.toUpperCase() === payment.tokenSymbol.toUpperCase()
       );
 
-      let networkId: AnyNetworkId = payment.chainId
-        ? (payment.chainId as unknown as AnyNetworkId)
-        : defaultNetwork;
+      let networkId: AnyNetworkId = paymentNetworkId;
       let tokenAddress: string | null = null;
       let decimals = 18;
 
       if (!isNativeToken && aggregatedToken && aggregatedToken.networks.length > 0) {
-        const networkData = aggregatedToken.networks[0];
-        networkId = networkData.networkId as AnyNetworkId;
-        tokenAddress = networkData.contractAddress;
+        // Prefer the network matching the payment's chainId; fall back to first available
+        const preferredNetworkData = aggregatedToken.networks.find(
+          (n) => n.networkId === paymentNetworkId
+        ) ?? aggregatedToken.networks[0];
+        networkId = preferredNetworkData.networkId as AnyNetworkId;
+        tokenAddress = preferredNetworkData.contractAddress;
         decimals = aggregatedToken.decimals;
       }
 
@@ -399,6 +406,22 @@ export default function ScheduledPaymentDetailsScreen() {
               {new Date(payment.createdAt).toLocaleDateString()}
             </Text>
           </View>
+
+          {/* Network row — only show for non-Sepolia chainIds */}
+          {payment.chainId && (() => {
+            const networkBadge = getNetworkBadge(payment.chainId);
+            if (!networkBadge) return null;
+            return (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                  Network
+                </Text>
+                <Text style={[styles.detailText, theme.typography.body, { color: networkBadge.color }]}>
+                  {networkBadge.name}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
 
         {/* Actions */}

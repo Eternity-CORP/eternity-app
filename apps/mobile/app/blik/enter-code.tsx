@@ -24,6 +24,7 @@ import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { truncateAddress } from '@/src/utils/format';
+import { getNetworkBadge } from '@e-y/shared';
 
 const CODE_LENGTH = 6;
 
@@ -173,6 +174,23 @@ export default function BlikEnterCodeScreen() {
                   {blik.sender.codeInfo.receiverUsername || truncateAddress(blik.sender.codeInfo.receiverAddress)}
                 </Text>
               </View>
+              {blik.sender.codeInfo.chainId && (() => {
+                const networkBadge = getNetworkBadge(blik.sender.codeInfo.chainId);
+                const networkLabel = networkBadge?.name ?? `Chain ${blik.sender.codeInfo.chainId}`;
+                return (
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                      Network
+                    </Text>
+                    <View style={styles.networkBadge}>
+                      {networkBadge && <View style={[styles.networkDot, { backgroundColor: networkBadge.color }]} />}
+                      <Text style={[styles.previewValue, theme.typography.body, { color: dynamicTheme.colors.textPrimary }]}>
+                        {networkLabel}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })()}
             </View>
           </View>
         )}
@@ -254,6 +272,16 @@ const styles = StyleSheet.create({
   },
   previewValue: {
     color: theme.colors.textPrimary,
+  },
+  networkBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  networkDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   errorCard: {
     backgroundColor: theme.colors.error + '10',

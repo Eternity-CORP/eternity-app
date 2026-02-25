@@ -13,7 +13,7 @@ import {
   type CodeNotFoundPayload,
   SUPPORTED_NETWORKS,
   TIER1_NETWORK_IDS,
-  NETWORK_TO_CHAIN_ID,
+  resolveChainId,
   type NetworkId,
   formatErrorMessage,
 } from '@e-y/shared'
@@ -129,7 +129,7 @@ export default function BlikPage() {
   const handleCreateCode = useCallback(() => {
     if (!amount || parseFloat(amount) <= 0) return
 
-    const chainId = isTestAccount ? 11155111 : NETWORK_TO_CHAIN_ID[selectedNetwork]
+    const chainId = resolveChainId(isTestAccount, selectedNetwork)
     const tokenSymbol = isTestAccount
       ? network.symbol
       : SUPPORTED_NETWORKS[selectedNetwork].nativeCurrency.symbol

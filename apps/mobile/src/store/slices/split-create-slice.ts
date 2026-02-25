@@ -4,6 +4,7 @@
  */
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { NetworkId } from '@e-y/shared';
 
 export type SplitCreateStep = 'token' | 'amount' | 'mode' | 'participants' | 'delivery' | 'confirm';
 export type SplitMode = 'equal' | 'custom' | 'percentage';
@@ -20,6 +21,7 @@ export interface SplitParticipant {
 interface SplitCreateState {
   step: SplitCreateStep;
   selectedToken: string;
+  selectedNetwork: NetworkId;
   totalAmount: string;
   splitMode: SplitMode;
   participants: SplitParticipant[];
@@ -32,6 +34,7 @@ interface SplitCreateState {
 const initialState: SplitCreateState = {
   step: 'token',
   selectedToken: 'ETH',
+  selectedNetwork: 'base',
   totalAmount: '',
   splitMode: 'equal',
   participants: [],
@@ -84,6 +87,9 @@ const splitCreateSlice = createSlice({
     setDescription: (state, action: PayloadAction<string>) => {
       state.description = action.payload;
     },
+    setSelectedNetwork: (state, action: PayloadAction<NetworkId>) => {
+      state.selectedNetwork = action.payload;
+    },
     resetSplitCreate: () => initialState,
   },
 });
@@ -99,6 +105,7 @@ export const {
   updateParticipant,
   setDelivery,
   setDescription,
+  setSelectedNetwork,
   resetSplitCreate,
 } = splitCreateSlice.actions;
 

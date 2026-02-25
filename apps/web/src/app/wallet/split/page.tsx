@@ -19,8 +19,9 @@ import {
   formatErrorMessage,
   SUPPORTED_NETWORKS,
   TIER1_NETWORK_IDS,
-  NETWORK_TO_CHAIN_ID,
   CHAIN_ID_TO_NETWORK,
+  resolveChainId,
+  getNetworkLabel,
   type NetworkId,
   type SplitBill,
 } from '@e-y/shared'
@@ -158,7 +159,7 @@ export default function SplitPage() {
         finalTotal = totalAmount || participantAmounts.reduce((acc, a) => acc + parseFloat(a || '0'), 0).toFixed(6)
       }
 
-      const chainId = isTestAccount ? 11155111 : NETWORK_TO_CHAIN_ID[selectedNetwork]
+      const chainId = resolveChainId(isTestAccount, selectedNetwork)
 
       const newSplit = await createSplitBill(apiClient, {
         creatorAddress: address,
@@ -243,14 +244,6 @@ export default function SplitPage() {
 
     setPendingPayment(null)
   }, [pendingPayment, currentAccount, network, address, isTestAccount])
-
-  // Resolve network name from chainId for display
-  const getNetworkLabel = (chainId?: number): string | null => {
-    if (!chainId) return null
-    if (chainId === 11155111) return null // Sepolia is the default for test, don't show
-    const networkId = CHAIN_ID_TO_NETWORK[chainId]
-    return networkId ? SUPPORTED_NETWORKS[networkId].shortName : null
-  }
 
   const canSubmit = splitMode === 'equal'
     ? !!totalAmount && parsedEntries.length > 0

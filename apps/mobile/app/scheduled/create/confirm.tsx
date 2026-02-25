@@ -21,6 +21,7 @@ import { signScheduledTransaction } from '@/src/services/scheduled-signing';
 import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
 import type { AnyNetworkId } from '@/src/services/network-service';
+import { SUPPORTED_NETWORKS, resolveChainId } from '@e-y/shared';
 
 export default function ScheduledConfirmScreen() {
   const dispatch = useAppDispatch();
@@ -45,13 +46,16 @@ export default function ScheduledConfirmScreen() {
   const scheduledDate = new Date(scheduledCreate.scheduledDate);
 
   // Determine network and token address for signing
-  const getNetworkAndTokenInfo = (): { networkId: AnyNetworkId; tokenAddress: string | null; decimals: number } => {
+  const getNetworkAndTokenInfo = (): { networkId: AnyNetworkId; tokenAddress: string | null; decimals: number; chainId: number } => {
     const accountType = currentAccount?.type || 'test';
 
-    // Default network based on account type
+    // For test accounts use Sepolia, for real accounts use the user-selected network
     const defaultNetwork: AnyNetworkId = accountType === 'test'
       ? TESTNET_NETWORK_IDS[0]
-      : TIER1_NETWORK_IDS[0];
+      : (scheduledCreate.selectedNetwork as AnyNetworkId) || TIER1_NETWORK_IDS[0];
+
+    // Resolve chainId for the chosen network
+    const resolvedChainId = resolveChainId(accountType === 'test', scheduledCreate.selectedNetwork);
 
     // Native token (ETH/etc)
     const isNativeToken = scheduledCreate.selectedToken === 'ETH' ||
@@ -59,21 +63,25 @@ export default function ScheduledConfirmScreen() {
       scheduledCreate.selectedToken === 'POL';
 
     if (isNativeToken) {
-      return { networkId: defaultNetwork, tokenAddress: null, decimals: 18 };
+      return { networkId: defaultNetwork, tokenAddress: null, decimals: 18, chainId: resolvedChainId };
     }
 
     // For ERC-20 tokens, find the contract address from aggregated balances
+    // Prefer network matching the user's selection; fall back to first available
     if (aggregatedToken && aggregatedToken.networks.length > 0) {
-      const networkData = aggregatedToken.networks[0];
+      const preferredNetworkData = aggregatedToken.networks.find(
+        (n) => n.networkId === scheduledCreate.selectedNetwork
+      ) ?? aggregatedToken.networks[0];
       return {
-        networkId: networkData.networkId as AnyNetworkId,
-        tokenAddress: networkData.contractAddress,
+        networkId: preferredNetworkData.networkId as AnyNetworkId,
+        tokenAddress: preferredNetworkData.contractAddress,
         decimals: aggregatedToken.decimals,
+        chainId: resolvedChainId,
       };
     }
 
     // Fallback - shouldn't happen if token selection works correctly
-    return { networkId: defaultNetwork, tokenAddress: null, decimals: 18 };
+    return { networkId: defaultNetwork, tokenAddress: null, decimals: 18, chainId: resolvedChainId };
   };
 
   const handleConfirm = async () => {
@@ -95,7 +103,7 @@ export default function ScheduledConfirmScreen() {
       const signingWallet = getWalletFromMnemonic(walletData.mnemonic, currentAccount.accountIndex);
 
       // Get network and token info
-      const { networkId, tokenAddress, decimals } = getNetworkAndTokenInfo();
+      const { networkId, tokenAddress, decimals, chainId: resolvedChainId } = getNetworkAndTokenInfo();
       const accountType = currentAccount.type || 'test';
 
       // Sign the transaction
@@ -126,7 +134,7 @@ export default function ScheduledConfirmScreen() {
           signedTransaction: signedData.signedTransaction,
           estimatedGasPrice: signedData.estimatedGasPrice,
           nonce: signedData.nonce,
-          chainId: signedData.chainId,
+          chainId: resolvedChainId,
         })
       ).unwrap();
 
@@ -262,6 +270,18 @@ export default function ScheduledConfirmScreen() {
               </Text>
               <Text style={[styles.detailValue, theme.typography.body, styles.descriptionText, { color: dynamicTheme.colors.textPrimary }]}>
                 {scheduledCreate.description}
+              </Text>
+            </View>
+          )}
+
+          {/* Network row — only show for real accounts */}
+          {!isTestAccount && (
+            <View style={styles.detailRow}>
+              <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                Network
+              </Text>
+              <Text style={[styles.detailValue, theme.typography.body, { color: SUPPORTED_NETWORKS[scheduledCreate.selectedNetwork]?.color ?? dynamicTheme.colors.textPrimary }]}>
+                {SUPPORTED_NETWORKS[scheduledCreate.selectedNetwork]?.name ?? scheduledCreate.selectedNetwork}
               </Text>
             </View>
           )}

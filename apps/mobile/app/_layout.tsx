@@ -198,6 +198,7 @@ function RootLayoutNav() {
           <Stack.Screen name="split" options={{ headerShown: false }} />
           <Stack.Screen name="swap" options={{ headerShown: false }} />
           <Stack.Screen name="business" options={{ headerShown: false }} />
+          <Stack.Screen name="deposit" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>
     </NotificationProvider>

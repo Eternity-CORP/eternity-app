@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { setRecipient, setStep, resetScheduledCreate } from '@/src/store/slices/scheduled-create-slice';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { setRecipient, setStep, resetScheduledCreate, setSelectedNetwork } from '@/src/store/slices/scheduled-create-slice';
+import { getCurrentAccount, selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { validateAddress } from '@/src/services/send-service';
 import { lookupUsername, isValidUsernameFormat } from '@/src/services/username-service';
@@ -17,7 +17,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
-import { debounce } from '@e-y/shared';
+import { debounce, SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, type NetworkId } from '@e-y/shared';
 import type { Contact } from '@/src/services/contacts-service';
 
 export default function ScheduledRecipientScreen() {
@@ -27,6 +27,7 @@ export default function ScheduledRecipientScreen() {
   const wallet = useAppSelector((state) => state.wallet);
   const contacts = useAppSelector((state) => state.contacts.contacts);
   const currentAccount = getCurrentAccount(wallet);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
   const [input, setInput] = useState(scheduledCreate.recipient);
   const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [resolvedUsername, setResolvedUsername] = useState<string | null>(null);
@@ -184,6 +185,38 @@ export default function ScheduledRecipientScreen() {
             Who are you sending to?
           </Text>
 
+          {/* Network selector — only for real accounts */}
+          {!isTestAccount && (
+            <View style={styles.networkSection}>
+              <Text style={[styles.networkLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                Network
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.networkScroll}>
+                {TIER1_NETWORK_IDS.map((id) => {
+                  const net = SUPPORTED_NETWORKS[id];
+                  const isSelected = id === scheduledCreate.selectedNetwork;
+                  return (
+                    <TouchableOpacity
+                      key={id}
+                      onPress={() => dispatch(setSelectedNetwork(id as NetworkId))}
+                      style={[
+                        styles.networkChip,
+                        {
+                          borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
+                          backgroundColor: isSelected ? net.color + '20' : 'transparent',
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.networkChipText, { color: isSelected ? net.color : 'rgba(255,255,255,0.4)' }]}>
+                        {net.shortName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, theme.typography.body, { backgroundColor: dynamicTheme.colors.surface, color: dynamicTheme.colors.textPrimary }]}
@@ -307,6 +340,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.xl,
+  },
+  networkSection: {
+    marginBottom: theme.spacing.lg,
+  },
+  networkLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.sm,
+  },
+  networkScroll: {
+    flexGrow: 0,
+  },
+  networkChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
+  },
+  networkChipText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   inputContainer: {
     marginTop: theme.spacing.md,

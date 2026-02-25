@@ -23,6 +23,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { getNetworkBadge } from '@e-y/shared';
 
 export default function SplitDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -190,6 +191,22 @@ export default function SplitDetailsScreen() {
               {new Date(bill.createdAt).toLocaleDateString()}
             </Text>
           </View>
+
+          {/* Network row — only show for non-Sepolia chainIds */}
+          {bill.chainId && (() => {
+            const networkBadge = getNetworkBadge(bill.chainId);
+            if (!networkBadge) return null;
+            return (
+              <View style={styles.detailRow}>
+                <Text style={[styles.detailLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                  Network
+                </Text>
+                <Text style={[styles.detailText, theme.typography.body, { color: networkBadge.color }]}>
+                  {networkBadge.name}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
 
         {/* Participants */}

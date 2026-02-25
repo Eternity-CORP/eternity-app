@@ -7,21 +7,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
-import { setSelectedToken, setStep, resetSplitCreate } from '@/src/store/slices/split-create-slice';
+import { setSelectedToken, setStep, resetSplitCreate, setSelectedNetwork } from '@/src/store/slices/split-create-slice';
+import { selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { TokenIcon } from '@/src/components/TokenIcon';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
+import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, type NetworkId } from '@e-y/shared';
 
 export default function SplitTokenScreen() {
   const dispatch = useAppDispatch();
   const { theme: dynamicTheme } = useTheme();
   const balance = useAppSelector((state) => state.balance);
+  const splitCreate = useAppSelector((state) => state.splitCreate);
+  const isTestAccount = useAppSelector(selectIsTestAccount);
 
   // Reset state when starting new flow
   useEffect(() => {
     dispatch(resetSplitCreate());
   }, [dispatch]);
+
+  const handleNetworkSelect = (networkId: NetworkId) => {
+    dispatch(setSelectedNetwork(networkId));
+  };
 
   const handleTokenSelect = (token: string) => {
     dispatch(setSelectedToken(token));
@@ -40,6 +48,38 @@ export default function SplitTokenScreen() {
         <Text style={[styles.subtitle, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
           Select token to split
         </Text>
+
+        {/* Network selector — only for real accounts */}
+        {!isTestAccount && (
+          <View style={styles.networkSection}>
+            <Text style={[styles.networkLabel, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+              Network
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.networkScroll}>
+              {TIER1_NETWORK_IDS.map((id) => {
+                const net = SUPPORTED_NETWORKS[id];
+                const isSelected = id === splitCreate.selectedNetwork;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    onPress={() => handleNetworkSelect(id)}
+                    style={[
+                      styles.networkChip,
+                      {
+                        borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
+                        backgroundColor: isSelected ? net.color + '20' : 'transparent',
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.networkChipText, { color: isSelected ? net.color : 'rgba(255,255,255,0.4)' }]}>
+                      {net.shortName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
 
         <ScrollView style={styles.tokenList} contentContainerStyle={styles.tokenListContent}>
           {balance.balances.map((token) => (
@@ -90,6 +130,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.xl,
+  },
+  networkSection: {
+    marginBottom: theme.spacing.lg,
+  },
+  networkLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.sm,
+  },
+  networkScroll: {
+    flexGrow: 0,
+  },
+  networkChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 8,
+  },
+  networkChipText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   tokenList: {
     flex: 1,

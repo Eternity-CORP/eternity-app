@@ -28,6 +28,13 @@ export function ActionButtons({ onOpenActionsMenu }: ActionButtonsProps) {
       </TouchableOpacity>
 
       <TouchableOpacity
+        style={[styles.actionButtonSecondary, { borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
+        onPress={() => router.push('/deposit' as any)}
+      >
+        <Text style={[styles.actionButtonSecondaryText, { color: dynamicTheme.colors.buttonSecondaryText }]}>Buy</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[styles.actionButtonMore, { backgroundColor: dynamicTheme.colors.surface, borderColor: dynamicTheme.colors.border }]}
         onPress={onOpenActionsMenu}
       >

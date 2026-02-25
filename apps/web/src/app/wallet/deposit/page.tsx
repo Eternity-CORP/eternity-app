@@ -1,5 +1,6 @@
 'use client'
 
+import { buildOnramperUrl } from '@e-y/shared'
 import { useAccount } from '@/contexts/account-context'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
@@ -11,9 +12,7 @@ export default function DepositPage() {
 
   const isTestAccount = currentAccount?.type === 'test'
 
-  const onramperUrl = address
-    ? `https://buy.onramper.com?apiKey=pk_prod_01JFGCX6TRMG3CXE5FE43130GG&defaultCrypto=eth&wallets=eth:${address},polygon:${address},base:${address},arbitrum:${address},optimism:${address}&networkWallets=ethereum:${address},polygon:${address},base:${address},arbitrum_one:${address},optimism:${address}&mode=buy&darkMode=true`
-    : null
+  const onramperUrl = buildOnramperUrl(address, 'pk_prod_01JFGCX6TRMG3CXE5FE43130GG')
 
   return (
     <div className="min-h-screen relative z-[2]">

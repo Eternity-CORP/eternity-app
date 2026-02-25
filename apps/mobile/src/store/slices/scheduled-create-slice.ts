@@ -5,6 +5,7 @@
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RecurringInterval } from '@/src/services/scheduled-payment-service';
+import type { NetworkId } from '@e-y/shared';
 
 export type ScheduledCreateStep = 'recipient' | 'token' | 'amount' | 'schedule' | 'confirm';
 
@@ -14,6 +15,7 @@ interface ScheduledCreateState {
   recipientUsername: string | null;
   recipientName: string | null;
   selectedToken: string;
+  selectedNetwork: NetworkId;
   amount: string;
   scheduledDate: string; // ISO string
   isRecurring: boolean;
@@ -27,6 +29,7 @@ const initialState: ScheduledCreateState = {
   recipientUsername: null,
   recipientName: null,
   selectedToken: 'ETH',
+  selectedNetwork: 'base',
   amount: '',
   scheduledDate: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hour from now
   isRecurring: false,
@@ -67,6 +70,9 @@ const scheduledCreateSlice = createSlice({
       state.recurringInterval = action.payload.recurringInterval;
       state.description = action.payload.description;
     },
+    setSelectedNetwork: (state, action: PayloadAction<NetworkId>) => {
+      state.selectedNetwork = action.payload;
+    },
     resetScheduledCreate: () => initialState,
   },
 });
@@ -77,6 +83,7 @@ export const {
   setSelectedToken,
   setAmount,
   setSchedule,
+  setSelectedNetwork,
   resetScheduledCreate,
 } = scheduledCreateSlice.actions;
 

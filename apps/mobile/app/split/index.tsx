@@ -21,6 +21,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
+import { getNetworkBadge } from '@e-y/shared';
 
 export default function SplitListScreen() {
   const { theme: dynamicTheme } = useTheme();
@@ -60,6 +61,7 @@ export default function SplitListScreen() {
     }
   };
 
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
       <ScreenHeader
@@ -92,6 +94,7 @@ export default function SplitListScreen() {
               const myShare = bill.participants.find(
                 (p) => p.address.toLowerCase() === currentAccount?.address?.toLowerCase()
               );
+              const networkBadge = getNetworkBadge(bill.chainId);
               return (
                 <TouchableOpacity
                   key={`pending-${bill.id}`}
@@ -108,6 +111,11 @@ export default function SplitListScreen() {
                     <Text style={[styles.splitDescription, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                       {bill.description || `From ${bill.creatorUsername ? `@${bill.creatorUsername}` : truncateAddress(bill.creatorAddress)}`}
                     </Text>
+                    {networkBadge && (
+                      <Text style={[styles.networkBadgeText, { color: networkBadge.color }]}>
+                        {networkBadge.name}
+                      </Text>
+                    )}
                   </View>
                   <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
                 </TouchableOpacity>
@@ -126,6 +134,7 @@ export default function SplitListScreen() {
               const paidCount = bill.participants.filter((p) => p.status === 'paid').length;
               const totalCount = bill.participants.length;
               const statusBadge = getStatusBadge(bill.status);
+              const networkBadge = getNetworkBadge(bill.chainId);
               return (
                 <TouchableOpacity
                   key={`created-${bill.id}`}
@@ -146,6 +155,11 @@ export default function SplitListScreen() {
                     <Text style={[styles.splitDescription, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
                       {bill.description || `${paidCount}/${totalCount} paid`}
                     </Text>
+                    {networkBadge && (
+                      <Text style={[styles.networkBadgeText, { color: networkBadge.color }]}>
+                        {networkBadge.name}
+                      </Text>
+                    )}
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: statusBadge.color + '20' }]}>
                     <Text style={[styles.statusText, theme.typography.caption, { color: statusBadge.color }]}>
@@ -234,6 +248,11 @@ const styles = StyleSheet.create({
   },
   splitDescription: {
     // color set inline
+  },
+  networkBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
   },
   statusBadge: {
     paddingHorizontal: theme.spacing.md,
