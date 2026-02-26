@@ -1,33 +1,47 @@
 {
   "expo": {
     "name": "E-Y",
-    "slug": "mobile",
-    "version": "1.0.0",
+    "slug": "e-y",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "ey",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.eternaki.mobile",
+      "bundleIdentifier": "com.eternity.wallet",
+      "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "E-Y needs camera access to scan QR codes for wallet addresses and payments.",
+        "NSFaceIDUsageDescription": "E-Y uses Face ID to secure access to your wallet.",
+        "NSMicrophoneUsageDescription": "E-Y uses the microphone for voice input."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.eternaki.mobile"
+      "package": "com.eternity.wallet",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "VIBRATE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +51,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "E-Y needs camera access to scan QR codes for wallet addresses and payments."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
@@ -44,6 +64,13 @@
           "sounds": []
         }
       ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "E-Y uses Face ID to secure access to your wallet."
+        }
+      ],
+      "expo-secure-store",
       "@react-native-community/datetimepicker",
       "expo-font",
       [
@@ -51,6 +78,13 @@
         {
           "microphonePermission": "Allow E-Y to use the microphone for voice input.",
           "speechRecognitionPermission": "Allow E-Y to use speech recognition."
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "e-y",
+          "project": "mobile"
         }
       ]
     ],
@@ -62,6 +96,13 @@
       "eas": {
         "projectId": "14113467-98b8-43ff-8402-0c324cf731f7"
       }
+    },
+    "owner": "eternity-wallet",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/14113467-98b8-43ff-8402-0c324cf731f7"
     }
   }
 }

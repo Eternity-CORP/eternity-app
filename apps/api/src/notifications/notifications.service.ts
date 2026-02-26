@@ -232,6 +232,185 @@ export class NotificationsService {
   }
 
   /**
+   * Send split created notification to participants
+   */
+  async sendSplitCreatedNotification(
+    participantAddresses: string[],
+    creatorName: string,
+    description: string | null,
+    totalAmount: string,
+    tokenSymbol: string,
+    splitId: string,
+  ): Promise<void> {
+    const body = description
+      ? `${creatorName} added you to "${description}" - ${totalAmount} ${tokenSymbol}`
+      : `${creatorName} added you to a split bill - ${totalAmount} ${tokenSymbol}`;
+
+    await this.sendToWallets(participantAddresses, {
+      title: 'New Split Bill',
+      body,
+      data: {
+        type: 'split_created',
+        splitId,
+        totalAmount,
+        tokenSymbol,
+      },
+      channelId: 'payments',
+    });
+  }
+
+  /**
+   * Send split paid notification to the creator
+   */
+  async sendSplitPaidNotification(
+    creatorAddress: string,
+    payerName: string,
+    amount: string,
+    tokenSymbol: string,
+    splitId: string,
+  ): Promise<void> {
+    await this.sendToWallet(creatorAddress, {
+      title: 'Split Payment Received',
+      body: `${payerName} paid their share: ${amount} ${tokenSymbol}`,
+      data: {
+        type: 'split_paid',
+        splitId,
+        amount,
+        tokenSymbol,
+      },
+      channelId: 'payments',
+    });
+  }
+
+  /**
+   * Send split completed notification to all participants
+   */
+  async sendSplitCompleteNotification(
+    allAddresses: string[],
+    totalAmount: string,
+    tokenSymbol: string,
+    splitId: string,
+  ): Promise<void> {
+    await this.sendToWallets(allAddresses, {
+      title: 'Split Bill Complete!',
+      body: `Everyone has paid. Total: ${totalAmount} ${tokenSymbol}`,
+      data: {
+        type: 'split_complete',
+        splitId,
+        totalAmount,
+        tokenSymbol,
+      },
+      channelId: 'payments',
+    });
+  }
+
+  /**
+   * Send payment received notification (generic transfer)
+   */
+  async sendPaymentReceivedNotification(
+    receiverAddress: string,
+    amount: string,
+    tokenSymbol: string,
+    fromAddress: string,
+    fromName: string | undefined,
+    txHash: string,
+  ): Promise<void> {
+    const sender = fromName || `${fromAddress.slice(0, 6)}...${fromAddress.slice(-4)}`;
+
+    await this.sendToWallet(receiverAddress, {
+      title: 'Payment Received',
+      body: `You received ${amount} ${tokenSymbol} from ${sender}`,
+      data: {
+        type: 'payment_received',
+        fromAddress,
+        amount,
+        tokenSymbol,
+        txHash,
+      },
+      channelId: 'payments',
+    });
+  }
+
+  /**
+   * Send scheduled payment executed notification
+   */
+  async sendScheduledExecutedNotification(
+    creatorAddress: string,
+    recipient: string,
+    amount: string,
+    tokenSymbol: string,
+    txHash: string,
+  ): Promise<void> {
+    const recipientShort = `${recipient.slice(0, 6)}...${recipient.slice(-4)}`;
+
+    await this.sendToWallet(creatorAddress, {
+      title: 'Scheduled Payment Executed',
+      body: `Your payment of ${amount} ${tokenSymbol} to ${recipientShort} was sent`,
+      data: {
+        type: 'scheduled_executed',
+        recipient,
+        amount,
+        tokenSymbol,
+        txHash,
+      },
+      channelId: 'scheduled',
+    });
+  }
+
+  /**
+   * Send scheduled payment reminder notification
+   */
+  async sendScheduledReminderNotification(
+    creatorAddress: string,
+    recipient: string,
+    amount: string,
+    tokenSymbol: string,
+    paymentId: string,
+  ): Promise<void> {
+    const recipientShort = `${recipient.slice(0, 6)}...${recipient.slice(-4)}`;
+
+    await this.sendToWallet(creatorAddress, {
+      title: 'Payment Due Soon',
+      body: `Your payment of ${amount} ${tokenSymbol} to ${recipientShort} is due soon`,
+      data: {
+        type: 'scheduled_reminder',
+        paymentId,
+        recipient,
+        amount,
+        tokenSymbol,
+      },
+      channelId: 'scheduled',
+    });
+  }
+
+  /**
+   * Send scheduled payment failed notification
+   */
+  async sendScheduledFailedNotification(
+    creatorAddress: string,
+    recipient: string,
+    amount: string,
+    tokenSymbol: string,
+    reason: string,
+    paymentId: string,
+  ): Promise<void> {
+    const recipientShort = `${recipient.slice(0, 6)}...${recipient.slice(-4)}`;
+
+    await this.sendToWallet(creatorAddress, {
+      title: 'Scheduled Payment Failed',
+      body: `Payment of ${amount} ${tokenSymbol} to ${recipientShort} failed: ${reason}`,
+      data: {
+        type: 'scheduled_failed',
+        paymentId,
+        recipient,
+        amount,
+        tokenSymbol,
+      },
+      channelId: 'scheduled',
+    });
+  }
+
+  /**
    * Send push notifications via Expo Push API
    */
   private async sendPushNotifications(messages: ExpoPushMessage[]): Promise<void> {

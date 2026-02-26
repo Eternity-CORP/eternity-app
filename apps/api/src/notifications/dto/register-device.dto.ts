@@ -10,8 +10,8 @@ export class RegisterDeviceDto {
   pushToken: string;
 
   @IsString()
-  @IsIn(['ios', 'android'])
-  platform: 'ios' | 'android';
+  @IsIn(['ios', 'android', 'web'])
+  platform: 'ios' | 'android' | 'web';
 
   @IsString()
   @IsOptional()

@@ -10,6 +10,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { SplitBill, SplitParticipant, SplitBillStatus, ParticipantStatus } from './entities';
 import { CreateSplitDto, MarkPaidDto } from './dto';
 import { SplitGateway } from './split.gateway';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // Spam protection constants
 const MAX_ACTIVE_SPLITS_PER_ADDRESS = 10;
@@ -52,6 +53,7 @@ export class SplitService {
     private readonly supabase: SupabaseService,
     @Inject(forwardRef(() => SplitGateway))
     private readonly splitGateway: SplitGateway,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -166,6 +168,20 @@ export class SplitService {
 
     // Notify participants via WebSocket
     this.splitGateway.notifySplitCreated(splitBill);
+
+    // Send push notifications to participants (non-blocking)
+    const participantAddresses = splitBill.participants.map((p) => p.address);
+    const creatorName = dto.creatorUsername || `${dto.creatorAddress.slice(0, 6)}...${dto.creatorAddress.slice(-4)}`;
+    this.notificationsService.sendSplitCreatedNotification(
+      participantAddresses,
+      creatorName,
+      dto.description || null,
+      dto.totalAmount,
+      dto.tokenSymbol,
+      splitBill.id,
+    ).catch((err) => {
+      this.logger.warn(`Failed to send split created push notification: ${err.message}`);
+    });
 
     return splitBill;
   }
@@ -355,8 +371,20 @@ export class SplitService {
     const updatedBill = await this.findById(splitId);
     const allPaid = updatedBill.participants.every((p) => p.status === 'paid');
 
-    // Notify about payment
+    // Notify about payment via WebSocket
     this.splitGateway.notifyParticipantPaid(updatedBill, dto.participantAddress);
+
+    // Send push notification to creator about payment (non-blocking)
+    const payerName = participant.username || participant.name || `${dto.participantAddress.slice(0, 6)}...${dto.participantAddress.slice(-4)}`;
+    this.notificationsService.sendSplitPaidNotification(
+      updatedBill.creatorAddress,
+      payerName,
+      participant.amount,
+      updatedBill.tokenSymbol,
+      splitId,
+    ).catch((err) => {
+      this.logger.warn(`Failed to send split paid push notification: ${err.message}`);
+    });
 
     if (allPaid) {
       const { error: billUpdateError } = await this.supabase
@@ -369,8 +397,22 @@ export class SplitService {
       } else {
         this.logger.log(`Split bill ${splitId} completed - all participants paid`);
         updatedBill.status = 'completed';
-        // Notify completion
+        // Notify completion via WebSocket
         this.splitGateway.notifySplitCompleted(updatedBill);
+
+        // Send push notification for completion (non-blocking)
+        const allAddresses = [
+          updatedBill.creatorAddress,
+          ...updatedBill.participants.map((p) => p.address),
+        ];
+        this.notificationsService.sendSplitCompleteNotification(
+          allAddresses,
+          updatedBill.totalAmount,
+          updatedBill.tokenSymbol,
+          splitId,
+        ).catch((err) => {
+          this.logger.warn(`Failed to send split complete push notification: ${err.message}`);
+        });
       }
     }
 

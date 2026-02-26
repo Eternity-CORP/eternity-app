@@ -26,6 +26,7 @@ import {
   verifySocketAuth,
   verifyAddressOwnership,
 } from '../common/ws-auth.guard';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -75,6 +76,8 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
 
   private pendingTransactions: Map<string, PendingTransaction> = new Map();
   private pollingInterval: NodeJS.Timeout | null = null;
+
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   /**
    * RPC URL cache keyed by chainId.
@@ -287,6 +290,20 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
         this.logger.log(
           `Transaction ${txHash} ${status} on chain ${pendingTx.chainId}`,
         );
+
+        // Send push notification for confirmed transactions (non-blocking)
+        if (status === 'confirmed') {
+          this.notificationsService.sendPaymentReceivedNotification(
+            pendingTx.userAddress,
+            '', // Amount is not available from receipt alone
+            '', // Token is not available from receipt alone
+            '', // From address is not available from receipt alone
+            undefined,
+            txHash,
+          ).catch((err) => {
+            this.logger.warn(`Failed to send tx confirmed push notification: ${err.message}`);
+          });
+        }
       } else {
         // Still pending - emit pending status
         this.server.to(`tx:${txHash}`).emit('status-update', {

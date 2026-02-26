@@ -8,12 +8,39 @@ const logger = new Logger('Bootstrap');
 
 // Initialize Sentry before app creation
 const SENTRY_DSN = process.env.SENTRY_DSN;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
-    debug: process.env.NODE_ENV !== 'production',
+    release: `e-y-api@${process.env.npm_package_version || '0.1.0'}`,
+    serverName: process.env.RAILWAY_SERVICE_NAME || 'e-y-api',
+
+    // Performance monitoring
+    tracesSampleRate: IS_PRODUCTION ? 0.2 : 1.0,
+    // Profile 10% of sampled transactions in production
+    profilesSampleRate: IS_PRODUCTION ? 0.1 : 1.0,
+
+    debug: !IS_PRODUCTION,
+
+    // Filter out noisy/expected errors
+    beforeSend(event) {
+      // Skip health-check related errors
+      if (event.request?.url?.includes('/health')) {
+        return null;
+      }
+      return event;
+    },
+
+    // Attach breadcrumbs for console logs so they appear in Sentry timeline
+    beforeBreadcrumb(breadcrumb) {
+      // Drop overly verbose debug breadcrumbs in production
+      if (IS_PRODUCTION && breadcrumb.level === 'debug') {
+        return null;
+      }
+      return breadcrumb;
+    },
   });
   logger.log('Sentry initialized');
 }

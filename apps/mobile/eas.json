@@ -20,12 +20,31 @@
       "ios": {
         "simulator": false
       },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://e-y-api-production.up.railway.app",
+        "EXPO_PUBLIC_WS_URL": "wss://e-y-api-production.up.railway.app",
+        "EXPO_PUBLIC_NETWORK": "sepolia"
+      },
       "node": "22.14.0"
     },
     "production": {
       "distribution": "store",
+      "ios": {
+        "autoIncrement": true
+      },
+      "android": {
+        "autoIncrement": true,
+        "buildType": "app-bundle"
+      },
       "env": {
         "NODE_ENV": "production",
+        "EXPO_PUBLIC_API_URL": "https://e-y-api-production.up.railway.app",
+        "EXPO_PUBLIC_WS_URL": "wss://e-y-api-production.up.railway.app",
+        "EXPO_PUBLIC_NETWORK": "sepolia",
         "SENTRY_PROJECT": "mobile",
         "SENTRY_ORG": "e-y"
       },
@@ -33,6 +52,16 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "YOUR_APPLE_ID@example.com",
+        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
+        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-services-key.json",
+        "track": "internal"
+      }
+    }
   }
 }

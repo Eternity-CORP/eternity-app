@@ -18,6 +18,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import * as Sentry from '@sentry/node';
 import {
   verifySocketAuth,
   verifyAddressOwnership,
@@ -48,10 +49,34 @@ export abstract class BaseSubscriptionGateway
     this.logger.log(
       `Client connected: ${client.id} (authenticated=${authenticated})`,
     );
+
+    // Sentry breadcrumb for WebSocket connection tracking
+    Sentry.addBreadcrumb({
+      category: 'websocket',
+      message: `WS connect: ${client.id}`,
+      level: 'info',
+      timestamp: Date.now() / 1000,
+      data: {
+        clientId: client.id,
+        authenticated,
+        gateway: this.constructor.name,
+      },
+    });
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
+
+    Sentry.addBreadcrumb({
+      category: 'websocket',
+      message: `WS disconnect: ${client.id}`,
+      level: 'info',
+      timestamp: Date.now() / 1000,
+      data: {
+        clientId: client.id,
+        gateway: this.constructor.name,
+      },
+    });
 
     // Remove client from all subscriptions
     this.subscriptions.forEach((sockets, address) => {
@@ -121,6 +146,19 @@ export abstract class BaseSubscriptionGateway
     const normalizedAddress = address.toLowerCase();
     this.server.to(`address:${normalizedAddress}`).emit(event, data);
     this.logger.debug(`Emitted ${event} to ${normalizedAddress}`);
+
+    // Track WS events as breadcrumbs for debugging event flow
+    Sentry.addBreadcrumb({
+      category: 'websocket.emit',
+      message: `Emit ${event} to ${normalizedAddress.slice(0, 10)}...`,
+      level: 'info',
+      timestamp: Date.now() / 1000,
+      data: {
+        event,
+        address: normalizedAddress,
+        gateway: this.constructor.name,
+      },
+    });
   }
 
   /**

@@ -13,6 +13,7 @@ import { ScheduledPayment, RecurringInterval, ScheduledPaymentStatus } from './e
 import { CreateScheduledDto, UpdateScheduledDto, ExecuteScheduledDto } from './dto';
 import { ScheduledGateway } from './scheduled.gateway';
 import { SupabaseService } from '../supabase/supabase.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CHAIN_RPC_URLS } from '@e-y/shared';
 
 /**
@@ -58,6 +59,7 @@ export class ScheduledService {
     @Inject(forwardRef(() => ScheduledGateway))
     private readonly scheduledGateway: ScheduledGateway,
     private readonly configService: ConfigService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.alchemyApiKey = this.configService.get<string>('ALCHEMY_API_KEY') || '';
   }
@@ -496,6 +498,17 @@ export class ScheduledService {
       // Send reminder via WebSocket
       this.scheduledGateway.notifyPaymentReminder(payment);
 
+      // Send push notification reminder (non-blocking)
+      this.notificationsService.sendScheduledReminderNotification(
+        payment.creatorAddress,
+        payment.recipient,
+        payment.amount,
+        payment.tokenSymbol,
+        payment.id,
+      ).catch((err) => {
+        this.logger.warn(`Failed to send scheduled reminder push notification: ${err.message}`);
+      });
+
       // Mark reminder as sent
       await this.supabaseService
         .from('scheduled_payments')
@@ -913,8 +926,19 @@ export class ScheduledService {
 
       this.logger.log(`Payment ${payment.id} executed successfully with tx ${receipt.hash}`);
 
-      // Notify user
+      // Notify user via WebSocket
       this.scheduledGateway.notifyPaymentExecuted(payment);
+
+      // Send push notification for successful execution (non-blocking)
+      this.notificationsService.sendScheduledExecutedNotification(
+        payment.creatorAddress,
+        payment.recipient,
+        payment.amount,
+        payment.tokenSymbol,
+        receipt.hash,
+      ).catch((err) => {
+        this.logger.warn(`Failed to send scheduled executed push notification: ${err.message}`);
+      });
 
       // Handle recurring payments - need to create next occurrence
       // Note: Recurring payments will need to be re-signed by the user
@@ -940,6 +964,18 @@ export class ScheduledService {
       this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
         payment,
         reason: failureReason,
+      });
+
+      // Send push notification for failure (non-blocking)
+      this.notificationsService.sendScheduledFailedNotification(
+        payment.creatorAddress,
+        payment.recipient,
+        payment.amount,
+        payment.tokenSymbol,
+        failureReason,
+        payment.id,
+      ).catch((err) => {
+        this.logger.warn(`Failed to send scheduled failed push notification: ${err.message}`);
       });
     }
   }
