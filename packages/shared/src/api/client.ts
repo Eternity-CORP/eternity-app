@@ -71,9 +71,11 @@ async function request<T>(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  // Chain external signal if provided
+  // Chain external signal if provided — store handler reference for cleanup
+  let externalAbortHandler: (() => void) | undefined;
   if (options.signal) {
-    options.signal.addEventListener('abort', () => controller.abort());
+    externalAbortHandler = () => controller.abort();
+    options.signal.addEventListener('abort', externalAbortHandler);
   }
 
   try {
@@ -88,8 +90,6 @@ async function request<T>(
       },
     });
 
-    clearTimeout(timeoutId);
-
     if (!response.ok) {
       throw await parseErrorResponse(response);
     }
@@ -97,8 +97,6 @@ async function request<T>(
     const text = await response.text();
     return (text ? JSON.parse(text) : null) as T;
   } catch (error) {
-    clearTimeout(timeoutId);
-
     if (error instanceof ApiError) {
       throw error;
     }
@@ -111,6 +109,11 @@ async function request<T>(
     }
 
     throw new NetworkError('Unknown error');
+  } finally {
+    clearTimeout(timeoutId);
+    if (options.signal && externalAbortHandler) {
+      options.signal.removeEventListener('abort', externalAbortHandler);
+    }
   }
 }
 

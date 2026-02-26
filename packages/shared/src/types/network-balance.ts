@@ -6,6 +6,39 @@
 import type { NetworkId } from '../config/multi-network';
 
 /**
+ * Add two decimal number strings with BigInt precision.
+ * Handles different decimal lengths correctly (e.g. "1.5" + "2.33" = "3.83").
+ */
+function addDecimalStrings(a: string, b: string): string {
+  if (a === '0' || a === '') return b || '0';
+  if (b === '0' || b === '') return a || '0';
+
+  const [aWhole = '0', aFrac = ''] = a.split('.');
+  const [bWhole = '0', bFrac = ''] = b.split('.');
+
+  const maxFracLen = Math.max(aFrac.length, bFrac.length);
+  if (maxFracLen === 0) {
+    return (BigInt(aWhole) + BigInt(bWhole)).toString();
+  }
+
+  // Pad fractional parts to equal length and combine into integers
+  const aInt = BigInt(aWhole + aFrac.padEnd(maxFracLen, '0'));
+  const bInt = BigInt(bWhole + bFrac.padEnd(maxFracLen, '0'));
+  const sum = aInt + bInt;
+
+  const sumStr = sum.toString();
+  if (sumStr.length <= maxFracLen) {
+    // Result is less than 1 — pad with leading zeros
+    const frac = sumStr.padStart(maxFracLen, '0').replace(/0+$/, '');
+    return frac ? `0.${frac}` : '0';
+  }
+
+  const wholePart = sumStr.slice(0, sumStr.length - maxFracLen);
+  const fracPart = sumStr.slice(sumStr.length - maxFracLen).replace(/0+$/, '');
+  return fracPart ? `${wholePart}.${fracPart}` : wholePart;
+}
+
+/**
  * Balance for a single token on a single network
  */
 export interface NetworkTokenBalance {
@@ -90,13 +123,13 @@ export function aggregateBalances(
     }
   }
 
-  // Accumulate totalBalance as numbers first, then format once to reduce precision loss
+  // Accumulate totalBalance using string-based decimal addition to avoid float drift
   for (const token of Object.values(aggregated)) {
-    let total = 0;
+    let totalStr = '0';
     for (const network of token.networks) {
-      total += parseFloat(network.balance);
+      totalStr = addDecimalStrings(totalStr, network.balance);
     }
-    token.totalBalance = total.toFixed(6);
+    token.totalBalance = totalStr;
   }
 
   return Object.values(aggregated).sort((a, b) => b.totalUsdValue - a.totalUsdValue);

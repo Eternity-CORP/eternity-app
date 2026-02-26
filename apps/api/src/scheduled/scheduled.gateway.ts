@@ -6,7 +6,7 @@ import { ScheduledPayment } from './entities';
 @WebSocketGateway({
   namespace: '/scheduled',
   cors: {
-    origin: '*',
+    origin: [process.env.WEB_APP_URL || 'https://e-y-app.vercel.app', 'http://localhost:3001'],
   },
 })
 export class ScheduledGateway extends BaseSubscriptionGateway {

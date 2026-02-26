@@ -9,11 +9,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { JsonRpcProvider, Transaction } from 'ethers';
-import { ScheduledPayment, RecurringInterval } from './entities';
+import { ScheduledPayment, RecurringInterval, ScheduledPaymentStatus } from './entities';
 import { CreateScheduledDto, UpdateScheduledDto, ExecuteScheduledDto } from './dto';
 import { ScheduledGateway } from './scheduled.gateway';
 import { SupabaseService } from '../supabase/supabase.service';
-import { ScheduledPaymentStatus } from './entities';
 
 /**
  * Database row type (snake_case)
@@ -260,7 +259,7 @@ export class ScheduledService {
     }
 
     // Build update object
-    const updateData: any = {};
+    const updateData: Partial<Omit<ScheduledPaymentRow, 'id' | 'creator_address' | 'created_at' | 'updated_at'>> = {};
     if (dto.recipient) updateData.recipient = dto.recipient.toLowerCase();
     if (dto.recipientUsername !== undefined) updateData.recipient_username = dto.recipientUsername;
     if (dto.recipientName !== undefined) updateData.recipient_name = dto.recipientName;
@@ -346,7 +345,7 @@ export class ScheduledService {
 
     // If recurring, create next occurrence
     if (payment.recurringInterval) {
-      await this.createNextOccurrence(payment);
+      await this.createNextRecurrence(payment);
     }
 
     return executed;
@@ -406,9 +405,13 @@ export class ScheduledService {
   }
 
   /**
-   * Create next occurrence for recurring payment
+   * Create next occurrence for recurring payment.
+   * @param notifyNeedsSigning - if true, also sends a 'scheduled:needs_signing' WS event
    */
-  private async createNextOccurrence(payment: ScheduledPayment): Promise<void> {
+  private async createNextRecurrence(
+    payment: ScheduledPayment,
+    options: { notifyNeedsSigning: boolean } = { notifyNeedsSigning: false },
+  ): Promise<void> {
     const nextDate = this.calculateNextDate(payment.scheduledAt, payment.recurringInterval!);
 
     // Check if next date is before end date
@@ -441,10 +444,18 @@ export class ScheduledService {
     }
 
     const saved = this.mapToEntity(data);
-    this.logger.log(`Created next recurring payment ${saved.id} scheduled for ${nextDate}`);
+    const suffix = options.notifyNeedsSigning ? ' (requires re-signing)' : '';
+    this.logger.log(`Created next recurring payment ${saved.id} scheduled for ${nextDate}${suffix}`);
 
     // Notify via WebSocket
     this.scheduledGateway.notifyPaymentCreated(saved);
+
+    if (options.notifyNeedsSigning) {
+      this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:needs_signing', {
+        payment: saved,
+        reason: 'Recurring payment created - please sign the transaction',
+      });
+    }
   }
 
   /**
@@ -623,7 +634,7 @@ export class ScheduledService {
 
           // Handle recurring
           if (payment.recurringInterval) {
-            await this.createNextRecurringPayment(payment);
+            await this.createNextRecurrence(payment, { notifyNeedsSigning: true });
           }
         } else if (receipt && receipt.status === 0) {
           // Reverted on-chain
@@ -923,7 +934,7 @@ export class ScheduledService {
       // Handle recurring payments - need to create next occurrence
       // Note: Recurring payments will need to be re-signed by the user
       if (payment.recurringInterval) {
-        await this.createNextRecurringPayment(payment);
+        await this.createNextRecurrence(payment, { notifyNeedsSigning: true });
       }
     } catch (error) {
       this.logger.error(`Failed to execute payment ${payment.id}:`, error);
@@ -948,52 +959,4 @@ export class ScheduledService {
     }
   }
 
-  /**
-   * Create next occurrence for recurring payment (without signed tx)
-   * User will need to re-sign the transaction
-   */
-  private async createNextRecurringPayment(payment: ScheduledPayment): Promise<void> {
-    const nextDate = this.calculateNextDate(payment.scheduledAt, payment.recurringInterval!);
-
-    // Check if next date is before end date
-    if (payment.recurringEndDate && nextDate > payment.recurringEndDate) {
-      this.logger.log(`Recurring payment ${payment.id} has reached end date`);
-      return;
-    }
-
-    const { data, error } = await this.supabaseService
-      .from('scheduled_payments')
-      .insert({
-        creator_address: payment.creatorAddress,
-        recipient: payment.recipient,
-        recipient_username: payment.recipientUsername,
-        recipient_name: payment.recipientName,
-        amount: payment.amount,
-        token_symbol: payment.tokenSymbol,
-        scheduled_at: nextDate.toISOString(),
-        recurring_interval: payment.recurringInterval,
-        recurring_end_date: payment.recurringEndDate ? payment.recurringEndDate.toISOString() : null,
-        description: payment.description,
-        status: 'pending',
-        // Note: No signed transaction - user needs to re-sign
-        // This is important because nonce and gas prices will have changed
-      })
-      .select()
-      .single();
-
-    if (error) {
-      this.logger.error(`Failed to create next recurring payment: ${error.message}`);
-      return;
-    }
-
-    const saved = this.mapToEntity(data);
-    this.logger.log(`Created next recurring payment ${saved.id} scheduled for ${nextDate} (requires re-signing)`);
-
-    // Notify via WebSocket that a new recurring payment was created and needs signing
-    this.scheduledGateway.notifyPaymentCreated(saved);
-    this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:needs_signing', {
-      payment: saved,
-      reason: 'Recurring payment created - please sign the transaction',
-    });
-  }
 }

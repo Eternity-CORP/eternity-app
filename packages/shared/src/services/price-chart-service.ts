@@ -6,9 +6,6 @@
 
 import { COINGECKO_IDS } from '../constants/coingecko';
 
-// Re-export for backward compatibility
-export const TOKEN_COIN_IDS = COINGECKO_IDS;
-
 export interface PricePoint {
   timestamp: number;
   price: number;
@@ -27,7 +24,7 @@ export interface PriceChartData {
  * Get CoinGecko coin ID for a token symbol
  */
 export function getCoinGeckoId(symbol: string): string | null {
-  return TOKEN_COIN_IDS[symbol.toUpperCase()] || null;
+  return COINGECKO_IDS[symbol.toUpperCase()] || null;
 }
 
 /**

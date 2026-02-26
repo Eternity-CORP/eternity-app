@@ -63,8 +63,7 @@ export async function fetchTokens(chainId: number): Promise<SwapToken[]> {
       logoURI: token.logoURI,
       priceUSD: token.priceUSD,
     }));
-  } catch (error: unknown) {
-    console.error('Failed to fetch tokens:', error);
+  } catch {
     return [];
   }
 }
@@ -195,7 +194,7 @@ export function getChainName(chainId: number): string {
 
 /**
  * Calculate exchange rate from raw token amounts (in smallest units).
- * Pure JS — no ethers dependency.
+ * Uses BigInt arithmetic to avoid floating-point precision loss.
  *
  * @param fromAmount - Amount sent in smallest units (e.g. wei)
  * @param fromDecimals - Decimals of the from token
@@ -210,27 +209,57 @@ export function calculateExchangeRate(
   toDecimals: number,
 ): string {
   if (!fromAmount || fromAmount === '0') return '0';
+  if (!toAmount || toAmount === '0') return '0';
 
-  // Convert smallest-unit strings to decimal numbers using pure math
-  const fromNum = parseSmallestUnits(fromAmount, fromDecimals);
-  const toNum = parseSmallestUnits(toAmount, toDecimals);
+  const fromBi = BigInt(fromAmount);
+  if (fromBi === 0n) return '0';
 
-  if (fromNum === 0) return '0';
-  return (toNum / fromNum).toString();
+  // Scale toAmount up by RATE_PRECISION decimals, then divide by fromAmount.
+  // This gives us the rate with RATE_PRECISION decimal digits of precision,
+  // normalized for the difference in token decimals.
+  const RATE_PRECISION = 18;
+  const decimalDiff = BigInt(toDecimals) - BigInt(fromDecimals);
+  const scaleFactor = 10n ** BigInt(RATE_PRECISION);
+
+  // rate = (toAmount * scaleFactor) / fromAmount, adjusted for decimal difference
+  const toBi = BigInt(toAmount);
+  let rateBi: bigint;
+  if (decimalDiff >= 0n) {
+    // toToken has more decimals — divide out the extra decimals
+    const extraDivisor = 10n ** decimalDiff;
+    rateBi = (toBi * scaleFactor) / (fromBi * extraDivisor);
+  } else {
+    // fromToken has more decimals — multiply to compensate
+    const extraMultiplier = 10n ** (-decimalDiff);
+    rateBi = (toBi * scaleFactor * extraMultiplier) / fromBi;
+  }
+
+  // Convert rateBi (which has RATE_PRECISION implicit decimals) to a string
+  const divisor = 10n ** BigInt(RATE_PRECISION);
+  const whole = rateBi / divisor;
+  const remainder = rateBi % divisor;
+  if (remainder === 0n) return whole.toString();
+
+  const remainderStr = remainder.toString().padStart(RATE_PRECISION, '0').replace(/0+$/, '');
+  return `${whole}.${remainderStr}`;
 }
 
 /**
- * Convert a smallest-unit amount string to a decimal number.
- * E.g. parseSmallestUnits("1500000", 6) => 1.5
+ * Convert a smallest-unit amount string to a human-readable decimal string.
+ * Uses BigInt to avoid floating-point precision loss for large amounts.
+ * E.g. parseSmallestUnits("1500000", 6) => "1.5"
  */
-function parseSmallestUnits(amount: string, decimals: number): number {
-  if (!amount || amount === '0') return 0;
+export function parseSmallestUnits(amount: string, decimals: number): string {
+  if (!amount || amount === '0') return '0';
 
-  const padded = amount.padStart(decimals + 1, '0');
-  const whole = padded.slice(0, padded.length - decimals) || '0';
-  const fraction = padded.slice(padded.length - decimals);
+  const bi = BigInt(amount);
+  const divisor = BigInt(10) ** BigInt(decimals);
+  const whole = bi / divisor;
+  const remainder = bi % divisor;
+  if (remainder === 0n) return whole.toString();
 
-  return parseFloat(`${whole}.${fraction}`);
+  const remainderStr = remainder.toString().padStart(decimals, '0').replace(/0+$/, '');
+  return `${whole}.${remainderStr}`;
 }
 
 /**

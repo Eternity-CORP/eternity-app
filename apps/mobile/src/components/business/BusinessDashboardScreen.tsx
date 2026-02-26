@@ -47,13 +47,12 @@ import {
   type VestingScheduleInfo,
   type BusinessWallet,
   type BusinessActivity,
-  type ContractFactory,
-  type EthersLikeContract,
   type EthersLikeProvider,
 } from '@e-y/shared';
 
 import { getWalletFromMnemonic } from '@/src/services/wallet-service';
 import { getTestnetProvider } from '@/src/services/network-service';
+import { ethersContractFactory } from '@/src/utils/contract-factory';
 
 // --------------------------------------------------
 // Types
@@ -267,17 +266,6 @@ export function BusinessDashboardScreen() {
   const [lockedAmount, setLockedAmount] = useState(0);
   const [releasing, setReleasing] = useState(false);
 
-  // Contract factory
-  const contractFactory: ContractFactory = useCallback(
-    (addr: string, abi: unknown, signerOrProvider: unknown) =>
-      new ethers.Contract(
-        addr,
-        abi as ethers.InterfaceAbi,
-        signerOrProvider as ethers.ContractRunner,
-      ) as unknown as EthersLikeContract,
-    [],
-  );
-
   // --------------------------------------------------
   // Data loader
   // --------------------------------------------------
@@ -303,13 +291,13 @@ export function BusinessDashboardScreen() {
       }
 
       const [holdersData, treasuryData, proposalCountData, activityData] = await Promise.all([
-        getAllHolders(contractFactory, biz.contractAddress, provider, memberAddresses).catch(
+        getAllHolders(ethersContractFactory, biz.contractAddress, provider, memberAddresses).catch(
           () => [] as HolderInfo[],
         ),
         getTreasuryBalance(provider as unknown as EthersLikeProvider, biz.treasuryAddress).catch(
           () => ({ eth: '0.000000' }),
         ),
-        getProposalCount(contractFactory, biz.treasuryAddress, provider).catch(() => 0),
+        getProposalCount(ethersContractFactory, biz.treasuryAddress, provider).catch(() => 0),
         getBusinessActivity(apiClient, biz.id).catch(() => [] as BusinessActivity[]),
       ]);
 
@@ -344,7 +332,7 @@ export function BusinessDashboardScreen() {
         const proposalPromises = [];
         for (let i = proposalCountData - 1; i >= proposalCountData - count; i--) {
           proposalPromises.push(
-            getProposal(contractFactory, biz.treasuryAddress, provider, i).catch(() => null),
+            getProposal(ethersContractFactory, biz.treasuryAddress, provider, i).catch(() => null),
           );
         }
         const results = await Promise.all(proposalPromises);
@@ -366,9 +354,9 @@ export function BusinessDashboardScreen() {
       // Load vesting data for current user
       try {
         const [vesting, releasable, locked] = await Promise.all([
-          getVestingSchedule(contractFactory, biz.contractAddress, provider, address),
-          getReleasable(contractFactory, biz.contractAddress, provider, address),
-          getLocked(contractFactory, biz.contractAddress, provider, address),
+          getVestingSchedule(ethersContractFactory, biz.contractAddress, provider, address),
+          getReleasable(ethersContractFactory, biz.contractAddress, provider, address),
+          getLocked(ethersContractFactory, biz.contractAddress, provider, address),
         ]);
         setVestingInfo(vesting);
         setReleasableAmount(releasable);
@@ -383,7 +371,7 @@ export function BusinessDashboardScreen() {
       setError(err instanceof Error ? err.message : 'Failed to load business data');
       setStatus('failed');
     }
-  }, [businessId, address, contractFactory]);
+  }, [businessId, address]);
 
   useEffect(() => {
     loadData();
@@ -424,7 +412,7 @@ export function BusinessDashboardScreen() {
             const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, currentAccount.accountIndex);
             const provider = getTestnetProvider('sepolia');
             const signer = hdWallet.connect(provider);
-            await releaseVestedTokens(contractFactory, business.contractAddress, signer);
+            await releaseVestedTokens(ethersContractFactory, business.contractAddress, signer);
             Alert.alert('Success', 'Tokens released successfully.');
             await loadData();
           } catch (err) {
@@ -435,7 +423,7 @@ export function BusinessDashboardScreen() {
         },
       },
     ]);
-  }, [business, wallet.mnemonic, currentAccount, releasableAmount, loadData, contractFactory]);
+  }, [business, wallet.mnemonic, currentAccount, releasableAmount, loadData]);
 
   // --------------------------------------------------
   // Loading state

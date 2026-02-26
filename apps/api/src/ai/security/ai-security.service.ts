@@ -303,13 +303,6 @@ export class AiSecurityService {
     return this.rateLimiter.getUsage(userAddress);
   }
 
-  /**
-   * Get security events for monitoring
-   */
-  getSecurityEvents(limit: number = 100) {
-    return this.auditLogger.getSecurityEvents(limit);
-  }
-
   private getDangerousPatternMessage(patternName: string): string {
     switch (patternName) {
       case 'seed_phrase':

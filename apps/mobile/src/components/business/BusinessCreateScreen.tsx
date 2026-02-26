@@ -30,8 +30,6 @@ import {
   BUSINESS_FACTORY_ADDRESS,
   type CreateBusinessParams,
   type TransferPolicy,
-  type EthersLikeContract,
-  type ContractFactory,
 } from '@e-y/shared';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
@@ -41,6 +39,7 @@ import { getCurrentAccount, addBusinessAccountThunk } from '@/src/store/slices/w
 import { selectIsTestAccount } from '@/src/store/slices/wallet-slice';
 import { apiClient } from '@/src/services/api-client';
 import { getTestnetRpcUrl } from '@/src/constants/networks-testnet';
+import { ethersContractFactory } from '@/src/utils/contract-factory';
 
 // --------------------------------------------------
 // Types
@@ -359,13 +358,6 @@ export function BusinessCreateScreen() {
       const provider = new ethers.JsonRpcProvider(rpcUrl);
       const signer = signerWallet.connect(provider);
 
-      const contractFactory: ContractFactory = (addr, abi, signerOrProvider) =>
-        new ethers.Contract(
-          addr,
-          abi as ethers.InterfaceAbi,
-          signerOrProvider as ethers.ContractRunner,
-        ) as unknown as EthersLikeContract;
-
       const params: CreateBusinessParams = {
         name,
         description: description || undefined,
@@ -394,7 +386,7 @@ export function BusinessCreateScreen() {
       };
 
       // 1. Deploy on-chain
-      const result = await createBusiness(contractFactory, BUSINESS_FACTORY_ADDRESS, signer, params);
+      const result = await createBusiness(ethersContractFactory, BUSINESS_FACTORY_ADDRESS, signer, params);
 
       setTxHash(result.txHash);
 

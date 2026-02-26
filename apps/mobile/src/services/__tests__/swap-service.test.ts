@@ -6,11 +6,13 @@
 import {
   formatTokenAmount,
   parseTokenAmount,
-  isCrossChainSwap,
-  getChainName,
   getNativeToken,
   NATIVE_TOKEN_ADDRESS,
 } from '../swap-service';
+import {
+  isCrossChainSwap,
+  getChainName,
+} from '@e-y/shared';
 
 // Mock networks constant
 jest.mock('@/src/constants/networks', () => ({

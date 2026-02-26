@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import {
-  type ContractFactory,
-  type EthersLikeContract,
   type ProposalStatus,
   type ProposalType,
   getProposal as getOnChainProposal,
@@ -21,8 +19,10 @@ import {
   isQuorumReached,
   type BusinessWallet,
   type OnChainProposal,
+  truncateAddress,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { createContractFactory } from '@/lib/contract-utils'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import Navigation from '@/components/Navigation'
@@ -34,13 +34,6 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const contractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new ethers.Contract(
-    address,
-    abi as ethers.InterfaceAbi,
-    signerOrProvider as ethers.ContractRunner,
-  ) as unknown as EthersLikeContract
 
 function proposalTypeLabel(t: ProposalType): string {
   const map: Record<ProposalType, string> = {
@@ -82,10 +75,6 @@ function formatCountdown(deadline: number): string {
   if (days > 0) return `${days}d ${hours}h ${minutes}m remaining`
   if (hours > 0) return `${hours}h ${minutes}m ${seconds}s remaining`
   return `${minutes}m ${seconds}s remaining`
-}
-
-function shortenAddress(addr: string): string {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
 function decodeProposalData(type: ProposalType, data: string): Record<string, string> {
@@ -188,8 +177,8 @@ export default function ProposalDetailPage() {
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
 
       const [onChain, qBps] = await Promise.all([
-        getOnChainProposal(contractFactory, biz.treasuryAddress, provider, proposalId),
-        getQuorumBps(contractFactory, biz.treasuryAddress, provider),
+        getOnChainProposal(createContractFactory, biz.treasuryAddress, provider, proposalId),
+        getQuorumBps(createContractFactory, biz.treasuryAddress, provider),
       ])
 
       // Load per-wallet data for all personal accounts
@@ -200,8 +189,8 @@ export default function ProposalDetailPage() {
         personalAccounts.map(async (acc) => {
           const [ethBal, shares, voted] = await Promise.all([
             provider.getBalance(acc.address),
-            getShareBalance(contractFactory, biz.contractAddress, provider, acc.address),
-            checkHasVoted(contractFactory, biz.treasuryAddress, provider, proposalId, acc.address),
+            getShareBalance(createContractFactory, biz.contractAddress, provider, acc.address),
+            checkHasVoted(createContractFactory, biz.treasuryAddress, provider, proposalId, acc.address),
           ])
           infos[acc.id] = {
             ethBalance: ethers.formatEther(ethBal),
@@ -260,7 +249,7 @@ export default function ProposalDetailPage() {
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
-    await castVote(contractFactory, business.treasuryAddress, signer, proposalId, support)
+    await castVote(createContractFactory, business.treasuryAddress, signer, proposalId, support)
 
     setActionStatus('succeeded')
     setShowVoteFor(false)
@@ -279,7 +268,7 @@ export default function ProposalDetailPage() {
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
-    await executeProposal(contractFactory, business.treasuryAddress, signer, proposalId)
+    await executeProposal(createContractFactory, business.treasuryAddress, signer, proposalId)
 
     setActionStatus('succeeded')
     setShowExecute(false)
@@ -297,7 +286,7 @@ export default function ProposalDetailPage() {
     const provider = new ethers.JsonRpcProvider(network.rpcUrl)
     const signer = wallet.connect(provider)
 
-    await cancelProposal(contractFactory, business.treasuryAddress, signer, proposalId)
+    await cancelProposal(createContractFactory, business.treasuryAddress, signer, proposalId)
 
     setActionStatus('succeeded')
     setShowCancel(false)
@@ -373,7 +362,7 @@ export default function ProposalDetailPage() {
                 {/* Proposal ID + Creator */}
                 <div className="flex items-center justify-between text-xs text-white/40 mb-4">
                   <span>Proposal #{proposalId}</span>
-                  <span className="font-mono">{shortenAddress(proposal.creator)}</span>
+                  <span className="font-mono">{truncateAddress(proposal.creator)}</span>
                 </div>
 
                 {/* Countdown */}

@@ -244,38 +244,6 @@ export class AiAuditLogger {
     });
   }
 
-  /**
-   * Get recent audit events for a user
-   */
-  getRecentEvents(
-    userAddress: string,
-    limit: number = 50,
-  ): AuditEvent[] {
-    const normalizedAddress = userAddress.toLowerCase();
-    return this.auditLog
-      .filter((e) => e.userAddress.toLowerCase() === normalizedAddress)
-      .slice(-limit);
-  }
-
-  /**
-   * Get events by type
-   */
-  getEventsByType(
-    type: AuditEventType,
-    limit: number = 100,
-  ): AuditEvent[] {
-    return this.auditLog.filter((e) => e.type === type).slice(-limit);
-  }
-
-  /**
-   * Get security events (warnings and above)
-   */
-  getSecurityEvents(limit: number = 100): AuditEvent[] {
-    return this.auditLog
-      .filter((e) => e.severity !== 'info')
-      .slice(-limit);
-  }
-
   private log(event: AuditEvent): void {
     // Add to in-memory log
     this.auditLog.push(event);

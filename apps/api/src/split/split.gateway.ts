@@ -6,7 +6,7 @@ import { SplitBill } from './entities';
 @WebSocketGateway({
   namespace: '/splits',
   cors: {
-    origin: '*',
+    origin: [process.env.WEB_APP_URL || 'https://e-y-app.vercel.app', 'http://localhost:3001'],
   },
 })
 export class SplitGateway extends BaseSubscriptionGateway {

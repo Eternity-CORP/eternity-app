@@ -34,6 +34,14 @@ export class FaucetService implements OnModuleInit {
 
     const normalized = address.toLowerCase();
 
+    // Clean expired entries to prevent unbounded Map growth
+    const now = Date.now();
+    for (const [addr, timestamp] of this.claims) {
+      if (now - timestamp > this.COOLDOWN_MS) {
+        this.claims.delete(addr);
+      }
+    }
+
     // Rate limit check
     const lastClaim = this.claims.get(normalized);
     if (lastClaim && Date.now() - lastClaim < this.COOLDOWN_MS) {

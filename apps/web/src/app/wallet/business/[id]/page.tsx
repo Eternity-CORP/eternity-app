@@ -16,8 +16,6 @@ import {
   type BusinessMember,
   type BusinessActivity,
   type Proposal,
-  type EthersLikeContract,
-  type ContractFactory,
   type EthersLikeProvider,
   getTokenInfo,
   getAllHolders,
@@ -29,9 +27,11 @@ import {
   getLocked,
   releaseVestedTokens,
   type VestingScheduleInfo,
+  indexToProposalStatus,
+  indexToProposalType,
 } from '@e-y/shared'
-import { indexToProposalStatus, indexToProposalType } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { createContractFactory } from '@/lib/contract-utils'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import Navigation from '@/components/Navigation'
@@ -224,10 +224,6 @@ export default function BusinessDashboardPage() {
   const [showRelease, setShowRelease] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
 
-  // Contract factory helper
-  const contractFactory: ContractFactory = (addr, abi, signerOrProvider) =>
-    new ethers.Contract(addr, abi as ethers.InterfaceAbi, signerOrProvider as ethers.ContractRunner) as unknown as EthersLikeContract
-
   // --------------------------------------------------
   // Load data
   // --------------------------------------------------
@@ -259,9 +255,9 @@ export default function BusinessDashboardPage() {
         }
 
         const [holdersData, treasuryData, proposalCountData, activityData] = await Promise.all([
-          getAllHolders(contractFactory, biz.contractAddress, provider, memberAddresses).catch(() => [] as HolderInfo[]),
+          getAllHolders(createContractFactory, biz.contractAddress, provider, memberAddresses).catch(() => [] as HolderInfo[]),
           getTreasuryBalance(provider as unknown as EthersLikeProvider, biz.treasuryAddress).catch(() => ({ eth: '0.000000' })),
-          getProposalCount(contractFactory, biz.treasuryAddress, provider).catch(() => 0),
+          getProposalCount(createContractFactory, biz.treasuryAddress, provider).catch(() => 0),
           getBusinessActivity(apiClient, biz.id).catch(() => [] as BusinessActivity[]),
         ])
 
@@ -292,7 +288,7 @@ export default function BusinessDashboardPage() {
           const count = Math.min(proposalCountData, 10) // Load last 10
           for (let i = proposalCountData - 1; i >= proposalCountData - count; i--) {
             proposalPromises.push(
-              getProposal(contractFactory, biz.treasuryAddress, provider, i).catch(() => null)
+              getProposal(createContractFactory, biz.treasuryAddress, provider, i).catch(() => null)
             )
           }
           const proposalResults = await Promise.all(proposalPromises)
@@ -317,9 +313,9 @@ export default function BusinessDashboardPage() {
         // 4. Load vesting info for current user
         try {
           const [vesting, releasable, locked] = await Promise.all([
-            getVestingSchedule(contractFactory, biz.contractAddress, provider, address),
-            getReleasable(contractFactory, biz.contractAddress, provider, address),
-            getLocked(contractFactory, biz.contractAddress, provider, address),
+            getVestingSchedule(createContractFactory, biz.contractAddress, provider, address),
+            getReleasable(createContractFactory, biz.contractAddress, provider, address),
+            getLocked(createContractFactory, biz.contractAddress, provider, address),
           ])
           if (!cancelled) {
             setVestingInfo(vesting)
@@ -355,7 +351,7 @@ export default function BusinessDashboardPage() {
       const signerWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
       const signer = signerWallet.connect(provider)
-      await releaseVestedTokens(contractFactory, business.contractAddress, signer)
+      await releaseVestedTokens(createContractFactory, business.contractAddress, signer)
       // Trigger data reload
       setReloadKey(k => k + 1)
     } finally {
@@ -679,7 +675,7 @@ export default function BusinessDashboardPage() {
                           <span className="text-[10px] text-white/30">{formatTimeAgo(activity.createdAt)}</span>
                           {activity.txHash && (
                             <a
-                              href={`https://sepolia.etherscan.io/tx/${activity.txHash}`}
+                              href={network.explorerTxUrl(activity.txHash)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-[10px] text-[#3388FF]/60 hover:text-[#3388FF] transition-colors font-mono"

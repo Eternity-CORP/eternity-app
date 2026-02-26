@@ -31,7 +31,14 @@ export class SentryInterceptor implements NestInterceptor {
           if (request) {
             scope.setExtra('url', request.url);
             scope.setExtra('method', request.method);
-            scope.setExtra('body', request.body);
+            const sensitiveKeys = ['signature', 'signedTransaction', 'signed_transaction', 'pushToken', 'push_token', 'mnemonic', 'privateKey', 'private_key', 'estimatedGasPrice'];
+            const sanitizedBody = { ...request.body };
+            for (const key of sensitiveKeys) {
+              if (key in sanitizedBody) {
+                sanitizedBody[key] = '[REDACTED]';
+              }
+            }
+            scope.setExtra('body', sanitizedBody);
             scope.setExtra('query', request.query);
             scope.setExtra('params', request.params);
 

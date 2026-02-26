@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { apiClient } from '@/lib/api'
+import { getNetwork } from '@/lib/network'
 import { ApiError, getErrorMessage } from '@e-y/shared'
 
 const EXTERNAL_FAUCETS = [
@@ -180,7 +181,7 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
             <div className="px-3 py-3 rounded-xl bg-[#22C55E]/10 border border-[#22C55E]/20">
               <p className="text-sm font-medium text-[#22C55E] mb-1">Claimed 0.001 ETH!</p>
               <a
-                href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                href={getNetwork('test').explorerTxUrl(txHash)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-[#3388FF] hover:underline font-mono break-all"

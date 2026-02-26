@@ -219,8 +219,6 @@ export {
   executeSwap,
   formatTokenAmount,
   parseTokenAmount,
-  isCrossChainSwap,
-  getChainName,
   NATIVE_TOKEN_ADDRESS,
   type SwapToken,
   type SwapQuote,

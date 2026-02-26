@@ -23,8 +23,6 @@ import {
   parseTokenAmount as sharedParseTokenAmount,
   getCachedQuote,
   setCachedQuote,
-  isCrossChainSwap as sharedIsCrossChainSwap,
-  getChainName as sharedGetChainName,
   calculateExchangeRate,
 } from '@e-y/shared';
 
@@ -128,12 +126,6 @@ export function getLiFiContractAddress(chainId: number): string {
 // Re-export shared format utilities
 export const formatTokenAmount = sharedFormatTokenAmount;
 export const parseTokenAmount = sharedParseTokenAmount;
-
-/** @deprecated Use isCrossChainSwap from @e-y/shared directly */
-export const isCrossChainSwap = sharedIsCrossChainSwap;
-
-/** @deprecated Use getChainName from @e-y/shared directly */
-export const getChainName = sharedGetChainName;
 
 // Export native token address constant
 export { NATIVE_TOKEN_ADDRESS };

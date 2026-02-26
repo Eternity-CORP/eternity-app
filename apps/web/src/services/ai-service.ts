@@ -13,8 +13,7 @@ import type {
   AiSuggestion,
   AiErrorPayload,
 } from '@e-y/shared'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
+import { API_BASE_URL } from '@/lib/api'
 
 interface AiSocketCallbacks {
   onChunk: (payload: ChunkPayload) => void

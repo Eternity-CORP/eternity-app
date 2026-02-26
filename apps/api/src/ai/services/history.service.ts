@@ -74,13 +74,13 @@ export class HistoryServiceAi {
       // Fetch sent transactions if needed
       if (type === 'all' || type === 'sent') {
         const sentTxs = await this.fetchTransfers(address, 'from', controller.signal);
-        transactions.push(...sentTxs.map(tx => this.formatTransaction(tx, address, 'sent')));
+        transactions.push(...sentTxs.map(tx => this.formatTransaction(tx, 'sent')));
       }
 
       // Fetch received transactions if needed
       if (type === 'all' || type === 'received') {
         const receivedTxs = await this.fetchTransfers(address, 'to', controller.signal);
-        transactions.push(...receivedTxs.map(tx => this.formatTransaction(tx, address, 'received')));
+        transactions.push(...receivedTxs.map(tx => this.formatTransaction(tx, 'received')));
       }
 
       clearTimeout(timeoutId);
@@ -154,7 +154,6 @@ export class HistoryServiceAi {
 
   private formatTransaction(
     transfer: AlchemyTransfer,
-    _userAddress: string,
     type: 'sent' | 'received'
   ): Transaction {
     const counterparty = type === 'sent' ? transfer.to : transfer.from;

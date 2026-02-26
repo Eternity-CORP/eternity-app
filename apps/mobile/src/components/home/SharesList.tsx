@@ -1,12 +1,10 @@
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 import { router } from 'expo-router';
-import { Contract } from 'ethers';
 import {
   getUserBusinesses,
   getShareBalance,
   createApiClient,
-  type ContractFactory,
   type BusinessWallet,
 } from '@e-y/shared';
 import { useAppSelector } from '@/src/store/hooks';
@@ -15,6 +13,7 @@ import { getTestnetProvider } from '@/src/services/network-service';
 import { API_BASE_URL } from '@/src/config/api';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
+import { ethersContractFactory } from '@/src/utils/contract-factory';
 
 interface ShareInfo {
   businessId: string;
@@ -26,9 +25,6 @@ interface ShareInfo {
 }
 
 const apiClient = createApiClient({ baseUrl: API_BASE_URL });
-
-const contractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new Contract(address, abi as string[], signerOrProvider as never) as never;
 
 export function SharesList() {
   const { theme: dynamicTheme } = useTheme();
@@ -61,7 +57,7 @@ export function SharesList() {
           businesses.map(async (biz: BusinessWallet) => {
             try {
               const balance = await getShareBalance(
-                contractFactory,
+                ethersContractFactory,
                 biz.contractAddress,
                 provider,
                 address,

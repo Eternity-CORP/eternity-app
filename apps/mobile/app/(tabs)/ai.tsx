@@ -57,6 +57,8 @@ import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
 import { saveContactThunk, loadContactsThunk } from '@/src/store/slices/contacts-slice';
 import { aiSocket, type ChatMessage, type AiSuggestion } from '@/src/services/ai-service';
+import { registerUsername } from '@/src/services/username-service';
+import { createScheduledPayment } from '@/src/services/scheduled-payment-service';
 
 export default function AiScreen() {
   const {
@@ -241,26 +243,8 @@ export default function AiScreen() {
 
     const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
 
-    // Sign the EIP-191 message
-    const signature = await hdWallet.signMessage(preview.messageToSign || '');
-
-    // Call API to register
-    const { API_BASE_URL } = require('@/src/config/api');
-    const response = await fetch(`${API_BASE_URL}/api/username`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: preview.username,
-        address: preview.address,
-        signature,
-        timestamp: preview.timestamp,
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Registration failed');
-    }
+    // Use the username service which handles signing + API call
+    await registerUsername(preview.username, hdWallet);
 
     return `@${preview.username}`;
   }, [wallet.mnemonic, currentAccount]);
@@ -300,32 +284,21 @@ export default function AiScreen() {
       accountType: currentAccount.type || 'test',
     });
 
-    const { API_BASE_URL } = require('@/src/config/api');
-    const response = await fetch(`${API_BASE_URL}/api/scheduled`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-wallet-address': currentAccount.address,
-      },
-      body: JSON.stringify({
-        recipient: pendingScheduled.recipient,
-        recipientUsername: pendingScheduled.recipientUsername,
-        amount: pendingScheduled.amount,
-        token: pendingScheduled.token,
-        scheduledAt: pendingScheduled.scheduledAt,
-        recurring: pendingScheduled.recurring,
-        description: pendingScheduled.description,
-        signedTransaction: signedData.signedTransaction,
-        estimatedGasPrice: signedData.estimatedGasPrice,
-        nonce: signedData.nonce,
-        chainId: signedData.chainId,
-      }),
+    // Use the scheduled payment service instead of raw fetch
+    await createScheduledPayment({
+      creatorAddress: currentAccount.address,
+      recipient: pendingScheduled.recipient,
+      recipientUsername: pendingScheduled.recipientUsername,
+      amount: pendingScheduled.amount,
+      tokenSymbol: pendingScheduled.token,
+      scheduledAt: pendingScheduled.scheduledAt,
+      recurringInterval: pendingScheduled.recurring !== 'once' ? pendingScheduled.recurring : undefined,
+      description: pendingScheduled.description,
+      signedTransaction: signedData.signedTransaction,
+      estimatedGasPrice: signedData.estimatedGasPrice,
+      nonce: signedData.nonce,
+      chainId: signedData.chainId,
     });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: 'Failed to schedule payment' }));
-      throw new Error(err.message || 'Failed to schedule payment');
-    }
 
     clearPendingScheduled();
   }, [pendingScheduled, currentAccount, clearPendingScheduled]);

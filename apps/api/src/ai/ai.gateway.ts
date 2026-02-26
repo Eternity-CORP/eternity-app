@@ -543,14 +543,6 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   /**
-   * Send a suggestion to all connected users
-   */
-  broadcastSuggestion(suggestion: SuggestionPayload): void {
-    this.server.emit(AI_EVENTS.SUGGESTION, suggestion);
-    this.logger.debug(`Broadcast suggestion: ${suggestion.type}`);
-  }
-
-  /**
    * Notify user about something (used by proactive features)
    */
   notifyUser(address: string, event: string, data: unknown): void {

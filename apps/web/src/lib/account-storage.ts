@@ -2,9 +2,6 @@ import type { AccountType, WalletAccount } from '@e-y/shared'
 
 export type { AccountType, WalletAccount }
 
-/** @deprecated Use WalletAccount instead */
-export type Account = WalletAccount
-
 const ACCOUNTS_KEY = 'ey_accounts'
 const CURRENT_INDEX_KEY = 'ey_current_account_index'
 

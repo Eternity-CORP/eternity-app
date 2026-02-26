@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import {
-  type ContractFactory,
-  type EthersLikeContract,
   type ProposalStatus,
   type ProposalType,
   getProposalCount,
@@ -14,8 +12,10 @@ import {
   indexToProposalType,
   getBusiness,
   type BusinessWallet,
+  truncateAddress,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { createContractFactory } from '@/lib/contract-utils'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import Navigation from '@/components/Navigation'
@@ -42,13 +42,6 @@ type FilterTab = 'all' | 'active' | 'passed' | 'executed'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const contractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new ethers.Contract(
-    address,
-    abi as ethers.InterfaceAbi,
-    signerOrProvider as ethers.ContractRunner,
-  ) as unknown as EthersLikeContract
 
 function proposalTypeLabel(t: ProposalType): string {
   const map: Record<ProposalType, string> = {
@@ -129,10 +122,6 @@ function formatCountdown(deadline: number): string {
   return `${minutes}m left`
 }
 
-function shortenAddress(addr: string): string {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -162,11 +151,11 @@ export default function ProposalsPage() {
 
       // Load on-chain proposals
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-      const count = await getProposalCount(contractFactory, biz.treasuryAddress, provider)
+      const count = await getProposalCount(createContractFactory, biz.treasuryAddress, provider)
 
       const items: ProposalItem[] = []
       for (let i = 0; i < count; i++) {
-        const p = await getProposal(contractFactory, biz.treasuryAddress, provider, i)
+        const p = await getProposal(createContractFactory, biz.treasuryAddress, provider, i)
         items.push({
           id: p.id,
           type: indexToProposalType(p.proposalType),
@@ -319,7 +308,7 @@ export default function ProposalsPage() {
                       {/* Deadline + Creator */}
                       <div className="flex items-center justify-between text-[10px] text-white/30">
                         <span>{formatCountdown(p.deadline)}</span>
-                        <span className="font-mono">{shortenAddress(p.creator)}</span>
+                        <span className="font-mono">{truncateAddress(p.creator)}</span>
                       </div>
                     </button>
                   )

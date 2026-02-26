@@ -17,10 +17,9 @@ import {
   type TransferPolicy,
   type VestingConfig,
   type DividendConfig,
-  type EthersLikeContract,
-  type ContractFactory,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { createContractFactory } from '@/lib/contract-utils'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
 import ConfirmModal from '@/components/shared/ConfirmModal'
@@ -284,9 +283,6 @@ export default function BusinessCreatePage() {
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
       const signer = signerWallet.connect(provider)
 
-      const contractFactory: ContractFactory = (addr, abi, signerOrProvider) =>
-        new ethers.Contract(addr, abi as ethers.InterfaceAbi, signerOrProvider as ethers.ContractRunner) as unknown as EthersLikeContract
-
       const params: CreateBusinessParams = {
         name,
         description: description || undefined,
@@ -312,7 +308,7 @@ export default function BusinessCreatePage() {
 
       // 1. Deploy on-chain
       const result = await createBusiness(
-        contractFactory,
+        createContractFactory,
         BUSINESS_FACTORY_ADDRESS,
         signer,
         params,
@@ -898,7 +894,7 @@ export default function BusinessCreatePage() {
 
               {txHash && (
                 <a
-                  href={`https://sepolia.etherscan.io/tx/${txHash}`}
+                  href={network.explorerTxUrl(txHash)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-[#3388FF] hover:text-[#3388FF]/80 transition-colors mb-6"

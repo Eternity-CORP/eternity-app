@@ -356,28 +356,4 @@ export class BlikService implements OnModuleDestroy {
     return expiredCodes.map((row) => this.mapToInternalCode(row));
   }
 
-  /**
-   * Get code status (for debugging/monitoring)
-   */
-  async getStats(): Promise<{ totalCodes: number; activeCodes: number; pendingCodes: number }> {
-    const { count: totalCount } = await this.supabase
-      .from('blik_codes')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: activeCount } = await this.supabase
-      .from('blik_codes')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'active');
-
-    const { count: pendingCount } = await this.supabase
-      .from('blik_codes')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending');
-
-    return {
-      totalCodes: totalCount || 0,
-      activeCodes: activeCount || 0,
-      pendingCodes: pendingCount || 0,
-    };
-  }
 }

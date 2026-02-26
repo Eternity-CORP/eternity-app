@@ -304,13 +304,8 @@ const WELL_KNOWN_TOKEN_ICONS: Record<string, string> = {
   OP: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/optimism/assets/0x4200000000000000000000000000000000000042/logo.png',
 };
 
-const NETWORK_TO_TRUSTWALLET_CHAIN: Record<string, string> = {
-  ethereum: 'ethereum',
-  polygon: 'polygon',
-  arbitrum: 'arbitrum',
-  base: 'base',
-  optimism: 'optimism',
-};
+/** Supported Trust Wallet chain names for icon lookups */
+const TRUSTWALLET_CHAINS = new Set(['ethereum', 'polygon', 'arbitrum', 'base', 'optimism']);
 
 /**
  * Get token icon URL — first checks well-known symbol map,
@@ -330,7 +325,7 @@ export function getTokenIconUrl(
   }
 
   // 2. Trust Wallet Assets by chain + contract address
-  const chain = networkId ? NETWORK_TO_TRUSTWALLET_CHAIN[networkId] || 'ethereum' : 'ethereum';
+  const chain = networkId && TRUSTWALLET_CHAINS.has(networkId) ? networkId : 'ethereum';
   return `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/${chain}/assets/${contractAddress}/logo.png`;
 }
 

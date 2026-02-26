@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 
 interface RateLimitEntry {
   count: number;
@@ -22,7 +22,7 @@ export interface RateLimitResult {
  * Implements sliding window rate limiting per user address
  */
 @Injectable()
-export class AiRateLimiter {
+export class AiRateLimiter implements OnModuleDestroy {
   private readonly logger = new Logger(AiRateLimiter.name);
 
   // Rate limit storage: userAddress -> window -> entry
@@ -144,16 +144,6 @@ export class AiRateLimiter {
         resetIn: this.getResetTime(hourEntry, this.hourConfig, now),
       },
     };
-  }
-
-  /**
-   * Reset rate limits for a user (admin function)
-   */
-  resetLimits(userAddress: string): void {
-    const normalizedAddress = userAddress.toLowerCase();
-    this.minuteWindow.delete(normalizedAddress);
-    this.hourWindow.delete(normalizedAddress);
-    this.logger.log(`Rate limits reset for ${normalizedAddress}`);
   }
 
   private checkWindow(

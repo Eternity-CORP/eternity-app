@@ -6,7 +6,7 @@ import { deriveWalletFromMnemonic, getAddressFromMnemonic, isValidMnemonic } fro
 import { ethers } from 'ethers'
 import { createAccount, getNextAccountIndex, migrateAccountAddresses } from '@e-y/shared'
 import {
-  type Account,
+  type WalletAccount,
   type AccountType,
   loadAccounts,
   saveAccounts,
@@ -26,8 +26,8 @@ interface AccountContextValue {
   wallet: ethers.HDNodeWallet | null
   address: string
   network: NetworkConfig
-  accounts: Account[]
-  currentAccount: Account | null
+  accounts: WalletAccount[]
+  currentAccount: WalletAccount | null
   uiMode: UiMode
   login: (mnemonic: string, defaultAccountType?: AccountType) => Promise<void>
   switchAccount: (accountId: string) => Promise<void>
@@ -73,8 +73,8 @@ export function useAccount() {
 export function AccountProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | null>(null)
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [currentAccount, setCurrentAccount] = useState<Account | null>(null)
+  const [accounts, setAccounts] = useState<WalletAccount[]>([])
+  const [currentAccount, setCurrentAccount] = useState<WalletAccount | null>(null)
   const [uiMode, setUiModeState] = useState<UiMode>('ai')
   const [ready, setReady] = useState(false)
 

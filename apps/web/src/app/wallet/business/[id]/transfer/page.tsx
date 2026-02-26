@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import {
-  type ContractFactory,
-  type EthersLikeContract,
   type TransferPolicy,
   getTokenInfo,
   getShareBalance,
@@ -13,8 +11,10 @@ import {
   getBusiness,
   type BusinessWallet,
   BUSINESS_TOKEN_ABI,
+  truncateAddress,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { createContractFactory } from '@/lib/contract-utils'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import Navigation from '@/components/Navigation'
@@ -26,18 +26,6 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const contractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new ethers.Contract(
-    address,
-    abi as ethers.InterfaceAbi,
-    signerOrProvider as ethers.ContractRunner,
-  ) as unknown as EthersLikeContract
-
-function shortenAddress(addr: string): string {
-  if (addr.length <= 14) return addr
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-}
 
 interface TransferEvent {
   from: string
@@ -98,9 +86,9 @@ export default function TransferSharesPage() {
       const provider = new ethers.JsonRpcProvider(network.rpcUrl)
 
       const [tokenInfo, userBalance] = await Promise.all([
-        getTokenInfo(contractFactory, biz.contractAddress, provider),
+        getTokenInfo(createContractFactory, biz.contractAddress, provider),
         address
-          ? getShareBalance(contractFactory, biz.contractAddress, provider, address)
+          ? getShareBalance(createContractFactory, biz.contractAddress, provider, address)
           : Promise.resolve(0),
       ])
 
@@ -306,7 +294,7 @@ export default function TransferSharesPage() {
                   {isValidForm && (
                     <div className="bg-[#22c55e]/8 border border-[#22c55e]/20 rounded-xl p-3">
                       <p className="text-[#22c55e] text-sm">
-                        Transfer {amount} {tokenSymbol} to {shortenAddress(recipient)}
+                        Transfer {amount} {tokenSymbol} to {truncateAddress(recipient)}
                       </p>
                     </div>
                   )}
@@ -362,15 +350,15 @@ export default function TransferSharesPage() {
                             <div className="min-w-0">
                               <p className="text-xs text-white truncate">
                                 {isZeroAddr
-                                  ? `Minted to ${shortenAddress(tx.to)}`
+                                  ? `Minted to ${truncateAddress(tx.to)}`
                                   : isSender
-                                  ? `Sent to ${shortenAddress(tx.to)}`
+                                  ? `Sent to ${truncateAddress(tx.to)}`
                                   : isReceiver
-                                  ? `Received from ${shortenAddress(tx.from)}`
-                                  : `${shortenAddress(tx.from)} -> ${shortenAddress(tx.to)}`}
+                                  ? `Received from ${truncateAddress(tx.from)}`
+                                  : `${truncateAddress(tx.from)} -> ${truncateAddress(tx.to)}`}
                               </p>
                               <p className="text-[10px] text-white/25 font-mono">
-                                {shortenAddress(tx.txHash)}
+                                {truncateAddress(tx.txHash)}
                               </p>
                             </div>
                           </div>
@@ -394,7 +382,7 @@ export default function TransferSharesPage() {
           title="Transfer Shares"
           summary={`${amount} ${tokenSymbol}`}
           details={[
-            { label: 'To', value: shortenAddress(recipient) },
+            { label: 'To', value: truncateAddress(recipient) },
             { label: 'Amount', value: `${amount} ${tokenSymbol}` },
             { label: 'Network', value: network.name },
           ]}

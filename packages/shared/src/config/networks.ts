@@ -47,18 +47,6 @@ export function buildNetworks(alchemyKey: string): Record<AccountType, SimpleNet
   };
 }
 
-/**
- * Chain ID constants for commonly used networks
- */
-export const CHAIN_IDS = {
-  ETHEREUM: 1,
-  SEPOLIA: 11155111,
-  POLYGON: 137,
-  ARBITRUM: 42161,
-  BASE: 8453,
-  OPTIMISM: 10,
-} as const;
-
 export type AccountNetworkMode = 'single' | 'multi';
 
 /**

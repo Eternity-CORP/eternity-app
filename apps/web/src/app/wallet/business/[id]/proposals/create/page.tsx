@@ -4,14 +4,14 @@ import { useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import {
-  type ContractFactory,
-  type EthersLikeContract,
   type ProposalType,
   createProposal,
   getBusiness,
   saveProposal,
+  truncateAddress,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
+import { createContractFactory } from '@/lib/contract-utils'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import Navigation from '@/components/Navigation'
@@ -23,13 +23,6 @@ import { deriveWalletFromMnemonic } from '@e-y/crypto'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const contractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new ethers.Contract(
-    address,
-    abi as ethers.InterfaceAbi,
-    signerOrProvider as ethers.ContractRunner,
-  ) as unknown as EthersLikeContract
 
 type Step = 'type' | 'fields' | 'review'
 
@@ -83,11 +76,6 @@ function typeIcon(t: ProposalType) {
         </svg>
       )
   }
-}
-
-function shortenAddress(addr: string): string {
-  if (addr.length <= 14) return addr
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
 // ---------------------------------------------------------------------------
@@ -205,9 +193,9 @@ export default function CreateProposalPage() {
   const proposalTitle = useMemo(() => {
     switch (selectedType) {
       case 'WITHDRAW_ETH':
-        return `Withdraw ${ethAmount} ETH to ${shortenAddress(ethRecipient)}`
+        return `Withdraw ${ethAmount} ETH to ${truncateAddress(ethRecipient)}`
       case 'TRANSFER_SHARES':
-        return `Transfer ${sharesAmount} shares from ${shortenAddress(sharesFrom)} to ${shortenAddress(sharesTo)}`
+        return `Transfer ${sharesAmount} shares from ${truncateAddress(sharesFrom)} to ${truncateAddress(sharesTo)}`
       case 'CHANGE_SETTINGS':
         return `Change settings: quorum ${newQuorum} bps, period ${newVotingPeriod}s`
       case 'DISTRIBUTE_DIVIDENDS':
@@ -239,7 +227,7 @@ export default function CreateProposalPage() {
 
     // Create on-chain proposal
     const result = await createProposal(
-      contractFactory,
+      createContractFactory,
       biz.treasuryAddress,
       signer,
       selectedType,
@@ -413,7 +401,7 @@ export default function CreateProposalPage() {
                       ) : (
                         <div className="space-y-1">
                           {dividendHolders.map((h, i) => (
-                            <p key={i} className="text-xs text-white/60 font-mono">{shortenAddress(h)}</p>
+                            <p key={i} className="text-xs text-white/60 font-mono">{truncateAddress(h)}</p>
                           ))}
                           <p className="text-[10px] text-white/25 mt-1">{dividendHolders.length} holders will receive dividends</p>
                         </div>
@@ -562,7 +550,7 @@ export default function CreateProposalPage() {
                   <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">Recipient</span>
-                      <span className="text-xs text-white font-mono">{shortenAddress(ethRecipient)}</span>
+                      <span className="text-xs text-white font-mono">{truncateAddress(ethRecipient)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">Amount</span>
@@ -588,11 +576,11 @@ export default function CreateProposalPage() {
                   <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">From</span>
-                      <span className="text-xs text-white font-mono">{shortenAddress(sharesFrom)}</span>
+                      <span className="text-xs text-white font-mono">{truncateAddress(sharesFrom)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">To</span>
-                      <span className="text-xs text-white font-mono">{shortenAddress(sharesTo)}</span>
+                      <span className="text-xs text-white font-mono">{truncateAddress(sharesTo)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40">Shares</span>

@@ -97,10 +97,15 @@ class AiSocketServiceWrapper {
     }
 
     if (this.isConnecting) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          clearInterval(checkConnection);
+          reject(new Error('Connection timeout'));
+        }, 10000);
         const checkConnection = setInterval(() => {
           if (this.socket?.connected) {
             clearInterval(checkConnection);
+            clearTimeout(timeout);
             resolve();
           }
         }, 100);

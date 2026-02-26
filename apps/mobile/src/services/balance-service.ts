@@ -9,7 +9,6 @@
 import { JsonRpcProvider, formatEther } from 'ethers';
 import * as SecureStore from 'expo-secure-store';
 import {
-  formatUsd,
   fetchAlchemyTokenBalances as sharedFetchTokenBalances,
   fetchAlchemyTokenMetadata as sharedFetchMetadata,
   fetchEthUsdPrice as sharedFetchEthPrice,
@@ -271,9 +270,6 @@ export const formatTokenBalance = formatRawTokenBalance;
 export function calculateTotalUsdValue(balances: TokenBalance[]): number {
   return sharedCalcTotal(balances);
 }
-
-/** @deprecated Use formatUsd from @e-y/shared */
-export const formatUsdValue = formatUsd;
 
 /**
  * Fetch all balances (ETH + ERC-20) for an address

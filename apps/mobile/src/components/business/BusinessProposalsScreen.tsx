@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { AbiCoder, Contract, formatEther, getBytes, parseEther } from 'ethers';
+import { AbiCoder, formatEther, getBytes, parseEther } from 'ethers';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { useAppSelector } from '@/src/store/hooks';
@@ -29,6 +29,7 @@ import { getWalletFromMnemonic } from '@/src/services/wallet-service';
 import { getTestnetProvider } from '@/src/services/network-service';
 import { API_BASE_URL } from '@/src/config/api';
 import { theme } from '@/src/constants/theme';
+import { ethersContractFactory } from '@/src/utils/contract-factory';
 import {
   type ProposalType,
   type ProposalStatus,
@@ -44,7 +45,6 @@ import {
   getBusiness,
   saveProposal,
   createApiClient,
-  type ContractFactory,
   type BusinessWallet,
   getShareBalance,
   hasVoted as checkHasVoted,
@@ -126,9 +126,6 @@ function typeBadgeColor(type: ProposalType): string {
   }
 }
 
-const ethersContractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new Contract(address, abi as string[], signerOrProvider as never) as never;
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -142,7 +139,10 @@ export default function BusinessProposalsScreen() {
   const address = currentAccount?.address ?? '';
 
   // Personal (non-business) accounts that can sign transactions
-  const personalAccounts = wallet.accounts.filter((a) => a.type !== 'business');
+  const personalAccounts = useMemo(
+    () => wallet.accounts.filter((a) => a.type !== 'business'),
+    [wallet.accounts],
+  );
 
   // Per-wallet info: ETH balance + shares + voted
   const [walletInfos, setWalletInfos] = useState<Record<string, { ethBalance: string; shares: number; voted: boolean }>>({});

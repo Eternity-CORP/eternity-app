@@ -6,13 +6,12 @@ import { ethers } from 'ethers'
 import {
   getUserBusinesses,
   getShareBalance,
-  type ContractFactory,
-  type EthersLikeContract,
   type BusinessWallet,
 } from '@e-y/shared'
 import { useAccount } from '@/contexts/account-context'
 import { apiClient } from '@/lib/api'
 import { getNetwork } from '@/lib/network'
+import { createContractFactory } from '@/lib/contract-utils'
 
 interface ShareInfo {
   businessId: string
@@ -22,13 +21,6 @@ interface ShareInfo {
   totalSupply: number
   percent: number
 }
-
-const contractFactory: ContractFactory = (address, abi, signerOrProvider) =>
-  new ethers.Contract(
-    address,
-    abi as ethers.InterfaceAbi,
-    signerOrProvider as ethers.ContractRunner,
-  ) as unknown as EthersLikeContract
 
 export default function BusinessShares() {
   const { address, currentAccount, isLoggedIn, ready } = useAccount()
@@ -64,7 +56,7 @@ export default function BusinessShares() {
           businesses.map(async (biz: BusinessWallet) => {
             try {
               const balance = await getShareBalance(
-                contractFactory,
+                createContractFactory,
                 biz.contractAddress,
                 provider,
                 address,

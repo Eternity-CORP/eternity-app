@@ -25,15 +25,15 @@ export function parseRecipient(input: string): RecipientParseResult {
 }
 
 /**
- * Check if address represents native token (ETH)
- * Matches all known native token address formats.
+ * Check if address represents native token (ETH).
+ * Only matches specific known native token address formats.
+ * Returns false for empty/undefined to avoid masking bugs.
  */
-export function isNativeToken(address: string): boolean {
-  if (!address) return true;
+export function isNativeToken(address?: string): boolean {
+  if (!address) return false;
 
   const lower = address.toLowerCase();
   return (
-    lower === '' ||
     lower === 'eth' ||
     lower === '0x0000000000000000000000000000000000000000' ||
     lower === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'

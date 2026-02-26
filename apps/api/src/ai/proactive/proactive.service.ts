@@ -282,8 +282,8 @@ export class ProactiveService {
 
     // Get unique addresses
     const addressSet = new Set<string>();
-    for (const row of data) {
-      addressSet.add(String((row as any).creator_address));
+    for (const row of data as { creator_address: string }[]) {
+      addressSet.add(String(row.creator_address));
     }
 
     for (const address of addressSet) {
@@ -514,27 +514,6 @@ export class ProactiveService {
         payload: { address: recipientAddress },
       },
       metadata: { recipientAddress: recipientAddress.toLowerCase(), suggestionType: 'add_contact' },
-    });
-  }
-
-  /**
-   * Create a savings tip suggestion
-   */
-  async createSavingsTip(params: {
-    userAddress: string;
-    title: string;
-    message: string;
-    tipType: string;
-  }): Promise<AiSuggestion> {
-    const { userAddress, title, message, tipType } = params;
-
-    return this.createSuggestion({
-      userAddress,
-      type: 'savings_tip',
-      title,
-      message,
-      priority: 'low',
-      metadata: { tipType },
     });
   }
 
