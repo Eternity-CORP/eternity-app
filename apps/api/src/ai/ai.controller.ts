@@ -5,10 +5,15 @@ import {
   Body,
   Param,
   Query,
+  Headers,
   HttpCode,
   HttpStatus,
   HttpException,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+
+const ETH_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
 import { ProactiveService } from './proactive';
@@ -56,7 +61,12 @@ export class AiController {
 
   @Post('chat')
   @HttpCode(HttpStatus.OK)
-  async chat(@Body() dto: SendChatDto): Promise<AiResponseDto> {
+  async chat(
+    @Body() dto: SendChatDto,
+    @Headers('x-wallet-address') walletAddress?: string,
+  ): Promise<AiResponseDto> {
+    this.verifyWalletOwnership(walletAddress, dto.userAddress, 'chat');
+
     const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const startTime = Date.now();
 
@@ -177,7 +187,12 @@ export class AiController {
 
   @Post('tool')
   @HttpCode(HttpStatus.OK)
-  async executeTool(@Body() dto: ExecuteToolDto) {
+  async executeTool(
+    @Body() dto: ExecuteToolDto,
+    @Headers('x-wallet-address') walletAddress?: string,
+  ) {
+    this.verifyWalletOwnership(walletAddress, dto.userAddress, 'executeTool');
+
     const requestId = `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // Validate tool call
@@ -273,7 +288,11 @@ export class AiController {
 
   @Post('security/large-transaction')
   @HttpCode(HttpStatus.CREATED)
-  async reportLargeTransaction(@Body() dto: LargeTransactionAlertDto) {
+  async reportLargeTransaction(
+    @Body() dto: LargeTransactionAlertDto,
+    @Headers('x-wallet-address') walletAddress?: string,
+  ) {
+    this.verifyWalletOwnership(walletAddress, dto.userAddress, 'reportLargeTransaction');
     const suggestion = await this.proactiveService.createLargeTransactionAlert(dto);
 
     return {
@@ -284,7 +303,11 @@ export class AiController {
 
   @Post('security/alert')
   @HttpCode(HttpStatus.CREATED)
-  async reportSecurityAlert(@Body() dto: SecurityAlertDto) {
+  async reportSecurityAlert(
+    @Body() dto: SecurityAlertDto,
+    @Headers('x-wallet-address') walletAddress?: string,
+  ) {
+    this.verifyWalletOwnership(walletAddress, dto.userAddress, 'reportSecurityAlert');
     const suggestion = await this.proactiveService.createSecurityAlert(dto);
 
     return {
@@ -299,7 +322,11 @@ export class AiController {
 
   @Post('smart/suggest-username')
   @HttpCode(HttpStatus.OK)
-  async suggestUsername(@Body() dto: SuggestUsernameDto) {
+  async suggestUsername(
+    @Body() dto: SuggestUsernameDto,
+    @Headers('x-wallet-address') walletAddress?: string,
+  ) {
+    this.verifyWalletOwnership(walletAddress, dto.userAddress, 'suggestUsername');
     const suggestion = await this.proactiveService.suggestUsernameSetup(
       dto.userAddress,
       dto.transactionCount || 0,
@@ -314,7 +341,11 @@ export class AiController {
 
   @Post('smart/suggest-contact')
   @HttpCode(HttpStatus.OK)
-  async suggestContact(@Body() dto: SuggestContactDto) {
+  async suggestContact(
+    @Body() dto: SuggestContactDto,
+    @Headers('x-wallet-address') walletAddress?: string,
+  ) {
+    this.verifyWalletOwnership(walletAddress, dto.userAddress, 'suggestContact');
     const suggestion = await this.proactiveService.suggestAddContact(dto);
 
     return {
@@ -322,5 +353,24 @@ export class AiController {
       suggestionId: suggestion?.id || null,
       created: !!suggestion,
     };
+  }
+
+  // ========================================
+  // Auth Helper
+  // ========================================
+
+  private verifyWalletOwnership(
+    headerAddress: string | undefined,
+    bodyAddress: string,
+    action: string,
+  ): void {
+    if (!headerAddress || !ETH_ADDRESS_RE.test(headerAddress)) {
+      throw new BadRequestException('Valid x-wallet-address header required');
+    }
+    if (headerAddress.toLowerCase() !== bodyAddress.toLowerCase()) {
+      throw new ForbiddenException(
+        `Wallet address mismatch on ${action}: header and body addresses must match`,
+      );
+    }
   }
 }

@@ -5,6 +5,10 @@
  * Note: ethers is mocked globally, so we test the logic without real crypto operations
  */
 
+// Hardhat Account #0 — well-known test private key, holds no real funds
+const HARDHAT_TEST_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+const HARDHAT_TEST_RECIPIENT = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
+
 describe('ScheduledSigningService', () => {
   describe('verifySignedTransaction logic', () => {
     // Mock implementation of verifySignedTransaction for testing
@@ -116,8 +120,8 @@ describe('ScheduledSigningService', () => {
 
     it('should validate correct parameters', () => {
       const params: SignScheduledParams = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '1.5',
         tokenAddress: null,
         networkId: 'sepolia',
@@ -130,7 +134,7 @@ describe('ScheduledSigningService', () => {
     it('should reject invalid private key', () => {
       const params = {
         privateKey: 'invalid',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '1.5',
         tokenAddress: null,
       };
@@ -140,7 +144,7 @@ describe('ScheduledSigningService', () => {
 
     it('should reject invalid recipient address', () => {
       const params = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
         recipient: 'invalid',
         amount: '1.5',
         tokenAddress: null,
@@ -151,8 +155,8 @@ describe('ScheduledSigningService', () => {
 
     it('should reject zero amount', () => {
       const params = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '0',
         tokenAddress: null,
       };
@@ -162,8 +166,8 @@ describe('ScheduledSigningService', () => {
 
     it('should reject negative amount', () => {
       const params = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '-1.5',
         tokenAddress: null,
       };
@@ -173,8 +177,8 @@ describe('ScheduledSigningService', () => {
 
     it('should validate token address when provided', () => {
       const params = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '1.5',
         tokenAddress: 'invalid-token',
       };
@@ -184,8 +188,8 @@ describe('ScheduledSigningService', () => {
 
     it('should accept null token address for native transfers', () => {
       const params = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '1.5',
         tokenAddress: null,
       };
@@ -195,8 +199,8 @@ describe('ScheduledSigningService', () => {
 
     it('should accept valid ERC-20 token address', () => {
       const params = {
-        privateKey: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
-        recipient: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        privateKey: HARDHAT_TEST_PRIVATE_KEY,
+        recipient: HARDHAT_TEST_RECIPIENT,
         amount: '100',
         tokenAddress: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
       };
