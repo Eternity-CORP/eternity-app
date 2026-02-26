@@ -18,7 +18,7 @@ export interface TransactionStatusUpdate {
 export type StatusUpdateCallback = (update: TransactionStatusUpdate) => void;
 
 export interface TransactionSocketService {
-  subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback): void;
+  subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback, chainId?: number): void;
   unsubscribe(txHash: string): void;
 }
 
@@ -43,13 +43,13 @@ export function createTransactionSocketService(socket: SocketLike): TransactionS
   });
 
   return {
-    subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback): void {
+    subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback, chainId?: number): void {
       const existing = callbacks.get(txHash) || [];
       existing.push(callback);
       callbacks.set(txHash, existing);
 
       if (socket.connected) {
-        socket.emit('subscribe', { txHash, userAddress });
+        socket.emit('subscribe', { txHash, userAddress, chainId });
       }
     },
 

@@ -9,6 +9,7 @@ import {
   Query,
   Headers,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ScheduledService } from './scheduled.service';
 import { CreateScheduledDto, UpdateScheduledDto, ExecuteScheduledDto } from './dto';
@@ -81,8 +82,23 @@ export class ScheduledController {
    * Get a specific scheduled payment by ID
    */
   @Get(':id')
-  async findById(@Param('id') id: string) {
-    return this.scheduledService.findById(id);
+  async findById(
+    @Param('id') id: string,
+    @Headers('x-wallet-address') walletAddress: string,
+  ) {
+    if (!walletAddress) {
+      throw new BadRequestException('Wallet address required');
+    }
+
+    const payment = await this.scheduledService.findById(id);
+
+    if (payment.creatorAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      throw new ForbiddenException(
+        'Only the payment creator can view this scheduled payment',
+      );
+    }
+
+    return payment;
   }
 
   /**

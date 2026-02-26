@@ -1,6 +1,9 @@
 /**
  * Transaction WebSocket Gateway
- * Provides real-time transaction status updates
+ * Provides real-time transaction status updates across multiple chains.
+ *
+ * Clients send { txHash, userAddress, chainId? } on 'subscribe'.
+ * If chainId is omitted, defaults to Sepolia (11155111) for backward compatibility.
  */
 
 import {
@@ -14,21 +17,45 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import {
+  CHAIN_RPC_URLS,
+  buildChainRpcUrl,
+  SEPOLIA_CHAIN_ID,
+} from '@e-y/shared';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface PendingTransaction {
   txHash: string;
   clientId: string;
   userAddress: string;
+  chainId: number;
   startTime: number;
 }
 
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
-const NETWORK = process.env.NETWORK || 'sepolia';
+interface RpcResponse {
+  jsonrpc: string;
+  id: number;
+  result: {
+    status: string;
+    blockNumber: string;
+    gasUsed: string;
+  } | null;
+}
 
-const getAlchemyUrl = (): string | null => {
-  if (!ALCHEMY_API_KEY) return null;
-  return `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
-};
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY || '';
+const TX_MONITOR_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+const POLL_INTERVAL_MS = 3000; // 3 seconds
+
+// ---------------------------------------------------------------------------
+// Gateway
+// ---------------------------------------------------------------------------
 
 @WebSocketGateway({
   namespace: '/transactions',
@@ -44,6 +71,16 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
 
   private pendingTransactions: Map<string, PendingTransaction> = new Map();
   private pollingInterval: NodeJS.Timeout | null = null;
+
+  /**
+   * RPC URL cache keyed by chainId.
+   * Built lazily so we only resolve URLs for chains that are actually used.
+   */
+  private readonly rpcUrlCache: Map<number, string> = new Map();
+
+  // -----------------------------------------------------------------------
+  // Connection lifecycle
+  // -----------------------------------------------------------------------
 
   handleConnection(client: Socket) {
     this.logger.log(`Client connected to Transaction gateway: ${client.id}`);
@@ -61,15 +98,28 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
     this.stopPollingIfNotNeeded();
   }
 
+  // -----------------------------------------------------------------------
+  // Subscribe / Unsubscribe
+  // -----------------------------------------------------------------------
+
   @SubscribeMessage('subscribe')
   handleSubscribe(
-    @MessageBody() data: { txHash: string; userAddress: string },
+    @MessageBody() data: { txHash: string; userAddress: string; chainId?: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const { txHash, userAddress } = data;
+    const { txHash, userAddress, chainId } = data;
 
     if (!txHash || !userAddress) {
       client.emit('error', { message: 'txHash and userAddress are required' });
+      return;
+    }
+
+    // Default to Sepolia for backward compatibility (test accounts)
+    const resolvedChainId = chainId ?? SEPOLIA_CHAIN_ID;
+
+    // Validate that the chain is supported
+    if (!CHAIN_RPC_URLS[resolvedChainId]) {
+      client.emit('error', { message: `Unsupported chain ID: ${resolvedChainId}` });
       return;
     }
 
@@ -78,18 +128,21 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
       txHash,
       clientId: client.id,
       userAddress,
+      chainId: resolvedChainId,
       startTime: Date.now(),
     });
 
     // Join room for this transaction
     client.join(`tx:${txHash}`);
 
-    this.logger.log(`Client ${client.id} subscribed to transaction ${txHash}`);
+    this.logger.log(
+      `Client ${client.id} subscribed to tx ${txHash} on chain ${resolvedChainId}`,
+    );
 
     // Immediately check status
     this.checkTransactionStatus(txHash);
 
-    return { subscribed: true, txHash };
+    return { subscribed: true, txHash, chainId: resolvedChainId };
   }
 
   @SubscribeMessage('unsubscribe')
@@ -107,15 +160,18 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
     return { unsubscribed: true, txHash };
   }
 
+  // -----------------------------------------------------------------------
+  // Polling
+  // -----------------------------------------------------------------------
+
   private startPollingIfNeeded() {
     if (this.pollingInterval || this.pendingTransactions.size === 0) {
       return;
     }
 
-    // Poll every 3 seconds
     this.pollingInterval = setInterval(() => {
       this.pollPendingTransactions();
-    }, 3000);
+    }, POLL_INTERVAL_MS);
 
     this.logger.debug('Started transaction polling');
   }
@@ -134,18 +190,54 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
     }
   }
 
+  // -----------------------------------------------------------------------
+  // RPC helpers
+  // -----------------------------------------------------------------------
+
+  /**
+   * Resolve RPC URL for a chain, caching the result.
+   * Returns null if the chain is unsupported or key is missing for Alchemy chains.
+   */
+  private getRpcUrl(chainId: number): string | null {
+    if (this.rpcUrlCache.has(chainId)) {
+      return this.rpcUrlCache.get(chainId)!;
+    }
+
+    const url = buildChainRpcUrl(chainId, ALCHEMY_API_KEY);
+    if (!url) {
+      this.logger.warn(`No RPC URL for chain ${chainId}`);
+      return null;
+    }
+
+    // Warn if an Alchemy URL is constructed without an API key
+    if (url.endsWith('/v2/')) {
+      this.logger.warn(
+        `ALCHEMY_API_KEY is empty — RPC calls for chain ${chainId} will fail`,
+      );
+    }
+
+    this.rpcUrlCache.set(chainId, url);
+    return url;
+  }
+
+  // -----------------------------------------------------------------------
+  // Transaction status check
+  // -----------------------------------------------------------------------
+
   private async checkTransactionStatus(txHash: string) {
     const pendingTx = this.pendingTransactions.get(txHash);
     if (!pendingTx) return;
 
-    const alchemyUrl = getAlchemyUrl();
-    if (!alchemyUrl) {
-      this.logger.warn('ALCHEMY_API_KEY not set, cannot check transaction status');
+    const rpcUrl = this.getRpcUrl(pendingTx.chainId);
+    if (!rpcUrl) {
+      this.logger.warn(
+        `Cannot check tx ${txHash} — no RPC URL for chain ${pendingTx.chainId}`,
+      );
       return;
     }
 
     try {
-      const response = await fetch(alchemyUrl, {
+      const response = await fetch(rpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -156,7 +248,7 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
         }),
       });
 
-      const data = await response.json();
+      const data: RpcResponse = await response.json();
       const receipt = data.result;
 
       if (receipt) {
@@ -170,34 +262,42 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
           blockNumber: parseInt(receipt.blockNumber, 16),
           gasUsed,
           confirmations: 1,
+          chainId: pendingTx.chainId,
         });
 
         // Remove from pending
         this.pendingTransactions.delete(txHash);
         this.stopPollingIfNotNeeded();
 
-        this.logger.log(`Transaction ${txHash} ${status}`);
+        this.logger.log(
+          `Transaction ${txHash} ${status} on chain ${pendingTx.chainId}`,
+        );
       } else {
         // Still pending - emit pending status
         this.server.to(`tx:${txHash}`).emit('status-update', {
           txHash,
           status: 'pending',
           confirmations: 0,
+          chainId: pendingTx.chainId,
         });
       }
 
-      // Check for timeout (10 minutes)
-      if (Date.now() - pendingTx.startTime > 10 * 60 * 1000) {
+      // Check for timeout
+      if (Date.now() - pendingTx.startTime > TX_MONITOR_TIMEOUT_MS) {
         this.server.to(`tx:${txHash}`).emit('status-update', {
           txHash,
           status: 'timeout',
           message: 'Transaction monitoring timed out',
+          chainId: pendingTx.chainId,
         });
         this.pendingTransactions.delete(txHash);
         this.stopPollingIfNotNeeded();
       }
     } catch (error) {
-      this.logger.error(`Error checking transaction ${txHash}:`, error);
+      this.logger.error(
+        `Error checking transaction ${txHash} on chain ${pendingTx.chainId}:`,
+        error,
+      );
     }
   }
 }

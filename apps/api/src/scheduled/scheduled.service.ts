@@ -13,6 +13,7 @@ import { ScheduledPayment, RecurringInterval, ScheduledPaymentStatus } from './e
 import { CreateScheduledDto, UpdateScheduledDto, ExecuteScheduledDto } from './dto';
 import { ScheduledGateway } from './scheduled.gateway';
 import { SupabaseService } from '../supabase/supabase.service';
+import { CHAIN_RPC_URLS } from '@e-y/shared';
 
 /**
  * Database row type (snake_case)
@@ -41,22 +42,6 @@ interface ScheduledPaymentRow {
   created_at: string;
   updated_at: string;
 }
-
-// Chain ID to RPC URL mapping (subset of commonly used chains)
-const CHAIN_RPC_URLS: Record<number, string> = {
-  // Mainnets
-  1: 'https://eth-mainnet.g.alchemy.com/v2/', // Ethereum
-  137: 'https://polygon-mainnet.g.alchemy.com/v2/', // Polygon
-  10: 'https://opt-mainnet.g.alchemy.com/v2/', // Optimism
-  42161: 'https://arb-mainnet.g.alchemy.com/v2/', // Arbitrum
-  8453: 'https://base-mainnet.g.alchemy.com/v2/', // Base
-  // Testnets (public RPCs — Alchemy 500s from Railway)
-  11155111: 'https://ethereum-sepolia-rpc.publicnode.com', // Sepolia
-  80002: 'https://polygon-amoy.g.alchemy.com/v2/', // Amoy
-  11155420: 'https://opt-sepolia.g.alchemy.com/v2/', // Optimism Sepolia
-  421614: 'https://arb-sepolia.g.alchemy.com/v2/', // Arbitrum Sepolia
-  84532: 'https://base-sepolia.g.alchemy.com/v2/', // Base Sepolia
-};
 
 // Gas price increase threshold (50%)
 const GAS_PRICE_THRESHOLD_PERCENT = 150n;

@@ -103,10 +103,10 @@ class TransactionSocketServiceWrapper {
   /**
    * Subscribe to updates for a specific transaction
    */
-  subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback): void {
+  subscribe(txHash: string, userAddress: string, callback: StatusUpdateCallback, chainId?: number): void {
     // Connect if not connected, then subscribe via shared service
     this.connect().then(() => {
-      this.sharedService?.subscribe(txHash, userAddress, callback);
+      this.sharedService?.subscribe(txHash, userAddress, callback, chainId);
     });
   }
 

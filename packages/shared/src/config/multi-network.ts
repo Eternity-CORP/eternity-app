@@ -255,3 +255,33 @@ export const NETWORK_GAS_RANKING: Record<NetworkId, number> = {
   polygon: 4,
   ethereum: 5,
 };
+
+/**
+ * Chain ID to RPC URL mapping for server-side use (API gateway, cron jobs).
+ * Alchemy URLs end with `/v2/` — append API key at runtime.
+ * Public RPCs (testnets) are complete URLs that need no key.
+ */
+export const CHAIN_RPC_URLS: Record<number, string> = {
+  // Mainnets (Alchemy — append API key)
+  1: 'https://eth-mainnet.g.alchemy.com/v2/',       // Ethereum
+  137: 'https://polygon-mainnet.g.alchemy.com/v2/',   // Polygon
+  10: 'https://opt-mainnet.g.alchemy.com/v2/',        // Optimism
+  42161: 'https://arb-mainnet.g.alchemy.com/v2/',     // Arbitrum
+  8453: 'https://base-mainnet.g.alchemy.com/v2/',     // Base
+  // Testnets (public RPCs — Alchemy 500s from Railway)
+  11155111: 'https://ethereum-sepolia-rpc.publicnode.com', // Sepolia
+  80002: 'https://polygon-amoy.g.alchemy.com/v2/',        // Amoy
+  11155420: 'https://opt-sepolia.g.alchemy.com/v2/',       // Optimism Sepolia
+  421614: 'https://arb-sepolia.g.alchemy.com/v2/',         // Arbitrum Sepolia
+  84532: 'https://base-sepolia.g.alchemy.com/v2/',         // Base Sepolia
+};
+
+/**
+ * Build an RPC URL for a given chainId.
+ * Appends the Alchemy API key to Alchemy-hosted URLs; returns as-is for public RPCs.
+ */
+export function buildChainRpcUrl(chainId: number, alchemyApiKey: string): string | null {
+  const baseUrl = CHAIN_RPC_URLS[chainId];
+  if (!baseUrl) return null;
+  return baseUrl.includes('alchemy.com') ? baseUrl + alchemyApiKey : baseUrl;
+}
