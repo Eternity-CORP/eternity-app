@@ -3,7 +3,13 @@
  * Represents a scheduled payment in the database
  */
 
-export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
+export type ScheduledPaymentStatus =
+  | 'pending'
+  | 'executed'
+  | 'cancelled'
+  | 'failed'
+  | 'pending_confirmation'
+  | 'needs_resigning';
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
 
 export interface ScheduledPayment {

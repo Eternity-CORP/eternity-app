@@ -112,8 +112,8 @@ export default function SuccessScreen() {
   const statusConfig = getStatusConfig();
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
+      <View style={styles.content}>
         <View style={styles.statusIcon}>
           <View style={[styles.statusCircle, { backgroundColor: statusConfig.color + '20' }]}>
             <FontAwesome name={statusConfig.icon as any} size={48} color={statusConfig.color} />
@@ -144,7 +144,10 @@ export default function SuccessScreen() {
             Checking status...
           </Text>
         )}
+      </View>
 
+      {/* Fixed Footer with Done Button */}
+      <View style={[styles.footer, { borderTopColor: dynamicTheme.colors.glassBorder }]}>
         <TouchableOpacity style={[styles.doneButton, { backgroundColor: dynamicTheme.colors.buttonPrimary }]} onPress={handleDone}>
           <Text style={[styles.doneButtonText, theme.typography.heading, { color: dynamicTheme.colors.buttonPrimaryText }]}>Done</Text>
         </TouchableOpacity>
@@ -158,11 +161,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  container: {
+  content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.xl,
+  },
+  footer: {
+    padding: theme.spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.buttonSecondaryBorder,
   },
   statusIcon: {
     marginBottom: theme.spacing.xl,

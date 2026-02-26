@@ -3,6 +3,7 @@
  */
 
 import { USERNAME_REGEX } from './username';
+import { BLIK_MIN_AMOUNT, BLIK_MAX_AMOUNT } from '../constants/limits';
 
 /**
  * Validate Ethereum address format
@@ -41,6 +42,24 @@ export function truncateAddress(
     return address;
   }
   return `${address.slice(0, startLength + 2)}...${address.slice(-endLength)}`;
+}
+
+/**
+ * Validate BLIK amount is within allowed range
+ * Returns null if valid, or an error message string if invalid
+ */
+export function validateBlikAmount(amount: string): string | null {
+  const parsed = parseFloat(amount);
+  if (isNaN(parsed) || parsed <= 0) {
+    return 'Amount must be greater than 0';
+  }
+  if (parsed < BLIK_MIN_AMOUNT) {
+    return `Minimum amount is ${BLIK_MIN_AMOUNT}`;
+  }
+  if (parsed > BLIK_MAX_AMOUNT) {
+    return `Maximum amount is ${BLIK_MAX_AMOUNT.toLocaleString()}`;
+  }
+  return null;
 }
 
 /**

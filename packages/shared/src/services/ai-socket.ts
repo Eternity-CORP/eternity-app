@@ -34,6 +34,7 @@ export interface AiSocketService {
   addResponseToHistory(content: string): void;
   addSystemMessage(content: string): void;
   clearHistory(): void;
+  rollbackLastUserMessage(): void;
   setCallbacks(callbacks: AiSocketCallbacks): void;
   clearCallbacks(): void;
 }
@@ -70,6 +71,15 @@ export function createAiSocketService(socket: SocketLike): AiSocketService {
   });
 
   socket.on(AI_EVENTS.ERROR, (payload: unknown) => {
+    // Rollback the last user message from history on error,
+    // since there was no valid assistant response to pair with it.
+    // This prevents history corruption where orphaned user messages
+    // confuse the AI context on subsequent requests.
+    const last = messageHistory[messageHistory.length - 1];
+    if (last && last.role === 'user') {
+      messageHistory.pop();
+    }
+
     callbacks.onError?.(payload as AiErrorPayload);
   });
 
@@ -117,6 +127,13 @@ export function createAiSocketService(socket: SocketLike): AiSocketService {
 
     clearHistory(): void {
       messageHistory = [];
+    },
+
+    rollbackLastUserMessage(): void {
+      const last = messageHistory[messageHistory.length - 1];
+      if (last && last.role === 'user') {
+        messageHistory.pop();
+      }
     },
 
     setCallbacks(newCallbacks: AiSocketCallbacks): void {

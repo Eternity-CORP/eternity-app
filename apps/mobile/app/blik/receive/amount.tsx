@@ -16,7 +16,7 @@ import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { sanitizeAmountInput } from '@/src/utils/format';
-import { resolveChainId } from '@e-y/shared';
+import { resolveChainId, validateBlikAmount, BLIK_MAX_AMOUNT } from '@e-y/shared';
 
 export default function BlikReceiveAmountScreen() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -28,6 +28,7 @@ export default function BlikReceiveAmountScreen() {
   const currentAccount = getCurrentAccount(wallet);
 
   const [amount, setAmount] = useState('');
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
   // Set up BLIK socket callbacks
@@ -58,14 +59,24 @@ export default function BlikReceiveAmountScreen() {
       if (decimalPlaces > 6) return;
     }
     setAmount(sanitized);
+    // Clear error when user is actively typing
+    if (amountError) setAmountError(null);
   };
 
   const handleBackspace = () => {
     setAmount((prev) => prev.slice(0, -1));
+    if (amountError) setAmountError(null);
   };
 
   const handleGenerateCode = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !currentAccount || !token) return;
+    if (!amount || !currentAccount || !token) return;
+
+    // Validate amount range
+    const validationError = validateBlikAmount(amount);
+    if (validationError) {
+      setAmountError(validationError);
+      return;
+    }
 
     setIsConnecting(true);
     dispatch(receiverStartCreating());
@@ -87,7 +98,7 @@ export default function BlikReceiveAmountScreen() {
   };
 
   const isLoading = isConnecting || blik.receiver.status === 'creating';
-  const canGenerate = amount && parseFloat(amount) > 0 && !isLoading;
+  const canGenerate = amount && parseFloat(amount) > 0 && parseFloat(amount) <= BLIK_MAX_AMOUNT && !isLoading;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top']}>
@@ -103,6 +114,15 @@ export default function BlikReceiveAmountScreen() {
             {token}
           </Text>
         </View>
+
+        {/* Amount Validation Error */}
+        {amountError && (
+          <View style={[styles.errorContainer, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+            <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
+              {amountError}
+            </Text>
+          </View>
+        )}
 
         {/* Error Display */}
         {blik.receiver.error && (

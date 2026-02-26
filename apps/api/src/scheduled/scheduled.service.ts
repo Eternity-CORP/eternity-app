@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { JsonRpcProvider } from 'ethers';
+import { JsonRpcProvider, Transaction } from 'ethers';
 import { ScheduledPayment, RecurringInterval } from './entities';
 import { CreateScheduledDto, UpdateScheduledDto, ExecuteScheduledDto } from './dto';
 import { ScheduledGateway } from './scheduled.gateway';
@@ -67,6 +67,7 @@ export class ScheduledService {
   private readonly logger = new Logger(ScheduledService.name);
   private readonly providerCache: Map<number, JsonRpcProvider> = new Map();
   private readonly alchemyApiKey: string;
+  private isExecuting = false;
 
   constructor(
     private readonly supabaseService: SupabaseService,
@@ -254,8 +255,8 @@ export class ScheduledService {
       throw new BadRequestException('Only creator can update scheduled payment');
     }
 
-    if (payment.status !== 'pending') {
-      throw new BadRequestException('Can only update pending payments');
+    if (payment.status !== 'pending' && payment.status !== 'needs_resigning') {
+      throw new BadRequestException('Can only update pending or needs_resigning payments');
     }
 
     // Build update object
@@ -278,6 +279,12 @@ export class ScheduledService {
     if (dto.estimatedGasPrice !== undefined) updateData.estimated_gas_price = dto.estimatedGasPrice;
     if (dto.nonce !== undefined) updateData.nonce = dto.nonce;
     if (dto.chainId !== undefined) updateData.chain_id = dto.chainId;
+
+    // If payment was needs_resigning and user provides a new signed tx, move back to pending
+    if (payment.status === 'needs_resigning' && dto.signedTransaction) {
+      updateData.status = 'pending';
+      updateData.failure_reason = null;
+    }
 
     const { data, error } = await this.supabaseService
       .from('scheduled_payments')
@@ -555,38 +562,161 @@ export class ScheduledService {
   }
 
   /**
+   * Cron job: Check pending_confirmation transactions and resolve their status
+   * Runs every 2 minutes
+   */
+  @Cron('*/2 * * * *')
+  async checkPendingConfirmations(): Promise<void> {
+    this.logger.debug('Checking pending_confirmation payments...');
+
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('status', 'pending_confirmation');
+
+    if (error) {
+      this.logger.error(`Failed to fetch pending_confirmation payments: ${error.message}`);
+      return;
+    }
+
+    const pendingPayments = (data || []).map(item => this.mapToEntity(item));
+
+    for (const payment of pendingPayments) {
+      if (!payment.executedTxHash || !payment.chainId) {
+        // Should not happen, but mark as failed if no tx hash
+        this.logger.error(
+          `pending_confirmation payment ${payment.id} has no tx hash or chain ID`,
+        );
+        await this.supabaseService
+          .from('scheduled_payments')
+          .update({
+            status: 'failed',
+            failure_reason: 'Missing transaction hash for confirmation check',
+          })
+          .eq('id', payment.id);
+        continue;
+      }
+
+      try {
+        const provider = this.getProvider(payment.chainId);
+        const receipt = await provider.getTransactionReceipt(payment.executedTxHash);
+
+        if (receipt && receipt.status === 1) {
+          // Confirmed successfully
+          await this.supabaseService
+            .from('scheduled_payments')
+            .update({
+              status: 'executed',
+              executed_at: new Date().toISOString(),
+              failure_reason: null,
+            })
+            .eq('id', payment.id);
+
+          payment.status = 'executed';
+          payment.executedAt = new Date();
+          payment.failureReason = null;
+
+          this.logger.log(
+            `Payment ${payment.id} confirmed on-chain (tx: ${payment.executedTxHash})`,
+          );
+          this.scheduledGateway.notifyPaymentExecuted(payment);
+
+          // Handle recurring
+          if (payment.recurringInterval) {
+            await this.createNextRecurringPayment(payment);
+          }
+        } else if (receipt && receipt.status === 0) {
+          // Reverted on-chain
+          await this.supabaseService
+            .from('scheduled_payments')
+            .update({
+              status: 'failed',
+              failure_reason: `Transaction reverted on-chain (tx: ${payment.executedTxHash})`,
+            })
+            .eq('id', payment.id);
+
+          this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
+            payment,
+            reason: `Transaction reverted on-chain (tx: ${payment.executedTxHash})`,
+          });
+        } else {
+          // Still pending — check if it's been too long (> 30 minutes)
+          const updatedAt = payment.updatedAt.getTime();
+          const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+
+          if (updatedAt < thirtyMinutesAgo) {
+            this.logger.warn(
+              `Payment ${payment.id} tx ${payment.executedTxHash} has been pending_confirmation for >30min, marking failed`,
+            );
+            await this.supabaseService
+              .from('scheduled_payments')
+              .update({
+                status: 'failed',
+                failure_reason: `Transaction ${payment.executedTxHash} was not confirmed within 30 minutes`,
+              })
+              .eq('id', payment.id);
+
+            this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
+              payment,
+              reason: 'Transaction was not confirmed within 30 minutes and may have been dropped',
+            });
+          }
+          // else: still within 30min window, keep waiting
+        }
+      } catch (checkError) {
+        this.logger.error(
+          `Error checking confirmation for payment ${payment.id}:`,
+          checkError,
+        );
+        // Don't mark as failed — we'll retry next cron cycle
+      }
+    }
+  }
+
+  /**
    * Cron job: Auto-execute pre-signed scheduled payments
    * Runs every minute
    */
   @Cron(CronExpression.EVERY_MINUTE)
   async executeScheduledPayments(): Promise<void> {
-    this.logger.debug('Checking for payments to execute...');
-
-    const now = new Date();
-
-    // Find pending payments with signed transactions that are due
-    const { data, error } = await this.supabaseService
-      .from('scheduled_payments')
-      .select('*')
-      .eq('status', 'pending')
-      .not('signed_transaction', 'is', null)
-      .lte('scheduled_at', now.toISOString());
-
-    if (error) {
-      this.logger.error(`Failed to fetch due payments: ${error.message}`);
+    // Bug 3 fix: concurrency guard — skip if previous run is still executing
+    if (this.isExecuting) {
+      this.logger.warn('Previous executeScheduledPayments run still in progress, skipping');
       return;
     }
 
-    const duePayments = (data || []).map(item => this.mapToEntity(item));
+    this.isExecuting = true;
+    try {
+      this.logger.debug('Checking for payments to execute...');
 
-    if (duePayments.length === 0) {
-      return;
-    }
+      const now = new Date();
 
-    this.logger.log(`Found ${duePayments.length} payments to execute`);
+      // Find pending payments with signed transactions that are due
+      const { data, error } = await this.supabaseService
+        .from('scheduled_payments')
+        .select('*')
+        .eq('status', 'pending')
+        .not('signed_transaction', 'is', null)
+        .lte('scheduled_at', now.toISOString());
 
-    for (const payment of duePayments) {
-      await this.executeSignedTransaction(payment);
+      if (error) {
+        this.logger.error(`Failed to fetch due payments: ${error.message}`);
+        return;
+      }
+
+      const duePayments = (data || []).map(item => this.mapToEntity(item));
+
+      if (duePayments.length === 0) {
+        return;
+      }
+
+      this.logger.log(`Found ${duePayments.length} payments to execute`);
+
+      for (const payment of duePayments) {
+        await this.executeSignedTransaction(payment);
+      }
+    } finally {
+      this.isExecuting = false;
     }
   }
 
@@ -611,6 +741,46 @@ export class ScheduledService {
 
       const provider = this.getProvider(payment.chainId);
 
+      // --- Bug 1 fix: Verify nonce before broadcast ---
+      const parsedTx = Transaction.from(payment.signedTransaction);
+      const senderAddress = parsedTx.from;
+
+      if (senderAddress && parsedTx.nonce !== null && parsedTx.nonce !== undefined) {
+        const currentNonce = await provider.getTransactionCount(senderAddress, 'pending');
+
+        if (parsedTx.nonce < currentNonce) {
+          // Nonce already used — the user made another tx since signing
+          this.logger.warn(
+            `Stale nonce for payment ${payment.id}: tx nonce=${parsedTx.nonce}, current=${currentNonce}`,
+          );
+          await this.supabaseService
+            .from('scheduled_payments')
+            .update({
+              status: 'needs_resigning' as ScheduledPaymentStatus,
+              failure_reason: `Stale nonce: transaction nonce ${parsedTx.nonce} is behind current nonce ${currentNonce}. Please re-sign.`,
+              signed_transaction: null,
+              nonce: null,
+              estimated_gas_price: null,
+            })
+            .eq('id', payment.id);
+
+          this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:needs_signing', {
+            payment: { ...payment, status: 'needs_resigning' as ScheduledPaymentStatus },
+            reason: `Transaction nonce is stale (expected ${currentNonce}, got ${parsedTx.nonce}). Please re-sign the transaction.`,
+          });
+          return;
+        }
+
+        if (parsedTx.nonce > currentNonce) {
+          // Nonce is ahead — there are pending txs that need to confirm first
+          this.logger.warn(
+            `Nonce gap for payment ${payment.id}: tx nonce=${parsedTx.nonce}, current=${currentNonce}. Skipping for now.`,
+          );
+          // Don't mark as failed — just skip this cycle, the gap may close
+          return;
+        }
+      }
+
       // Check current gas price vs estimated
       const currentFeeData = await provider.getFeeData();
       const currentGasPrice = currentFeeData.gasPrice;
@@ -633,19 +803,22 @@ export class ScheduledService {
 
       const estimatedGas = BigInt(payment.estimatedGasPrice);
 
-      // If gas price increased more than 50%, mark as failed
+      // If gas price increased more than 50%, mark as needs_resigning (not failed)
       if (currentGasPrice > (estimatedGas * GAS_PRICE_THRESHOLD_PERCENT) / 100n) {
         this.logger.warn(`Gas price too high for payment ${payment.id}`);
         await this.supabaseService
           .from('scheduled_payments')
           .update({
-            status: 'failed',
-            failure_reason: `Gas price increased significantly (from ${estimatedGas.toString()} to ${currentGasPrice.toString()} wei)`,
+            status: 'needs_resigning' as ScheduledPaymentStatus,
+            failure_reason: `Gas price increased significantly (from ${estimatedGas.toString()} to ${currentGasPrice.toString()} wei). Please re-sign.`,
+            signed_transaction: null,
+            nonce: null,
+            estimated_gas_price: null,
           })
           .eq('id', payment.id);
-        this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:failed', {
-          payment,
-          reason: 'Gas price increased more than 50% since signing',
+        this.scheduledGateway.notifyUser(payment.creatorAddress, 'scheduled:needs_signing', {
+          payment: { ...payment, status: 'needs_resigning' as ScheduledPaymentStatus },
+          reason: 'Gas price increased more than 50% since signing. Please re-sign the transaction.',
         });
         return;
       }
@@ -654,13 +827,75 @@ export class ScheduledService {
       const txResponse = await provider.broadcastTransaction(payment.signedTransaction);
       this.logger.log(`Transaction broadcast: ${txResponse.hash}`);
 
+      // --- Bug 2 fix: Improved timeout handling ---
       // Wait for confirmation (with timeout)
-      const receipt = await Promise.race([
-        txResponse.wait(),
-        new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error('Transaction confirmation timeout')), 120000),
-        ),
-      ]);
+      let receipt: Awaited<ReturnType<typeof txResponse.wait>> | null = null;
+      let timedOut = false;
+
+      try {
+        receipt = await Promise.race([
+          txResponse.wait(),
+          new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error('TX_CONFIRMATION_TIMEOUT')), 120000),
+          ),
+        ]);
+      } catch (waitError) {
+        const isTimeout =
+          waitError instanceof Error && waitError.message === 'TX_CONFIRMATION_TIMEOUT';
+
+        if (isTimeout) {
+          timedOut = true;
+          this.logger.warn(
+            `Timeout waiting for confirmation of payment ${payment.id}, tx ${txResponse.hash}. Checking on-chain status...`,
+          );
+        } else {
+          // Re-throw non-timeout errors (e.g., tx reverted)
+          throw waitError;
+        }
+      }
+
+      // If timed out, check the transaction status on-chain before deciding
+      if (timedOut) {
+        const txReceipt = await provider.getTransactionReceipt(txResponse.hash);
+
+        if (txReceipt && txReceipt.status === 1) {
+          // Transaction actually confirmed successfully
+          this.logger.log(
+            `Payment ${payment.id} tx ${txResponse.hash} confirmed on-chain despite timeout`,
+          );
+          receipt = txReceipt;
+        } else if (txReceipt && txReceipt.status === 0) {
+          // Transaction reverted on-chain
+          throw new Error(`Transaction reverted on-chain (tx: ${txResponse.hash})`);
+        } else {
+          // Still pending — mark as pending_confirmation so we don't re-broadcast
+          this.logger.log(
+            `Payment ${payment.id} tx ${txResponse.hash} still pending on-chain, marking as pending_confirmation`,
+          );
+          await this.supabaseService
+            .from('scheduled_payments')
+            .update({
+              status: 'pending_confirmation' as ScheduledPaymentStatus,
+              executed_tx_hash: txResponse.hash,
+              failure_reason: 'Transaction broadcast but awaiting confirmation',
+            })
+            .eq('id', payment.id);
+
+          this.scheduledGateway.notifyUser(
+            payment.creatorAddress,
+            'scheduled:pending_confirmation',
+            {
+              payment: {
+                ...payment,
+                status: 'pending_confirmation' as ScheduledPaymentStatus,
+                executedTxHash: txResponse.hash,
+              },
+              reason: 'Transaction was broadcast but confirmation is taking longer than expected',
+            },
+          );
+          return;
+        }
+      }
 
       if (!receipt) {
         throw new Error('Transaction confirmation failed');

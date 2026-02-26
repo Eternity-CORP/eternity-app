@@ -83,7 +83,16 @@ export default function SplitPage() {
       if (sum <= 0) return { valid: false, sum: '0', error: 'Enter percentages for participants' }
       return { valid: true, sum: sum.toFixed(1) }
     }
-    return validateCustomAmounts(totalAmount || null, customAmounts)
+    // For custom amounts mode: validate amounts and check against total if provided
+    const result = validateCustomAmounts(totalAmount || null, customAmounts)
+    // Additional check: if no totalAmount, ensure each amount is reasonable (max 1000 ETH per participant)
+    if (result.valid && !totalAmount) {
+      const parsed = customAmounts.map(a => parseFloat(a || '0'))
+      if (parsed.some(a => a > 1000)) {
+        return { valid: false, sum: result.sum, error: 'Individual amount exceeds 1000 — set a total amount for large splits' }
+      }
+    }
+    return result
   }, [splitMode, parsedEntries.length, customAmounts, usePercentages, totalAmount])
 
   // Load splits from API when address is available
@@ -319,7 +328,7 @@ export default function SplitPage() {
 
                 <div className="bg-white/3 border border-white/8 rounded-xl p-4">
                   <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
-                    Total Amount {splitMode === 'custom' && !usePercentages ? '(optional)' : ''}
+                    Total Amount {splitMode === 'custom' && !usePercentages ? '(recommended)' : ''}
                   </label>
                   <div className="flex items-center gap-3 overflow-hidden">
                     <input

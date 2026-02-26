@@ -1,6 +1,7 @@
 /**
  * BLIK Receive - Token Selection Screen
  * Select which token to receive
+ * Shows token balances and USD values (consistent with Send flow)
  */
 
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
@@ -14,7 +15,13 @@ import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 
 // Fallback tokens if balance is empty
-const FALLBACK_TOKENS: Array<{ symbol: string; name: string; iconUrl?: string }> = [
+const FALLBACK_TOKENS: Array<{
+  symbol: string;
+  name: string;
+  balance?: string;
+  usdValue?: number;
+  iconUrl?: string;
+}> = [
   { symbol: 'ETH', name: 'Ethereum' },
   { symbol: 'USDC', name: 'USD Coin' },
   { symbol: 'USDT', name: 'Tether USD' },
@@ -24,11 +31,13 @@ export default function BlikReceiveTokenScreen() {
   const { theme: dynamicTheme } = useTheme();
   const balance = useAppSelector((state) => state.balance);
 
-  // Use tokens from balance if available, otherwise fallback
+  // Use tokens from balance if available (with balance + USD), otherwise fallback
   const tokens = balance.balances.length > 0
     ? balance.balances.map((b) => ({
         symbol: b.symbol,
         name: b.name || b.symbol,
+        balance: b.balance,
+        usdValue: b.usdValue,
         iconUrl: b.iconUrl,
       }))
     : FALLBACK_TOKENS;
@@ -57,7 +66,7 @@ export default function BlikReceiveTokenScreen() {
               onPress={() => handleSelectToken(token.symbol)}
               activeOpacity={0.7}
             >
-              <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={48} />
+              <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={40} />
               <View style={styles.tokenInfo}>
                 <Text style={[styles.tokenName, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
                   {token.name}
@@ -66,7 +75,20 @@ export default function BlikReceiveTokenScreen() {
                   {token.symbol}
                 </Text>
               </View>
-              <FontAwesome name="chevron-right" size={16} color={dynamicTheme.colors.textTertiary} />
+              <View style={styles.tokenBalance}>
+                {token.balance != null ? (
+                  <>
+                    <Text style={[styles.balanceText, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
+                      {parseFloat(token.balance).toFixed(6)}
+                    </Text>
+                    <Text style={[styles.balanceUsd, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
+                      {token.usdValue ? `$${token.usdValue.toFixed(2)}` : '$0.00'}
+                    </Text>
+                  </>
+                ) : (
+                  <FontAwesome name="chevron-right" size={16} color={dynamicTheme.colors.textTertiary} />
+                )}
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -85,10 +107,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.xl,
+    gap: theme.spacing.md,
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
   tokenList: {
     gap: theme.spacing.md,
@@ -99,16 +122,26 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
     borderRadius: theme.borderRadius.lg,
-    gap: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   tokenInfo: {
     flex: 1,
   },
   tokenName: {
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.xs / 2,
   },
   tokenSymbol: {
+    // color set inline
+  },
+  tokenBalance: {
+    alignItems: 'flex-end',
+  },
+  balanceText: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  balanceUsd: {
     // color set inline
   },
 });

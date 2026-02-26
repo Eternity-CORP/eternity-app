@@ -50,9 +50,11 @@ export default function ChatContainer() {
     pendingScheduled,
     pendingSplit,
     error,
+    lastFailedMessage,
     isConnected,
     isStreaming,
     sendMessage,
+    retryLastMessage,
     clearPendingTransaction,
     clearPendingBlik,
     clearPendingSwap,
@@ -427,8 +429,16 @@ export default function ChatContainer() {
         {/* Error banner */}
         {error && (
           <div className="flex-shrink-0 px-4 py-2">
-            <div className="px-4 py-2 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl">
-              <p className="text-xs text-[#EF4444]">{error}</p>
+            <div className="px-4 py-2 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl flex items-center gap-2">
+              <p className="text-xs text-[#EF4444] flex-1">{error}</p>
+              {lastFailedMessage && (
+                <button
+                  onClick={retryLastMessage}
+                  className="text-xs font-semibold text-[#EF4444] hover:text-[#F87171] px-2 py-0.5 rounded-md bg-[#EF4444]/10 border border-[#EF4444]/20 hover:bg-[#EF4444]/20 transition-colors whitespace-nowrap cursor-pointer"
+                >
+                  &#x21bb; Retry
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -72,7 +72,9 @@ export default function AiScreen() {
     pendingScheduled,
     pendingSplit,
     error,
+    lastFailedMessage,
     sendMessage,
+    retryLastMessage,
     dismissSuggestion,
     clearPendingTransaction,
     clearPendingBlik,
@@ -550,6 +552,11 @@ export default function AiScreen() {
             <View style={styles.errorBanner}>
               <FontAwesome name="exclamation-circle" size={16} color={aiChat.accentRed} />
               <Text style={styles.errorText}>{error}</Text>
+              {lastFailedMessage && (
+                <TouchableOpacity onPress={retryLastMessage} activeOpacity={0.7} style={styles.retryButton}>
+                  <Text style={styles.retryText}>&#x21bb; Retry</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -772,5 +779,18 @@ const styles = StyleSheet.create({
     ...theme.typography.caption,
     color: aiChat.accentRed,
     flex: 1,
+  },
+  retryButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239,68,68,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.3)',
+  },
+  retryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: aiChat.accentRed,
   },
 });

@@ -16,6 +16,8 @@ import {
   resolveChainId,
   type NetworkId,
   formatErrorMessage,
+  validateBlikAmount,
+  BLIK_MAX_AMOUNT,
 } from '@e-y/shared'
 import { getProvider } from '@/lib/multi-network'
 import { API_BASE_URL } from '@/lib/api'
@@ -128,6 +130,13 @@ export default function BlikPage() {
 
   const handleCreateCode = useCallback(() => {
     if (!amount || parseFloat(amount) <= 0) return
+
+    // Validate amount range
+    const validationError = validateBlikAmount(amount)
+    if (validationError) {
+      setError(validationError)
+      return
+    }
 
     const chainId = resolveChainId(isTestAccount, selectedNetwork)
     const tokenSymbol = isTestAccount
@@ -294,7 +303,7 @@ export default function BlikPage() {
                     <input
                       type="number"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={(e) => { setAmount(e.target.value); setError(''); }}
                       placeholder="0"
                       step="0.0001"
                       className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-white placeholder:text-white/25 focus:outline-none"
@@ -306,6 +315,12 @@ export default function BlikPage() {
                   </div>
                 </div>
 
+                {error && (
+                  <div className="px-4 py-3 bg-[#EF4444]/5 border border-[#EF4444]/15 rounded-xl mb-4">
+                    <p className="text-[#f87171] text-sm">{error}</p>
+                  </div>
+                )}
+
                 <div className="flex gap-3">
                   <button
                     onClick={reset}
@@ -315,7 +330,7 @@ export default function BlikPage() {
                   </button>
                   <button
                     onClick={handleCreateCode}
-                    disabled={!amount || parseFloat(amount) <= 0}
+                    disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > BLIK_MAX_AMOUNT}
                     className="flex-1 py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                   >
                     Generate

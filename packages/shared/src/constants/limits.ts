@@ -8,6 +8,10 @@ export const BLIK_CODE_LENGTH = 6;
 export const BLIK_CODE_MIN = 100000;
 export const BLIK_CODE_MAX = 999999;
 
+// BLIK amount limits
+export const BLIK_MIN_AMOUNT = 0.000001; // prevent dust amounts
+export const BLIK_MAX_AMOUNT = 1_000_000; // reasonable upper bound
+
 // Username constants
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 20;

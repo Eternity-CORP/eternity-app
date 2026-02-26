@@ -49,6 +49,7 @@ const INITIAL_STATE: AiState = {
   pendingSplit: null,
   error: null,
   errorCode: null,
+  lastFailedMessage: null,
   rateLimit: null,
 };
 
@@ -897,6 +898,7 @@ describe('ai-slice reducer', () => {
         pendingSplit: null,
         error: 'Something broke',
         errorCode: 'BROKEN',
+        lastFailedMessage: 'test message',
         rateLimit: { remaining: 0, resetIn: 120, limit: 50 },
       };
 

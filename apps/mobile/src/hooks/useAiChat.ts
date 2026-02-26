@@ -56,11 +56,13 @@ interface UseAiChatReturn {
   pendingSplit: AiState['pendingSplit'];
   error: string | null;
   rateLimit: AiState['rateLimit'];
+  lastFailedMessage: string | null;
 
   // Actions
   connect: () => Promise<void>;
   disconnect: () => void;
   sendMessage: (content: string) => void;
+  retryLastMessage: () => void;
   dismissSuggestion: (id: string) => void;
   clearChat: () => void;
   clearPendingTransaction: () => void;
@@ -102,6 +104,7 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     pendingSplit,
     error,
     rateLimit,
+    lastFailedMessage,
   } = aiState;
 
   // Derived state
@@ -150,6 +153,14 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     },
     [dispatch],
   );
+
+  // Retry the last failed message
+  const retryLastMessage = useCallback(() => {
+    if (!lastFailedMessage) return;
+    const content = lastFailedMessage;
+    dispatch(sendMessageAction(content));
+    aiSocket.sendMessage(content);
+  }, [lastFailedMessage, dispatch]);
 
   // Dismiss a suggestion
   const dismissSuggestion = useCallback(
@@ -314,11 +325,13 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatReturn {
     pendingSplit,
     error,
     rateLimit,
+    lastFailedMessage,
 
     // Actions
     connect,
     disconnect,
     sendMessage,
+    retryLastMessage,
     dismissSuggestion,
     clearChat,
     clearPendingTransaction: clearPendingTx,

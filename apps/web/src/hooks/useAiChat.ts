@@ -42,11 +42,13 @@ interface UseAiChatReturn {
   pendingSplit: SplitPreview | null
   error: string | null
   rateLimit: RateLimit | null
+  lastFailedMessage: string | null
   isConnected: boolean
   isStreaming: boolean
   connect: () => void
   disconnect: () => void
   sendMessage: (content: string) => void
+  retryLastMessage: () => void
   dismissSuggestion: (id: string) => void
   clearChat: () => void
   clearPendingTransaction: () => void
@@ -72,6 +74,7 @@ export function useAiChat(): UseAiChatReturn {
   const [pendingSplit, setPendingSplit] = useState<SplitPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rateLimit, setRateLimit] = useState<RateLimit | null>(null)
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null)
 
   const streamingRef = useRef('')
 
@@ -106,10 +109,32 @@ export function useAiChat(): UseAiChatReturn {
     setStreamingContent('')
     streamingRef.current = ''
     setError(null)
+    setLastFailedMessage(null)
     setStatus('sending')
 
     aiSocket.sendMessage(content.trim())
   }, [])
+
+  const retryLastMessage = useCallback(() => {
+    if (!lastFailedMessage) return
+    const content = lastFailedMessage
+
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setStreamingContent('')
+    streamingRef.current = ''
+    setError(null)
+    setLastFailedMessage(null)
+    setStatus('sending')
+
+    aiSocket.sendMessage(content)
+  }, [lastFailedMessage])
 
   const dismissSuggestion = useCallback((id: string) => {
     setSuggestions((prev) => prev.filter((s) => s.id !== id))
@@ -237,6 +262,15 @@ export function useAiChat(): UseAiChatReturn {
     })
 
     aiSocket.on('onError', (payload: AiErrorPayload) => {
+      // Capture the last user message for retry before setting error
+      setMessages((prev) => {
+        const lastUser = [...prev].reverse().find((m) => m.role === 'user')
+        if (lastUser) {
+          setLastFailedMessage(lastUser.content)
+        }
+        return prev
+      })
+
       setError(payload.message)
       setStatus('connected')
 
@@ -289,11 +323,13 @@ export function useAiChat(): UseAiChatReturn {
     pendingSplit,
     error,
     rateLimit,
+    lastFailedMessage,
     isConnected,
     isStreaming,
     connect,
     disconnect,
     sendMessage,
+    retryLastMessage,
     dismissSuggestion,
     clearChat,
     clearPendingTransaction,

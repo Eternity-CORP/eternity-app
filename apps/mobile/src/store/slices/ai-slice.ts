@@ -58,6 +58,9 @@ export interface AiState {
   error: string | null;
   errorCode: string | null;
 
+  // Retry state: content of the last failed user message
+  lastFailedMessage: string | null;
+
   // Rate limit info
   rateLimit: {
     remaining: number;
@@ -81,6 +84,7 @@ const initialState: AiState = {
   pendingSplit: null,
   error: null,
   errorCode: null,
+  lastFailedMessage: null,
   rateLimit: null,
 };
 
@@ -160,6 +164,7 @@ const aiSlice = createSlice({
         state.status = 'sending';
         state.error = null;
         state.errorCode = null;
+        state.lastFailedMessage = null;
 
         // Prepare for streaming response
         state.streamingContent = '';
@@ -389,6 +394,7 @@ const aiSlice = createSlice({
 
     /**
      * Set error state
+     * Captures the last user message content for retry functionality
      */
     setError: (
       state,
@@ -406,17 +412,22 @@ const aiSlice = createSlice({
         state.rateLimit = action.payload.rateLimit;
       }
 
+      // Capture the last user message for retry
+      const lastUserMsg = [...state.messages].reverse().find((m) => m.role === 'user');
+      state.lastFailedMessage = lastUserMsg?.content || null;
+
       // Clear streaming state on error
       state.streamingContent = '';
       state.streamingMessageId = null;
     },
 
     /**
-     * Clear error state
+     * Clear error state and retry info
      */
     clearError: (state) => {
       state.error = null;
       state.errorCode = null;
+      state.lastFailedMessage = null;
       if (state.status === 'error') {
         state.status = state.isConnected ? 'connected' : 'idle';
       }

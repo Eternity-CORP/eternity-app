@@ -16,7 +16,7 @@ import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { FontAwesome } from '@expo/vector-icons';
 import { sanitizeAmountInput } from '@/src/utils/format';
-import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, resolveChainId, type NetworkId } from '@e-y/shared';
+import { SUPPORTED_NETWORKS, TIER1_NETWORK_IDS, resolveChainId, validateBlikAmount, BLIK_MAX_AMOUNT, type NetworkId } from '@e-y/shared';
 
 export default function BlikRequestScreen() {
   const { theme: dynamicTheme } = useTheme();
@@ -33,6 +33,7 @@ export default function BlikRequestScreen() {
     .map(t => t.symbol);
 
   const [amount, setAmount] = useState('');
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [selectedToken, setSelectedToken] = useState(availableTokens[0] || 'ETH');
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkId>('base');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -78,14 +79,23 @@ export default function BlikRequestScreen() {
       if (decimalPlaces > 6) return;
     }
     setAmount(sanitized);
+    if (amountError) setAmountError(null);
   };
 
   const handleBackspace = () => {
     setAmount((prev) => prev.slice(0, -1));
+    if (amountError) setAmountError(null);
   };
 
   const handleGenerateCode = async () => {
-    if (!amount || parseFloat(amount) <= 0 || !currentAccount) return;
+    if (!amount || !currentAccount) return;
+
+    // Validate amount range
+    const validationError = validateBlikAmount(amount);
+    if (validationError) {
+      setAmountError(validationError);
+      return;
+    }
 
     setIsConnecting(true);
     dispatch(receiverStartCreating());
@@ -110,7 +120,7 @@ export default function BlikRequestScreen() {
     }
   };
 
-  const isValid = amount && parseFloat(amount) > 0 && availableTokens.length > 0;
+  const isValid = amount && parseFloat(amount) > 0 && parseFloat(amount) <= BLIK_MAX_AMOUNT && availableTokens.length > 0;
   const isLoading = blik.receiver.status === 'creating' || isConnecting;
 
   return (
@@ -219,6 +229,15 @@ export default function BlikRequestScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Amount Validation Error */}
+          {amountError && (
+            <View style={[styles.errorCard, { backgroundColor: dynamicTheme.colors.error + '10' }]}>
+              <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
+                {amountError}
+              </Text>
+            </View>
+          )}
 
           {/* Error Display */}
           {blik.receiver.error && (

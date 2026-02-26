@@ -6,6 +6,7 @@
 import { Injectable, OnModuleDestroy, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { BlikCode, BlikCodeStatus } from '@e-y/shared';
+import { BLIK_MIN_AMOUNT, BLIK_MAX_AMOUNT } from '@e-y/shared';
 
 // Internal representation with socketId for notifications
 export interface InternalBlikCode extends BlikCode {
@@ -129,6 +130,18 @@ export class BlikService implements OnModuleDestroy {
     chainId: number,
     socketId: string,
   ): Promise<InternalBlikCode> {
+    // Validate amount
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      throw new Error('BLIK_INVALID_AMOUNT: Amount must be greater than 0');
+    }
+    if (parsedAmount < BLIK_MIN_AMOUNT) {
+      throw new Error(`BLIK_INVALID_AMOUNT: Minimum amount is ${BLIK_MIN_AMOUNT}`);
+    }
+    if (parsedAmount > BLIK_MAX_AMOUNT) {
+      throw new Error(`BLIK_INVALID_AMOUNT: Maximum amount is ${BLIK_MAX_AMOUNT.toLocaleString()}`);
+    }
+
     // Check rate limit
     const existingCodes = await this.countCodesForAddress(receiverAddress);
     if (existingCodes >= MAX_CODES_PER_ADDRESS) {

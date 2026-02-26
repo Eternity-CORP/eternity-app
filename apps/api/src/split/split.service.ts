@@ -11,6 +11,10 @@ import { SplitBill, SplitParticipant, SplitBillStatus, ParticipantStatus } from 
 import { CreateSplitDto, MarkPaidDto } from './dto';
 import { SplitGateway } from './split.gateway';
 
+// Spam protection constants
+const MAX_ACTIVE_SPLITS_PER_ADDRESS = 10;
+const MAX_PARTICIPANTS_PER_SPLIT = 20;
+
 /**
  * Database row types (snake_case)
  */
@@ -50,8 +54,67 @@ export class SplitService {
     private readonly splitGateway: SplitGateway,
   ) {}
 
+  /**
+   * Count active splits for a given creator address
+   */
+  private async countActiveSplitsForAddress(address: string): Promise<number> {
+    const { count, error } = await this.supabase
+      .from('split_bills')
+      .select('*', { count: 'exact', head: true })
+      .eq('creator_address', address.toLowerCase())
+      .eq('status', 'active');
+
+    if (error) {
+      this.logger.error('Failed to count active splits', error);
+      return 0;
+    }
+
+    return count || 0;
+  }
+
   async create(dto: CreateSplitDto): Promise<SplitBill> {
     this.logger.log(`Creating split bill for ${dto.creatorAddress}`);
+
+    // --- Spam protection ---
+
+    // 1. Check participant count limit
+    if (dto.participants.length > MAX_PARTICIPANTS_PER_SPLIT) {
+      throw new BadRequestException(
+        `Too many participants: maximum ${MAX_PARTICIPANTS_PER_SPLIT} allowed, got ${dto.participants.length}`,
+      );
+    }
+
+    // 2. Check active splits rate limit per creator address
+    const activeSplits = await this.countActiveSplitsForAddress(dto.creatorAddress);
+    if (activeSplits >= MAX_ACTIVE_SPLITS_PER_ADDRESS) {
+      throw new BadRequestException(
+        `Rate limit: maximum ${MAX_ACTIVE_SPLITS_PER_ADDRESS} active splits per address`,
+      );
+    }
+
+    // 3. Server-side validation: participant amounts must not exceed totalAmount
+    const totalAmount = parseFloat(dto.totalAmount);
+    if (!isNaN(totalAmount) && totalAmount > 0) {
+      const participantSum = dto.participants.reduce(
+        (sum, p) => sum + parseFloat(p.amount || '0'),
+        0,
+      );
+      if (participantSum > totalAmount + 0.01) {
+        throw new BadRequestException(
+          `Participant amounts sum (${participantSum.toFixed(6)}) exceeds total amount (${dto.totalAmount})`,
+        );
+      }
+    }
+
+    // 4. Validate all participant amounts are positive
+    for (const p of dto.participants) {
+      const amt = parseFloat(p.amount);
+      if (isNaN(amt) || amt <= 0) {
+        throw new BadRequestException(
+          `Invalid participant amount: "${p.amount}" for address ${p.address}`,
+        );
+      }
+    }
 
     // Insert split bill first
     const { data: splitBillData, error: splitError } = await this.supabase
