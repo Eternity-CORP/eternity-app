@@ -9,7 +9,7 @@ import { router } from 'expo-router';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppSelector } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
-import { getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { getWalletFromMnemonic, getMnemonic } from '@/src/services/wallet-service';
 import {
   getUsernameByAddress,
   checkUsernameAvailable,
@@ -120,8 +120,14 @@ export default function UsernameScreen() {
 
   // Handle claim/update
   const handleSubmit = async () => {
-    if (!currentAccount || !wallet.mnemonic) {
+    if (!currentAccount) {
       Alert.alert('Error', 'No wallet available');
+      return;
+    }
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) {
+      Alert.alert('Error', 'Wallet locked');
       return;
     }
 
@@ -145,7 +151,7 @@ export default function UsernameScreen() {
     setError(null);
 
     try {
-      const walletInstance = getWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+      const walletInstance = getWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
       if (currentUsername) {
         // Update existing username
@@ -169,9 +175,12 @@ export default function UsernameScreen() {
 
   // Handle delete
   const handleDelete = async () => {
-    if (!currentAccount || !wallet.mnemonic || !currentUsername) {
+    if (!currentAccount || !currentUsername) {
       return;
     }
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
 
     Alert.alert(
       'Delete Username',
@@ -186,7 +195,9 @@ export default function UsernameScreen() {
             setError(null);
 
             try {
-              const walletInstance = getWalletFromMnemonic(wallet.mnemonic!, currentAccount.accountIndex);
+              const deleteWalletMnemonic = await getMnemonic();
+              if (!deleteWalletMnemonic) throw new Error('Wallet locked');
+              const walletInstance = getWalletFromMnemonic(deleteWalletMnemonic, currentAccount.accountIndex);
               await deleteUsername(currentUsername, walletInstance);
               setCurrentUsername(null);
               setInput('');

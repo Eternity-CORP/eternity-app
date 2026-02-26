@@ -59,9 +59,11 @@ contract BusinessTreasury is ReentrancyGuard {
     uint256 public quorumBps; // basis points (5100 = 51%)
     uint256 public votingPeriod; // seconds
     uint256 public proposalCount;
+    uint256 public dividendRoundId;
 
     mapping(uint256 => Proposal) public proposals;
     mapping(uint256 => mapping(address => bool)) public hasVoted;
+    mapping(address => uint256) public pendingDividends;
 
     event ProposalCreated(
         uint256 indexed id,
@@ -78,8 +80,12 @@ contract BusinessTreasury is ReentrancyGuard {
     event ProposalCanceled(uint256 indexed id);
     event Deposited(address token, uint256 amount, address sender);
     event DividendsDistributed(uint256 indexed proposalId, uint256 totalAmount, uint256 recipientCount);
+    event DividendsClaimed(address indexed holder, uint256 amount);
 
     error NotInitialized();
+    error NoDividendsToClaim();
+    error InvalidQuorumBps();
+    error InvalidVotingPeriod();
     error InsufficientTreasuryBalance();
     error AlreadyInitialized();
     error OnlyFactory();
@@ -216,8 +222,14 @@ contract BusinessTreasury is ReentrancyGuard {
                 p.data,
                 (uint256, uint256)
             );
-            if (newQuorum > 0) quorumBps = newQuorum;
-            if (newVotingPeriod > 0) votingPeriod = newVotingPeriod;
+            if (newQuorum > 0) {
+                if (newQuorum < 2500 || newQuorum > 10000) revert InvalidQuorumBps();
+                quorumBps = newQuorum;
+            }
+            if (newVotingPeriod > 0) {
+                if (newVotingPeriod < 1 hours || newVotingPeriod > 30 days) revert InvalidVotingPeriod();
+                votingPeriod = newVotingPeriod;
+            }
         } else if (p.proposalType == ProposalType.DISTRIBUTE_DIVIDENDS) {
             (uint256 totalAmount, address[] memory holders) = abi.decode(
                 p.data,
@@ -235,16 +247,31 @@ contract BusinessTreasury is ReentrancyGuard {
                 uint256 share = (totalAmount * holderBalance) / supply;
                 if (share == 0) continue;
 
-                (bool success, ) = holders[i].call{value: share}("");
-                require(success, "Dividend transfer failed");
+                pendingDividends[holders[i]] += share;
                 recipientCount++;
             }
 
+            dividendRoundId++;
             emit DividendsDistributed(proposalId, totalAmount, recipientCount);
         }
         // CUSTOM proposals have no on-chain execution
 
         emit ProposalExecuted(proposalId);
+    }
+
+    /// @notice Claim accumulated dividends (pull-based pattern).
+    function claimDividends() external nonReentrant {
+        uint256 amount = pendingDividends[msg.sender];
+        if (amount == 0) revert NoDividendsToClaim();
+        pendingDividends[msg.sender] = 0;
+        (bool success, ) = msg.sender.call{value: amount}("");
+        require(success, "Transfer failed");
+        emit DividendsClaimed(msg.sender, amount);
+    }
+
+    /// @notice View pending dividends for a holder.
+    function getPendingDividends(address holder) external view returns (uint256) {
+        return pendingDividends[holder];
     }
 
     function cancelProposal(uint256 proposalId) external onlyInitialized {

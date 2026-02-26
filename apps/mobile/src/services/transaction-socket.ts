@@ -9,9 +9,11 @@
 import { io, Socket } from 'socket.io-client';
 import {
   createTransactionSocketService,
+  buildSocketAuth,
   type TransactionSocketService,
   type TransactionStatusUpdate,
   type StatusUpdateCallback,
+  type WsHandshakeAuth,
 } from '@e-y/shared';
 import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
@@ -27,8 +29,13 @@ class TransactionSocketServiceWrapper {
 
   /**
    * Connect to the transaction WebSocket server
+   * @param address - Optional wallet address for auth
+   * @param signMessage - Optional signing function for WebSocket auth
    */
-  connect(): Promise<void> {
+  connect(
+    address?: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): Promise<void> {
     if (this.socket?.connected) {
       return Promise.resolve();
     }
@@ -46,12 +53,32 @@ class TransactionSocketServiceWrapper {
 
     this.isConnecting = true;
 
+    return this.doConnect(address, signMessage);
+  }
+
+  private async doConnect(
+    address?: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): Promise<void> {
+    // Build auth if signing function and address are available
+    let auth: WsHandshakeAuth | undefined;
+    if (signMessage && address) {
+      try {
+        auth = await buildSocketAuth(address, signMessage);
+      } catch (error) {
+        log.warn('Auth signing failed, connecting without auth', {
+          message: (error as Error).message,
+        });
+      }
+    }
+
     return new Promise((resolve) => {
       this.socket = io(`${API_BASE_URL}/transactions`, {
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
+        ...(auth ? { auth } : {}),
       });
 
       // Create shared service that wires up event listeners

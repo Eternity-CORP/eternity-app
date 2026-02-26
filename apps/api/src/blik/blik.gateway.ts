@@ -1,6 +1,13 @@
 /**
  * BLIK WebSocket Gateway
- * Handles real-time BLIK code creation, lookup, and payment confirmation
+ * Handles real-time BLIK code creation, lookup, and payment confirmation.
+ *
+ * Auth enforcement:
+ * - CREATE_CODE: receiverAddress must match authenticated address
+ * - CANCEL_CODE: receiverAddress must match authenticated address
+ * - CONFIRM_PAYMENT: senderAddress must match authenticated address
+ * - LOOKUP_CODE: no auth required (anyone can look up by 6-digit code)
+ * - register: receiverAddress must match authenticated address
  */
 
 import {
@@ -16,6 +23,10 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { BlikService } from './blik.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  verifySocketAuth,
+  verifyAddressOwnership,
+} from '../common/ws-auth.guard';
 import {
   BLIK_EVENTS,
   type CreateCodePayload,
@@ -48,7 +59,10 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected to BLIK gateway: ${client.id}`);
+    const authenticated = verifySocketAuth(client);
+    this.logger.log(
+      `Client connected to BLIK gateway: ${client.id} (authenticated=${authenticated})`,
+    );
   }
 
   handleDisconnect(client: Socket) {
@@ -68,6 +82,14 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (!amount || !tokenSymbol || !receiverAddress) {
         client.emit('error', { message: 'Missing required fields: amount, tokenSymbol, receiverAddress' });
+        return;
+      }
+
+      // Verify that the receiverAddress matches the authenticated address
+      if (!verifyAddressOwnership(client, receiverAddress, 'CREATE_CODE')) {
+        client.emit('error', {
+          message: 'Address mismatch: receiverAddress must match your authenticated wallet',
+        });
         return;
       }
 
@@ -114,6 +136,14 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
+      // Verify that the receiverAddress matches the authenticated address
+      if (!verifyAddressOwnership(client, receiverAddress, 'CANCEL_CODE')) {
+        client.emit('error', {
+          message: 'Address mismatch: receiverAddress must match your authenticated wallet',
+        });
+        return;
+      }
+
       const success = await this.blikService.cancelCode(code, receiverAddress);
 
       if (success) {
@@ -130,6 +160,7 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   /**
    * Look up a BLIK code (Sender)
+   * No auth required — anyone can look up a code by its 6-digit number
    */
   @SubscribeMessage(BLIK_EVENTS.LOOKUP_CODE)
   async handleLookupCode(
@@ -207,6 +238,14 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
+      // Verify that the senderAddress matches the authenticated address
+      if (!verifyAddressOwnership(client, senderAddress, 'CONFIRM_PAYMENT')) {
+        client.emit('error', {
+          message: 'Address mismatch: senderAddress must match your authenticated wallet',
+        });
+        return;
+      }
+
       const result = await this.blikService.confirmPayment(code, txHash, senderAddress, network);
 
       if (!result) {
@@ -265,6 +304,14 @@ export class BlikGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const { receiverAddress } = data;
 
     if (receiverAddress) {
+      // Verify that the receiverAddress matches the authenticated address
+      if (!verifyAddressOwnership(client, receiverAddress, 'register')) {
+        client.emit('error', {
+          message: 'Address mismatch: receiverAddress must match your authenticated wallet',
+        });
+        return;
+      }
+
       // Update socket ID for any active codes belonging to this address
       await this.blikService.updateReceiverSocket(receiverAddress, client.id);
 

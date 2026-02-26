@@ -51,7 +51,7 @@ import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { sendTransaction } from '@/src/services/send-service';
 import { createSplitBill } from '@/src/services/split-bill-service';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
-import { loadWallet, getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { loadWallet, getWalletFromMnemonic, getMnemonic } from '@/src/services/wallet-service';
 import { signScheduledTransaction } from '@/src/services/scheduled-signing';
 import { TIER1_NETWORK_IDS } from '@/src/constants/networks';
 import { TESTNET_NETWORK_IDS } from '@/src/constants/networks-testnet';
@@ -123,9 +123,12 @@ export default function AiScreen() {
 
   // Handle transaction confirmation
   const handleConfirmTransaction = useCallback(async (tx: PendingTransaction): Promise<string> => {
-    if (!wallet.mnemonic || !currentAccount) {
+    if (!currentAccount) {
       throw new Error('Wallet not available');
     }
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) throw new Error('Wallet locked');
 
     // Check if test account and non-native token
     const isTestAccount = currentAccount.type === 'test';
@@ -135,7 +138,7 @@ export default function AiScreen() {
       throw new Error(`On test accounts, only native tokens (ETH) are supported. ${tx.token} transfers are not available on testnets.`);
     }
 
-    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+    const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
     // Send the transaction
     const txHash = await sendTransaction({
@@ -146,7 +149,7 @@ export default function AiScreen() {
     });
 
     return txHash;
-  }, [wallet.mnemonic, currentAccount]);
+  }, [currentAccount]);
 
   // Handle saving contact
   const handleSaveContact = useCallback(async (address: string, name: string) => {
@@ -165,9 +168,12 @@ export default function AiScreen() {
 
   // Handle BLIK pay confirmation
   const handleConfirmBlikPay = useCallback(async (blik: PendingBlikPay): Promise<string> => {
-    if (!wallet.mnemonic || !currentAccount) {
+    if (!currentAccount) {
       throw new Error('Wallet not available');
     }
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) throw new Error('Wallet locked');
 
     // Check if test account and non-native token
     const isTestAccount = currentAccount.type === 'test';
@@ -177,7 +183,7 @@ export default function AiScreen() {
       throw new Error(`On test accounts, only native tokens (ETH) are supported. ${blik.token} transfers are not available on testnets.`);
     }
 
-    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+    const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
     // Send the BLIK payment
     const txHash = await sendTransaction({
@@ -188,7 +194,7 @@ export default function AiScreen() {
     });
 
     return txHash;
-  }, [wallet.mnemonic, currentAccount]);
+  }, [currentAccount]);
 
   // Handle BLIK complete
   const handleBlikComplete = useCallback(() => {
@@ -202,11 +208,14 @@ export default function AiScreen() {
 
   // Handle Swap confirmation
   const handleConfirmSwap = useCallback(async (swap: PendingSwap): Promise<string> => {
-    if (!wallet.mnemonic || !currentAccount) {
+    if (!currentAccount) {
       throw new Error('Wallet not available');
     }
 
-    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) throw new Error('Wallet locked');
+
+    const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
     // Execute swap as a native token send (placeholder — in production this would call a DEX router)
     const txHash = await sendTransaction({
@@ -217,7 +226,7 @@ export default function AiScreen() {
     });
 
     return txHash;
-  }, [wallet.mnemonic, currentAccount]);
+  }, [currentAccount]);
 
   // Handle Swap approval
   const handleApproveSwap = useCallback(async (): Promise<void> => {
@@ -237,17 +246,20 @@ export default function AiScreen() {
 
   // Handle Username registration
   const handleConfirmUsername = useCallback(async (preview: UsernamePreview): Promise<string> => {
-    if (!wallet.mnemonic || !currentAccount) {
+    if (!currentAccount) {
       throw new Error('Wallet not available');
     }
 
-    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) throw new Error('Wallet locked');
+
+    const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
     // Use the username service which handles signing + API call
     await registerUsername(preview.username, hdWallet);
 
     return `@${preview.username}`;
-  }, [wallet.mnemonic, currentAccount]);
+  }, [currentAccount]);
 
   const handleUsernameComplete = useCallback(() => {
     clearPendingUsername();

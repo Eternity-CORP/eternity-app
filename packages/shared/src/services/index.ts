@@ -20,3 +20,4 @@ export * from './gas-guard';
 export * from './gas-bridge-helper';
 export * from './smart-routing';
 export * from './quote-cache';
+export * from './ws-auth-helpers';

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { encryptAndSave } from '@e-y/storage'
 import Link from 'next/link'
@@ -8,6 +8,14 @@ import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
 import { decryptTempFromSession, clearTempSession } from '@/lib/session-crypto'
 import { useInviteGuard } from '@/hooks/useInviteGuard'
+import { validatePasswordStrength, getPasswordStrengthLabel, getPasswordStrengthColor } from '@e-y/shared'
+
+const STRENGTH_COLORS: Record<ReturnType<typeof getPasswordStrengthColor>, string> = {
+  red: '#ef4444',
+  orange: '#f97316',
+  yellow: '#eab308',
+  green: '#22c55e',
+}
 
 export default function ImportPassword() {
   useInviteGuard()
@@ -18,6 +26,10 @@ export default function ImportPassword() {
   const [error, setError] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle')
   const [mnemonic, setMnemonic] = useState('')
+
+  const strength = useMemo(() => validatePasswordStrength(password), [password])
+  const strengthColor = STRENGTH_COLORS[getPasswordStrengthColor(strength.score)]
+  const strengthLabel = getPasswordStrengthLabel(strength.score)
 
   useEffect(() => {
     (async () => {
@@ -34,8 +46,8 @@ export default function ImportPassword() {
     e.preventDefault()
     setError('')
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+    if (!strength.isValid) {
+      setError('Password is not strong enough')
       return
     }
 
@@ -50,6 +62,7 @@ export default function ImportPassword() {
       await encryptAndSave(mnemonic, password)
       clearTempSession()
       await login(mnemonic, 'real')
+      setMnemonic('') // Clear mnemonic from React state after use
       setStatus('succeeded')
       router.push('/wallet')
     } catch (err) {
@@ -58,6 +71,8 @@ export default function ImportPassword() {
       setStatus('failed')
     }
   }
+
+  const canSubmit = strength.isValid && password === confirmPassword && password.length > 0 && confirmPassword.length > 0
 
   return (
     <div className="min-h-screen relative z-[2]">
@@ -99,6 +114,56 @@ export default function ImportPassword() {
               <p className="text-[#f87171] text-sm px-1 font-medium">{error}</p>
             )}
 
+            {/* Password strength meter */}
+            <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+              {/* Strength bar */}
+              {password.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-white/40">Strength</span>
+                    <span className="text-xs font-medium" style={{ color: strengthColor }}>
+                      {strengthLabel}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1.5 flex-1 rounded-full transition-colors duration-300"
+                        style={{
+                          backgroundColor: i < strength.score ? strengthColor : 'rgba(255,255,255,0.08)',
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Requirements checklist */}
+              <div className="space-y-1.5">
+                <RequirementItem
+                  met={password.length >= 8}
+                  label="At least 8 characters"
+                  active={password.length > 0}
+                />
+                <RequirementItem
+                  met={/[A-Z]/.test(password) && /[a-z]/.test(password)}
+                  label="Upper and lowercase letters"
+                  active={password.length > 0}
+                />
+                <RequirementItem
+                  met={/\d/.test(password)}
+                  label="At least one number"
+                  active={password.length > 0}
+                />
+                <RequirementItem
+                  met={/[^A-Za-z0-9]/.test(password)}
+                  label="At least one special character"
+                  active={password.length > 0}
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 pt-2">
               <Link
                 href="/import"
@@ -108,7 +173,7 @@ export default function ImportPassword() {
               </Link>
               <button
                 type="submit"
-                disabled={status === 'loading' || !password || !confirmPassword}
+                disabled={status === 'loading' || !canSubmit}
                 className="py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {status === 'loading' ? 'Importing...' : 'Import Wallet'}
@@ -117,6 +182,17 @@ export default function ImportPassword() {
           </form>
         </div>
       </main>
+    </div>
+  )
+}
+
+function RequirementItem({ met, label, active }: { met: boolean; label: string; active: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className={`text-sm ${met ? 'text-[#22c55e]' : active ? 'text-[#ef4444]' : 'text-white/25'}`}>
+        {met ? '\u2713' : '\u25CB'}
+      </span>
+      <span className={`text-sm ${met ? 'text-white/60' : 'text-white/40'}`}>{label}</span>
     </div>
   )
 }

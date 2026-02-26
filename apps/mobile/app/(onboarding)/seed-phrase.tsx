@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
+import { useState, useEffect, useRef } from 'react';
+import { useAppDispatch } from '@/src/store/hooks';
 import { saveWalletThunk, type AccountType } from '@/src/store/slices/wallet-slice';
+import { getMnemonic } from '@/src/services/wallet-service';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
@@ -11,8 +12,8 @@ export default function SeedPhraseScreen() {
   const { theme: dynamicTheme } = useTheme();
   const { wordCount, accountType: accountTypeParam } = useLocalSearchParams<{ wordCount?: string; accountType?: string }>();
   const accountType: AccountType = (accountTypeParam === 'real' || accountTypeParam === 'test') ? accountTypeParam : 'test';
-  // Get mnemonic from Redux state (not from URL params for security)
-  const mnemonic = useAppSelector((state) => state.wallet.mnemonic);
+  // Mnemonic is loaded from SecureStore on mount (not kept in Redux state for security)
+  const mnemonicRef = useRef<string | null>(null);
   const dispatch = useAppDispatch();
   const [words, setWords] = useState<string[]>([]);
   const [verificationWords, setVerificationWords] = useState<number[]>([]);
@@ -23,7 +24,14 @@ export default function SeedPhraseScreen() {
   const totalWords = wordCount ? parseInt(wordCount, 10) : 12;
 
   useEffect(() => {
-    if (mnemonic) {
+    (async () => {
+      const mnemonic = await getMnemonic();
+      if (!mnemonic) {
+        Alert.alert('Error', 'Mnemonic not found. Please start over.');
+        router.replace('/(onboarding)/create-wallet');
+        return;
+      }
+      mnemonicRef.current = mnemonic;
       const wordList = mnemonic.split(' ');
       setWords(wordList);
       // Select 3 random words for verification (or 4 for 24-word phrases)
@@ -33,8 +41,8 @@ export default function SeedPhraseScreen() {
         indices.add(Math.floor(Math.random() * wordList.length));
       }
       setVerificationWords(Array.from(indices).sort((a, b) => a - b));
-    }
-  }, [mnemonic, totalWords]);
+    })();
+  }, [totalWords]);
 
   const handleVerify = async () => {
     const allCorrect = verificationWords.every((index) => {
@@ -47,6 +55,7 @@ export default function SeedPhraseScreen() {
     }
 
     // All words correct - save wallet to storage
+    const mnemonic = mnemonicRef.current;
     if (!mnemonic) {
       Alert.alert('Error', 'Mnemonic not found. Please start over.');
       return;
@@ -55,6 +64,8 @@ export default function SeedPhraseScreen() {
     setIsSaving(true);
     try {
       await dispatch(saveWalletThunk({ mnemonic, type: accountType })).unwrap();
+      // Clear the ref now that the wallet is saved
+      mnemonicRef.current = null;
       setIsVerified(true);
       // Navigate to home screen
       router.replace('/(tabs)/home');

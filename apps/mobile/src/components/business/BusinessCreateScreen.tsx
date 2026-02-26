@@ -22,6 +22,7 @@ import { router } from 'expo-router';
 import { ethers } from 'ethers';
 import { FontAwesome } from '@expo/vector-icons';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { getMnemonic } from '@/src/services/wallet-service';
 import {
   validateBusinessParams,
   lookupUsername,
@@ -346,14 +347,17 @@ export function BusinessCreateScreen() {
   // --------------------------------------------------
 
   const handleDeploy = useCallback(async () => {
-    if (!wallet.mnemonic || !currentAccount) return;
+    if (!currentAccount) return;
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
 
     setDeployStatus('loading');
     setDeployError('');
 
     try {
       // For mobile, we derive the wallet directly from the mnemonic (no password encryption layer)
-      const signerWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+      const signerWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
       const rpcUrl = getTestnetRpcUrl('sepolia');
       const provider = new ethers.JsonRpcProvider(rpcUrl);
       const signer = signerWallet.connect(provider);
@@ -450,7 +454,6 @@ export function BusinessCreateScreen() {
       setDeployStatus('failed');
     }
   }, [
-    wallet.mnemonic,
     currentAccount,
     address,
     name,

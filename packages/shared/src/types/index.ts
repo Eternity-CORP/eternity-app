@@ -13,3 +13,4 @@ export * from './split';
 export * from './network-balance';
 export * from './bridge-errors';
 export * from './business';
+export * from './ws-auth';

@@ -1,6 +1,11 @@
 /**
  * Base WebSocket Gateway with address subscription management
- * Provides common functionality for gateways that track user subscriptions
+ * Provides common functionality for gateways that track user subscriptions.
+ *
+ * Includes signature-based authentication:
+ * - Verifies auth on connection (handleConnection)
+ * - Validates address ownership on subscribe
+ * - Allows unauthenticated connections for backward compatibility (with warnings)
  */
 
 import {
@@ -13,6 +18,10 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import {
+  verifySocketAuth,
+  verifyAddressOwnership,
+} from './ws-auth.guard';
 
 interface SubscribePayload {
   address: string;
@@ -34,7 +43,11 @@ export abstract class BaseSubscriptionGateway
   private subscriptions = new Map<string, Set<string>>();
 
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
+    // Verify auth credentials from handshake
+    const authenticated = verifySocketAuth(client);
+    this.logger.log(
+      `Client connected: ${client.id} (authenticated=${authenticated})`,
+    );
   }
 
   handleDisconnect(client: Socket) {
@@ -55,6 +68,17 @@ export abstract class BaseSubscriptionGateway
     @MessageBody() payload: SubscribePayload,
   ) {
     const address = payload.address.toLowerCase();
+
+    // Verify that the subscribed address matches the authenticated address
+    if (!verifyAddressOwnership(client, address, 'subscribe')) {
+      this.logger.warn(
+        `Client ${client.id} rejected: tried to subscribe to ${address} but authenticated as different address`,
+      );
+      return {
+        success: false,
+        error: 'Address mismatch: you can only subscribe to your own address',
+      };
+    }
 
     if (!this.subscriptions.has(address)) {
       this.subscriptions.set(address, new Set());

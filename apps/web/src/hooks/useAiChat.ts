@@ -61,7 +61,7 @@ interface UseAiChatReturn {
 }
 
 export function useAiChat(): UseAiChatReturn {
-  const { address, isLoggedIn, currentAccount } = useAccount()
+  const { address, isLoggedIn, currentAccount, wallet } = useAccount()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([])
   const [status, setStatus] = useState<ChatStatus>('idle')
@@ -87,8 +87,11 @@ export function useAiChat(): UseAiChatReturn {
     setStatus('connecting')
     const contacts = loadContacts(address)
     const aiContacts = contacts.length > 0 ? contactsToAiFormat(contacts) : undefined
-    aiSocket.connect(address, aiContacts, currentAccount?.type)
-  }, [address, currentAccount?.type])
+    const signFn = wallet
+      ? (msg: string) => wallet.signMessage(msg)
+      : undefined
+    aiSocket.connect(address, aiContacts, currentAccount?.type, signFn)
+  }, [address, currentAccount?.type, wallet])
 
   const disconnect = useCallback(() => {
     aiSocket.disconnect()

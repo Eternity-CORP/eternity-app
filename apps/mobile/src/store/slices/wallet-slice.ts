@@ -3,7 +3,7 @@
  */
 
 import { createSlice, createAsyncThunk, PayloadAction, type Dispatch } from '@reduxjs/toolkit';
-import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, saveCurrentAccountIndex, loadCurrentAccountIndex, type WalletData } from '@/src/services/wallet-service';
+import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, saveCurrentAccountIndex, loadCurrentAccountIndex, getMnemonic, type WalletData } from '@/src/services/wallet-service';
 import { getAddressFromMnemonic } from '@e-y/crypto';
 import { migrateAccountAddresses, createAccount, type AccountType, type WalletAccount } from '@e-y/shared';
 
@@ -13,7 +13,6 @@ export type { AccountType };
 export type Account = WalletAccount;
 
 interface WalletState {
-  mnemonic: string | null;
   accounts: Account[];
   currentAccountIndex: number; // Index in accounts array
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -30,7 +29,6 @@ export const getCurrentAccount = (state: WalletState): Account | null => {
 };
 
 const initialState: WalletState = {
-  mnemonic: null,
   accounts: [],
   currentAccountIndex: 0,
   status: 'idle',
@@ -95,19 +93,29 @@ export const importWalletThunk = createAsyncThunk(
  */
 export const loadAccountsThunk = createAsyncThunk(
   'wallet/loadAccounts',
-  async (_, { getState }) => {
-    const [accounts, savedIndex] = await Promise.all([
+  async () => {
+    const [accounts, savedIndex, mnemonic] = await Promise.all([
       loadAccounts(),
       loadCurrentAccountIndex(),
+      getMnemonic(),
     ]);
     // Handle migration side effect here (in thunk) instead of in reducer
-    const state = getState() as { wallet: WalletState };
-    if (accounts.length > 0 && state.wallet.mnemonic) {
-      const migration = migrateAccountAddresses(accounts, state.wallet.mnemonic, getAddressFromMnemonic);
+    if (accounts.length > 0 && mnemonic) {
+      const migration = migrateAccountAddresses(accounts, mnemonic, getAddressFromMnemonic);
       if (migration.needsSave) {
         await saveAccounts(migration.accounts);
       }
       return { accounts: migration.accounts, savedIndex, migrated: true };
+    }
+    // If no accounts stored but wallet exists, create default account (migration from old format)
+    if (accounts.length === 0 && mnemonic) {
+      const fallbackAccounts: Account[] = [{
+        id: '0',
+        address: getAddressFromMnemonic(mnemonic, 0),
+        accountIndex: 0,
+        type: 'test',
+      }];
+      return { accounts: fallbackAccounts, savedIndex: 0, migrated: false };
     }
     return { accounts, savedIndex, migrated: false };
   }
@@ -120,11 +128,12 @@ export const loadAccountsThunk = createAsyncThunk(
 export const addAccountThunk = createAsyncThunk(
   'wallet/addAccount',
   async (type: AccountType = 'test', { getState }) => {
-    const state = getState() as { wallet: WalletState };
-    if (!state.wallet.mnemonic) {
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) {
       throw new Error('No mnemonic available. Please create or import a wallet first.');
     }
-    const newAccount = await createNewAccount(state.wallet.mnemonic, state.wallet.accounts, type);
+    const state = getState() as { wallet: WalletState };
+    const newAccount = await createNewAccount(mnemonic, state.wallet.accounts, type);
     // Persist account index after adding (side effect belongs in thunk, not reducer)
     const newIndex = state.wallet.accounts.length; // will be the index of the new account
     await saveCurrentAccountIndex(newIndex);
@@ -248,7 +257,6 @@ const walletSlice = createSlice({
         });
         state.currentAccountIndex = 0;
       }
-      state.mnemonic = action.payload.mnemonic;
       state.status = 'succeeded';
       state.isInitialized = true;
     },
@@ -278,7 +286,6 @@ const walletSlice = createSlice({
       }
     },
     clearWallet: (state) => {
-      state.mnemonic = null;
       state.accounts = [];
       state.currentAccountIndex = 0;
       state.status = 'idle';
@@ -294,7 +301,6 @@ const walletSlice = createSlice({
       })
       .addCase(loadWalletThunk.fulfilled, (state, action) => {
         if (action.payload) {
-          state.mnemonic = action.payload.mnemonic;
           // Create temporary default account (will be replaced by loadAccountsThunk)
           // This ensures UI has something to display while accounts load
           // Default to 'test' for migration, loadAccountsThunk will provide actual type
@@ -318,22 +324,11 @@ const walletSlice = createSlice({
       .addCase(loadAccountsThunk.fulfilled, (state, action) => {
         const { accounts, savedIndex } = action.payload;
         // Replace temporary accounts with loaded ones
-        // Migration (re-derive addresses) is already handled in the thunk
+        // Migration and fallback account creation are handled in the thunk
         if (accounts.length > 0) {
           state.accounts = accounts;
           // Restore persisted account index (with bounds check)
           state.currentAccountIndex = savedIndex < accounts.length ? savedIndex : 0;
-        } else if (state.accounts.length === 0 && state.mnemonic) {
-          // If no accounts stored but wallet exists, create default account
-          // This handles migration from old wallet format
-          // Default to 'test' for backwards compatibility
-          state.accounts.push({
-            id: '0',
-            address: getAddressFromMnemonic(state.mnemonic, 0),
-            accountIndex: 0,
-            type: 'test',
-          });
-          state.currentAccountIndex = 0;
         }
       })
       // Add account
@@ -359,8 +354,8 @@ const walletSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(generateWalletThunk.fulfilled, (state, action) => {
-        // Store mnemonic temporarily (not saved to storage yet)
-        state.mnemonic = action.payload.mnemonic;
+        // Mnemonic is NOT stored in Redux state for security.
+        // The seed-phrase screen reads it from the thunk result via action.payload.
         // Create temporary account for display
         if (state.accounts.length === 0) {
           state.accounts.push({
@@ -383,7 +378,7 @@ const walletSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(saveWalletThunk.fulfilled, (state, action) => {
-        state.mnemonic = action.payload.mnemonic;
+        // Mnemonic is persisted to SecureStore by the thunk, NOT stored in Redux state.
         // Ensure default account exists
         if (state.accounts.length === 0) {
           state.accounts.push({
@@ -410,7 +405,7 @@ const walletSlice = createSlice({
         state.status = 'loading';
       })
       .addCase(importWalletThunk.fulfilled, (state, action) => {
-        state.mnemonic = action.payload.mnemonic;
+        // Mnemonic is persisted to SecureStore by the thunk, NOT stored in Redux state.
         // Ensure default account exists
         // Imported wallets are always 'real' accounts
         if (state.accounts.length === 0) {

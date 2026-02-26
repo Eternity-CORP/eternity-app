@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { generateMnemonic, deriveWalletFromMnemonic, isValidMnemonic, isValidMnemonicLength, getAddressFromMnemonic } from '@e-y/crypto';
 import type { HDNodeWallet } from 'ethers';
 import { type AccountType, type WalletAccount, createAccount, getNextAccountIndex } from '@e-y/shared';
+import { encryptAccountsData, decryptAccountsData, isEncryptedData, deleteAccountsEncryptionKey } from './accounts-crypto';
 
 type Account = WalletAccount;
 
@@ -24,8 +25,9 @@ export interface WalletData {
 }
 
 /**
- * Generate a new wallet with mnemonic (does NOT save to storage)
- * Use saveWallet() after verification to persist
+ * Generate a new wallet with mnemonic.
+ * Temporarily saves to SecureStore so the seed-phrase screen can read it via getMnemonic().
+ * Use saveWallet() after verification to finalize (saves accounts too).
  * @param wordCount - Number of words: 12 or 24 (default: 12)
  * @param type - Account type: 'test' for testnets, 'real' for mainnets (default: 'test')
  */
@@ -33,6 +35,10 @@ export async function generateWallet(wordCount: 12 | 24 = 12, type: AccountType 
   const mnemonic = generateMnemonic(wordCount);
   const wallet = deriveWalletFromMnemonic(mnemonic, 0);
   const address = wallet.address;
+
+  // Temporarily persist mnemonic to SecureStore so seed-phrase screen can read it
+  // without keeping it in Redux state. saveWallet() will finalize with accounts.
+  await SecureStore.setItemAsync(WALLET_MNEMONIC_KEY, mnemonic);
 
   // Don't include wallet object in return (not serializable for Redux)
   return {
@@ -97,22 +103,38 @@ export async function loadWallet(): Promise<WalletData | null> {
 /**
  * Load all accounts from storage
  * Uses file system (no size limit) instead of SecureStore
- * Includes migration from legacy SecureStore storage
+ * The accounts file is encrypted with AES-256-CTR using a key stored in SecureStore.
  *
- * Migration: Accounts without 'type' field will default to 'test'
+ * Includes migration from:
+ * 1. Legacy SecureStore storage (ACCOUNTS_KEY)
+ * 2. Plaintext JSON files (pre-encryption era)
+ * 3. Accounts without 'type' field (default to 'test')
  */
 export async function loadAccounts(): Promise<Account[]> {
   try {
     // First, try to load from file system
     const fileInfo = await FileSystem.getInfoAsync(ACCOUNTS_FILE);
     if (fileInfo.exists) {
-      const accountsJson = await FileSystem.readAsStringAsync(ACCOUNTS_FILE);
+      const rawData = await FileSystem.readAsStringAsync(ACCOUNTS_FILE);
+
+      let accountsJson: string;
+      if (isEncryptedData(rawData)) {
+        // Already encrypted — decrypt
+        accountsJson = await decryptAccountsData(rawData);
+      } else {
+        // Migration: plaintext JSON found — will be re-encrypted on save
+        accountsJson = rawData;
+      }
+
       const accounts = JSON.parse(accountsJson) as Account[];
       // Migration: add type field to accounts that don't have it
       const migratedAccounts = migrateAccountsWithType(accounts);
-      // Save back if migration occurred
-      if (migratedAccounts.some((acc, i) => acc.type !== accounts[i]?.type)) {
-        await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(migratedAccounts));
+
+      // Re-save if migration occurred OR file was plaintext (upgrade to encrypted)
+      const needsTypeMigration = migratedAccounts.some((acc, i) => acc.type !== accounts[i]?.type);
+      const needsEncryptionMigration = !isEncryptedData(rawData);
+      if (needsTypeMigration || needsEncryptionMigration) {
+        await saveAccounts(migratedAccounts);
       }
       return migratedAccounts;
     }
@@ -123,8 +145,8 @@ export async function loadAccounts(): Promise<Account[]> {
       const accounts = JSON.parse(legacyAccountsJson) as Account[];
       // Migration: add type field to accounts that don't have it
       const migratedAccounts = migrateAccountsWithType(accounts);
-      // Migrate to file system with type field
-      await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(migratedAccounts));
+      // Migrate to encrypted file system storage
+      await saveAccounts(migratedAccounts);
       // Clean up legacy storage
       await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
       return migratedAccounts;
@@ -150,12 +172,15 @@ function migrateAccountsWithType(accounts: Partial<Account>[]): Account[] {
 }
 
 /**
- * Save accounts to storage
- * Uses file system to avoid SecureStore 2048 byte limit
+ * Save accounts to storage (encrypted)
+ * Uses file system to avoid SecureStore 2048 byte limit.
+ * Data is encrypted with AES-256-CTR; key is in SecureStore.
  */
 export async function saveAccounts(accounts: Account[]): Promise<void> {
   try {
-    await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, JSON.stringify(accounts));
+    const json = JSON.stringify(accounts);
+    const encrypted = await encryptAccountsData(json);
+    await FileSystem.writeAsStringAsync(ACCOUNTS_FILE, encrypted);
   } catch (error) {
     console.error('Error saving accounts:', error);
     throw error;
@@ -267,6 +292,20 @@ export async function importWallet(mnemonic: string): Promise<WalletData & { typ
 }
 
 /**
+ * Get the mnemonic phrase from SecureStore.
+ * Use this instead of reading from Redux state.
+ * The caller should use the mnemonic in a local scope and let it be garbage collected.
+ */
+export async function getMnemonic(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(WALLET_MNEMONIC_KEY);
+  } catch (error) {
+    console.error('Error reading mnemonic from SecureStore:', error);
+    return null;
+  }
+}
+
+/**
  * Get wallet object from mnemonic (for signing transactions)
  * This creates a new wallet instance when needed, not stored in Redux
  */
@@ -286,6 +325,8 @@ export async function clearWallet(): Promise<void> {
   if (fileInfo.exists) {
     await FileSystem.deleteAsync(ACCOUNTS_FILE);
   }
+  // Delete accounts encryption key
+  await deleteAccountsEncryptionKey();
   // Also clean up legacy SecureStore key if exists
   await SecureStore.deleteItemAsync(ACCOUNTS_KEY);
 }

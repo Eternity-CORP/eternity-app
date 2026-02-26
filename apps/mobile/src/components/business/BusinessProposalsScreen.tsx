@@ -25,7 +25,7 @@ import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { useAppSelector } from '@/src/store/hooks';
 import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
-import { getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { getWalletFromMnemonic, getMnemonic } from '@/src/services/wallet-service';
 import { getTestnetProvider } from '@/src/services/network-service';
 import { API_BASE_URL } from '@/src/config/api';
 import { theme } from '@/src/constants/theme';
@@ -275,7 +275,7 @@ export default function BusinessProposalsScreen() {
 
   const handleVote = useCallback(
     (proposalId: number, support: boolean) => {
-      if (!business?.treasuryAddress || !wallet.mnemonic || !holderAccount) {
+      if (!business?.treasuryAddress || !holderAccount) {
         Alert.alert('Error', 'None of your wallets hold shares in this business.');
         return;
       }
@@ -293,7 +293,9 @@ export default function BusinessProposalsScreen() {
             onPress: async () => {
               setVotingId(proposalId);
               try {
-                const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, holderAccount.accountIndex);
+                const mnemonic = await getMnemonic();
+                if (!mnemonic) throw new Error('Wallet locked');
+                const hdWallet = getWalletFromMnemonic(mnemonic, holderAccount.accountIndex);
                 const provider = getTestnetProvider('sepolia');
                 const signer = hdWallet.connect(provider);
 
@@ -312,7 +314,7 @@ export default function BusinessProposalsScreen() {
         ],
       );
     },
-    [business, wallet.mnemonic, holderAccount, walletInfos, loadData],
+    [business, holderAccount, walletInfos, loadData],
   );
 
   // ---------------------------------------------------------------------------
@@ -320,7 +322,10 @@ export default function BusinessProposalsScreen() {
   // ---------------------------------------------------------------------------
 
   const handleCreate = useCallback(async () => {
-    if (!business?.treasuryAddress || !wallet.mnemonic || !businessId) return;
+    if (!business?.treasuryAddress || !businessId) return;
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
 
     if (!createTitle.trim()) {
       Alert.alert('Error', 'Please enter a proposal title.');
@@ -336,7 +341,7 @@ export default function BusinessProposalsScreen() {
 
     setSubmitting(true);
     try {
-      const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, signerAccount.accountIndex);
+      const hdWallet = getWalletFromMnemonic(mnemonic, signerAccount.accountIndex);
       const provider = getTestnetProvider('sepolia');
       const signer = hdWallet.connect(provider);
 
@@ -423,7 +428,6 @@ export default function BusinessProposalsScreen() {
     }
   }, [
     business,
-    wallet.mnemonic,
     holderAccount,
     personalAccounts,
     businessId,

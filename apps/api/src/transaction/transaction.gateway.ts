@@ -22,6 +22,10 @@ import {
   buildChainRpcUrl,
   SEPOLIA_CHAIN_ID,
 } from '@e-y/shared';
+import {
+  verifySocketAuth,
+  verifyAddressOwnership,
+} from '../common/ws-auth.guard';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -83,7 +87,10 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
   // -----------------------------------------------------------------------
 
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected to Transaction gateway: ${client.id}`);
+    const authenticated = verifySocketAuth(client);
+    this.logger.log(
+      `Client connected to Transaction gateway: ${client.id} (authenticated=${authenticated})`,
+    );
     this.startPollingIfNeeded();
   }
 
@@ -111,6 +118,14 @@ export class TransactionGateway implements OnGatewayConnection, OnGatewayDisconn
 
     if (!txHash || !userAddress) {
       client.emit('error', { message: 'txHash and userAddress are required' });
+      return;
+    }
+
+    // Verify that the userAddress matches the authenticated address
+    if (!verifyAddressOwnership(client, userAddress, 'tx subscribe')) {
+      client.emit('error', {
+        message: 'Address mismatch: you can only subscribe to your own transactions',
+      });
       return;
     }
 

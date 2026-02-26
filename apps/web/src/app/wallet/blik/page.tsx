@@ -7,6 +7,7 @@ import { ethers } from 'ethers'
 import { io, type Socket } from 'socket.io-client'
 import {
   createBlikSocketService,
+  buildSocketAuth,
   type BlikSocketService,
   type CodeCreatedPayload,
   type CodeInfoPayload,
@@ -53,61 +54,81 @@ export default function BlikPage() {
   useEffect(() => {
     if (!address) return
 
-    const socket = io(`${API_BASE_URL}/blik`, {
-      transports: ['websocket'],
-      autoConnect: true,
-    })
+    let cancelled = false
 
-    socketRef.current = socket
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const blikService = createBlikSocketService(socket as any)
-    blikServiceRef.current = blikService
-
-    socket.on('connect', () => {
-      blikService.register(address)
-    })
-
-    blikService.setCallbacks({
-      onCodeCreated: (payload: CodeCreatedPayload) => {
-        setCreatedCode(payload)
-        setTimeLeft(120)
-      },
-      onPaymentConfirmed: () => {
-        router.push('/wallet/blik/received')
-      },
-      onCodeExpired: () => {
-        setCreatedCode(null)
-        setMode('select')
-      },
-      onCodeInfo: (payload: CodeInfoPayload) => {
-        if (payload.receiverAddress.toLowerCase() === address.toLowerCase()) {
-          setError("You can't send to yourself")
-          return
+    const initSocket = async () => {
+      // Build auth credentials if wallet is available
+      let auth: { address: string; signature: string; timestamp: number } | undefined
+      if (wallet) {
+        try {
+          auth = await buildSocketAuth(address, (msg) => wallet.signMessage(msg))
+        } catch {
+          console.warn('[BLIK] Auth signing failed, connecting without auth')
         }
-        setFoundCode(payload)
-      },
-      onCodeNotFound: (payload: CodeNotFoundPayload) => {
-        const reasons: Record<string, string> = {
-          not_found: 'Code not found',
-          expired: 'Code has expired',
-          completed: 'Code already used',
-          cancelled: 'Code was cancelled',
-        }
-        setError(reasons[payload.reason] || 'Code not found or expired')
-      },
-      onError: (err) => {
-        setError(err.message)
-      },
-    })
+      }
+
+      if (cancelled) return
+
+      const socket = io(`${API_BASE_URL}/blik`, {
+        transports: ['websocket'],
+        autoConnect: true,
+        ...(auth ? { auth } : {}),
+      })
+
+      socketRef.current = socket
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const blikService = createBlikSocketService(socket as any)
+      blikServiceRef.current = blikService
+
+      socket.on('connect', () => {
+        blikService.register(address)
+      })
+
+      blikService.setCallbacks({
+        onCodeCreated: (payload: CodeCreatedPayload) => {
+          setCreatedCode(payload)
+          setTimeLeft(120)
+        },
+        onPaymentConfirmed: () => {
+          router.push('/wallet/blik/received')
+        },
+        onCodeExpired: () => {
+          setCreatedCode(null)
+          setMode('select')
+        },
+        onCodeInfo: (payload: CodeInfoPayload) => {
+          if (payload.receiverAddress.toLowerCase() === address.toLowerCase()) {
+            setError("You can't send to yourself")
+            return
+          }
+          setFoundCode(payload)
+        },
+        onCodeNotFound: (payload: CodeNotFoundPayload) => {
+          const reasons: Record<string, string> = {
+            not_found: 'Code not found',
+            expired: 'Code has expired',
+            completed: 'Code already used',
+            cancelled: 'Code was cancelled',
+          }
+          setError(reasons[payload.reason] || 'Code not found or expired')
+        },
+        onError: (err) => {
+          setError(err.message)
+        },
+      })
+    }
+
+    initSocket()
 
     return () => {
-      blikService.clearCallbacks()
-      socket.removeAllListeners()
-      socket.disconnect()
+      cancelled = true
+      blikServiceRef.current?.clearCallbacks()
+      socketRef.current?.removeAllListeners()
+      socketRef.current?.disconnect()
       socketRef.current = null
       blikServiceRef.current = null
     }
-  }, [address, router])
+  }, [address, wallet, router])
 
   // Timer countdown for created code
   useEffect(() => {

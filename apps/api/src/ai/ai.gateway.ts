@@ -29,6 +29,10 @@ import {
   AiSuggestion,
   AiContact,
 } from '@e-y/shared';
+import {
+  verifySocketAuth,
+  verifyAddressOwnership,
+} from '../common/ws-auth.guard';
 
 // Re-export for convenience
 export { AI_EVENTS };
@@ -102,7 +106,10 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: Socket) {
-    this.logger.log(`Client connected to AI gateway: ${client.id}`);
+    const authenticated = verifySocketAuth(client);
+    this.logger.log(
+      `Client connected to AI gateway: ${client.id} (authenticated=${authenticated})`,
+    );
   }
 
   handleDisconnect(client: Socket) {
@@ -145,6 +152,15 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const address = validated.address.toLowerCase();
+
+    // Verify that the subscribed address matches the authenticated address
+    if (!verifyAddressOwnership(client, address, 'AI subscribe')) {
+      client.emit(AI_EVENTS.ERROR, {
+        code: 'ADDRESS_MISMATCH',
+        message: 'You can only subscribe with your authenticated wallet address',
+      } as ErrorPayload);
+      return;
+    }
 
     // Store mapping
     this.socketToAddress.set(client.id, address);

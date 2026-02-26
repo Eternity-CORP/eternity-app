@@ -21,6 +21,7 @@ import { findContactByAddress } from '@/src/services/contacts-service';
 import { blikSocket } from '@/src/services/blik-service';
 import { sendTransaction, estimateGas, type GasEstimate } from '@/src/services/send-service';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { getMnemonic } from '@/src/services/wallet-service';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
@@ -180,13 +181,16 @@ export default function BlikConfirmScreen() {
   }, [dispatch, codeInfo, handlePaymentSuccess]);
 
   const handleConfirmPayment = useCallback(async () => {
-    if (!wallet.mnemonic || !currentAccount || !codeInfo) return;
+    if (!currentAccount || !codeInfo) return;
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
 
     dispatch(senderStartConfirming());
 
     try {
       // Derive wallet for signing
-      const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+      const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
       // Get token address
       const tokenAddress = codeInfo.tokenSymbol === 'ETH' ? 'ETH' : getTokenAddress(codeInfo.tokenSymbol);
@@ -220,7 +224,7 @@ export default function BlikConfirmScreen() {
       dispatch(senderError(message));
       Alert.alert('Transaction Failed', message);
     }
-  }, [wallet.mnemonic, currentAccount, codeInfo, codeNetwork, dispatch]);
+  }, [currentAccount, codeInfo, codeNetwork, dispatch]);
 
   const canConfirm = gasEstimateStatus === 'succeeded' && blik.sender.status !== 'confirming';
   const isConfirming = blik.sender.status === 'confirming';

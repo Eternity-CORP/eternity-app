@@ -14,6 +14,7 @@ import { estimateGasThunk, sendTransactionThunk, executeSmartSendThunk, setGasGu
 import { resetBridge } from '@/src/store/slices/bridge-slice';
 import { loadContactsThunk, saveContactThunk, touchContactThunk } from '@/src/store/slices/contacts-slice';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { getMnemonic } from '@/src/services/wallet-service';
 import { checkGasAvailability, suggestGasBridge, SUPPORTED_NETWORKS as SHARED_NETWORKS } from '@e-y/shared';
 import { truncateAddress } from '@/src/utils/format';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
@@ -162,9 +163,12 @@ export default function ConfirmScreen() {
   }, [dispatch]);
 
   const handleConfirm = useCallback(async () => {
-    if (!wallet.mnemonic || !currentAccount) return;
+    if (!currentAccount) return;
 
-    const hdWallet = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount.accountIndex);
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
+
+    const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
     // Touch contact to update lastUsedAt if exists
     if (existingContact) {
@@ -195,7 +199,7 @@ export default function ConfirmScreen() {
         token: tokenAddress,
       }));
     }
-  }, [wallet.mnemonic, currentAccount, existingContact, dispatch, send.recipient, send.amount, tokenAddress, routingResult]);
+  }, [currentAccount, existingContact, dispatch, send.recipient, send.amount, tokenAddress, routingResult]);
 
   const handleSaveContact = useCallback(async () => {
     if (!contactName.trim()) {

@@ -10,3 +10,4 @@ export * from './coingecko';
 export * from './business';
 export * from './logo-paths';
 export * from './swap-settings';
+export * from './ws-auth';

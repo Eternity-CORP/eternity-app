@@ -9,7 +9,9 @@
 import { io, Socket } from 'socket.io-client';
 import {
   createBlikSocketService,
+  buildSocketAuth,
   type BlikSocketService,
+  type WsHandshakeAuth,
   type CreateCodePayload,
   type CancelCodePayload,
   type LookupCodePayload,
@@ -49,8 +51,12 @@ class BlikSocketServiceWrapper {
 
   /**
    * Connect to the BLIK WebSocket server
+   * @param signMessage - Optional signing function for WebSocket auth
    */
-  connect(address?: string): Promise<void> {
+  connect(
+    address?: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): Promise<void> {
     if (this.socket?.connected) {
       if (address) {
         this.receiverAddress = address;
@@ -75,12 +81,32 @@ class BlikSocketServiceWrapper {
       this.receiverAddress = address;
     }
 
+    return this.doConnect(address, signMessage);
+  }
+
+  private async doConnect(
+    address?: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): Promise<void> {
+    // Build auth if signing function and address are available
+    let auth: WsHandshakeAuth | undefined;
+    if (signMessage && address) {
+      try {
+        auth = await buildSocketAuth(address, signMessage);
+      } catch (error) {
+        log.warn('Auth signing failed, connecting without auth', {
+          message: (error as Error).message,
+        });
+      }
+    }
+
     return new Promise((resolve) => {
       this.socket = io(`${API_BASE_URL}/blik`, {
         transports: ['websocket'],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
+        ...(auth ? { auth } : {}),
       });
 
       // Create shared service that wires up all event listeners

@@ -50,7 +50,7 @@ import {
   type EthersLikeProvider,
 } from '@e-y/shared';
 
-import { getWalletFromMnemonic } from '@/src/services/wallet-service';
+import { getWalletFromMnemonic, getMnemonic } from '@/src/services/wallet-service';
 import { getTestnetProvider } from '@/src/services/network-service';
 import { ethersContractFactory } from '@/src/utils/contract-factory';
 
@@ -401,7 +401,9 @@ export function BusinessDashboardScreen() {
   // --------------------------------------------------
 
   const handleRelease = useCallback(async () => {
-    if (!business || !wallet.mnemonic || !currentAccount) return;
+    if (!business || !currentAccount) return;
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
     Alert.alert('Release Tokens', `Release ${releasableAmount} vested tokens?`, [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -409,7 +411,9 @@ export function BusinessDashboardScreen() {
         onPress: async () => {
           setReleasing(true);
           try {
-            const hdWallet = getWalletFromMnemonic(wallet.mnemonic!, currentAccount.accountIndex);
+            const releaseMnemonic = await getMnemonic();
+            if (!releaseMnemonic) throw new Error('Wallet locked');
+            const hdWallet = getWalletFromMnemonic(releaseMnemonic, currentAccount.accountIndex);
             const provider = getTestnetProvider('sepolia');
             const signer = hdWallet.connect(provider);
             await releaseVestedTokens(ethersContractFactory, business.contractAddress, signer);
@@ -423,7 +427,7 @@ export function BusinessDashboardScreen() {
         },
       },
     ]);
-  }, [business, wallet.mnemonic, currentAccount, releasableAmount, loadData]);
+  }, [business, currentAccount, releasableAmount, loadData]);
 
   // --------------------------------------------------
   // Loading state

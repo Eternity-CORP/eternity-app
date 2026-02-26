@@ -11,7 +11,9 @@ import { API_BASE_URL } from '@/src/config/api';
 import { createLogger } from '@/src/utils/logger';
 import {
   createAiSocketService,
+  buildSocketAuth,
   type AiSocketService,
+  type WsHandshakeAuth,
   AI_EVENTS,
   AiContact,
   ChatMessage,
@@ -83,8 +85,14 @@ class AiSocketServiceWrapper {
 
   /**
    * Connect to the AI WebSocket server
+   * @param signMessage - Optional signing function for WebSocket auth
    */
-  connect(address: string, contacts?: AiContact[], accountType?: string): Promise<void> {
+  connect(
+    address: string,
+    contacts?: AiContact[],
+    accountType?: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): Promise<void> {
     this.userContacts = contacts;
     this.userAccountType = accountType;
 
@@ -115,6 +123,25 @@ class AiSocketServiceWrapper {
     this.isConnecting = true;
     this.userAddress = address;
 
+    return this.doConnect(address, signMessage);
+  }
+
+  private async doConnect(
+    address: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): Promise<void> {
+    // Build auth if signing function is available
+    let auth: WsHandshakeAuth | undefined;
+    if (signMessage) {
+      try {
+        auth = await buildSocketAuth(address, signMessage);
+      } catch (error) {
+        log.warn('Auth signing failed, connecting without auth', {
+          message: (error as Error).message,
+        });
+      }
+    }
+
     return new Promise((resolve) => {
       this.socket = io(`${API_BASE_URL}/ai`, {
         transports: ['websocket'],
@@ -122,6 +149,7 @@ class AiSocketServiceWrapper {
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
+        ...(auth ? { auth } : {}),
       });
 
       // Create shared service that wires up all event listeners

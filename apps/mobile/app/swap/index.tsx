@@ -21,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { deriveWalletFromMnemonic } from '@e-y/crypto';
+import { getMnemonic } from '@/src/services/wallet-service';
 
 import { theme } from '@/src/constants/theme';
 import { useTheme } from '@/src/contexts';
@@ -175,13 +176,16 @@ export default function SwapScreen() {
   };
 
   const handleApprove = async () => {
-    if (!swap.fromToken || !wallet.mnemonic) return;
+    if (!swap.fromToken) return;
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
 
     dispatch(setSwapStatus('approving'));
 
     try {
       const provider = getProvider(swap.fromNetworkId);
-      const walletInstance = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
+      const walletInstance = deriveWalletFromMnemonic(mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
 
       const spender = getLiFiContractAddress(
         SUPPORTED_NETWORKS[swap.fromNetworkId].chainId
@@ -205,13 +209,16 @@ export default function SwapScreen() {
   };
 
   const handleSwap = async () => {
-    if (!swap.quote || !wallet.mnemonic) return;
+    if (!swap.quote) return;
+
+    const mnemonic = await getMnemonic();
+    if (!mnemonic) return;
 
     dispatch(setSwapStatus('swapping'));
 
     try {
       const provider = getProvider(swap.fromNetworkId);
-      const walletInstance = deriveWalletFromMnemonic(wallet.mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
+      const walletInstance = deriveWalletFromMnemonic(mnemonic, currentAccount?.accountIndex ?? 0).connect(provider);
 
       const tx = await executeSwap(swap.quote, walletInstance);
       dispatch(setSwapTxHash(tx.hash));

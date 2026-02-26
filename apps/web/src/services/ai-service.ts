@@ -1,8 +1,10 @@
 import { io, type Socket } from 'socket.io-client'
 import {
   createAiSocketService,
+  buildSocketAuth,
   type AiSocketService,
   type AiSocketCallbacks as SharedAiSocketCallbacks,
+  type WsHandshakeAuth,
 } from '@e-y/shared'
 import type {
   AiContact,
@@ -38,7 +40,12 @@ class WebAiSocketService {
   private userContacts: AiContact[] | undefined
   private userAccountType: string | undefined
 
-  connect(address: string, contacts?: AiContact[], accountType?: string): void {
+  connect(
+    address: string,
+    contacts?: AiContact[],
+    accountType?: string,
+    signMessage?: (message: string) => Promise<string>,
+  ): void {
     if (this.socket?.connected && this.userAddress === address) return
 
     this.disconnect()
@@ -46,28 +53,45 @@ class WebAiSocketService {
     this.userContacts = contacts
     this.userAccountType = accountType
 
-    this.socket = io(`${API_BASE_URL}/ai`, {
-      transports: ['websocket'],
-      autoConnect: true,
-    })
+    // Build auth and connect
+    const doConnect = (auth?: WsHandshakeAuth) => {
+      this.socket = io(`${API_BASE_URL}/ai`, {
+        transports: ['websocket'],
+        autoConnect: true,
+        ...(auth ? { auth } : {}),
+      })
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.service = createAiSocketService(this.socket as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.service = createAiSocketService(this.socket as any)
 
-    // Apply any callbacks that were registered before connect
-    if (Object.keys(this.pendingCallbacks).length > 0) {
-      this.service.setCallbacks(this.pendingCallbacks as Partial<SharedAiSocketCallbacks>)
-      this.pendingCallbacks = {}
+      // Apply any callbacks that were registered before connect
+      if (Object.keys(this.pendingCallbacks).length > 0) {
+        this.service.setCallbacks(this.pendingCallbacks as Partial<SharedAiSocketCallbacks>)
+        this.pendingCallbacks = {}
+      }
+
+      this.socket.on('connect', () => {
+        this.service?.subscribe(this.userAddress, this.userContacts, this.userAccountType)
+        this.localCallbacks.onConnect?.()
+      })
+
+      this.socket.on('disconnect', (reason: string) => {
+        this.localCallbacks.onDisconnect?.(reason)
+      })
     }
 
-    this.socket.on('connect', () => {
-      this.service?.subscribe(this.userAddress, this.userContacts, this.userAccountType)
-      this.localCallbacks.onConnect?.()
-    })
-
-    this.socket.on('disconnect', (reason: string) => {
-      this.localCallbacks.onDisconnect?.(reason)
-    })
+    // If signMessage is provided, build auth credentials before connecting
+    if (signMessage && address) {
+      buildSocketAuth(address, signMessage)
+        .then((auth) => doConnect(auth))
+        .catch(() => {
+          // Fallback to unauthenticated connection if signing fails
+          console.warn('[AI Socket] Auth signing failed, connecting without auth')
+          doConnect()
+        })
+    } else {
+      doConnect()
+    }
   }
 
   disconnect(): void {
