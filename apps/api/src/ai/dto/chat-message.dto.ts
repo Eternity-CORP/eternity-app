@@ -1,9 +1,19 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  IsOptional,
+  IsArray,
+  IsIn,
+  Matches,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ChatMessageDto {
   @IsString()
   @IsNotEmpty()
+  @IsIn(['user', 'assistant'])
   role: 'user' | 'assistant';
 
   @IsString()
@@ -24,9 +34,10 @@ export class SendChatDto {
   @Type(() => ChatMessageDto)
   history?: ChatMessageDto[];
 
-  @IsOptional()
   @IsString()
-  userAddress?: string;
+  @IsNotEmpty({ message: 'User address is required' })
+  @Matches(/^0x[a-fA-F0-9]{40}$/, { message: 'Invalid Ethereum address' })
+  userAddress: string;
 }
 
 export class AiResponseDto {

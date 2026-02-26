@@ -4,6 +4,7 @@
  */
 
 import { Injectable, OnModuleDestroy, Logger } from '@nestjs/common';
+import { randomInt } from 'crypto';
 import { SupabaseService } from '../supabase/supabase.service';
 import type { BlikCode, BlikCodeStatus } from '@e-y/shared';
 import { BLIK_MIN_AMOUNT, BLIK_MAX_AMOUNT } from '@e-y/shared';
@@ -62,7 +63,7 @@ export class BlikService implements OnModuleDestroy {
     const maxAttempts = 100;
 
     do {
-      code = Math.floor(100000 + Math.random() * 900000).toString();
+      code = randomInt(100000, 999999).toString();
 
       // Check if code exists in database
       const { data } = await this.supabase

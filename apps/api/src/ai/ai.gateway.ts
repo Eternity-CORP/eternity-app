@@ -20,6 +20,7 @@ import { AiSecurityService } from './security';
 import { IntentParser } from './intent-parser';
 import { ChatMessage } from './providers';
 import { buildSystemPrompt } from './constants';
+import { WsSubscribeDto, WsChatDto, validateWsPayload } from './dto';
 import {
   AI_EVENTS,
   ChunkPayload,
@@ -32,7 +33,7 @@ import {
 // Re-export for convenience
 export { AI_EVENTS };
 
-// Gateway-specific payload types (not in shared)
+// Keep interfaces for backwards compatibility with external consumers
 export interface ChatPayload {
   content: string;
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
@@ -128,27 +129,22 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Subscribe to AI events for a wallet address
    */
   @SubscribeMessage(AI_EVENTS.SUBSCRIBE)
-  handleSubscribe(
+  async handleSubscribe(
     @MessageBody() data: SubscribePayload,
     @ConnectedSocket() client: Socket,
   ) {
-    if (!data.address || typeof data.address !== 'string') {
+    // Validate payload using DTO
+    const { instance: validated, errors } = await validateWsPayload(WsSubscribeDto, data);
+
+    if (errors.length > 0) {
       client.emit(AI_EVENTS.ERROR, {
         code: 'INVALID_ADDRESS',
-        message: 'Address is required and must be a string',
+        message: errors.join('; '),
       } as ErrorPayload);
       return;
     }
 
-    const address = data.address.toLowerCase();
-
-    if (!/^0x[0-9a-f]{40}$/.test(address)) {
-      client.emit(AI_EVENTS.ERROR, {
-        code: 'INVALID_ADDRESS',
-        message: 'Address must be a valid hex address (0x + 40 hex characters)',
-      } as ErrorPayload);
-      return;
-    }
+    const address = validated.address.toLowerCase();
 
     // Store mapping
     this.socketToAddress.set(client.id, address);
@@ -164,14 +160,14 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // Store account type for network selection (defaults to env NETWORK if not provided)
-    if (data.accountType) {
-      this.socketToAccountType.set(client.id, data.accountType);
+    if (validated.accountType) {
+      this.socketToAccountType.set(client.id, validated.accountType);
     }
 
     // Join room for targeted messages
     client.join(`ai:${address}`);
 
-    this.logger.log(`Client ${client.id} subscribed to AI for ${address} (${data.contacts?.length || 0} contacts, accountType: ${data.accountType || 'default'})`);
+    this.logger.log(`Client ${client.id} subscribed to AI for ${address} (${data.contacts?.length || 0} contacts, accountType: ${validated.accountType || 'default'})`);
 
     return { success: true, address };
   }
@@ -221,10 +217,13 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    if (!data.content?.trim()) {
+    // Validate payload using DTO
+    const { errors } = await validateWsPayload(WsChatDto, data);
+
+    if (errors.length > 0) {
       client.emit(AI_EVENTS.ERROR, {
         code: 'EMPTY_MESSAGE',
-        message: 'Message content is required',
+        message: errors.join('; '),
       } as ErrorPayload);
       return;
     }

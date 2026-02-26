@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { HealthModule } from './health/health.module';
 import { BlikModule } from './blik/blik.module';
 import { TransactionModule } from './transaction/transaction.module';
@@ -22,6 +24,10 @@ import { SupabaseModule } from './supabase';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
     SupabaseModule,
     HealthModule,
     BlikModule,
@@ -36,6 +42,12 @@ import { SupabaseModule } from './supabase';
     FaucetModule,
     InviteModule,
     BusinessModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

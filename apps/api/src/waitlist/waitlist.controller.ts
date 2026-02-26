@@ -19,6 +19,18 @@ export class WaitlistController {
   ) {}
 
   /**
+   * Validate admin token from Authorization header (Bearer token)
+   */
+  private validateAdminToken(authHeader?: string): void {
+    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!adminToken || token !== adminToken) {
+      throw new UnauthorizedException('Invalid admin token');
+    }
+  }
+
+  /**
    * POST /waitlist - Add email to waitlist
    */
   @Post()
@@ -49,45 +61,34 @@ export class WaitlistController {
 
   /**
    * GET /waitlist - Get all entries (admin only)
+   * Token must be sent via Authorization: Bearer <token> header
    */
   @Get()
-  async findAll(@Query('token') token?: string) {
-    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
-
-    if (!adminToken || token !== adminToken) {
-      throw new UnauthorizedException('Invalid admin token');
-    }
-
+  async findAll(@Headers('authorization') authHeader?: string) {
+    this.validateAdminToken(authHeader);
     return this.waitlistService.findAll();
   }
 
   /**
    * GET /waitlist/stats - Get stats only (admin only)
+   * Token must be sent via Authorization: Bearer <token> header
    */
   @Get('stats')
-  async getStats(@Query('token') token?: string) {
-    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
-
-    if (!adminToken || token !== adminToken) {
-      throw new UnauthorizedException('Invalid admin token');
-    }
-
+  async getStats(@Headers('authorization') authHeader?: string) {
+    this.validateAdminToken(authHeader);
     return this.waitlistService.getStats();
   }
 
   /**
    * GET /waitlist/export - Export emails (admin only)
+   * Token must be sent via Authorization: Bearer <token> header
    */
   @Get('export')
   async exportEmails(
-    @Query('token') token?: string,
+    @Headers('authorization') authHeader?: string,
     @Query('betaOnly') betaOnly?: string,
   ) {
-    const adminToken = this.configService.get<string>('ADMIN_TOKEN');
-
-    if (!adminToken || token !== adminToken) {
-      throw new UnauthorizedException('Invalid admin token');
-    }
+    this.validateAdminToken(authHeader);
 
     const emails = await this.waitlistService.exportEmails(betaOnly === 'true');
 

@@ -1,17 +1,30 @@
 import { Injectable, HttpException, HttpStatus, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
+import { SupabaseService } from '../supabase/supabase.service';
+import type { FaucetClaim } from './entities';
+
+// Database row type (snake_case)
+interface FaucetClaimRow {
+  id: string;
+  wallet_address: string;
+  amount: string;
+  tx_hash: string | null;
+  claimed_at: string;
+}
 
 @Injectable()
 export class FaucetService implements OnModuleInit {
   private readonly logger = new Logger(FaucetService.name);
   private wallet: ethers.Wallet;
   private provider: ethers.JsonRpcProvider;
-  private readonly claims = new Map<string, number>();
   private readonly DRIP_AMOUNT = ethers.parseEther('0.001');
   private readonly COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly supabase: SupabaseService,
+  ) {}
 
   onModuleInit() {
     const privateKey = this.configService.get<string>('FAUCET_PRIVATE_KEY');
@@ -27,6 +40,65 @@ export class FaucetService implements OnModuleInit {
     this.logger.log(`Faucet wallet: ${this.wallet.address}`);
   }
 
+  /**
+   * Map database row to FaucetClaim interface
+   */
+  private mapToFaucetClaim(row: FaucetClaimRow): FaucetClaim {
+    return {
+      id: row.id,
+      walletAddress: row.wallet_address,
+      amount: row.amount,
+      txHash: row.tx_hash,
+      claimedAt: new Date(row.claimed_at),
+    };
+  }
+
+  /**
+   * Check if an address can claim (cooldown not elapsed)
+   * Returns the last claim if cooldown is still active, null if can claim
+   */
+  private async getLastClaimInCooldown(address: string): Promise<FaucetClaim | null> {
+    const cooldownThreshold = new Date(Date.now() - this.COOLDOWN_MS).toISOString();
+
+    const { data, error } = await this.supabase
+      .from('faucet_claims')
+      .select('*')
+      .eq('wallet_address', address.toLowerCase())
+      .gte('claimed_at', cooldownThreshold)
+      .order('claimed_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      // No recent claim found — address can claim
+      return null;
+    }
+
+    return this.mapToFaucetClaim(data);
+  }
+
+  /**
+   * Record a new faucet claim in the database
+   */
+  private async recordClaim(address: string, amount: string, txHash: string): Promise<FaucetClaim> {
+    const { data, error } = await this.supabase
+      .from('faucet_claims')
+      .insert({
+        wallet_address: address.toLowerCase(),
+        amount,
+        tx_hash: txHash,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      this.logger.error('Failed to record faucet claim', error);
+      throw new Error('Failed to record faucet claim');
+    }
+
+    return this.mapToFaucetClaim(data);
+  }
+
   async claim(address: string): Promise<{ txHash: string; amount: string }> {
     if (!this.wallet) {
       throw new HttpException('Faucet not configured', HttpStatus.SERVICE_UNAVAILABLE);
@@ -34,18 +106,11 @@ export class FaucetService implements OnModuleInit {
 
     const normalized = address.toLowerCase();
 
-    // Clean expired entries to prevent unbounded Map growth
-    const now = Date.now();
-    for (const [addr, timestamp] of this.claims) {
-      if (now - timestamp > this.COOLDOWN_MS) {
-        this.claims.delete(addr);
-      }
-    }
-
-    // Rate limit check
-    const lastClaim = this.claims.get(normalized);
-    if (lastClaim && Date.now() - lastClaim < this.COOLDOWN_MS) {
-      const remainingMs = this.COOLDOWN_MS - (Date.now() - lastClaim);
+    // Rate limit check — query database for last claim within cooldown
+    const lastClaim = await this.getLastClaimInCooldown(normalized);
+    if (lastClaim) {
+      const claimedAtMs = lastClaim.claimedAt.getTime();
+      const remainingMs = this.COOLDOWN_MS - (Date.now() - claimedAtMs);
       throw new HttpException(
         { message: 'Already claimed in last 24h', remainingMs },
         HttpStatus.TOO_MANY_REQUESTS,
@@ -66,7 +131,8 @@ export class FaucetService implements OnModuleInit {
         value: this.DRIP_AMOUNT,
       });
 
-      this.claims.set(normalized, Date.now());
+      // Record claim in database
+      await this.recordClaim(normalized, '0.001', tx.hash);
       this.logger.log(`Sent 0.001 ETH to ${address} — tx: ${tx.hash}`);
 
       return { txHash: tx.hash, amount: '0.001' };

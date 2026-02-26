@@ -12,7 +12,16 @@ import {
 import { AiService } from './ai.service';
 import { AiSecurityService } from './security';
 import { ProactiveService } from './proactive';
-import { SendChatDto, AiResponseDto } from './dto';
+import {
+  SendChatDto,
+  AiResponseDto,
+  ExecuteToolDto,
+  AddressQueryDto,
+  LargeTransactionAlertDto,
+  SecurityAlertDto,
+  SuggestUsernameDto,
+  SuggestContactDto,
+} from './dto';
 import { ChatMessage } from './providers';
 import { buildSystemPrompt } from './constants';
 
@@ -50,14 +59,6 @@ export class AiController {
   async chat(@Body() dto: SendChatDto): Promise<AiResponseDto> {
     const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const startTime = Date.now();
-
-    // Validate user address
-    if (!dto.userAddress) {
-      throw new HttpException(
-        { code: 'MISSING_ADDRESS', message: 'User address is required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const systemPrompt = buildSystemPrompt({
       userAddress: dto.userAddress,
@@ -176,17 +177,8 @@ export class AiController {
 
   @Post('tool')
   @HttpCode(HttpStatus.OK)
-  async executeTool(
-    @Body() dto: { tool: string; args: Record<string, unknown>; userAddress: string },
-  ) {
+  async executeTool(@Body() dto: ExecuteToolDto) {
     const requestId = `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-
-    if (!dto.userAddress) {
-      throw new HttpException(
-        { code: 'MISSING_ADDRESS', message: 'User address is required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     // Validate tool call
     const toolCheck = this.securityService.validateToolCall(
@@ -216,15 +208,8 @@ export class AiController {
   }
 
   @Get('rate-limit')
-  getRateLimit(@Query('address') userAddress: string) {
-    if (!userAddress) {
-      throw new HttpException(
-        { code: 'MISSING_ADDRESS', message: 'User address is required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    return this.securityService.getRateLimitUsage(userAddress);
+  getRateLimit(@Query() query: AddressQueryDto) {
+    return this.securityService.getRateLimitUsage(query.address);
   }
 
   // ========================================
@@ -232,15 +217,8 @@ export class AiController {
   // ========================================
 
   @Get('suggestions')
-  async getSuggestions(@Query('address') address: string) {
-    if (!address) {
-      throw new HttpException(
-        { code: 'MISSING_ADDRESS', message: 'Address query parameter is required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const suggestions = await this.proactiveService.getPendingSuggestions(address);
+  async getSuggestions(@Query() query: AddressQueryDto) {
+    const suggestions = await this.proactiveService.getPendingSuggestions(query.address);
 
     return {
       suggestions: suggestions.map((s) => ({
@@ -295,23 +273,7 @@ export class AiController {
 
   @Post('security/large-transaction')
   @HttpCode(HttpStatus.CREATED)
-  async reportLargeTransaction(
-    @Body()
-    dto: {
-      userAddress: string;
-      txHash: string;
-      amount: string;
-      token: string;
-      usdValue: number;
-    },
-  ) {
-    if (!dto.userAddress || !dto.txHash) {
-      throw new HttpException(
-        { code: 'INVALID_PARAMS', message: 'userAddress and txHash are required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  async reportLargeTransaction(@Body() dto: LargeTransactionAlertDto) {
     const suggestion = await this.proactiveService.createLargeTransactionAlert(dto);
 
     return {
@@ -322,23 +284,7 @@ export class AiController {
 
   @Post('security/alert')
   @HttpCode(HttpStatus.CREATED)
-  async reportSecurityAlert(
-    @Body()
-    dto: {
-      userAddress: string;
-      alertType: 'new_device' | 'failed_auth' | 'unusual_activity';
-      title: string;
-      message: string;
-      metadata?: Record<string, unknown>;
-    },
-  ) {
-    if (!dto.userAddress || !dto.alertType || !dto.title || !dto.message) {
-      throw new HttpException(
-        { code: 'INVALID_PARAMS', message: 'userAddress, alertType, title, and message are required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  async reportSecurityAlert(@Body() dto: SecurityAlertDto) {
     const suggestion = await this.proactiveService.createSecurityAlert(dto);
 
     return {
@@ -353,16 +299,7 @@ export class AiController {
 
   @Post('smart/suggest-username')
   @HttpCode(HttpStatus.OK)
-  async suggestUsername(
-    @Body() dto: { userAddress: string; transactionCount: number },
-  ) {
-    if (!dto.userAddress) {
-      throw new HttpException(
-        { code: 'INVALID_PARAMS', message: 'userAddress is required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  async suggestUsername(@Body() dto: SuggestUsernameDto) {
     const suggestion = await this.proactiveService.suggestUsernameSetup(
       dto.userAddress,
       dto.transactionCount || 0,
@@ -377,21 +314,7 @@ export class AiController {
 
   @Post('smart/suggest-contact')
   @HttpCode(HttpStatus.OK)
-  async suggestContact(
-    @Body()
-    dto: {
-      userAddress: string;
-      recipientAddress: string;
-      transactionCount: number;
-    },
-  ) {
-    if (!dto.userAddress || !dto.recipientAddress) {
-      throw new HttpException(
-        { code: 'INVALID_PARAMS', message: 'userAddress and recipientAddress are required' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  async suggestContact(@Body() dto: SuggestContactDto) {
     const suggestion = await this.proactiveService.suggestAddContact(dto);
 
     return {
