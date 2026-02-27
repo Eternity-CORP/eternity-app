@@ -60,3 +60,6 @@ faucet-wallet.txt
 .security-key
 logs/security/
 .vercel
+
+# Claude Code local settings (may contain secrets in permission history)
+.claude/settings.local.json
