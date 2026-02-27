@@ -1,0 +1,88 @@
+Business Source License 1.1
+
+Parameters
+
+Licensor:             Danylo Lohachov
+Licensed Work:        E-Y (Eternity Wallet)
+                      The Licensed Work is (c) 2025-2026 Danylo Lohachov.
+Additional Use Grant: You may make use of the Licensed Work, provided that
+                      you may not use the Licensed Work for a Competing
+                      Service. A "Competing Service" is a product or service
+                      that is offered to third parties and that provides
+                      substantially the same functionality as the Licensed
+                      Work, including but not limited to:
+                      (a) a cryptocurrency wallet application;
+                      (b) a BLIK-style payment or transfer service;
+                      (c) a crypto business wallet or treasury management
+                          service.
+
+                      You may use the Licensed Work for non-commercial,
+                      educational, research, and personal purposes without
+                      restriction.
+
+Change Date:          February 27, 2030
+Change License:       Apache License, Version 2.0
+
+For information about alternative licensing arrangements for the Licensed
+Work, please contact: eternaki@proton.me
+
+Notice
+
+The Business Source License (this document, or the "License") is not an
+Open Source license. However, the Licensed Work will eventually be made
+available under an Open Source License, as stated in this License.
+
+License text below is subject to the following:
+
+As of the Change Date, the Licensed Work will be made available under the
+terms of the Change License. Until the Change Date, the following terms
+apply:
+
+1. Grant of Rights
+
+The Licensor hereby grants you the right to copy, modify, create derivative
+works, redistribute, and make non-production use of the Licensed Work. The
+Licensor may make an Additional Use Grant, above, permitting limited
+production use.
+
+2. Conditions
+
+You must give any other recipients of the Licensed Work or Derivative Works
+a copy of this License. You must cause any modified files to carry prominent
+notices stating that you changed the files. You must retain, in the Source
+form of any Derivative Works that you distribute, all copyright, patent,
+trademark, and attribution notices from the Source form of the Licensed
+Work, excluding those notices that do not pertain to any part of the
+Derivative Works.
+
+If you institute patent litigation against any entity (including a
+cross-claim or counterclaim in a lawsuit) alleging that the Licensed Work
+constitutes direct or contributory patent infringement, then any patent
+licenses granted to you under this License for the Licensed Work shall
+terminate as of the date such litigation is filed.
+
+3. Covenants of the Licensor
+
+The Licensor will not charge a separate license fee for any version of the
+Licensed Work made available under this License. The Licensed Work will be
+made available under the Change License after the Change Date. This
+covenant, along with the grant above, is irrevocable and may not be
+terminated.
+
+4. Disclaimer of Warranty
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+5. Limitation of Liability
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER
+DEALINGS IN THE LICENSED WORK.
+
+6. Governing Law
+
+This License is governed by the laws of the European Union and the laws of
+Poland, without regard to conflict of law principles.

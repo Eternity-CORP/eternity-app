@@ -1,0 +1,19 @@
+---
+name: Feature Request
+about: Suggest a feature for E-Y
+title: '[FEATURE] '
+labels: enhancement
+assignees: ''
+---
+
+## Problem
+What problem does this feature solve?
+
+## Proposed Solution
+How should it work?
+
+## Alternatives Considered
+Other approaches you've thought about.
+
+## Additional Context
+Mockups, references, or other details.

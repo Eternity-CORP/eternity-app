@@ -1,0 +1,45 @@
+E-Y (Eternity Wallet)
+Copyright 2025-2026 Danylo Lohachov
+
+This product was created and is maintained by Danylo Lohachov (eternaki).
+
+Project:     https://github.com/Eternity-CORP/eternity-app
+Website:     https://eternity-wallet.vercel.app
+Contact:     eternaki@proton.me
+
+FOUNDER AND ORIGINAL AUTHOR
+  Danylo Lohachov (@eternaki)
+
+TRADEMARKS
+  The following names and marks are trademarks of Danylo Lohachov and may
+  NOT be used without express written permission:
+
+  - "E-Y"
+  - "Eternity Wallet"
+  - "Eternity" (in the context of cryptocurrency or fintech products)
+  - "eternaki"
+  - The E-Y logo and visual identity
+
+  If you fork or redistribute this software, you MUST:
+  1. Remove all trademarks listed above from your derivative work
+  2. Choose a different name for your project
+  3. Not imply any endorsement by or affiliation with Danylo Lohachov
+     or Eternity Corp
+
+  You MAY:
+  - State that your project is "based on E-Y" or "derived from E-Y"
+    for factual attribution purposes only
+
+THIRD-PARTY NOTICES
+  This project includes or depends on the following open-source software:
+
+  - React Native / Expo (MIT License)
+  - NestJS (MIT License)
+  - ethers.js (MIT License)
+  - Redux Toolkit (MIT License)
+  - TypeScript (Apache 2.0 License)
+  - PostgreSQL (PostgreSQL License)
+  - Turborepo (MIT License)
+
+  Full license texts for dependencies are available in their respective
+  node_modules directories.

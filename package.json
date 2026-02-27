@@ -1,8 +1,17 @@
 {
   "name": "e-y",
   "version": "0.1.0",
-  "private": true,
   "description": "E-Y - Crypto wallet with BLIK codes",
+  "license": "BUSL-1.1",
+  "author": "Danylo Lohachov <eternaki@proton.me> (https://github.com/eternaki)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Eternity-CORP/eternity-app.git"
+  },
+  "homepage": "https://eternity-wallet.vercel.app",
+  "bugs": {
+    "url": "https://github.com/Eternity-CORP/eternity-app/issues"
+  },
   "scripts": {
     "start": "./scripts/dev.sh",
     "dev": "turbo run dev",
