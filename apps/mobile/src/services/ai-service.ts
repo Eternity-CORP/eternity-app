@@ -97,8 +97,8 @@ class AiSocketServiceWrapper {
     this.userAccountType = accountType;
 
     if (this.socket?.connected) {
-      if (address && address !== this.userAddress) {
-        this.userAddress = address;
+      if (address && address.toLowerCase() !== this.userAddress) {
+        this.userAddress = address.toLowerCase();
         this.sharedService?.subscribe(address, contacts, accountType);
       }
       return Promise.resolve();
@@ -121,7 +121,7 @@ class AiSocketServiceWrapper {
     }
 
     this.isConnecting = true;
-    this.userAddress = address;
+    this.userAddress = address.toLowerCase();
 
     return this.doConnect(address, signMessage);
   }

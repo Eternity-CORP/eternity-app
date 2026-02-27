@@ -40,9 +40,14 @@ const MOCK_AI_EVENTS = {
   ERROR: 'error',
 } as const;
 
-jest.mock('@e-y/shared', () => ({
-  AI_EVENTS: MOCK_AI_EVENTS,
-}));
+jest.mock('@e-y/shared', () => {
+  const actual = jest.requireActual('@e-y/shared');
+  return {
+    ...actual,
+    AI_EVENTS: MOCK_AI_EVENTS,
+    buildSocketAuth: jest.fn(),
+  };
+});
 
 import { io } from 'socket.io-client';
 import { aiSocket } from '../ai-service';
