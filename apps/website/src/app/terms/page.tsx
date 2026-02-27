@@ -63,10 +63,9 @@ export default function TermsPage() {
                 <li>Interact with an AI Agent for wallet assistance</li>
                 <li>Create and manage on-chain business wallets with tokenized equity and governance</li>
               </ul>
-              <div className="mt-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <p className="text-amber-800 dark:text-amber-200 text-sm">
-                  <strong>Note:</strong> The current version operates on Sepolia testnet
-                  only. Do not use real funds.
+              <div className="mt-4 p-4 rounded-lg" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
+                <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                  <strong style={{ color: 'var(--foreground)' }}>Note:</strong> Test accounts operate on Sepolia testnet using test tokens with no real value. Real accounts operate on Ethereum mainnet and L2 networks (Polygon, Arbitrum, Base, Optimism). Always verify your account type before transacting.
                 </p>
               </div>
             </section>

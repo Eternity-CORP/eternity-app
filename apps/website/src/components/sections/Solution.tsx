@@ -13,15 +13,15 @@ const pillars = [
   },
   {
     number: '02',
-    title: 'Network Abstraction',
-    subtitle: 'One token, any chain',
-    description: 'See "USDC", not "USDC (Polygon)". We handle the complexity.',
+    title: 'Cross-Chain Swaps',
+    subtitle: 'Swap across 5 networks',
+    description: 'Swap tokens across 5 networks seamlessly. Ethereum, Polygon, Arbitrum, Base, Optimism — all in one wallet.',
   },
   {
     number: '03',
-    title: 'SHARD Identity',
-    subtitle: 'Your passport = your ID',
-    description: 'Your passport becomes your crypto identity. Verify from home.',
+    title: 'Split Bills',
+    subtitle: 'Share expenses with friends',
+    description: 'Split dinner, rent, or any expense with friends. Track who paid, send reminders, settle in crypto.',
   },
   {
     number: '04',
@@ -115,12 +115,12 @@ export function Solution() {
             <div className="flex items-center gap-3">
               <span style={{ color: 'var(--foreground-muted)' }}>Confusion</span>
               <span style={{ color: 'var(--foreground-light)' }}>→</span>
-              <span className="font-medium" style={{ color: 'var(--foreground)' }}>Abstraction</span>
+              <span className="font-medium" style={{ color: 'var(--foreground)' }}>Multi-Chain + AI</span>
             </div>
             <div className="flex items-center gap-3">
               <span style={{ color: 'var(--foreground-muted)' }}>Exclusion</span>
               <span style={{ color: 'var(--foreground-light)' }}>→</span>
-              <span className="font-medium" style={{ color: 'var(--foreground)' }}>SHARD + AI</span>
+              <span className="font-medium" style={{ color: 'var(--foreground)' }}>@username + AI</span>
             </div>
           </div>
         </FadeIn>

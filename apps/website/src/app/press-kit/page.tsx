@@ -24,7 +24,7 @@ const facts = [
   { label: 'Founded', value: '2026' },
   { label: 'Category', value: 'AI-Native Crypto Wallet' },
   { label: 'Key Features', value: 'BLIK codes, AI Agent, Business Wallet' },
-  { label: 'Stage', value: 'MVP (Sepolia Testnet)' },
+  { label: 'Stage', value: 'Active Development (Testnet + Mainnet)' },
   { label: 'Platform', value: 'Web, iOS & Android' },
 ]
 

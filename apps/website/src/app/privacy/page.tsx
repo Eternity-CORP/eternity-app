@@ -126,6 +126,22 @@ export default function PrivacyPage() {
                   <strong style={{ color: 'var(--foreground)' }}>Anthropic</strong> — AI model provider
                   for the in-app AI Agent
                 </li>
+                <li>
+                  <strong style={{ color: 'var(--foreground)' }}>Supabase</strong> — Database and
+                  authentication services
+                </li>
+                <li>
+                  <strong style={{ color: 'var(--foreground)' }}>Onramper</strong> — Fiat-to-crypto
+                  on-ramp aggregator
+                </li>
+                <li>
+                  <strong style={{ color: 'var(--foreground)' }}>LI.FI</strong> — Cross-chain swap and
+                  bridge protocol
+                </li>
+                <li>
+                  <strong style={{ color: 'var(--foreground)' }}>Expo</strong> — Push notification
+                  delivery
+                </li>
               </ul>
             </section>
 

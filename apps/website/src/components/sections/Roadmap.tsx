@@ -18,6 +18,9 @@ const milestones = [
       { text: 'AI Financial Agent', done: true },
       { text: 'Business Wallet & Governance', done: true },
       { text: 'Multi-chain balances', done: true },
+      { text: 'Cross-chain swaps', done: true },
+      { text: 'Fiat on-ramp (Onramper)', done: true },
+      { text: 'Token swap (LI.FI)', done: true },
     ],
   },
   {
@@ -26,8 +29,8 @@ const milestones = [
     status: 'next',
     items: [
       { text: 'Network abstraction', done: false },
-      { text: 'Cross-chain swaps', done: false },
-      { text: 'Fiat on-ramp', done: false },
+      { text: 'Advanced notifications', done: false },
+      { text: 'Account abstraction', done: false },
     ],
   },
   {
@@ -45,7 +48,7 @@ const milestones = [
     title: 'Scale',
     status: 'future',
     items: [
-      { text: 'Mobile app launch', done: false },
+      { text: 'App Store & Play Store launch', done: false },
       { text: 'Advanced AI insights', done: false },
       { text: 'Institutional features', done: false },
     ],

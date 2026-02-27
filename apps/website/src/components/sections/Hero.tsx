@@ -87,9 +87,9 @@ export function Hero() {
             className="text-xl md:text-2xl max-w-2xl mx-auto mb-12 [text-wrap:balance]"
             style={{ color: 'var(--foreground-muted)' }}
           >
-            Send crypto like a text message.
+            Share a 6-digit code or type @username.
             <br className="hidden md:block" />
-            {' '}Just type a name and hit send.
+            {' '}Crypto without fear.
           </p>
         </FadeIn>
 
