@@ -8,7 +8,7 @@ E-Y handles cryptocurrency and user funds. We take security extremely seriously.
 
 ### How to Report
 
-Send an email to: **eternaki@proton.me**
+Send an email to telegram: @eternaki
 
 Include:
 - Description of the vulnerability
