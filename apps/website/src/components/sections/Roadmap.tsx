@@ -8,38 +8,37 @@ import { GlitchText } from '@/components/animations/GlitchText'
 const milestones = [
   {
     quarter: 'Q1 2026',
-    title: 'MVP + AI Agent',
+    title: 'MVP Launch',
     status: 'completed',
     items: [
-      { text: 'Core wallet functionality', done: true },
+      { text: 'Core wallet (create, import, send, receive)', done: true },
       { text: 'BLIK codes system', done: true },
       { text: '@username registry', done: true },
       { text: 'Contacts & scheduled payments', done: true },
       { text: 'AI Financial Agent', done: true },
-      { text: 'Business Wallet & Governance', done: true },
       { text: 'Multi-chain balances', done: true },
-      { text: 'Cross-chain swaps', done: true },
-      { text: 'Fiat on-ramp (Onramper)', done: true },
-      { text: 'Token swap (LI.FI)', done: true },
     ],
   },
   {
     quarter: 'Q2 2026',
-    title: 'Expansion',
-    status: 'next',
+    title: 'DeFi & Business',
+    status: 'current',
     items: [
+      { text: 'Business Wallet & Governance', done: true },
+      { text: 'Cross-chain swaps (LI.FI)', done: true },
+      { text: 'Fiat on-ramp (Onramper)', done: true },
+      { text: 'Push notifications', done: true },
+      { text: 'App Store & Play Store launch', done: false },
       { text: 'Network abstraction', done: false },
-      { text: 'Advanced notifications', done: false },
-      { text: 'Account abstraction', done: false },
     ],
   },
   {
     quarter: 'Q3 2026',
-    title: 'Identity',
+    title: 'Identity & Privacy',
     status: 'upcoming',
     items: [
-      { text: 'SHARD Identity', done: false },
-      { text: 'Proof of Personhood', done: false },
+      { text: 'SHARD Identity system', done: false },
+      { text: 'Account abstraction (ERC-4337)', done: false },
       { text: 'Privacy-preserving KYC', done: false },
     ],
   },
@@ -48,9 +47,9 @@ const milestones = [
     title: 'Scale',
     status: 'future',
     items: [
-      { text: 'App Store & Play Store launch', done: false },
-      { text: 'Advanced AI insights', done: false },
+      { text: 'Advanced AI insights & analytics', done: false },
       { text: 'Institutional features', done: false },
+      { text: 'Proof of Personhood', done: false },
     ],
   },
 ]
@@ -167,6 +166,7 @@ function MilestoneCard({
   index: number
 }) {
   const isCompleted = milestone.status === 'completed'
+  const isCurrent = milestone.status === 'current'
   const isNext = milestone.status === 'next'
 
   // Desktop: alternate left/right aligned to match the S-curve
@@ -185,10 +185,12 @@ function MilestoneCard({
         className="p-6 rounded-2xl backdrop-blur-sm transition-all duration-300"
         style={{
           background: 'var(--card-bg)',
-          border: `1px solid ${isCompleted ? 'var(--accent-blue)' : isNext ? 'var(--border)' : 'var(--border-light)'}`,
+          border: `1px solid ${isCompleted ? 'var(--accent-blue)' : isCurrent ? 'var(--accent-cyan)' : isNext ? 'var(--border)' : 'var(--border-light)'}`,
           boxShadow: isCompleted
             ? '0 0 30px rgba(51, 136, 255, 0.08)'
-            : 'none',
+            : isCurrent
+              ? '0 0 30px rgba(0, 229, 255, 0.12)'
+              : 'none',
         }}
         whileHover={{ y: -3, boxShadow: '0 8px 30px rgba(51, 136, 255, 0.1)' }}
         transition={{ duration: 0.3 }}
@@ -201,16 +203,18 @@ function MilestoneCard({
               style={{
                 background: isCompleted
                   ? 'var(--accent-blue)'
-                  : isNext
-                    ? 'var(--foreground)'
-                    : 'var(--border)',
+                  : isCurrent
+                    ? 'var(--accent-cyan)'
+                    : isNext
+                      ? 'var(--foreground)'
+                      : 'var(--border)',
               }}
             />
-            {isNext && (
+            {isCurrent && (
               <motion.div
                 className="absolute inset-0 rounded-full"
                 style={{ border: '1.5px solid var(--accent-cyan)' }}
-                animate={{ scale: [1, 2, 1], opacity: [1, 0, 1] }}
+                animate={{ scale: [1, 2.2, 1], opacity: [1, 0, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               />
             )}
@@ -222,9 +226,11 @@ function MilestoneCard({
             style={{
               color: isCompleted
                 ? 'var(--accent-blue)'
-                : isNext
-                  ? 'var(--foreground)'
-                  : 'var(--foreground-muted)',
+                : isCurrent
+                  ? 'var(--accent-cyan)'
+                  : isNext
+                    ? 'var(--foreground)'
+                    : 'var(--foreground-muted)',
             }}
           >
             {milestone.quarter}
@@ -237,10 +243,10 @@ function MilestoneCard({
               DONE
             </span>
           )}
-          {isNext && (
+          {isCurrent && (
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full ml-auto"
-              style={{ border: '1px solid var(--foreground)', color: 'var(--foreground)' }}>
-              NEXT
+              style={{ background: 'var(--accent-cyan)', color: '#000' }}>
+              NOW
             </span>
           )}
         </div>
@@ -343,12 +349,18 @@ export function Roadmap() {
                   <div
                     className="w-4 h-4 rounded-full border-2"
                     style={{
-                      background: milestone.status === 'completed' ? 'var(--accent-blue)' : 'var(--background)',
+                      background: milestone.status === 'completed'
+                        ? 'var(--accent-blue)'
+                        : milestone.status === 'current'
+                          ? 'var(--accent-cyan)'
+                          : 'var(--background)',
                       borderColor: milestone.status === 'completed'
                         ? 'var(--accent-blue)'
-                        : milestone.status === 'next'
-                          ? 'var(--foreground)'
-                          : 'var(--border)',
+                        : milestone.status === 'current'
+                          ? 'var(--accent-cyan)'
+                          : milestone.status === 'next'
+                            ? 'var(--foreground)'
+                            : 'var(--border)',
                     }}
                   />
                 </div>
