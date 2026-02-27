@@ -24,7 +24,7 @@ We are committed to providing a welcoming and inclusive environment for everyone
 
 ## Enforcement
 
-Instances of unacceptable behavior may be reported to telegram **@eternaki@**.
+Instances of unacceptable behavior may be reported to telegram **@eternaki**.
 
 All reports will be reviewed and investigated. The project team reserves the right to remove, edit, or reject comments, commits, code, issues, and other contributions that violate this Code of Conduct, and to temporarily or permanently ban any contributor.
 
