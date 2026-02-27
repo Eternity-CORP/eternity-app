@@ -176,7 +176,7 @@ See the [LICENSE](./LICENSE) file for full terms.
 
 **Danylo Lohachov** ([@eternaki](https://github.com/eternaki))
 
-- Email: eternaki@proton.me
+- Email: eternity.shard.business@gmail.com
 - Project: [Eternity Corp](https://github.com/Eternity-CORP)
 
 ---
