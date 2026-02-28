@@ -5,10 +5,12 @@
 import { StyleSheet, View, Text, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { setAmount, setStep } from '@/src/store/slices/send-slice';
 import { sanitizeAmountInput } from '@/src/utils/format';
+import { estimateGas } from '@/src/services/send-service';
+import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
 import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
@@ -18,11 +20,35 @@ export default function AmountScreen() {
   const { theme: dynamicTheme } = useTheme();
   const dispatch = useAppDispatch();
   const send = useAppSelector((state) => state.send);
+  const wallet = useAppSelector((state) => state.wallet);
   const balance = useAppSelector((state) => state.balance);
+  const currentAccount = getCurrentAccount(wallet);
   const [amount, setAmountLocal] = useState(send.amount || '');
+  const [reservedGas, setReservedGas] = useState(0);
 
   const selectedToken = balance.balances.find((t) => t.symbol === send.selectedToken);
-  const maxAmount = selectedToken ? parseFloat(selectedToken.balance) : 0;
+  const tokenBalance = selectedToken ? parseFloat(selectedToken.balance) : 0;
+  const isNativeToken = send.selectedToken === 'ETH' || send.selectedToken === 'MATIC';
+  const maxAmount = isNativeToken ? Math.max(0, tokenBalance - reservedGas) : tokenBalance;
+
+  // Pre-fetch gas estimate for native tokens so "Max" reserves gas
+  useEffect(() => {
+    if (!isNativeToken || !currentAccount?.address || !send.recipient) return;
+    let cancelled = false;
+    estimateGas(currentAccount.address, send.recipient, '0.0001', 'ETH')
+      .then((est) => {
+        if (cancelled) return;
+        // Reserve 1.5x estimated gas as buffer
+        const gasCost = parseFloat(est.totalGasCost) * 1.5;
+        setReservedGas(gasCost);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Fallback: reserve a small fixed amount for gas
+        setReservedGas(0.0005);
+      });
+    return () => { cancelled = true; };
+  }, [isNativeToken, currentAccount?.address, send.recipient]);
 
   const handleNumberPress = (num: string) => {
     const newInput = amount + num;
@@ -79,6 +105,10 @@ export default function AmountScreen() {
                 ${usdValue.toFixed(2)} USD
               </Text>
             )}
+            <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textTertiary, marginTop: 8 }]}>
+              Available: {maxAmount.toFixed(6)} {send.selectedToken}
+              {isNativeToken && reservedGas > 0 ? ' (gas reserved)' : ''}
+            </Text>
           </View>
 
           <View style={styles.quickAmounts}>
