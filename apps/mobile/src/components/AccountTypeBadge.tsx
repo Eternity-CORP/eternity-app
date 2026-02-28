@@ -27,16 +27,16 @@ const SIZES = {
 
 const COLORS = {
   test: {
-    background: '#F59E0B', // Orange/amber
-    text: '#FFFFFF',
+    background: 'rgba(245, 158, 11, 0.15)', // Orange/amber transparent
+    text: '#F59E0B',
   },
   real: {
-    background: '#10B981', // Green
-    text: '#FFFFFF',
+    background: 'rgba(34, 197, 94, 0.15)', // Green transparent
+    text: '#22C55E',
   },
   business: {
-    background: '#3388FF', // Blue (matching web accent-blue)
-    text: '#FFFFFF',
+    background: 'rgba(51, 136, 255, 0.15)', // Blue transparent
+    text: '#3388FF',
   },
 };
 
@@ -81,10 +81,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.borderRadius.full,
+    borderRadius: 4,
   },
   label: {
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
 });

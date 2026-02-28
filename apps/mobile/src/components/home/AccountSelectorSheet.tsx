@@ -1,6 +1,5 @@
 import { View, TouchableOpacity, Text, TextInput, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
@@ -8,7 +7,6 @@ const logoWhite = require('@/assets/images/logo_white.png');
 const logoBlack = require('@/assets/images/logo_black.png');
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
-import { generateAvatarColors } from '@/src/utils/avatar';
 import { formatUsd } from '@e-y/shared';
 import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
@@ -252,7 +250,6 @@ export function AccountSelectorSheet({
                 onDragEnd={({ data }) => onReorderAccounts(data)}
                 contentContainerStyle={styles.accountsScrollContent}
                 renderItem={({ item: account, drag, isActive }: RenderItemParams<Account>) => {
-                  const [color1, color2] = generateAvatarColors(account.address);
                   const accountIndex = accounts.findIndex(a => a.id === account.id);
                   const isSelected = accountIndex === currentAccountIndex;
                   const isBusiness = account.type === 'business';
@@ -315,20 +312,12 @@ export function AccountSelectorSheet({
                           </TouchableOpacity>
                         )}
 
-                        <LinearGradient
-                          colors={[color1, color2]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.accountAvatar}
-                        />
+                        <AccountTypeBadge type={account.type} size="small" />
 
                         <View style={styles.accountListInfo}>
-                          <View style={styles.accountNameRow}>
-                            <Text style={[styles.accountListName, { color: dynamicTheme.colors.textPrimary }]}>
-                              {account.label || `Account ${account.accountIndex + 1}`}
-                            </Text>
-                            <AccountTypeBadge type={account.type} size="small" />
-                          </View>
+                          <Text style={[styles.accountListName, { color: dynamicTheme.colors.textPrimary }]}>
+                            {account.label || `Account ${account.accountIndex + 1}`}
+                          </Text>
                           {accountUsernames[account.address] && (
                             <Text style={[theme.typography.caption, { color: dynamicTheme.colors.success, marginTop: 2 }]}>
                               @{accountUsernames[account.address]}
@@ -448,21 +437,9 @@ const styles = StyleSheet.create({
     padding: theme.spacing.sm,
     marginLeft: -theme.spacing.xs,
   },
-  accountAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   accountListInfo: {
     flex: 1,
     gap: 2,
-  },
-  accountNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
   },
   accountListName: {
     ...theme.typography.body,
