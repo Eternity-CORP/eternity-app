@@ -171,61 +171,65 @@ export function AccountSelectorSheet({
             />
 
             <TouchableOpacity
-              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#10B981', borderWidth: 1 }]}
+              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={() => onAddAccount('real')}
               disabled={isAddingAccount}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: '#10B981' + '20' }]}>
-                <FontAwesome name="diamond" size={18} color="#10B981" />
+              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
+                <FontAwesome name="diamond" size={18} color={dynamicTheme.colors.accent} />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Wallet</Text>
                 <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Create a real mainnet wallet</Text>
               </View>
+              <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#F59E0B', borderWidth: 1 }]}
+              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={() => onAddAccount('test')}
               disabled={isAddingAccount}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: '#F59E0B' + '20' }]}>
-                <FontAwesome name="flask" size={18} color="#F59E0B" />
+              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
+                <FontAwesome name="flask" size={18} color={dynamicTheme.colors.textSecondary} />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Test Wallet</Text>
                 <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>For testing with free tokens</Text>
               </View>
+              <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background, borderColor: '#3388FF', borderWidth: 1 }]}
+              style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={() => {
                 onHideAddWalletMenu();
                 onClose();
                 router.push('/business/create' as any);
               }}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: '#3388FF' + '20' }]}>
-                <FontAwesome name="building" size={18} color="#3388FF" />
+              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
+                <FontAwesome name="building" size={18} color={dynamicTheme.colors.accent} />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Business Wallet</Text>
                 <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Tokenized equity shares</Text>
               </View>
+              <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={onShowImportSheet}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: '#8B5CF6' + '20' }]}>
-                <FontAwesome name="download" size={18} color="#8B5CF6" />
+              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
+                <FontAwesome name="download" size={18} color={dynamicTheme.colors.textSecondary} />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>Existing Wallet</Text>
                 <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Import using recovery phrase</Text>
               </View>
+              <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
 
             <TouchableOpacity

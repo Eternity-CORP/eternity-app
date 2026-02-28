@@ -315,9 +315,9 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={balance.status === 'loading'}
+            refreshing={balance.status === 'loading' && !!balance.lastUpdated}
             onRefresh={onRefresh}
-            tintColor={theme.colors.accent}
+            tintColor={dynamicTheme.colors.accent}
           />
         }
       >

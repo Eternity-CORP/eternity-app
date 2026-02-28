@@ -30,14 +30,14 @@
 ## FLOW 2: Receive (Web + Mobile)
 
 ### Web
-- [ ] W2.1: Navigate to Receive — address + QR code shown
-- [ ] W2.2: Copy address button works
-- [ ] W2.3: QR code is scannable
+- [x] W2.1: Navigate to Receive — address + QR code shown
+- [x] W2.2: Copy address button works
+- [x] W2.3: QR code is scannable
 
 ### Mobile
-- [ ] M2.1: Tap Receive — address shown
-- [ ] M2.2: QR code displays
-- [ ] M2.3: Share button works
+- [x] M2.1: Tap Receive — address shown
+- [x] M2.2: QR code displays
+- [x] M2.3: Share button works
 
 ---
 
@@ -270,7 +270,7 @@ Severity: Critical / High / Medium / Low / Cosmetic
 | Flow | Name | Status | Date | Bugs Found | Bugs Fixed | Notes |
 |------|------|--------|------|------------|------------|-------|
 | FLOW 1 | Onboarding | PASSED | 2026-02-28 | 7 | 7/7 | Web + Mobile. All critical/high bugs fixed in-session. Commits: `0d94d6c`, `d303535`, `4b8b09e` |
-| FLOW 2 | Receive | — | — | — | — | |
+| FLOW 2 | Receive | PASSED | 2026-03-01 | 2 | 2/2 | Web + Mobile. Fixed: balance refresh spinner stuck, redesigned wallet buttons |
 | FLOW 3 | Faucet | — | — | — | — | |
 | FLOW 4 | Send ETH | — | — | — | — | |
 | FLOW 5 | @username | — | — | — | — | |
