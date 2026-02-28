@@ -5,7 +5,7 @@ import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import BackButton from '@/components/BackButton'
-import ShardMerge from '@/components/animations/ShardMerge'
+import LogoReveal from '@/components/animations/LogoReveal'
 import { useAccount } from '@/contexts/account-context'
 import { SUPPORTED_NETWORKS, type NetworkId } from '@e-y/shared'
 import { getNetworkById } from '@/lib/network'
@@ -33,8 +33,8 @@ function SuccessContent() {
       <main className="max-w-[480px] mx-auto px-6 py-16">
         <BackButton />
         <div className="glass-card gradient-border rounded-2xl p-8 text-center relative" style={{ overflow: 'hidden' }}>
-          {/* Shard Merge animation — plays once */}
-          <ShardMerge active={!animDone} onComplete={() => setAnimDone(true)} />
+          {/* Logo reveal animation — plays once */}
+          <LogoReveal active={!animDone} onComplete={() => setAnimDone(true)} />
 
           <div
             className="relative z-[1] transition-opacity duration-500"

@@ -8,10 +8,10 @@ const cspDirectives = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "connect-src 'self' https://e-y-api-production.up.railway.app wss://e-y-api-production.up.railway.app https://*.alchemy.com https://api.coingecko.com https://*.coingecko.com https://raw.githubusercontent.com",
-  "img-src 'self' data: blob: https://raw.githubusercontent.com https://*.coingecko.com https://assets.coingecko.com",
+  "connect-src 'self' https://e-y-api-production.up.railway.app wss://e-y-api-production.up.railway.app https://*.alchemy.com https://api.coingecko.com https://*.coingecko.com https://raw.githubusercontent.com https://*.onramper.com",
+  "img-src 'self' data: blob: https://raw.githubusercontent.com https://*.coingecko.com https://assets.coingecko.com https://*.onramper.com",
   "font-src 'self'",
-  "frame-src 'none'",
+  "frame-src https://buy.onramper.com",
   "object-src 'none'",
   "base-uri 'self'",
 ];
