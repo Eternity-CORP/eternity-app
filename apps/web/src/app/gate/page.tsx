@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/api'
 import { ApiError } from '@e-y/shared'
 import { isInviteValidated, setInviteValidated } from '@/lib/invite'
 import { getDeviceFingerprint } from '@/lib/fingerprint'
-import WarpEffect from '@/components/WarpEffect'
+import GateReveal from '@/components/animations/GateReveal'
 
 type GateState = 'checking' | 'idle' | 'loading' | 'success' | 'error' | 'rate-limited'
 
@@ -107,7 +107,7 @@ export default function GatePage() {
   return (
     <div className="min-h-screen relative z-[2] flex items-center justify-center px-6">
       {showWarp && (
-        <WarpEffect onComplete={() => router.replace('/')} />
+        <GateReveal onComplete={() => router.replace('/')} />
       )}
 
       <div className="w-full max-w-sm">

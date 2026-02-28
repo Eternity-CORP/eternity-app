@@ -15,10 +15,24 @@ import {
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import {
-  ExpoSpeechRecognitionModule,
-  useSpeechRecognitionEvent,
-} from 'expo-speech-recognition';
+// expo-speech-recognition requires a dev client build (native module).
+// In Expo Go it's unavailable — provide graceful fallback.
+let ExpoSpeechRecognitionModule: {
+  requestPermissionsAsync: () => Promise<{ granted: boolean }>;
+  start: (opts: Record<string, unknown>) => void;
+  stop: () => void;
+} | null = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let useSpeechRecognitionEvent: (event: string, handler: (e: any) => void) => void = () => {};
+
+try {
+  const mod = require('expo-speech-recognition');
+  ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
+  useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
+} catch {
+  // Native module not available (Expo Go) — voice input disabled
+}
 import { aiChat } from '@/src/constants/ai-chat-theme';
 import { theme } from '@/src/constants/theme';
 
@@ -161,7 +175,11 @@ export function ChatInput({
     setInterimText('');
   });
 
+  const speechAvailable = ExpoSpeechRecognitionModule != null;
+
   const startListening = useCallback(async () => {
+    if (!ExpoSpeechRecognitionModule) return;
+
     const { granted } =
       await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!granted) return;
@@ -179,7 +197,7 @@ export function ChatInput({
   }, []);
 
   const stopListening = useCallback(() => {
-    ExpoSpeechRecognitionModule.stop();
+    ExpoSpeechRecognitionModule?.stop();
     setIsListening(false);
     isListeningRef.current = false;
     setInterimText('');
@@ -209,10 +227,10 @@ export function ChatInput({
       }
     } else if (showSend) {
       handleSend();
-    } else {
+    } else if (speechAvailable) {
       startListening();
     }
-  }, [disabled, showSend, interimText, handleSend, startListening, stopListening]);
+  }, [disabled, showSend, speechAvailable, interimText, handleSend, startListening, stopListening]);
 
   return (
     <View style={styles.container}>
@@ -259,10 +277,10 @@ export function ChatInput({
             activeOpacity={0.7}
           >
             <FontAwesome
-              name={isListening ? 'stop' : showSend ? 'arrow-up' : 'microphone'}
+              name={isListening ? 'stop' : showSend ? 'arrow-up' : speechAvailable ? 'microphone' : 'arrow-up'}
               size={isListening ? 14 : 18}
               color={
-                isListening || showSend ? '#FFFFFF' : 'rgba(255,255,255,0.5)'
+                isListening || showSend ? '#FFFFFF' : 'rgba(255,255,255,0.2)'
               }
             />
           </TouchableOpacity>
