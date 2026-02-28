@@ -280,30 +280,19 @@ const KNOWN_TOKENS = new Set([
 ]);
 
 /**
- * Detect spam/scam tokens by checking symbol and name for suspicious patterns.
- * Spam tokens often have URLs, "claim" language, or abnormally long symbols.
+ * Detect spam/scam tokens using whitelist approach.
+ * Only known, legitimate tokens pass through. Everything else is filtered.
+ * This prevents dust attacks, airdrop scams, and random shitcoins.
  */
 export function isSpamToken(symbol: string, name: string, balance?: string): boolean {
   // Empty or whitespace-only symbol/name is always spam
   if (!symbol.trim() || !name.trim()) return true;
 
-  // Known tokens are never spam
+  // Whitelist approach: if token is known, it's safe
   if (KNOWN_TOKENS.has(symbol.toUpperCase())) return false;
 
-  // Symbol > 10 chars is suspicious
-  if (symbol.length > 10) return true;
-
-  // Symbol contains special characters (parentheses, URLs, etc.)
-  if (/[(){}[\]@#$]/.test(symbol)) return true;
-
-  // Absurdly large balance (> 1 billion) — classic dust attack pattern
-  if (balance) {
-    const numBalance = parseFloat(balance);
-    if (numBalance > 1_000_000_000) return true;
-  }
-
-  const combined = `${symbol} ${name}`;
-  return SPAM_PATTERNS.some(pattern => pattern.test(combined));
+  // Everything else is treated as spam
+  return true;
 }
 
 // ============================================
