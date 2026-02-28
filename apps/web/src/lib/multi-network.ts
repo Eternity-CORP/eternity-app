@@ -118,7 +118,7 @@ async function fetchNetworkBalances(
     if (parseFloat(balance) === 0) continue
 
     // Filter out spam/scam tokens
-    if (isSpamToken(metadata.symbol, metadata.name)) continue
+    if (isSpamToken(metadata.symbol, metadata.name, balance)) continue
 
     balances.push({
       networkId,
