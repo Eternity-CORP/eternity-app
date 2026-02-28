@@ -1,8 +1,11 @@
-import { View, TouchableOpacity, Text, TextInput, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, TouchableOpacity, Text, TextInput, StyleSheet, Animated, Dimensions, Image } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
+
+const logoWhite = require('@/assets/images/logo_white.png');
+const logoBlack = require('@/assets/images/logo_black.png');
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
 import { generateAvatarColors } from '@/src/utils/avatar';
@@ -176,7 +179,7 @@ export function AccountSelectorSheet({
               disabled={isAddingAccount}
             >
               <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <FontAwesome name="diamond" size={18} color={dynamicTheme.colors.accent} />
+                <Image source={isDark ? logoWhite : logoBlack} style={styles.addWalletLogoImg} resizeMode="contain" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Wallet</Text>
@@ -191,7 +194,7 @@ export function AccountSelectorSheet({
               disabled={isAddingAccount}
             >
               <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <FontAwesome name="flask" size={18} color={dynamicTheme.colors.textSecondary} />
+                <Image source={isDark ? logoWhite : logoBlack} style={[styles.addWalletLogoImg, { tintColor: '#F59E0B' }]} resizeMode="contain" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Test Wallet</Text>
@@ -209,7 +212,7 @@ export function AccountSelectorSheet({
               }}
             >
               <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <FontAwesome name="building" size={18} color={dynamicTheme.colors.accent} />
+                <Image source={isDark ? logoWhite : logoBlack} style={[styles.addWalletLogoImg, { tintColor: '#3388FF' }]} resizeMode="contain" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Business Wallet</Text>
@@ -223,7 +226,7 @@ export function AccountSelectorSheet({
               onPress={onShowImportSheet}
             >
               <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <FontAwesome name="download" size={18} color={dynamicTheme.colors.textSecondary} />
+                <Image source={isDark ? logoWhite : logoBlack} style={[styles.addWalletLogoImg, { tintColor: '#8B5CF6' }]} resizeMode="contain" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>Existing Wallet</Text>
@@ -559,6 +562,10 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  addWalletLogoImg: {
+    width: 24,
+    height: 24,
   },
   addWalletOptionInfo: {
     flex: 1,
