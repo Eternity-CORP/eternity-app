@@ -1,10 +1,7 @@
-import { View, TouchableOpacity, Text, TextInput, StyleSheet, Animated, Dimensions, Image } from 'react-native';
+import { View, TouchableOpacity, Text, TextInput, StyleSheet, Animated, Dimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
-
-const logoWhite = require('@/assets/images/logo_white.png');
-const logoBlack = require('@/assets/images/logo_black.png');
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
 import { formatUsd } from '@e-y/shared';
@@ -176,12 +173,12 @@ export function AccountSelectorSheet({
               onPress={() => onAddAccount('real')}
               disabled={isAddingAccount}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <Image source={isDark ? logoWhite : logoBlack} style={styles.addWalletLogoImg} resizeMode="contain" />
+              <View style={[styles.addWalletIcon, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
+                <Feather name="layers" size={18} color="#22C55E" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Wallet</Text>
-                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Create a real mainnet wallet</Text>
+                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Ethereum mainnet</Text>
               </View>
               <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
@@ -191,12 +188,12 @@ export function AccountSelectorSheet({
               onPress={() => onAddAccount('test')}
               disabled={isAddingAccount}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <Image source={isDark ? logoWhite : logoBlack} style={[styles.addWalletLogoImg, { tintColor: '#F59E0B' }]} resizeMode="contain" />
+              <View style={[styles.addWalletIcon, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+                <Feather name="zap" size={18} color="#F59E0B" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Test Wallet</Text>
-                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>For testing with free tokens</Text>
+                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Sepolia testnet</Text>
               </View>
               <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
@@ -209,8 +206,8 @@ export function AccountSelectorSheet({
                 router.push('/business/create' as any);
               }}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <Image source={isDark ? logoWhite : logoBlack} style={[styles.addWalletLogoImg, { tintColor: '#3388FF' }]} resizeMode="contain" />
+              <View style={[styles.addWalletIcon, { backgroundColor: 'rgba(51, 136, 255, 0.1)' }]}>
+                <Feather name="home" size={18} color="#3388FF" />
               </View>
               <View style={styles.addWalletOptionInfo}>
                 <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>New Business Wallet</Text>
@@ -223,12 +220,12 @@ export function AccountSelectorSheet({
               style={[styles.addWalletOption, { backgroundColor: dynamicTheme.colors.background }]}
               onPress={onShowImportSheet}
             >
-              <View style={[styles.addWalletIcon, { backgroundColor: dynamicTheme.colors.surfaceElevated }]}>
-                <Image source={isDark ? logoWhite : logoBlack} style={[styles.addWalletLogoImg, { tintColor: '#8B5CF6' }]} resizeMode="contain" />
+              <View style={[styles.addWalletIcon, { backgroundColor: 'rgba(139, 92, 246, 0.1)' }]}>
+                <Feather name="download" size={18} color="#8B5CF6" />
               </View>
               <View style={styles.addWalletOptionInfo}>
-                <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>Existing Wallet</Text>
-                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Import using recovery phrase</Text>
+                <Text style={[styles.addWalletOptionTitle, { color: dynamicTheme.colors.textPrimary }]}>Import Wallet</Text>
+                <Text style={[styles.addWalletOptionDesc, { color: dynamicTheme.colors.textTertiary }]}>Recovery phrase</Text>
               </View>
               <FontAwesome name="chevron-right" size={12} color={dynamicTheme.colors.textTertiary} />
             </TouchableOpacity>
@@ -534,15 +531,11 @@ const styles = StyleSheet.create({
     gap: theme.spacing.md,
   },
   addWalletIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  addWalletLogoImg: {
-    width: 24,
-    height: 24,
   },
   addWalletOptionInfo: {
     flex: 1,
