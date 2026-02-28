@@ -25,7 +25,7 @@ export const TESTNET_NETWORKS: Record<TestnetNetworkId, NetworkConfig> = {
     shortName: 'SEP',
     chainId: 11155111,
     nativeCurrency: {
-      name: 'Sepolia Ether',
+      name: 'Ether',
       symbol: 'ETH',
       decimals: 18,
     },

@@ -111,7 +111,7 @@ export function BalanceBreakdown({
         <View style={styles.tokenInfo}>
           <View style={styles.tokenNameRow}>
             <Text style={[styles.tokenName, theme.typography.heading]}>
-              {name || symbol}
+              {symbol}
             </Text>
             {/* Show network badges inline for single network */}
             {networks.length === 1 && (
@@ -131,7 +131,7 @@ export function BalanceBreakdown({
             )}
           </View>
           <Text style={[styles.tokenSymbol, theme.typography.caption]}>
-            {symbol}
+            {name || symbol}
           </Text>
         </View>
 

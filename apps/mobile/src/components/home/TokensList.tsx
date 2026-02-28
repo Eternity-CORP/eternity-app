@@ -38,8 +38,8 @@ export function TokensList({ balances, isLoading, aggregatedBalances }: TokensLi
         >
           <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={44} />
           <View style={styles.tokenInfo}>
-            <Text style={[styles.tokenName, { color: dynamicTheme.colors.textPrimary }]}>{token.name || token.symbol}</Text>
-            <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textSecondary }]}>{token.symbol}</Text>
+            <Text style={[styles.tokenName, { color: dynamicTheme.colors.textPrimary }]}>{token.symbol}</Text>
+            <Text style={[styles.tokenSymbol, { color: dynamicTheme.colors.textSecondary }]}>{token.name || token.symbol}</Text>
           </View>
           <View style={styles.tokenBalance}>
             <Text style={[styles.tokenBalanceValue, { color: dynamicTheme.colors.textPrimary }]}>

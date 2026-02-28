@@ -91,10 +91,10 @@ export default function SplitTokenScreen() {
               <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={40} />
               <View style={styles.tokenInfo}>
                 <Text style={[styles.tokenName, theme.typography.heading, { color: dynamicTheme.colors.textPrimary }]}>
-                  {token.name || token.symbol}
+                  {token.symbol}
                 </Text>
                 <Text style={[styles.tokenSymbol, theme.typography.caption, { color: dynamicTheme.colors.textSecondary }]}>
-                  {token.symbol}
+                  {token.name || token.symbol}
                 </Text>
               </View>
               <View style={styles.tokenBalance}>

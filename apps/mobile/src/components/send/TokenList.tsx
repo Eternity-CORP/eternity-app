@@ -38,10 +38,10 @@ export function TokenList({ tokens, selectedSymbol, onSelect }: Props) {
           <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={44} />
           <View style={styles.tokenInfo}>
             <Text style={[styles.tokenName, theme.typography.body]}>
-              {token.name || token.symbol}
+              {token.symbol}
             </Text>
             <Text style={[styles.tokenBalance, theme.typography.caption, { color: theme.colors.textSecondary }]}>
-              {parseFloat(token.balance).toFixed(4)} {token.symbol}
+              {parseFloat(token.balance).toFixed(4)} · {token.name || token.symbol}
             </Text>
           </View>
           {selectedSymbol === token.symbol && (

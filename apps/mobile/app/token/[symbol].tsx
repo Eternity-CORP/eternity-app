@@ -220,6 +220,9 @@ export default function TokenDetailsScreen() {
         <View style={styles.tokenHeader}>
           <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={64} />
           <Text style={[styles.tokenName, theme.typography.heading, { fontSize: 24, color: dynamicTheme.colors.textPrimary }]}>
+            {token.symbol}
+          </Text>
+          <Text style={[theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
             {token.name || token.symbol}
           </Text>
         </View>
