@@ -44,14 +44,14 @@
 ## FLOW 3: Faucet (Get Test ETH)
 
 ### Web
-- [ ] W3.1: Faucet card visible on dashboard
-- [ ] W3.2: Request test ETH — transaction sent
-- [ ] W3.3: Balance updates after faucet
+- [x] W3.1: Faucet card visible on dashboard
+- [x] W3.2: Request test ETH — transaction sent
+- [x] W3.3: Balance updates after faucet
 
 ### Mobile
-- [ ] M3.1: Faucet option accessible
-- [ ] M3.2: Request test ETH works
-- [ ] M3.3: Balance updates
+- [x] M3.1: Faucet option accessible
+- [x] M3.2: Request test ETH works
+- [x] M3.3: Balance updates
 
 ---
 
@@ -271,7 +271,7 @@ Severity: Critical / High / Medium / Low / Cosmetic
 |------|------|--------|------|------------|------------|-------|
 | FLOW 1 | Onboarding | PASSED | 2026-02-28 | 7 | 7/7 | Web + Mobile. All critical/high bugs fixed in-session. Commits: `0d94d6c`, `d303535`, `4b8b09e` |
 | FLOW 2 | Receive | PASSED | 2026-03-01 | 2 | 2/2 | Web + Mobile. Fixed: balance refresh spinner stuck, redesigned wallet buttons |
-| FLOW 3 | Faucet | — | — | — | — | |
+| FLOW 3 | Faucet | PASSED | 2026-03-01 | 0 | 0/0 | Web + Mobile. All checks passed, no bugs found |
 | FLOW 4 | Send ETH | — | — | — | — | |
 | FLOW 5 | @username | — | — | — | — | |
 | FLOW 6 | BLIK | — | — | — | — | |
