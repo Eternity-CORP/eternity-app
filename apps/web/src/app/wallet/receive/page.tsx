@@ -27,7 +27,7 @@ export default function ReceivePage() {
         <div className="w-full max-w-[420px]">
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white text-center mb-8">Receive</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)] text-center mb-8">Receive</h1>
 
             {/* Testnet Warning */}
             {currentAccount?.type === 'test' && (
@@ -59,15 +59,15 @@ export default function ReceivePage() {
             </div>
 
             {/* Address */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
-              <p className="text-xs text-white/40 uppercase tracking-wide mb-2">Your address</p>
-              <p className="font-mono text-sm text-white/50 break-all leading-relaxed">{address}</p>
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-4">
+              <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2">Your address</p>
+              <p className="font-mono text-sm text-[var(--foreground-muted)] break-all leading-relaxed">{address}</p>
             </div>
 
             {/* Network hints — real accounts work on all EVM chains */}
             {currentAccount?.type === 'real' && (
               <div className="mb-4 text-center">
-                <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                <p className="text-xs mb-2 text-[var(--foreground-subtle)]" style={{}}>
                   Same address works on all networks
                 </p>
                 <div className="flex flex-wrap justify-center gap-1.5">
@@ -94,18 +94,18 @@ export default function ReceivePage() {
             {/* Copy button */}
             <button
               onClick={handleCopy}
-              className="w-full py-4 rounded-xl font-semibold transition-all bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-xl font-semibold transition-all bg-[var(--foreground)] text-[var(--background)] shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] flex items-center justify-center gap-2"
             >
               {copied ? (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-black">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[var(--background)]">
                     <path d="M20 6L9 17l-5-5"/>
                   </svg>
                   Copied
                 </>
               ) : (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-black">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--background)]">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>

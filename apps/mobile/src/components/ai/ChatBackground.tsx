@@ -1,16 +1,20 @@
 /**
  * ChatBackground Component
- * Semi-transparent grid pattern for dark AI chat screen
+ * Semi-transparent grid pattern for AI chat screen
+ * Adapts to light/dark theme
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
-import { aiChat } from '@/src/constants/ai-chat-theme';
-
-const CELL = aiChat.grid.cellSize;
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 
 function GridPattern() {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+  const CELL = aiChatTheme.grid.cellSize;
+
   const { width, height } = useWindowDimensions();
   const cols = Math.ceil(width / CELL);
   const rows = Math.ceil(height / CELL);
@@ -25,7 +29,7 @@ function GridPattern() {
         y1={0}
         x2={i * CELL}
         y2={height}
-        stroke={aiChat.grid.stroke}
+        stroke={aiChatTheme.grid.stroke}
         strokeWidth={1}
       />,
     );
@@ -39,7 +43,7 @@ function GridPattern() {
         y1={j * CELL}
         x2={width}
         y2={j * CELL}
-        stroke={aiChat.grid.stroke}
+        stroke={aiChatTheme.grid.stroke}
         strokeWidth={1}
       />,
     );

@@ -299,7 +299,7 @@ export default function SwapPage() {
     label: string
   }) => (
     <div className="mb-2">
-      <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">{label}</label>
+      <label className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wider mb-1.5 block">{label}</label>
       <div className="flex flex-wrap gap-1.5">
         {TIER1_NETWORK_IDS.map((id) => {
           const net = SUPPORTED_NETWORKS[id]
@@ -311,8 +311,8 @@ export default function SwapPage() {
               className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
               style={{
                 backgroundColor: isSelected ? net.color + '20' : 'transparent',
-                borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
-                color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                borderColor: isSelected ? net.color + '60' : 'var(--border)',
+                color: isSelected ? net.color : 'var(--foreground-subtle)',
               }}
             >
               <span
@@ -335,7 +335,7 @@ export default function SwapPage() {
         <div className="w-full max-w-[420px]">
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white text-center mb-6">Swap</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)] text-center mb-6">Swap</h1>
 
             {/* Testnet block */}
             {isTestAccount && (
@@ -347,16 +347,16 @@ export default function SwapPage() {
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-white mb-2">Swap unavailable on testnet</h2>
-                <p className="text-sm text-white/50 mb-1">
+                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Swap unavailable on testnet</h2>
+                <p className="text-sm text-[var(--foreground-muted)] mb-1">
                   Token swaps require real DEX liquidity and are only available on mainnet networks.
                 </p>
-                <p className="text-sm text-white/50 mb-6">
+                <p className="text-sm text-[var(--foreground-muted)] mb-6">
                   Switch to a real account to use swaps and cross-chain bridges.
                 </p>
                 <button
                   onClick={() => window.history.back()}
-                  className="px-6 py-3 rounded-xl font-medium transition-all bg-white/10 text-white hover:bg-white/15"
+                  className="px-6 py-3 rounded-xl font-medium transition-all bg-[var(--surface-hover)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
                 >
                   Go back
                 </button>
@@ -380,8 +380,8 @@ export default function SwapPage() {
             )}
 
             {/* Multi-network notice */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-3 mb-4">
-              <p className="text-xs text-white/40 text-center">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 mb-4">
+              <p className="text-xs text-[var(--foreground-subtle)] text-center">
                 {isCrossChain
                   ? `${SUPPORTED_NETWORKS[fromNetworkId].name} -> ${SUPPORTED_NETWORKS[toNetworkId].name} via LI.FI`
                   : `Swaps on ${SUPPORTED_NETWORKS[fromNetworkId].name} via LI.FI`}
@@ -399,7 +399,7 @@ export default function SwapPage() {
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                   </svg>
                 </span>
-                <div className="absolute bottom-full left-0 mb-2 w-56 p-2.5 rounded-lg bg-[#1a1a1a] border border-white/10 text-xs text-white/70 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg">
+                <div className="absolute bottom-full left-0 mb-2 w-56 p-2.5 rounded-lg bg-[var(--background)] border border-[var(--border)] text-xs text-[var(--foreground-muted)] opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 shadow-lg">
                   Max price change allowed during swap. If the price moves more than this, the transaction is cancelled to protect you.
                 </div>
               </div>
@@ -409,9 +409,9 @@ export default function SwapPage() {
                   onClick={() => setSlippage(opt)}
                   className="text-xs px-2.5 py-1 rounded-lg transition-colors"
                   style={{
-                    background: slippage === opt ? 'rgba(255,255,255,0.15)' : 'transparent',
-                    border: `1px solid ${slippage === opt ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`,
-                    color: slippage === opt ? 'white' : 'var(--muted)',
+                    background: slippage === opt ? 'var(--surface-hover)' : 'transparent',
+                    border: `1px solid ${slippage === opt ? 'var(--border)' : 'var(--border-light)'}`,
+                    color: slippage === opt ? 'var(--foreground)' : 'var(--foreground-subtle)',
                   }}
                 >
                   {SLIPPAGE_LABELS[opt]}
@@ -420,11 +420,11 @@ export default function SwapPage() {
             </div>
 
             {/* From section: Network + Token */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
               <NetworkChips selectedId={fromNetworkId} onChange={handleFromNetworkChange} label="From network" />
 
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-white/40 uppercase tracking-wide">You pay</label>
+                <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">You pay</label>
               </div>
               <div className="flex items-center gap-3">
                 <input
@@ -433,17 +433,17 @@ export default function SwapPage() {
                   onChange={(e) => setFromAmount(e.target.value)}
                   placeholder="0"
                   step="0.0001"
-                  className="flex-1 min-w-0 bg-transparent text-2xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                  className="flex-1 min-w-0 bg-transparent text-2xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                 />
                 <button
                   onClick={() => setShowFromTokens(!showFromTokens)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/8 rounded-lg hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                 >
                   {fromToken?.logoURI && (
                     <img src={fromToken.logoURI} alt="" className="w-5 h-5 rounded-full" />
                   )}
-                  <span className="text-white font-medium">{fromToken?.symbol || 'Select'}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                  <span className="text-[var(--foreground)] font-medium">{fromToken?.symbol || 'Select'}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
@@ -456,16 +456,16 @@ export default function SwapPage() {
                     <button
                       key={token.address}
                       onClick={() => selectFromToken(token)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/8 transition-colors"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       {token.logoURI ? (
                         <img src={token.logoURI} alt="" className="w-6 h-6 rounded-full" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-white/20" />
+                        <div className="w-6 h-6 rounded-full bg-[var(--surface-hover)]" />
                       )}
                       <div className="text-left">
-                        <p className="text-white text-sm font-medium">{token.symbol}</p>
-                        <p className="text-xs text-white/40">{token.name}</p>
+                        <p className="text-[var(--foreground)] text-sm font-medium">{token.symbol}</p>
+                        <p className="text-xs text-[var(--foreground-subtle)]">{token.name}</p>
                       </div>
                     </button>
                   ))}
@@ -477,7 +477,7 @@ export default function SwapPage() {
             <div className="flex justify-center my-3 relative z-10">
               <button
                 onClick={handleSwapTokens}
-                className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-white hover:border-white/15 transition-colors"
+                className="w-10 h-10 rounded-xl glass-card flex items-center justify-center text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M7 16V4M7 4L3 8M7 4L11 8"/>
@@ -487,31 +487,31 @@ export default function SwapPage() {
             </div>
 
             {/* To section: Network + Token */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-5">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-5">
               <NetworkChips selectedId={toNetworkId} onChange={handleToNetworkChange} label="To network" />
 
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs text-white/40 uppercase tracking-wide">You receive</label>
+                <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">You receive</label>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   {quoteLoading ? (
-                    <div className="h-8 w-24 bg-white/8 rounded animate-pulse" />
+                    <div className="h-8 w-24 bg-[var(--surface-hover)] rounded animate-pulse" />
                   ) : (
-                    <p className="text-2xl font-bold text-white">
+                    <p className="text-2xl font-bold text-[var(--foreground)]">
                       {quote ? formatTokenAmount(quote.toAmount, quote.toToken.decimals, 6) : '0'}
                     </p>
                   )}
                 </div>
                 <button
                   onClick={() => setShowToTokens(!showToTokens)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/8 rounded-lg hover:bg-white/10 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-hover)] rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                 >
                   {toToken?.logoURI && (
                     <img src={toToken.logoURI} alt="" className="w-5 h-5 rounded-full" />
                   )}
-                  <span className="text-white font-medium">{toToken?.symbol || 'Select'}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                  <span className="text-[var(--foreground)] font-medium">{toToken?.symbol || 'Select'}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </button>
@@ -524,16 +524,16 @@ export default function SwapPage() {
                     <button
                       key={token.address}
                       onClick={() => selectToToken(token)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/8 transition-colors"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--surface-hover)] transition-colors"
                     >
                       {token.logoURI ? (
                         <img src={token.logoURI} alt="" className="w-6 h-6 rounded-full" />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-white/20" />
+                        <div className="w-6 h-6 rounded-full bg-[var(--surface-hover)]" />
                       )}
                       <div className="text-left">
-                        <p className="text-white text-sm font-medium">{token.symbol}</p>
-                        <p className="text-xs text-white/40">{token.name}</p>
+                        <p className="text-[var(--foreground)] text-sm font-medium">{token.symbol}</p>
+                        <p className="text-xs text-[var(--foreground-subtle)]">{token.name}</p>
                       </div>
                     </button>
                   ))}
@@ -543,40 +543,40 @@ export default function SwapPage() {
 
             {/* Quote Details */}
             {quote && (
-              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-5 space-y-2">
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-5 space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-white/40">Rate</span>
-                  <span className="text-white">
+                  <span className="text-[var(--foreground-subtle)]">Rate</span>
+                  <span className="text-[var(--foreground)]">
                     1 {fromToken?.symbol} = {parseFloat(quote.exchangeRate).toFixed(4)} {toToken?.symbol}
                   </span>
                 </div>
                 {parseFloat(quote.priceImpact) > 0 && (
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/40">Price Impact</span>
-                    <span className={parseFloat(quote.priceImpact) > 1 ? 'text-[#f87171]' : 'text-white'}>
+                    <span className="text-[var(--foreground-subtle)]">Price Impact</span>
+                    <span className={parseFloat(quote.priceImpact) > 1 ? 'text-[#f87171]' : 'text-[var(--foreground)]'}>
                       {parseFloat(quote.priceImpact).toFixed(2)}%
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-white/40">Network Fee</span>
-                  <span className="text-white">${parseFloat(quote.gasCostUSD).toFixed(2)}</span>
+                  <span className="text-[var(--foreground-subtle)]">Network Fee</span>
+                  <span className="text-[var(--foreground)]">${parseFloat(quote.gasCostUSD).toFixed(2)}</span>
                 </div>
                 {/* Route info for cross-chain */}
                 {isCrossChain && quote.route && (
                   <>
                     {quote.route.totalDuration > 0 && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-white/40">Estimated Time</span>
-                        <span className="text-white">
+                        <span className="text-[var(--foreground-subtle)]">Estimated Time</span>
+                        <span className="text-[var(--foreground)]">
                           ~{Math.ceil(quote.route.totalDuration / 60)} min
                         </span>
                       </div>
                     )}
                     {quote.route.steps.length > 1 && (
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-white/40">Route Steps</span>
-                        <span className="text-white">
+                        <span className="text-[var(--foreground-subtle)]">Route Steps</span>
+                        <span className="text-[var(--foreground)]">
                           {quote.route.steps.map(s => s.toolDetails.name).join(' -> ')}
                         </span>
                       </div>
@@ -635,7 +635,7 @@ export default function SwapPage() {
             <button
               onClick={handleSwap}
               disabled={!quote || swapStatus === 'loading' || quoteLoading || approvalNeeded}
-              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--foreground)] text-[var(--background)] shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
               {swapStatus === 'loading'
                 ? 'Swapping...'

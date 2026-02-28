@@ -17,7 +17,8 @@ function MicIcon() {
       height="18"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="rgba(255,255,255,0.5)"
+      stroke="currentColor"
+      opacity={0.5}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -36,7 +37,7 @@ function SendIcon() {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="white"
+      stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -149,7 +150,7 @@ export default function InputBar({ onSend, disabled = false, placeholder = 'Type
         disabled={disabled}
         readOnly={isListening}
         placeholder={isListening ? 'Listening...' : placeholder}
-        className={`flex-1 bg-transparent text-sm text-white placeholder-white/30 resize-none outline-none leading-relaxed max-h-[120px] ${isListening ? '!placeholder-red-400/50' : ''}`}
+        className={`flex-1 bg-transparent text-sm text-[var(--foreground)] placeholder-[var(--foreground-subtle)] resize-none outline-none leading-relaxed max-h-[120px] ${isListening ? '!placeholder-red-400/50' : ''}`}
       />
       {(showSend || isListening || isSupported) && (
         <button
@@ -161,7 +162,7 @@ export default function InputBar({ onSend, disabled = false, placeholder = 'Type
               ? 'bg-red-500/20 voice-pulse cursor-pointer'
               : showSend
                 ? 'bg-[#3388FF] hover:bg-[#3388FF]/80 cursor-pointer'
-                : 'bg-white/5 hover:bg-white/10 cursor-pointer'
+                : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)] cursor-pointer'
             }
           `}
         >

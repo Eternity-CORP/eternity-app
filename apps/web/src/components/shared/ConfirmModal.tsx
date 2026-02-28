@@ -135,7 +135,7 @@ export default function ConfirmModal({
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-[var(--backdrop-bg)] backdrop-blur-sm" />
 
       {/* Modal */}
       <div className="glass-card rounded-2xl p-5 max-w-[380px] w-full relative z-10" style={{ overflow: 'hidden' }}>
@@ -145,10 +145,10 @@ export default function ConfirmModal({
         {/* Content */}
         <div className="relative z-[1]">
           {/* Title */}
-          <h3 className="text-base font-semibold text-white mb-1 text-center">{title}</h3>
+          <h3 className="text-base font-semibold text-[var(--foreground)] mb-1 text-center">{title}</h3>
 
           {/* Summary */}
-          <p className="text-lg font-bold text-white mb-4">{summary}</p>
+          <p className="text-lg font-bold text-[var(--foreground)] mb-4">{summary}</p>
 
           {/* Details */}
           {details.length > 0 && (
@@ -158,7 +158,7 @@ export default function ConfirmModal({
                   const refProp = i === firstEditableIdx ? { ref: firstEditableRef } : {}
                   return (
                     <div key={i}>
-                      <label className="text-[10px] uppercase tracking-wider text-white/40 mb-1 block">
+                      <label className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)] mb-1 block">
                         {detail.label}
                       </label>
                       <input
@@ -169,15 +169,15 @@ export default function ConfirmModal({
                         onKeyDown={handleKeyDown}
                         step={detail.type === 'number' ? 'any' : undefined}
                         min={detail.type === 'number' ? '0' : undefined}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white font-mono placeholder-white/20 outline-none focus:border-[#3388FF]/40 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--foreground)] font-mono placeholder-[var(--foreground-subtle)] outline-none focus:border-[var(--accent-blue)]/40 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   )
                 }
                 return (
                   <div key={i} className="flex items-center justify-between">
-                    <span className="text-[11px] text-white/40">{detail.label}</span>
-                    <span className="text-[11px] text-white/70 font-mono">{detail.value}</span>
+                    <span className="text-[11px] text-[var(--foreground-subtle)]">{detail.label}</span>
+                    <span className="text-[11px] text-[var(--foreground-muted)] font-mono">{detail.value}</span>
                   </div>
                 )
               })}
@@ -188,12 +188,12 @@ export default function ConfirmModal({
           {extraContent}
 
           {/* Divider */}
-          {requiresPassword && <div className="border-t border-white/8 my-4" />}
+          {requiresPassword && <div className="border-t border-[var(--border)] my-4" />}
 
           {/* Password input */}
           {requiresPassword && (
             <div className="mb-4">
-              <label className="text-[10px] uppercase tracking-wider text-white/40 mb-1.5 block">
+              <label className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)] mb-1.5 block">
                 Password
               </label>
               <input
@@ -203,7 +203,7 @@ export default function ConfirmModal({
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter your password"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-[#3388FF]/40 transition-colors"
+                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-xl px-3 py-2.5 text-sm text-[var(--foreground)] placeholder-[var(--foreground-subtle)] outline-none focus:border-[var(--accent-blue)]/40 transition-colors"
               />
             </div>
           )}
@@ -214,7 +214,7 @@ export default function ConfirmModal({
           )}
 
           {/* Auto-cancel timer */}
-          <p className="text-[10px] text-white/20 text-center mb-3">
+          <p className="text-[10px] text-[var(--foreground-subtle)] text-center mb-3">
             Auto-cancels in {secondsLeft}s
           </p>
 
@@ -223,20 +223,20 @@ export default function ConfirmModal({
             <button
               onClick={onCancel}
               disabled={status === 'loading'}
-              className="flex-1 px-3 py-2.5 rounded-xl text-xs font-medium text-white/60 glass-card hover:text-white/80 transition-colors cursor-pointer disabled:opacity-50"
+              className="flex-1 px-3 py-2.5 rounded-xl text-xs font-medium text-[var(--foreground-muted)] glass-card hover:text-[var(--foreground)] transition-colors cursor-pointer disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
               disabled={!canConfirm || status === 'loading'}
-              className="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-white text-black shimmer cursor-pointer hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              className="flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold bg-[var(--foreground)] text-[var(--background)] shimmer cursor-pointer hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
             >
               {status === 'loading' ? (
                 <>
                   <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="rgba(0,0,0,0.2)" strokeWidth="3" />
-                    <path d="M12 2a10 10 0 0 1 10 10" stroke="black" strokeWidth="3" strokeLinecap="round" />
+                    <circle cx="12" cy="12" r="10" stroke="var(--background)" strokeOpacity="0.2" strokeWidth="3" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="var(--background)" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                   Confirming...
                 </>

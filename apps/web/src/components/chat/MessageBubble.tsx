@@ -38,7 +38,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         `}
         style={{ overflowWrap: 'anywhere' }}
       >
-        <div className="text-sm text-white/90 leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
+        <div className="text-sm text-[var(--foreground)]/90 leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
           {renderMarkdown(cleanContent)}
         </div>
 
@@ -55,7 +55,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         )}
 
-        <p className={`text-[10px] mt-1.5 ${isUser ? 'text-white/30 text-right' : 'text-white/25'}`}>
+        <p className={`text-[10px] mt-1.5 ${isUser ? 'text-[var(--foreground)]/30 text-right' : 'text-[var(--foreground)]/25'}`}>
           {formatTime(message.timestamp)}
         </p>
       </div>

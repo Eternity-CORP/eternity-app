@@ -9,15 +9,15 @@ function SkeletonRow() {
   return (
     <div className="flex items-center justify-between p-4 animate-pulse">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-white/5" />
+        <div className="w-10 h-10 rounded-full bg-[var(--surface)]" />
         <div>
-          <div className="h-4 w-16 bg-white/5 rounded mb-1" />
-          <div className="h-3 w-24 bg-white/5 rounded" />
+          <div className="h-4 w-16 bg-[var(--surface)] rounded mb-1" />
+          <div className="h-3 w-24 bg-[var(--surface)] rounded" />
         </div>
       </div>
       <div className="text-right">
-        <div className="h-4 w-20 bg-white/5 rounded mb-1 ml-auto" />
-        <div className="h-3 w-14 bg-white/5 rounded ml-auto" />
+        <div className="h-4 w-20 bg-[var(--surface)] rounded mb-1 ml-auto" />
+        <div className="h-3 w-14 bg-[var(--surface)] rounded ml-auto" />
       </div>
     </div>
   )
@@ -29,8 +29,8 @@ export default function TokenList() {
   if (loading) {
     return (
       <div className="glass-card rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-white/5">
-          <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Tokens</h2>
+        <div className="p-4 border-b border-[var(--border-light)]">
+          <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Tokens</h2>
         </div>
         <SkeletonRow />
         <SkeletonRow />
@@ -42,23 +42,23 @@ export default function TokenList() {
   if (aggregatedBalances.length === 0) {
     return (
       <div className="glass-card rounded-2xl p-8 text-center">
-        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mx-auto mb-3">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/25">
+        <div className="w-12 h-12 rounded-xl bg-[var(--surface)] flex items-center justify-center mx-auto mb-3">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
             <circle cx="12" cy="12" r="10" />
             <path d="M12 6v6l4 2" />
           </svg>
         </div>
-        <p className="text-white/40 text-sm">No tokens found</p>
+        <p className="text-[var(--foreground-subtle)] text-sm">No tokens found</p>
       </div>
     )
   }
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-white/5">
-        <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Tokens</h2>
+      <div className="p-4 border-b border-[var(--border-light)]">
+        <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Tokens</h2>
       </div>
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-[var(--border-light)]">
         {aggregatedBalances.map((token) => {
           const color = TOKEN_COLORS[token.symbol.toUpperCase()] || '#888888'
           const initial = token.symbol.charAt(0)
@@ -67,7 +67,7 @@ export default function TokenList() {
             <Link
               key={token.symbol}
               href={`/wallet/token/${token.symbol}`}
-              className="flex items-center justify-between p-4 hover:bg-white/3 transition-colors group"
+              className="flex items-center justify-between p-4 hover:bg-[var(--surface)] transition-colors group"
             >
               <div className="flex items-center gap-3">
                 {/* Token icon */}
@@ -85,18 +85,18 @@ export default function TokenList() {
                   />
                 ) : null}
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white ${token.iconUrl ? 'hidden' : ''}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-[var(--foreground)] ${token.iconUrl ? 'hidden' : ''}`}
                   style={{ backgroundColor: `${color}20`, border: `2px solid ${color}40` }}
                 >
                   {initial}
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-white group-hover:text-white/90">
+                  <p className="text-sm font-semibold text-[var(--foreground)] group-hover:text-[var(--foreground)]">
                     {token.symbol}
                   </p>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-white/40">{token.name}</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">{token.name}</span>
                     {/* Network dots — show which chains hold this token */}
                     <div className="flex gap-0.5">
                       {token.networks
@@ -118,10 +118,10 @@ export default function TokenList() {
               </div>
 
               <div className="text-right">
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-[var(--foreground)]">
                   {formatBalance(token.totalBalance)}
                 </p>
-                <p className="text-xs text-white/40">{formatUsd(token.totalUsdValue)}</p>
+                <p className="text-xs text-[var(--foreground-subtle)]">{formatUsd(token.totalUsdValue)}</p>
               </div>
             </Link>
           )

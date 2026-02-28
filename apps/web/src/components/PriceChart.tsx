@@ -113,7 +113,7 @@ export default function PriceChart({ symbol }: PriceChartProps) {
     <div className="glass-card rounded-2xl p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Price</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Price</h2>
         <div className="flex gap-1">
           {rangeLabels.map((r) => (
             <button
@@ -121,8 +121,8 @@ export default function PriceChart({ symbol }: PriceChartProps) {
               onClick={() => { setRange(r.value); setHoveredIndex(null) }}
               className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                 range === r.value
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/40 hover:text-white/60'
+                  ? 'bg-[var(--surface-hover)] text-[var(--foreground)]'
+                  : 'text-[var(--foreground-subtle)] hover:text-[var(--foreground-muted)]'
               }`}
             >
               {r.label}
@@ -133,11 +133,11 @@ export default function PriceChart({ symbol }: PriceChartProps) {
 
       {/* Current Price / Hovered Price */}
       {status === 'loading' ? (
-        <div className="h-8 w-32 bg-white/5 rounded-lg animate-pulse mb-4" />
+        <div className="h-8 w-32 bg-[var(--surface)] rounded-lg animate-pulse mb-4" />
       ) : data ? (
         <div className="mb-4">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">
+            <span className="text-2xl font-bold text-[var(--foreground)]">
               {formatPrice(hoveredPoint ? hoveredPoint.price : data.currentPrice)}
             </span>
             {!hoveredPoint && (
@@ -147,21 +147,21 @@ export default function PriceChart({ symbol }: PriceChartProps) {
             )}
           </div>
           {hoveredPoint && (
-            <p className="text-xs text-white/40 mt-0.5">{formatChartDate(hoveredPoint.timestamp, range)}</p>
+            <p className="text-xs text-[var(--foreground-subtle)] mt-0.5">{formatChartDate(hoveredPoint.timestamp, range)}</p>
           )}
           {!hoveredPoint && data.high24h > 0 && (
-            <p className="text-xs text-white/40 mt-0.5">
+            <p className="text-xs text-[var(--foreground-subtle)] mt-0.5">
               H: {formatPrice(data.high24h)} / L: {formatPrice(data.low24h)}
             </p>
           )}
         </div>
       ) : (
-        <p className="text-sm text-white/30 mb-4">Price data unavailable</p>
+        <p className="text-sm text-[var(--foreground-subtle)] mb-4">Price data unavailable</p>
       )}
 
       {/* Chart */}
       {status === 'loading' ? (
-        <div className="h-40 rounded-xl bg-white/3 animate-pulse" />
+        <div className="h-40 rounded-xl bg-[var(--surface)] animate-pulse" />
       ) : pathD ? (
         <svg
           viewBox={viewBox}
@@ -195,8 +195,8 @@ export default function PriceChart({ symbol }: PriceChartProps) {
           )}
         </svg>
       ) : (
-        <div className="h-40 rounded-xl bg-white/3 border border-white/5 flex items-center justify-center">
-          <p className="text-sm text-white/30">No chart data</p>
+        <div className="h-40 rounded-xl bg-[var(--surface)] border border-[var(--border-light)] flex items-center justify-center">
+          <p className="text-sm text-[var(--foreground-subtle)]">No chart data</p>
         </div>
       )}
     </div>

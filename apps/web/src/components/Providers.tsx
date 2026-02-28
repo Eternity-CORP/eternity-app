@@ -2,6 +2,7 @@
 
 import { AccountProvider } from '@/contexts/account-context'
 import { BalanceProvider } from '@/contexts/balance-context'
+import { ThemeProvider } from '@/contexts/theme-context'
 import { useBusinessSync } from '@/hooks/useBusinessSync'
 import { useErrorTrackingInit, useErrorTrackingUser } from '@/hooks/useErrorTracking'
 import type { ReactNode } from 'react'
@@ -22,12 +23,14 @@ export default function Providers({ children }: { children: ReactNode }) {
   useErrorTrackingInit()
 
   return (
-    <AccountProvider>
-      <ErrorTrackingUserSync>
-        <BalanceProvider>
-          <BusinessSyncRunner>{children}</BusinessSyncRunner>
-        </BalanceProvider>
-      </ErrorTrackingUserSync>
-    </AccountProvider>
+    <ThemeProvider>
+      <AccountProvider>
+        <ErrorTrackingUserSync>
+          <BalanceProvider>
+            <BusinessSyncRunner>{children}</BusinessSyncRunner>
+          </BalanceProvider>
+        </ErrorTrackingUserSync>
+      </AccountProvider>
+    </ThemeProvider>
   )
 }

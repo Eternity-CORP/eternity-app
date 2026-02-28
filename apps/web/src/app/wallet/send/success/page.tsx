@@ -48,15 +48,15 @@ function SuccessContent() {
             </div>
 
             <h1 className="text-3xl font-bold text-gradient mb-2">Transaction Confirmed</h1>
-            <p className="text-white/50 mb-8">
+            <p className="text-[var(--foreground-muted)] mb-8">
               Your transaction has been submitted to the network
             </p>
 
             {/* Transaction hash */}
             {hash && (
-              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-6">
-                <p className="text-sm text-white/50 mb-2 font-medium">Transaction Hash</p>
-                <p className="font-mono text-sm text-white">{shortHash}</p>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-6">
+                <p className="text-sm text-[var(--foreground-muted)] mb-2 font-medium">Transaction Hash</p>
+                <p className="font-mono text-sm text-[var(--foreground)]">{shortHash}</p>
               </div>
             )}
 
@@ -67,7 +67,7 @@ function SuccessContent() {
                   href={explorerUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-4 rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
+                  className="flex items-center justify-center gap-2 w-full py-4 rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
                 >
                   View on {networkDisplayName} Explorer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -79,7 +79,7 @@ function SuccessContent() {
               )}
               <Link
                 href="/wallet"
-                className="flex items-center justify-center w-full py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
+                className="flex items-center justify-center w-full py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
               >
                 Back to Wallet
               </Link>
@@ -95,7 +95,7 @@ export default function SuccessPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
       </div>
     }>
       <SuccessContent />

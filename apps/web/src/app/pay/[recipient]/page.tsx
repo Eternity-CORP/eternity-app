@@ -69,12 +69,12 @@ export default function PayPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-[var(--background)]">
         <Navigation />
         <main className="flex items-center justify-center py-32">
           <div className="text-center">
-            <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-white/50">Resolving recipient...</p>
+            <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-[var(--foreground-muted)]">Resolving recipient...</p>
           </div>
         </main>
       </div>
@@ -83,18 +83,18 @@ export default function PayPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-black">
+      <div className="min-h-screen bg-[var(--background)]">
         <Navigation />
         <main className="max-w-[500px] mx-auto px-6 py-16">
-          <div className="bg-white/[0.02] border border-white/10 rounded-3xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-white/5 flex items-center justify-center mb-6">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-8 text-center">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-[var(--surface)] flex items-center justify-center mb-6">
               <span className="text-3xl">?</span>
             </div>
             <h1 className="text-2xl font-bold mb-2">Not Found</h1>
-            <p className="text-white/50 mb-8">{error}</p>
+            <p className="text-[var(--foreground-muted)] mb-8">{error}</p>
             <Link
               href="/"
-              className="inline-block px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-colors"
+              className="inline-block px-8 py-4 bg-[var(--foreground)] text-[var(--background)] font-semibold rounded-xl hover:opacity-90 transition-colors"
             >
               Go Home
             </Link>
@@ -119,15 +119,15 @@ export default function PayPage() {
 
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gradient mb-2">Send to {displayName}</h1>
-            <p className="text-white/50">Connect your wallet to send ETH</p>
+            <p className="text-[var(--foreground-muted)]">Connect your wallet to send ETH</p>
           </div>
 
           {/* Recipient card */}
-          <div className="bg-white/3 border border-white/8 rounded-xl p-5 mb-8">
-            <p className="text-sm text-white/50 mb-2 font-medium">Recipient</p>
-            <p className="font-semibold text-lg text-white">{displayName}</p>
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 mb-8">
+            <p className="text-sm text-[var(--foreground-muted)] mb-2 font-medium">Recipient</p>
+            <p className="font-semibold text-lg text-[var(--foreground)]">{displayName}</p>
             {displayName !== resolvedAddress && (
-              <p className="text-xs text-white/40 font-mono mt-2 break-all">
+              <p className="text-xs text-[var(--foreground-subtle)] font-mono mt-2 break-all">
                 {resolvedAddress}
               </p>
             )}
@@ -135,22 +135,22 @@ export default function PayPage() {
 
           <button
             onClick={handleConnect}
-            className="w-full py-4 bg-white text-black font-semibold rounded-xl shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors mb-4"
+            className="w-full py-4 bg-[var(--foreground)] text-[var(--background)] font-semibold rounded-xl shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors mb-4"
           >
             Connect Wallet
           </button>
 
           <Link
             href="/"
-            className="block text-center text-white/50 hover:text-white transition-colors text-sm"
+            className="block text-center text-[var(--foreground-muted)] hover:text-[var(--foreground)] transition-colors text-sm"
           >
             What is Eternity?
           </Link>
 
           {/* Network badge */}
-          <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-white/5">
+          <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-[var(--border-light)]">
             <span className="w-2 h-2 rounded-full bg-[#22c55e]" />
-            <span className="text-sm text-white/40">{networkLabel}</span>
+            <span className="text-sm text-[var(--foreground-subtle)]">{networkLabel}</span>
           </div>
         </div>
       </main>

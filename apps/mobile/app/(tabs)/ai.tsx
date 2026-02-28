@@ -3,7 +3,7 @@
  * Main AI interface with chat, suggestions, and streaming
  */
 
-import React, { useRef, useCallback, useEffect, useState } from 'react';
+import React, { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -45,7 +45,8 @@ import {
   type PendingSwap,
 } from '@/src/components/ai';
 import type { UsernamePreview } from '@e-y/shared';
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
 import { sendTransaction } from '@/src/services/send-service';
@@ -61,6 +62,9 @@ import { registerUsername } from '@/src/services/username-service';
 import { createScheduledPayment } from '@/src/services/scheduled-payment-service';
 
 export default function AiScreen() {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+
   const {
     messages,
     suggestions,
@@ -109,7 +113,7 @@ export default function AiScreen() {
     : '0.0000';
   const displaySymbol = nativeToken?.symbol ?? 'ETH';
   const isTestAccount = currentAccount?.type === 'test';
-  const networkColor = isTestAccount ? aiChat.accentAmber : aiChat.accentGreen;
+  const networkColor = isTestAccount ? aiChatTheme.accentAmber : aiChatTheme.accentGreen;
 
   // Load contacts on mount
   useEffect(() => {
@@ -217,7 +221,7 @@ export default function AiScreen() {
 
     const hdWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex);
 
-    // Execute swap as a native token send (placeholder — in production this would call a DEX router)
+    // Execute swap as a native token send (placeholder -- in production this would call a DEX router)
     const txHash = await sendTransaction({
       wallet: hdWallet,
       to: currentAccount.address, // Self-send placeholder for swap execution
@@ -379,10 +383,10 @@ export default function AiScreen() {
     ? ['Баланс', 'Отправить', 'BLIK', 'История']
     : ['Что ты умеешь?', 'Покажи баланс', 'Как отправить крипто?'];
 
-  // Animate empty state → active when first message is sent
+  // Animate empty state -> active when first message is sent
   useEffect(() => {
     if (hasMessages && !prevHasMessagesRef.current) {
-      // First message sent — animate empty state out
+      // First message sent -- animate empty state out
       emptyStateProgress.value = withTiming(0, {
         duration: 400,
         easing: Easing.out(Easing.cubic),
@@ -392,7 +396,7 @@ export default function AiScreen() {
         }
       });
     } else if (!hasMessages && prevHasMessagesRef.current) {
-      // Chat cleared — restore empty state
+      // Chat cleared -- restore empty state
       setOverlayRemoved(false);
       emptyStateProgress.value = withTiming(1, {
         duration: 400,
@@ -416,8 +420,8 @@ export default function AiScreen() {
   const showEmptyState = !hasMessages && !isStreaming;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <StatusBar style="light" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: aiChatTheme.screen }]} edges={['top']}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <ChatBackground />
       <KeyboardAvoidingView
         style={styles.container}
@@ -425,16 +429,16 @@ export default function AiScreen() {
         keyboardVerticalOffset={0}
       >
         {/* Minimal Top Bar: balance + network */}
-        <View style={styles.topBar}>
+        <View style={[styles.topBar, { borderBottomColor: aiChatTheme.divider }]}>
           <View style={styles.topBarLeft}>
-            <Text style={styles.balanceText}>
+            <Text style={[styles.balanceText, { color: aiChatTheme.text.primary }]}>
               {displayBalance}{' '}
-              <Text style={styles.balanceSymbol}>{displaySymbol}</Text>
+              <Text style={[styles.balanceSymbol, { color: aiChatTheme.text.tertiary }]}>{displaySymbol}</Text>
             </Text>
           </View>
           <View style={styles.topBarRight}>
             <View style={[styles.networkDot, { backgroundColor: networkColor }]} />
-            <Text style={styles.networkText}>
+            <Text style={[styles.networkText, { color: aiChatTheme.text.tertiary }]}>
               {isTestAccount ? 'Sepolia Testnet' : 'Ethereum'}
             </Text>
           </View>
@@ -535,11 +539,11 @@ export default function AiScreen() {
           {/* Error Banner */}
           {error && (
             <View style={styles.errorBanner}>
-              <FontAwesome name="exclamation-circle" size={16} color={aiChat.accentRed} />
-              <Text style={styles.errorText}>{error}</Text>
+              <FontAwesome name="exclamation-circle" size={16} color={aiChatTheme.accentRed} />
+              <Text style={[styles.errorText, { color: aiChatTheme.accentRed }]}>{error}</Text>
               {lastFailedMessage && (
                 <TouchableOpacity onPress={retryLastMessage} activeOpacity={0.7} style={styles.retryButton}>
-                  <Text style={styles.retryText}>&#x21bb; Retry</Text>
+                  <Text style={[styles.retryText, { color: aiChatTheme.accentRed }]}>&#x21bb; Retry</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -556,11 +560,14 @@ export default function AiScreen() {
               {QUICK_CHIPS.map((chip) => (
                 <TouchableOpacity
                   key={chip}
-                  style={styles.quickChip}
+                  style={[styles.quickChip, {
+                    backgroundColor: aiChatTheme.quickChipBg,
+                    borderColor: aiChatTheme.quickChipBorder,
+                  }]}
                   onPress={() => sendMessage(chip)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.quickChipText}>{chip}</Text>
+                  <Text style={[styles.quickChipText, { color: aiChatTheme.text.secondary }]}>{chip}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -579,7 +586,7 @@ export default function AiScreen() {
           </View>
         </Animated.View>
 
-        {/* Empty state overlay — Gemini-style centered welcome */}
+        {/* Empty state overlay -- Gemini-style centered welcome */}
         {!overlayRemoved && (
           <Animated.View
             style={[styles.emptyOverlay, emptyOverlayStyle]}
@@ -587,7 +594,7 @@ export default function AiScreen() {
           >
             {/* Greeting */}
             <View style={styles.greetingContainer}>
-              <Text style={styles.greetingSubtle}>Welcome to </Text>
+              <Text style={[styles.greetingSubtle, { color: aiChatTheme.text.tertiary }]}>Welcome to </Text>
               <Text style={styles.greetingAccent}>Eternity</Text>
             </View>
 
@@ -609,11 +616,14 @@ export default function AiScreen() {
               {QUICK_CHIPS.map((chip) => (
                 <TouchableOpacity
                   key={chip}
-                  style={styles.quickChip}
+                  style={[styles.quickChip, {
+                    backgroundColor: aiChatTheme.quickChipBg,
+                    borderColor: aiChatTheme.quickChipBorder,
+                  }]}
                   onPress={() => sendMessage(chip)}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.quickChipText}>{chip}</Text>
+                  <Text style={[styles.quickChipText, { color: aiChatTheme.text.secondary }]}>{chip}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -627,7 +637,6 @@ export default function AiScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: aiChat.screen,
   },
   container: {
     flex: 1,
@@ -639,7 +648,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     height: 48,
     borderBottomWidth: 1,
-    borderBottomColor: aiChat.divider,
   },
   topBarLeft: {
     flexDirection: 'row',
@@ -653,12 +661,10 @@ const styles = StyleSheet.create({
   balanceText: {
     fontSize: 16,
     fontWeight: '700',
-    color: aiChat.text.primary,
   },
   balanceSymbol: {
     fontSize: 14,
     fontWeight: '500',
-    color: aiChat.text.tertiary,
   },
   networkDot: {
     width: 8,
@@ -667,7 +673,6 @@ const styles = StyleSheet.create({
   },
   networkText: {
     fontSize: 12,
-    color: aiChat.text.tertiary,
   },
   activeContent: {
     flex: 1,
@@ -701,7 +706,6 @@ const styles = StyleSheet.create({
   greetingSubtle: {
     fontSize: 32,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.60)',
     letterSpacing: -0.5,
   },
   greetingAccent: {
@@ -739,14 +743,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   quickChipText: {
     fontSize: 13,
     fontWeight: '500',
-    color: aiChat.text.secondary,
   },
   errorBanner: {
     flexDirection: 'row',
@@ -762,7 +763,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...theme.typography.caption,
-    color: aiChat.accentRed,
     flex: 1,
   },
   retryButton: {
@@ -776,6 +776,5 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 12,
     fontWeight: '600',
-    color: aiChat.accentRed,
   },
 });

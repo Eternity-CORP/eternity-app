@@ -144,10 +144,10 @@ export default function ScheduledPage() {
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-xl font-semibold text-white">Scheduled</h1>
+              <h1 className="text-xl font-semibold text-[var(--foreground)]">Scheduled</h1>
               <button
                 onClick={() => setShowCreate(!showCreate)}
-                className="w-8 h-8 rounded-lg glass-card flex items-center justify-center text-white hover:border-white/15 transition-colors"
+                className="w-8 h-8 rounded-lg glass-card flex items-center justify-center text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19"/>
@@ -162,7 +162,7 @@ export default function ScheduledPage() {
                 {/* Network Selector (real accounts only) */}
                 {!isTestAccount && (
                   <div className="mb-4">
-                    <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">Network</label>
+                    <label className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wider mb-1.5 block">Network</label>
                     <div className="flex flex-wrap gap-1.5">
                       {TIER1_NETWORK_IDS.map((id) => {
                         const net = SUPPORTED_NETWORKS[id]
@@ -174,8 +174,8 @@ export default function ScheduledPage() {
                             className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
                             style={{
                               backgroundColor: isSelected ? net.color + '20' : 'transparent',
-                              borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
-                              color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                              borderColor: isSelected ? net.color + '60' : 'var(--border)',
+                              color: isSelected ? net.color : 'var(--foreground-subtle)',
                             }}
                           >
                             <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: net.color }} />
@@ -187,18 +187,18 @@ export default function ScheduledPage() {
                   </div>
                 )}
 
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Recipient</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Recipient</label>
                   <input
                     type="text"
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
                     placeholder="Address or @username"
-                    className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none"
+                    className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                   />
                 </div>
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Amount</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Amount</label>
                   <div className="flex items-center gap-3 overflow-hidden">
                     <input
                       type="number"
@@ -206,28 +206,28 @@ export default function ScheduledPage() {
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0"
                       step="0.0001"
-                      className="flex-1 min-w-0 bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                     />
-                    <span className="flex-shrink-0 text-white/40">{network.symbol}</span>
+                    <span className="flex-shrink-0 text-[var(--foreground-subtle)]">{network.symbol}</span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                    <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Date</label>
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                    <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Date</label>
                     <input
                       type="date"
                       value={scheduledDate}
                       onChange={(e) => setScheduledDate(e.target.value)}
-                      className="w-full bg-transparent text-white focus:outline-none"
+                      className="w-full bg-transparent text-[var(--foreground)] focus:outline-none"
                     />
                   </div>
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                    <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Time</label>
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                    <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Time</label>
                     <input
                       type="time"
                       value={scheduledTime}
                       onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-full bg-transparent text-white focus:outline-none"
+                      className="w-full bg-transparent text-[var(--foreground)] focus:outline-none"
                     />
                   </div>
                 </div>
@@ -241,7 +241,7 @@ export default function ScheduledPage() {
                 <button
                   onClick={handleCreate}
                   disabled={!recipient || !amount || !scheduledDate || !scheduledTime || submitStatus === 'loading'}
-                  className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
+                  className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
                   {submitStatus === 'loading' ? 'Creating...' : 'Schedule Payment'}
                 </button>
@@ -251,41 +251,41 @@ export default function ScheduledPage() {
             {/* Loading state */}
             {status === 'loading' && (
               <div className="flex justify-center py-8">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
               </div>
             )}
 
             {/* Pending Payments */}
             {status !== 'loading' && pendingPayments.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Upcoming</p>
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-3">Upcoming</p>
                 <div className="space-y-2">
                   {pendingPayments.map((payment) => {
                     const networkLabel = getNetworkLabel(payment.chainId)
                     return (
                       <div
                         key={payment.id}
-                        className="bg-white/3 border border-white/8 rounded-xl p-4 flex items-center justify-between"
+                        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center justify-between"
                       >
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-white font-medium">{payment.amount} {network.symbol}</p>
+                            <p className="text-[var(--foreground)] font-medium">{payment.amount} {network.symbol}</p>
                             {networkLabel && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--foreground-subtle)] font-mono">
                                 {networkLabel}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-white/40 font-mono truncate max-w-[180px]">
+                          <p className="text-xs text-[var(--foreground-subtle)] font-mono truncate max-w-[180px]">
                             {payment.recipient}
                           </p>
-                          <p className="text-xs text-white/40 mt-1">
+                          <p className="text-xs text-[var(--foreground-subtle)] mt-1">
                             {new Date(payment.scheduledAt).toLocaleString()}
                           </p>
                         </div>
                         <button
                           onClick={() => handleCancel(payment.id)}
-                          className="p-2 text-white/40 hover:text-[#f87171] transition-colors"
+                          className="p-2 text-[var(--foreground-subtle)] hover:text-[#f87171] transition-colors"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -302,20 +302,20 @@ export default function ScheduledPage() {
             {/* Past Payments */}
             {status !== 'loading' && pastPayments.length > 0 && (
               <div>
-                <p className="text-xs text-white/40 uppercase tracking-wide mb-3">History</p>
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-3">History</p>
                 <div className="space-y-2">
                   {pastPayments.map((payment) => {
                     const networkLabel = getNetworkLabel(payment.chainId)
                     return (
                       <div
                         key={payment.id}
-                        className="bg-white/3 border border-white/8 rounded-xl p-4 opacity-60"
+                        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 opacity-60"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <p className="text-white font-medium">{payment.amount} {network.symbol}</p>
+                            <p className="text-[var(--foreground)] font-medium">{payment.amount} {network.symbol}</p>
                             {networkLabel && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--foreground-subtle)] font-mono">
                                 {networkLabel}
                               </span>
                             )}
@@ -328,7 +328,7 @@ export default function ScheduledPage() {
                             {payment.status}
                           </span>
                         </div>
-                        <p className="text-xs text-white/40 font-mono truncate mt-1">
+                        <p className="text-xs text-[var(--foreground-subtle)] font-mono truncate mt-1">
                           {payment.recipient}
                         </p>
                       </div>
@@ -341,12 +341,12 @@ export default function ScheduledPage() {
             {/* Empty State */}
             {status !== 'loading' && payments.length === 0 && !showCreate && (
               <div className="text-center py-8">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-[var(--foreground-subtle)] mb-4">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12 6 12 12 16 14"/>
                 </svg>
-                <p className="text-white/40">No scheduled payments</p>
-                <p className="text-xs text-white/25 mt-1">Tap + to create one</p>
+                <p className="text-[var(--foreground-subtle)]">No scheduled payments</p>
+                <p className="text-xs text-[var(--foreground-subtle)] mt-1">Tap + to create one</p>
               </div>
             )}
           </div>

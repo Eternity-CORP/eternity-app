@@ -4,7 +4,7 @@
  * Also supports save contact after successful transaction
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
-import { cardStyles } from './card-styles';
+import { getCardStyles } from './card-styles';
 import { LogoStrokeDraw } from './LogoStrokeDraw';
 
 export interface PendingTransaction {
@@ -55,6 +56,10 @@ export function TransactionCard({
   isInContacts = false,
   isTestAccount = false,
 }: TransactionCardProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+  const cs = useMemo(() => getCardStyles(aiChatTheme), [aiChatTheme]);
+
   const [status, setStatus] = useState<'idle' | 'confirming' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -99,21 +104,21 @@ export function TransactionCard({
   // Success state with save contact option
   if (status === 'success') {
     return (
-      <View style={cardStyles.container}>
-        <View style={cardStyles.successContainer}>
+      <View style={cs.container}>
+        <View style={cs.successContainer}>
           <LinearGradient
             colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={cardStyles.successCard}
+            style={cs.successCard}
           >
             <FontAwesome name="check-circle" size={32} color="#FFFFFF" />
-            <Text style={cardStyles.successTitle}>Transaction Sent!</Text>
-            <Text style={cardStyles.successSubtitle}>
+            <Text style={cs.successTitle}>Transaction Sent!</Text>
+            <Text style={cs.successSubtitle}>
               {transaction.amount} {transaction.token} → {recipient}
             </Text>
             {txHash && (
-              <Text style={cardStyles.txHash}>
+              <Text style={cs.txHash}>
                 {truncateAddress(txHash)}
               </Text>
             )}
@@ -121,43 +126,43 @@ export function TransactionCard({
 
           {/* Save Contact Section */}
           {!isInContacts && !contactSaved && onSaveContact && !transaction.toUsername && (
-            <View style={cardStyles.saveContactSection}>
+            <View style={cs.saveContactSection}>
               {!showSaveContact ? (
                 <TouchableOpacity
-                  style={cardStyles.saveContactPrompt}
+                  style={cs.saveContactPrompt}
                   onPress={() => setShowSaveContact(true)}
                 >
-                  <FontAwesome name="user-plus" size={16} color={aiChat.accentBlue} />
-                  <Text style={cardStyles.saveContactPromptText}>
+                  <FontAwesome name="user-plus" size={16} color={aiChatTheme.accentBlue} />
+                  <Text style={cs.saveContactPromptText}>
                     Save to contacts?
                   </Text>
                 </TouchableOpacity>
               ) : (
-                <View style={cardStyles.saveContactForm}>
+                <View style={cs.saveContactForm}>
                   <TextInput
-                    style={cardStyles.contactNameInput}
+                    style={cs.contactNameInput}
                     placeholder="Contact name"
-                    placeholderTextColor={aiChat.text.tertiary}
+                    placeholderTextColor={aiChatTheme.text.tertiary}
                     value={contactName}
                     onChangeText={setContactName}
                     autoFocus
                   />
-                  <View style={cardStyles.saveContactActions}>
+                  <View style={cs.saveContactActions}>
                     <TouchableOpacity
-                      style={cardStyles.saveContactCancel}
+                      style={cs.saveContactCancel}
                       onPress={() => setShowSaveContact(false)}
                     >
-                      <Text style={cardStyles.saveContactCancelText}>Cancel</Text>
+                      <Text style={cs.saveContactCancelText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={cardStyles.saveContactSave}
+                      style={cs.saveContactSave}
                       onPress={handleSaveContact}
                       disabled={savingContact || !contactName.trim()}
                     >
                       {savingContact ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
-                        <Text style={cardStyles.saveContactSaveText}>Save</Text>
+                        <Text style={cs.saveContactSaveText}>Save</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -168,15 +173,15 @@ export function TransactionCard({
 
           {/* Contact Saved Confirmation */}
           {contactSaved && (
-            <View style={cardStyles.contactSavedBanner}>
-              <FontAwesome name="check" size={14} color={aiChat.accentGreen} />
-              <Text style={cardStyles.contactSavedText}>Contact saved!</Text>
+            <View style={cs.contactSavedBanner}>
+              <FontAwesome name="check" size={14} color={aiChatTheme.accentGreen} />
+              <Text style={cs.contactSavedText}>Contact saved!</Text>
             </View>
           )}
 
           {/* Done Button */}
-          <TouchableOpacity style={cardStyles.doneButton} onPress={onComplete}>
-            <Text style={cardStyles.doneButtonText}>Done</Text>
+          <TouchableOpacity style={cs.doneButton} onPress={onComplete}>
+            <Text style={cs.doneButtonText}>Done</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -184,40 +189,40 @@ export function TransactionCard({
   }
 
   return (
-    <View style={cardStyles.container}>
-      <View style={cardStyles.card}>
+    <View style={cs.container}>
+      <View style={cs.card}>
         {/* Particle background */}
         <LogoStrokeDraw />
 
         {/* Header */}
-        <View style={cardStyles.header}>
-          <View style={[cardStyles.headerIcon, styles.headerIconBg]}>
-            <FontAwesome name="paper-plane" size={16} color={aiChat.accentBlue} />
+        <View style={cs.header}>
+          <View style={[cs.headerIcon, styles.headerIconBg]}>
+            <FontAwesome name="paper-plane" size={16} color={aiChatTheme.accentBlue} />
           </View>
-          <Text style={cardStyles.headerTitle}>Confirm Transaction</Text>
+          <Text style={cs.headerTitle}>Confirm Transaction</Text>
         </View>
 
         {/* Amount */}
-        <View style={cardStyles.amountSection}>
-          <Text style={[cardStyles.amountValue, styles.amountValueTypography]}>
+        <View style={cs.amountSection}>
+          <Text style={[cs.amountValue, styles.amountValueTypography]}>
             {transaction.amount} {transaction.token}
           </Text>
-          <Text style={cardStyles.amountUsd}>≈ ${transaction.amountUsd}</Text>
+          <Text style={cs.amountUsd}>≈ ${transaction.amountUsd}</Text>
         </View>
 
         {/* Details */}
-        <View style={cardStyles.details}>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>To</Text>
-            <Text style={cardStyles.detailValue}>{recipient}</Text>
+        <View style={cs.details}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>To</Text>
+            <Text style={cs.detailValue}>{recipient}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Network</Text>
-            <Text style={cardStyles.detailValue}>{transaction.network}</Text>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Network</Text>
+            <Text style={cs.detailValue}>{transaction.network}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Gas Fee</Text>
-            <Text style={cardStyles.detailValue}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Gas Fee</Text>
+            <Text style={cs.detailValue}>
               ~{transaction.estimatedGas} ETH (${transaction.estimatedGasUsd})
             </Text>
           </View>
@@ -225,9 +230,9 @@ export function TransactionCard({
 
         {/* Error */}
         {error && (
-          <View style={cardStyles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
-            <Text style={cardStyles.errorText}>{error}</Text>
+          <View style={cs.errorBanner}>
+            <FontAwesome name="exclamation-circle" size={14} color={aiChatTheme.accentRed} />
+            <Text style={cs.errorText}>{error}</Text>
           </View>
         )}
 
@@ -239,17 +244,17 @@ export function TransactionCard({
         )}
 
         {/* Actions */}
-        <View style={cardStyles.actions}>
+        <View style={cs.actions}>
           <TouchableOpacity
-            style={cardStyles.cancelButton}
+            style={cs.cancelButton}
             onPress={onCancel}
             disabled={status === 'confirming'}
           >
-            <Text style={cardStyles.cancelButtonText}>Cancel</Text>
+            <Text style={cs.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[cardStyles.confirmButton, status === 'confirming' && cardStyles.confirmButtonDisabled]}
+            style={[cs.confirmButton, status === 'confirming' && cs.confirmButtonDisabled]}
             onPress={handleConfirm}
             disabled={status === 'confirming'}
           >
@@ -257,14 +262,14 @@ export function TransactionCard({
               colors={['#3388FF', '#2266CC']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={cardStyles.confirmButtonGradient}
+              style={cs.confirmButtonGradient}
             >
               {status === 'confirming' ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
                   <FontAwesome name="check" size={14} color="#FFFFFF" />
-                  <Text style={cardStyles.confirmButtonText}>Confirm</Text>
+                  <Text style={cs.confirmButtonText}>Confirm</Text>
                 </>
               )}
             </LinearGradient>

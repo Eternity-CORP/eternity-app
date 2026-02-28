@@ -27,7 +27,7 @@ export default function Home() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
       </div>
     )
   }
@@ -38,21 +38,21 @@ export default function Home() {
         {/* Logo */}
         <div className="text-center mb-10">
           <img src="/logo.svg" alt="Eternity" className="w-20 h-20 mx-auto mb-6" />
-          <h1 className="text-3xl font-bold text-white mb-2">Eternity</h1>
-          <p className="text-white/40 text-sm">AI-native self-custody wallet</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">Eternity</h1>
+          <p className="text-[var(--foreground-subtle)] text-sm">AI-native self-custody wallet</p>
         </div>
 
         {/* Actions */}
         <div className="flex flex-col gap-3">
           <Link
             href="/create"
-            className="w-full py-4 bg-white text-black font-semibold rounded-xl text-center hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:scale-[1.01] active:scale-[0.99]"
+            className="w-full py-4 bg-[var(--foreground)] text-[var(--background)] font-semibold rounded-xl text-center hover:opacity-90 transition-all shimmer hover:scale-[1.01] active:scale-[0.99]"
           >
             Create Wallet
           </Link>
           <Link
             href="/import"
-            className="w-full py-4 glass-card text-white font-semibold rounded-xl text-center hover:border-white/20 transition-all hover:scale-[1.01] active:scale-[0.99]"
+            className="w-full py-4 glass-card text-[var(--foreground)] font-semibold rounded-xl text-center hover:scale-[1.01] active:scale-[0.99]"
           >
             Import Existing
           </Link>

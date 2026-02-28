@@ -63,12 +63,12 @@ export default function PrivacySettingsPage() {
       <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
           <BackButton />
-          <h1 className="text-lg font-semibold text-white mb-6">Privacy</h1>
+          <h1 className="text-lg font-semibold text-[var(--foreground)] mb-6">Privacy</h1>
 
           {/* Split Bill Privacy */}
           <div className="mb-6">
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Split Bill Requests</h2>
-            <p className="text-xs text-white/40 mb-4">Control who can send you split-bill payment requests.</p>
+            <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-3">Split Bill Requests</h2>
+            <p className="text-xs text-[var(--foreground-subtle)] mb-4">Control who can send you split-bill payment requests.</p>
             <div className="space-y-2">
               {PRIVACY_OPTIONS.map((option) => {
                 const isSelected = splitBillPrivacy === option.value
@@ -77,17 +77,17 @@ export default function PrivacySettingsPage() {
                     key={option.value}
                     onClick={() => handleChange(option.value)}
                     className={`w-full flex items-center gap-3 p-4 rounded-xl glass-card transition-colors ${
-                      isSelected ? 'border border-[#3388FF]/30 bg-[#3388FF]/5' : 'hover:bg-white/3'
+                      isSelected ? 'border border-[#3388FF]/30 bg-[#3388FF]/5' : 'hover:bg-[var(--surface)]'
                     }`}
                   >
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      isSelected ? 'border-[#3388FF]' : 'border-white/20'
+                      isSelected ? 'border-[#3388FF]' : 'border-[var(--border)]'
                     }`}>
                       {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#3388FF]" />}
                     </div>
                     <div className="text-left">
-                      <span className="text-sm font-medium text-white">{option.label}</span>
-                      <p className="text-xs text-white/40 mt-0.5">{option.description}</p>
+                      <span className="text-sm font-medium text-[var(--foreground)]">{option.label}</span>
+                      <p className="text-xs text-[var(--foreground-subtle)] mt-0.5">{option.description}</p>
                     </div>
                   </button>
                 )

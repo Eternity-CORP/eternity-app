@@ -106,26 +106,26 @@ export default function TokenDetailPage() {
           <div className="glass-card gradient-border rounded-2xl p-6 mb-4">
             <div className="flex flex-col items-center mb-6">
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white mb-3"
+                className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-[var(--foreground)] mb-3"
                 style={{ backgroundColor: `${meta.color}20`, border: `2px solid ${meta.color}40` }}
               >
                 {meta.icon}
               </div>
-              <h1 className="text-xl font-semibold text-white">{meta.name}</h1>
-              <p className="text-sm text-white/40">{symbol}</p>
+              <h1 className="text-xl font-semibold text-[var(--foreground)]">{meta.name}</h1>
+              <p className="text-sm text-[var(--foreground-subtle)]">{symbol}</p>
             </div>
 
             {/* Balance */}
             <div className="text-center mb-6">
               {loading ? (
-                <div className="h-12 w-40 bg-white/5 rounded-xl animate-pulse mx-auto" />
+                <div className="h-12 w-40 bg-[var(--surface)] rounded-xl animate-pulse mx-auto" />
               ) : (
                 <>
                   <div className="flex items-center justify-center gap-3 mb-1">
                     <span className="text-4xl font-bold text-gradient">{formattedBalance}</span>
-                    <span className="text-lg font-medium text-white/40">{symbol}</span>
+                    <span className="text-lg font-medium text-[var(--foreground-subtle)]">{symbol}</span>
                   </div>
-                  <p className="text-white/40">{formatUsd(balanceUsd)}</p>
+                  <p className="text-[var(--foreground-subtle)]">{formatUsd(balanceUsd)}</p>
                 </>
               )}
             </div>
@@ -134,7 +134,7 @@ export default function TokenDetailPage() {
             <div className="flex gap-3">
               <Link
                 href={`/wallet/send?token=${symbol}`}
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold hover:opacity-90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-[1.02] active:scale-[0.98]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="19" x2="12" y2="5"/>
@@ -144,7 +144,7 @@ export default function TokenDetailPage() {
               </Link>
               <Link
                 href="/wallet/receive"
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl glass-card text-white font-semibold hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl glass-card text-[var(--foreground)] font-semibold hover:border-[var(--border)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/>
@@ -160,22 +160,22 @@ export default function TokenDetailPage() {
             const activeNetworks = networks.filter(n => parseFloat(n.balance) > 0)
             return activeNetworks.length > 1 ? (
               <div className="glass-card rounded-2xl p-5 mb-4">
-                <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Network Breakdown</h2>
+                <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-3">Network Breakdown</h2>
                 <div className="space-y-2">
                   {activeNetworks.map((n) => {
                     const netConfig = SUPPORTED_NETWORKS[n.networkId as NetworkId]
                     return (
-                      <div key={n.networkId} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
+                      <div key={n.networkId} className="flex items-center justify-between p-3 rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors">
                         <div className="flex items-center gap-2.5">
                           <span
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                             style={{ backgroundColor: netConfig?.color || '#888' }}
                           />
-                          <span className="text-sm font-medium text-white/70">{netConfig?.name || n.networkId}</span>
+                          <span className="text-sm font-medium text-[var(--foreground-muted)]">{netConfig?.name || n.networkId}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm font-medium text-white">{parseFloat(n.balance).toFixed(4)}</span>
-                          <span className="text-xs text-white/40 ml-2">{formatUsd(n.usdValue)}</span>
+                          <span className="text-sm font-medium text-[var(--foreground)]">{parseFloat(n.balance).toFixed(4)}</span>
+                          <span className="text-xs text-[var(--foreground-subtle)] ml-2">{formatUsd(n.usdValue)}</span>
                         </div>
                       </div>
                     )
@@ -192,11 +192,11 @@ export default function TokenDetailPage() {
 
           {/* Recent Transactions */}
           <div className="glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-white/5">
-              <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Recent Transactions</h2>
+            <div className="flex items-center justify-between p-5 border-b border-[var(--border-light)]">
+              <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Recent Transactions</h2>
               <Link
                 href="/wallet/history"
-                className="text-xs text-white/40 hover:text-white transition-colors"
+                className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors"
               >
                 View All
               </Link>
@@ -204,20 +204,20 @@ export default function TokenDetailPage() {
 
             {txStatus === 'loading' ? (
               <div className="p-8 flex justify-center">
-                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
               </div>
             ) : tokenTxs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center mb-3">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/25">
+                <div className="w-12 h-12 rounded-xl bg-[var(--surface)] flex items-center justify-center mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
                 </div>
-                <p className="text-white/40 text-sm">No transactions yet</p>
+                <p className="text-[var(--foreground-subtle)] text-sm">No transactions yet</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-[var(--border-light)]">
                 {tokenTxs.map((tx) => {
                   const isSent = tx.direction === 'sent'
                   const addr = isSent ? tx.to : tx.from
@@ -227,13 +227,13 @@ export default function TokenDetailPage() {
                   return (
                     <div
                       key={`${tx.hash}-${tx.networkId || 'default'}`}
-                      className="flex items-center justify-between p-4 hover:bg-white/3 transition-colors"
+                      className="flex items-center justify-between p-4 hover:bg-[var(--surface)] transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          isSent ? 'bg-white/5' : 'bg-[#22c55e]/8'
+                          isSent ? 'bg-[var(--surface)]' : 'bg-[#22c55e]/8'
                         }`}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isSent ? 'text-white/50' : 'text-[#22c55e]'}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={isSent ? 'text-[var(--foreground-muted)]' : 'text-[#22c55e]'}>
                             {isSent ? (
                               <>
                                 <line x1="12" y1="19" x2="12" y2="5"/>
@@ -249,9 +249,9 @@ export default function TokenDetailPage() {
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-semibold text-white">{isSent ? 'Sent' : 'Received'}</p>
+                            <p className="text-sm font-semibold text-[var(--foreground)]">{isSent ? 'Sent' : 'Received'}</p>
                             {txNetConfig && (
-                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/5 text-[10px] text-white/50">
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[var(--surface)] text-[10px] text-[var(--foreground-muted)]">
                                 <span
                                   className="w-1.5 h-1.5 rounded-full inline-block"
                                   style={{ backgroundColor: txNetConfig.color }}
@@ -260,16 +260,16 @@ export default function TokenDetailPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-white/40">
+                          <p className="text-xs text-[var(--foreground-subtle)]">
                             {isSent ? `To ${shortAddr}` : `From ${shortAddr}`}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-sm font-semibold ${isSent ? 'text-white/50' : 'text-[#22c55e]'}`}>
+                        <p className={`text-sm font-semibold ${isSent ? 'text-[var(--foreground-muted)]' : 'text-[#22c55e]'}`}>
                           {isSent ? '-' : '+'}{parseFloat(tx.amount).toFixed(4)} {tx.token}
                         </p>
-                        <p className="text-xs text-white/40">{formatTransactionDate(tx.timestamp)}</p>
+                        <p className="text-xs text-[var(--foreground-subtle)]">{formatTransactionDate(tx.timestamp)}</p>
                       </div>
                     </div>
                   )

@@ -43,7 +43,7 @@ export default function WalletError({
           Wallet Error
         </h2>
 
-        <p className="text-white/40 mb-8 leading-relaxed">
+        <p className="text-[var(--foreground-subtle)] mb-8 leading-relaxed">
           Something went wrong while loading your wallet. This might be a
           temporary issue -- try refreshing or head back to the main wallet view.
         </p>
@@ -64,13 +64,13 @@ export default function WalletError({
         <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={() => reset()}
-            className="flex-1 px-6 py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98]"
+            className="flex-1 px-6 py-3.5 bg-[var(--foreground)] text-[var(--background)] font-semibold rounded-xl hover:opacity-90 transition-all shimmer hover:scale-[1.02] active:scale-[0.98]"
           >
             Try again
           </button>
           <Link
             href="/wallet"
-            className="flex-1 px-6 py-3.5 glass-card text-white font-semibold rounded-xl hover:border-white/20 transition-all text-center hover:scale-[1.02] active:scale-[0.98]"
+            className="flex-1 px-6 py-3.5 glass-card text-[var(--foreground)] font-semibold rounded-xl transition-all text-center hover:scale-[1.02] active:scale-[0.98]"
           >
             Back to wallet
           </Link>

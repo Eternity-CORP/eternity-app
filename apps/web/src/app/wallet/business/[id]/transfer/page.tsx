@@ -184,7 +184,7 @@ export default function TransferSharesPage() {
           {/* Loading */}
           {status === 'loading' && (
             <div className="glass-card gradient-border rounded-2xl p-6 flex justify-center py-12">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[var(--border)] border-t-white rounded-full animate-spin" />
             </div>
           )}
 
@@ -195,7 +195,7 @@ export default function TransferSharesPage() {
                 <p className="text-[#f87171] text-sm">{error}</p>
                 <button
                   onClick={loadData}
-                  className="text-xs text-white/40 hover:text-white mt-2 transition-colors"
+                  className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] mt-2 transition-colors"
                 >
                   Retry
                 </button>
@@ -210,23 +210,23 @@ export default function TransferSharesPage() {
               <div className="glass-card gradient-border rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h1 className="text-xl font-semibold text-white">Transfer Shares</h1>
+                    <h1 className="text-xl font-semibold text-[var(--foreground)]">Transfer Shares</h1>
                     {business && (
-                      <p className="text-xs text-white/40 mt-1">{business.name}</p>
+                      <p className="text-xs text-[var(--foreground-subtle)] mt-1">{business.name}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Token Info */}
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-white/40">Your Balance</span>
-                    <span className="text-lg font-bold text-white">
+                    <span className="text-xs text-[var(--foreground-subtle)]">Your Balance</span>
+                    <span className="text-lg font-bold text-[var(--foreground)]">
                       {balance} {tokenSymbol}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/40">Ownership</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">Ownership</span>
                     <span className="text-sm text-[#3388FF] font-medium">{ownershipPercent}%</span>
                   </div>
                 </div>
@@ -252,8 +252,8 @@ export default function TransferSharesPage() {
 
                 {/* Form */}
                 <div className="space-y-3">
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                    <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                    <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                       Recipient Address
                     </label>
                     <input
@@ -261,16 +261,16 @@ export default function TransferSharesPage() {
                       value={recipient}
                       onChange={(e) => setRecipient(e.target.value)}
                       placeholder="0x..."
-                      className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono"
+                      className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none text-sm font-mono"
                     />
                   </div>
 
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs text-white/40 uppercase tracking-wide">Amount</label>
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Amount</label>
                       <button
                         onClick={() => setAmount(String(balance))}
-                        className="text-xs text-white/40 hover:text-white transition-colors"
+                        className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors"
                       >
                         Max: {balance}
                       </button>
@@ -284,9 +284,9 @@ export default function TransferSharesPage() {
                         step="1"
                         min="1"
                         max={balance}
-                        className="flex-1 bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                        className="flex-1 bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
-                      <span className="text-white/40 text-sm flex-shrink-0">{tokenSymbol}</span>
+                      <span className="text-[var(--foreground-subtle)] text-sm flex-shrink-0">{tokenSymbol}</span>
                     </div>
                   </div>
 
@@ -304,7 +304,7 @@ export default function TransferSharesPage() {
                     <button
                       onClick={() => setShowConfirm(true)}
                       disabled={!isValidForm}
-                      className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Transfer Shares
                     </button>
@@ -323,7 +323,7 @@ export default function TransferSharesPage() {
               {/* Transfer History */}
               {transfers.length > 0 && (
                 <div className="glass-card rounded-2xl p-6">
-                  <p className="text-xs text-white/40 uppercase tracking-wide mb-4">Transfer History</p>
+                  <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Transfer History</p>
                   <div className="space-y-3">
                     {transfers.slice(0, 20).map((tx, i) => {
                       const isSender = tx.from.toLowerCase() === address.toLowerCase()
@@ -333,7 +333,7 @@ export default function TransferSharesPage() {
                       return (
                         <div
                           key={`${tx.txHash}-${i}`}
-                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/3"
+                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--surface)]"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <div
@@ -344,11 +344,11 @@ export default function TransferSharesPage() {
                                   ? 'bg-[#EF4444]'
                                   : isReceiver
                                   ? 'bg-[#22c55e]'
-                                  : 'bg-white/30'
+                                  : 'bg-[var(--surface)]0'
                               }`}
                             />
                             <div className="min-w-0">
-                              <p className="text-xs text-white truncate">
+                              <p className="text-xs text-[var(--foreground)] truncate">
                                 {isZeroAddr
                                   ? `Minted to ${truncateAddress(tx.to)}`
                                   : isSender
@@ -357,12 +357,12 @@ export default function TransferSharesPage() {
                                   ? `Received from ${truncateAddress(tx.from)}`
                                   : `${truncateAddress(tx.from)} -> ${truncateAddress(tx.to)}`}
                               </p>
-                              <p className="text-[10px] text-white/25 font-mono">
+                              <p className="text-[10px] text-[var(--foreground-subtle)] font-mono">
                                 {truncateAddress(tx.txHash)}
                               </p>
                             </div>
                           </div>
-                          <span className="text-xs text-white/60 font-mono flex-shrink-0 ml-3">
+                          <span className="text-xs text-[var(--foreground-muted)] font-mono flex-shrink-0 ml-3">
                             {tx.value} {tokenSymbol}
                           </span>
                         </div>

@@ -75,7 +75,7 @@ function StepIndicator({ current }: { current: Step }) {
                   ? 'bg-[#22c55e] text-black'
                   : step.num === current
                     ? 'bg-[#3388FF] text-white shadow-[0_0_15px_rgba(51,136,255,0.4)]'
-                    : 'bg-white/5 text-white/30'
+                    : 'bg-[var(--surface)] text-[var(--foreground-subtle)]'
               }`}
             >
               {step.num < current ? (
@@ -86,13 +86,13 @@ function StepIndicator({ current }: { current: Step }) {
                 step.num
               )}
             </div>
-            <span className={`text-[10px] mt-1.5 transition-colors ${step.num === current ? 'text-white/70' : 'text-white/25'}`}>
+            <span className={`text-[10px] mt-1.5 transition-colors ${step.num === current ? 'text-[var(--foreground-muted)]' : 'text-[var(--foreground-subtle)]'}`}>
               {step.label}
             </span>
           </div>
           {i < steps.length - 1 && (
             <div className="flex-1 mx-2 mb-5">
-              <div className="h-[2px] rounded-full overflow-hidden bg-white/5">
+              <div className="h-[2px] rounded-full overflow-hidden bg-[var(--surface)]">
                 <div
                   className="h-full bg-[#3388FF] transition-all duration-500"
                   style={{ width: step.num < current ? '100%' : '0%' }}
@@ -395,36 +395,36 @@ export default function BusinessCreatePage() {
 
   const renderStep1 = () => (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-white mb-2">Basic Information</h2>
+      <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Basic Information</h2>
 
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Business Name</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Business Name</label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="My Business"
           maxLength={50}
-          className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none"
+          className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
         />
-        <p className="text-[10px] text-white/25 mt-1">{name.length}/50 characters (min 3)</p>
+        <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">{name.length}/50 characters (min 3)</p>
       </div>
 
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Token Symbol</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Token Symbol</label>
         <input
           type="text"
           value={tokenSymbol}
           onChange={(e) => setTokenSymbol(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6))}
           placeholder="BIZ"
           maxLength={6}
-          className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none font-mono"
+          className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none font-mono"
         />
-        <p className="text-[10px] text-white/25 mt-1">2-6 uppercase letters</p>
+        <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">2-6 uppercase letters</p>
       </div>
 
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Total Token Supply</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Total Token Supply</label>
         <input
           type="number"
           value={tokenSupply}
@@ -432,19 +432,19 @@ export default function BusinessCreatePage() {
           placeholder="1000"
           min={2}
           max={1000000}
-          className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-full bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
-        <p className="text-[10px] text-white/25 mt-1">2 - 1,000,000 tokens</p>
+        <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">2 - 1,000,000 tokens</p>
       </div>
 
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Description (optional)</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Description (optional)</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Brief description of the business..."
           rows={3}
-          className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none resize-none"
+          className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none resize-none"
         />
       </div>
     </div>
@@ -452,18 +452,18 @@ export default function BusinessCreatePage() {
 
   const renderStep2 = () => (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-white mb-2">Founders & Shares</h2>
+      <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Founders & Shares</h2>
 
       {/* Share distribution bar */}
       {supply > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-[10px] text-white/40 uppercase tracking-wide">
+          <div className="flex items-center justify-between text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wide">
             <span>Share Distribution</span>
-            <span className={totalShares === supply ? 'text-[#22c55e]' : totalShares > supply ? 'text-[#EF4444]' : 'text-white/40'}>
+            <span className={totalShares === supply ? 'text-[#22c55e]' : totalShares > supply ? 'text-[#EF4444]' : 'text-[var(--foreground-subtle)]'}>
               {totalShares} / {supply}
             </span>
           </div>
-          <div className="h-3 rounded-full overflow-hidden bg-white/5 flex">
+          <div className="h-3 rounded-full overflow-hidden bg-[var(--surface)] flex">
             {founders.map((f, i) => {
               const pct = supply > 0 ? (f.shares / supply) * 100 : 0
               if (pct <= 0) return null
@@ -486,7 +486,7 @@ export default function BusinessCreatePage() {
               return (
                 <div key={i} className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: shareColors[i % shareColors.length] }} />
-                  <span className="text-[10px] text-white/50">
+                  <span className="text-[10px] text-[var(--foreground-muted)]">
                     {f.username ? `@${f.username}` : `${f.address.slice(0, 6)}...${f.address.slice(-4)}`}
                     {' '}{pct}%
                   </span>
@@ -495,8 +495,8 @@ export default function BusinessCreatePage() {
             })}
             {sharesRemaining > 0 && (
               <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-white/10" />
-                <span className="text-[10px] text-white/30">Unallocated {sharesRemaining}</span>
+                <div className="w-2 h-2 rounded-full bg-[var(--surface-hover)]" />
+                <span className="text-[10px] text-[var(--foreground-subtle)]">Unallocated {sharesRemaining}</span>
               </div>
             )}
           </div>
@@ -506,18 +506,18 @@ export default function BusinessCreatePage() {
       {/* Founders list */}
       <div className="space-y-3">
         {founders.map((f, i) => (
-          <div key={i} className="bg-white/3 border border-white/8 rounded-xl p-4">
+          <div key={i} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: shareColors[i % shareColors.length] }} />
-                <span className="text-sm text-white/70 font-mono truncate max-w-[200px]">
+                <span className="text-sm text-[var(--foreground-muted)] font-mono truncate max-w-[200px]">
                   {i === 0 ? 'You (creator)' : f.username ? `@${f.username}` : `${f.address.slice(0, 8)}...${f.address.slice(-6)}`}
                 </span>
               </div>
               {i > 0 && (
                 <button
                   onClick={() => handleRemoveFounder(i)}
-                  className="text-white/20 hover:text-[#EF4444] transition-colors"
+                  className="text-[var(--foreground-subtle)] hover:text-[#EF4444] transition-colors"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -527,7 +527,7 @@ export default function BusinessCreatePage() {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-xs text-white/40">Shares:</label>
+              <label className="text-xs text-[var(--foreground-subtle)]">Shares:</label>
               <input
                 type="number"
                 value={f.shares || ''}
@@ -535,10 +535,10 @@ export default function BusinessCreatePage() {
                 placeholder="0"
                 min={0}
                 max={supply}
-                className="flex-1 bg-white/5 border border-white/8 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--border)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               {supply > 0 && (
-                <span className="text-xs text-white/30 w-12 text-right">
+                <span className="text-xs text-[var(--foreground-subtle)] w-12 text-right">
                   {((f.shares / supply) * 100).toFixed(1)}%
                 </span>
               )}
@@ -548,15 +548,15 @@ export default function BusinessCreatePage() {
       </div>
 
       {/* Add founder */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Add Founder</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Add Founder</label>
         <div className="flex gap-2">
           <input
             type="text"
             value={newFounderInput}
             onChange={(e) => { setNewFounderInput(e.target.value); setFounderError('') }}
             placeholder="0x... or @username"
-            className="flex-1 bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 font-mono"
+            className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--border)] font-mono"
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddFounder() } }}
           />
           <button
@@ -598,18 +598,18 @@ export default function BusinessCreatePage() {
 
   const renderStep3 = () => (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-white mb-2">Governance Settings</h2>
+      <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Governance Settings</h2>
 
       {/* Transfer Policy */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-3 block">Transfer Policy</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-3 block">Transfer Policy</label>
         <div className="flex gap-2">
           <button
             onClick={() => setTransferPolicy('FREE')}
             className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
               transferPolicy === 'FREE'
                 ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                : 'glass-card text-white/40'
+                : 'glass-card text-[var(--foreground-subtle)]'
             }`}
           >
             <div className="text-center">
@@ -626,7 +626,7 @@ export default function BusinessCreatePage() {
             className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all ${
               transferPolicy === 'APPROVAL_REQUIRED'
                 ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                : 'glass-card text-white/40'
+                : 'glass-card text-[var(--foreground-subtle)]'
             }`}
           >
             <div className="text-center">
@@ -641,9 +641,9 @@ export default function BusinessCreatePage() {
       </div>
 
       {/* Quorum Threshold */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-xs text-white/40 uppercase tracking-wide">Quorum Threshold</label>
+          <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Quorum Threshold</label>
           <span className="text-sm font-semibold text-[#3388FF]">{(quorumBps / 100).toFixed(0)}%</span>
         </div>
         <input
@@ -653,17 +653,17 @@ export default function BusinessCreatePage() {
           step={100}
           value={quorumBps}
           onChange={(e) => setQuorumBps(parseInt(e.target.value))}
-          className="w-full h-2 rounded-full appearance-none cursor-pointer bg-white/10 accent-[#3388FF] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3388FF] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(51,136,255,0.5)]"
+          className="w-full h-2 rounded-full appearance-none cursor-pointer bg-[var(--surface-hover)] accent-[#3388FF] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3388FF] [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(51,136,255,0.5)]"
         />
         <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-white/25">51%</span>
-          <span className="text-[10px] text-white/25">100%</span>
+          <span className="text-[10px] text-[var(--foreground-subtle)]">51%</span>
+          <span className="text-[10px] text-[var(--foreground-subtle)]">100%</span>
         </div>
       </div>
 
       {/* Voting Period */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <label className="text-xs text-white/40 uppercase tracking-wide mb-3 block">Voting Period</label>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-3 block">Voting Period</label>
         <div className="grid grid-cols-2 gap-2">
           {VOTING_PERIOD_OPTIONS.map((opt) => (
             <button
@@ -672,7 +672,7 @@ export default function BusinessCreatePage() {
               className={`py-2 rounded-lg text-sm font-medium transition-all ${
                 votingPeriod === opt.seconds
                   ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                  : 'glass-card text-white/40'
+                  : 'glass-card text-[var(--foreground-subtle)]'
               }`}
             >
               {opt.label}
@@ -682,37 +682,37 @@ export default function BusinessCreatePage() {
       </div>
 
       {/* Vesting */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-xs text-white/40 uppercase tracking-wide">Vesting</label>
+          <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Vesting</label>
           <button
             onClick={() => setVestingEnabled(!vestingEnabled)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${vestingEnabled ? 'bg-[#3388FF]' : 'bg-white/10'}`}
+            className={`relative w-11 h-6 rounded-full transition-colors ${vestingEnabled ? 'bg-[#3388FF]' : 'bg-[var(--surface-hover)]'}`}
           >
             <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${vestingEnabled ? 'left-6' : 'left-1'}`} />
           </button>
         </div>
         {vestingEnabled && (
-          <div className="space-y-3 mt-3 pt-3 border-t border-white/5">
+          <div className="space-y-3 mt-3 pt-3 border-t border-[var(--border-light)]">
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-[10px] text-white/30 mb-1 block">Cliff (months)</label>
+                <label className="text-[10px] text-[var(--foreground-subtle)] mb-1 block">Cliff (months)</label>
                 <input
                   type="number"
                   value={vestingCliff}
                   onChange={(e) => setVestingCliff(e.target.value)}
                   min={1}
-                  className="w-full bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--border)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-[10px] text-white/30 mb-1 block">Duration (months)</label>
+                <label className="text-[10px] text-[var(--foreground-subtle)] mb-1 block">Duration (months)</label>
                 <input
                   type="number"
                   value={vestingDuration}
                   onChange={(e) => setVestingDuration(e.target.value)}
                   min={1}
-                  className="w-full bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--border)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
@@ -721,20 +721,20 @@ export default function BusinessCreatePage() {
       </div>
 
       {/* Dividends */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-xs text-white/40 uppercase tracking-wide">Dividends</label>
+          <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Dividends</label>
           <button
             onClick={() => setDividendsEnabled(!dividendsEnabled)}
-            className={`relative w-11 h-6 rounded-full transition-colors ${dividendsEnabled ? 'bg-[#3388FF]' : 'bg-white/10'}`}
+            className={`relative w-11 h-6 rounded-full transition-colors ${dividendsEnabled ? 'bg-[#3388FF]' : 'bg-[var(--surface-hover)]'}`}
           >
             <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${dividendsEnabled ? 'left-6' : 'left-1'}`} />
           </button>
         </div>
         {dividendsEnabled && (
-          <div className="space-y-3 mt-3 pt-3 border-t border-white/5">
+          <div className="space-y-3 mt-3 pt-3 border-t border-[var(--border-light)]">
             <div>
-              <label className="text-[10px] text-white/30 mb-1 block">Frequency</label>
+              <label className="text-[10px] text-[var(--foreground-subtle)] mb-1 block">Frequency</label>
               <div className="grid grid-cols-2 gap-2">
                 {DIVIDEND_FREQUENCY_OPTIONS.map((freq) => (
                   <button
@@ -743,7 +743,7 @@ export default function BusinessCreatePage() {
                     className={`py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${
                       dividendFrequency === freq
                         ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                        : 'glass-card text-white/40'
+                        : 'glass-card text-[var(--foreground-subtle)]'
                     }`}
                   >
                     {freq}
@@ -752,7 +752,7 @@ export default function BusinessCreatePage() {
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-white/30 mb-1 block">Percentage</label>
+              <label className="text-[10px] text-[var(--foreground-subtle)] mb-1 block">Percentage</label>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -761,9 +761,9 @@ export default function BusinessCreatePage() {
                   min={0.1}
                   max={100}
                   step={0.1}
-                  className="flex-1 bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--border)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <span className="text-sm text-white/40">%</span>
+                <span className="text-sm text-[var(--foreground-subtle)]">%</span>
               </div>
             </div>
           </div>
@@ -774,10 +774,10 @@ export default function BusinessCreatePage() {
 
   const renderStep4 = () => (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-white mb-2">Review & Deploy</h2>
+      <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Review & Deploy</h2>
 
       {/* Summary */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-3 mb-1">
           <div className="w-10 h-10 rounded-xl bg-[#3388FF]/15 flex items-center justify-center">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3388FF" strokeWidth="2">
@@ -786,28 +786,28 @@ export default function BusinessCreatePage() {
             </svg>
           </div>
           <div>
-            <p className="text-white font-semibold">{name}</p>
-            <p className="text-xs text-white/40">{tokenSymbol} -- {supply.toLocaleString()} tokens</p>
+            <p className="text-[var(--foreground)] font-semibold">{name}</p>
+            <p className="text-xs text-[var(--foreground-subtle)]">{tokenSymbol} -- {supply.toLocaleString()} tokens</p>
           </div>
         </div>
         {description && (
-          <p className="text-sm text-white/50">{description}</p>
+          <p className="text-sm text-[var(--foreground-muted)]">{description}</p>
         )}
       </div>
 
       {/* Founders */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Founders ({founders.length})</p>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-3">Founders ({founders.length})</p>
         <div className="space-y-2">
           {founders.map((f, i) => (
             <div key={i} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: shareColors[i % shareColors.length] }} />
-                <span className="text-xs text-white/60 font-mono">
+                <span className="text-xs text-[var(--foreground-muted)] font-mono">
                   {i === 0 ? 'You' : f.username ? `@${f.username}` : `${f.address.slice(0, 6)}...${f.address.slice(-4)}`}
                 </span>
               </div>
-              <span className="text-xs text-white/50">
+              <span className="text-xs text-[var(--foreground-muted)]">
                 {f.shares} ({supply > 0 ? ((f.shares / supply) * 100).toFixed(1) : 0}%)
               </span>
             </div>
@@ -816,30 +816,30 @@ export default function BusinessCreatePage() {
       </div>
 
       {/* Governance */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-        <p className="text-xs text-white/40 uppercase tracking-wide mb-3">Governance</p>
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-3">Governance</p>
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-xs text-white/40">Transfer Policy</span>
-            <span className="text-xs text-white/70">{transferPolicy === 'FREE' ? 'Free Transfer' : 'Approval Required'}</span>
+            <span className="text-xs text-[var(--foreground-subtle)]">Transfer Policy</span>
+            <span className="text-xs text-[var(--foreground-muted)]">{transferPolicy === 'FREE' ? 'Free Transfer' : 'Approval Required'}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-white/40">Quorum</span>
-            <span className="text-xs text-white/70">{(quorumBps / 100).toFixed(0)}%</span>
+            <span className="text-xs text-[var(--foreground-subtle)]">Quorum</span>
+            <span className="text-xs text-[var(--foreground-muted)]">{(quorumBps / 100).toFixed(0)}%</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-white/40">Voting Period</span>
-            <span className="text-xs text-white/70">{VOTING_PERIOD_OPTIONS.find(o => o.seconds === votingPeriod)?.label}</span>
+            <span className="text-xs text-[var(--foreground-subtle)]">Voting Period</span>
+            <span className="text-xs text-[var(--foreground-muted)]">{VOTING_PERIOD_OPTIONS.find(o => o.seconds === votingPeriod)?.label}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-white/40">Vesting</span>
-            <span className="text-xs text-white/70">
+            <span className="text-xs text-[var(--foreground-subtle)]">Vesting</span>
+            <span className="text-xs text-[var(--foreground-muted)]">
               {vestingEnabled ? `${vestingCliff}mo cliff, ${vestingDuration}mo duration` : 'Disabled'}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-xs text-white/40">Dividends</span>
-            <span className="text-xs text-white/70">
+            <span className="text-xs text-[var(--foreground-subtle)]">Dividends</span>
+            <span className="text-xs text-[var(--foreground-muted)]">
               {dividendsEnabled ? `${dividendPercentage}% ${dividendFrequency}` : 'Disabled'}
             </span>
           </div>
@@ -864,10 +864,10 @@ export default function BusinessCreatePage() {
       )}
 
       {/* Network */}
-      <div className="bg-white/3 border border-white/8 rounded-xl p-3">
+      <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
-          <span className="text-xs text-white/50">Deploying on {network.name}</span>
+          <span className="text-xs text-[var(--foreground-muted)]">Deploying on {network.name}</span>
         </div>
       </div>
     </div>
@@ -889,8 +889,8 @@ export default function BusinessCreatePage() {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-white mb-2">Business Created</h2>
-              <p className="text-sm text-white/50 mb-4">{name} ({tokenSymbol}) has been deployed successfully.</p>
+              <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">Business Created</h2>
+              <p className="text-sm text-[var(--foreground-muted)] mb-4">{name} ({tokenSymbol}) has been deployed successfully.</p>
 
               {txHash && (
                 <a
@@ -911,13 +911,13 @@ export default function BusinessCreatePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => router.push('/wallet')}
-                  className="flex-1 py-3 rounded-xl glass-card text-white font-medium hover:border-white/15 transition-colors"
+                  className="flex-1 py-3 rounded-xl glass-card text-[var(--foreground)] font-medium hover:border-[var(--border)] transition-colors"
                 >
                   Back to Wallet
                 </button>
                 <button
                   onClick={() => router.push(`/wallet/business/${createdBusinessId}`)}
-                  className="flex-1 py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 transition-colors"
                 >
                   View Business
                 </button>
@@ -942,7 +942,7 @@ export default function BusinessCreatePage() {
           <BackButton />
 
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white mb-6">Create Business</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)] mb-6">Create Business</h1>
 
             <StepIndicator current={step} />
 
@@ -955,11 +955,11 @@ export default function BusinessCreatePage() {
             </div>
 
             {/* Navigation buttons */}
-            <div className="flex gap-3 mt-6 pt-4 border-t border-white/5">
+            <div className="flex gap-3 mt-6 pt-4 border-t border-[var(--border-light)]">
               {step > 1 && (
                 <button
                   onClick={handleBack}
-                  className="flex-1 py-3 rounded-xl glass-card text-white font-medium hover:border-white/15 transition-colors"
+                  className="flex-1 py-3 rounded-xl glass-card text-[var(--foreground)] font-medium hover:border-[var(--border)] transition-colors"
                 >
                   Back
                 </button>
@@ -968,7 +968,7 @@ export default function BusinessCreatePage() {
                 <button
                   onClick={handleNext}
                   disabled={!canProceed}
-                  className="flex-1 py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

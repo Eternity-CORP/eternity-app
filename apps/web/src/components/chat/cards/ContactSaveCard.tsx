@@ -38,26 +38,26 @@ export default function ContactSaveCard({ recipientAddress, recipientUsername, o
           <div className="w-8 h-8 rounded-full bg-[#22C55E]/15 flex items-center justify-center text-[#22C55E]">
             <UserPlusIcon />
           </div>
-          <span className="text-sm font-semibold text-white">Save to Contacts?</span>
+          <span className="text-sm font-semibold text-[var(--foreground)]">Save to Contacts?</span>
         </div>
 
         {/* Recipient info */}
         <div className="space-y-3">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-white/40">Address</span>
-            <p className="text-xs text-white/60 font-mono mt-0.5">{truncateAddress(recipientAddress)}</p>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Address</span>
+            <p className="text-xs text-[var(--foreground-muted)] font-mono mt-0.5">{truncateAddress(recipientAddress)}</p>
           </div>
 
           {recipientUsername && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider text-white/40">Username</span>
-              <p className="text-xs text-white/60 mt-0.5">{recipientUsername}</p>
+              <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Username</span>
+              <p className="text-xs text-[var(--foreground-muted)] mt-0.5">{recipientUsername}</p>
             </div>
           )}
 
           {/* Name input */}
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-white/40">Name</span>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Name</span>
             <div className="editable-field mt-0.5">
               <input
                 ref={inputRef}
@@ -66,7 +66,7 @@ export default function ContactSaveCard({ recipientAddress, recipientUsername, o
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) onSave(name.trim()) }}
                 placeholder="Enter contact name"
-                className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/20"
+                className="w-full bg-transparent text-xs text-[var(--foreground)] outline-none placeholder:text-[var(--foreground-subtle)]"
               />
             </div>
           </div>
@@ -76,14 +76,14 @@ export default function ContactSaveCard({ recipientAddress, recipientUsername, o
         <div className="flex gap-2 mt-4">
           <button
             onClick={onSkip}
-            className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-white/60 glass-card hover:text-white/80 transition-colors cursor-pointer"
+            className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-[var(--foreground-muted)] glass-card hover:text-[var(--foreground)] transition-colors cursor-pointer"
           >
             Skip
           </button>
           <button
             onClick={() => onSave(name.trim())}
             disabled={!name.trim()}
-            className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-white text-black shimmer cursor-pointer hover:bg-white/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-[var(--foreground)] text-[var(--background)] shimmer cursor-pointer hover:opacity-90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Save
           </button>

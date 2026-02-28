@@ -1,10 +1,10 @@
 /**
  * ChatInput Component
  * Text input with unified action button for AI chat
- * Empty input → mic, has text → send, recording → stop
+ * Empty input -> mic, has text -> send, recording -> stop
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   TextInput,
@@ -16,7 +16,7 @@ import {
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 // expo-speech-recognition requires a dev client build (native module).
-// In Expo Go it's unavailable — provide graceful fallback.
+// In Expo Go it's unavailable -- provide graceful fallback.
 let ExpoSpeechRecognitionModule: {
   requestPermissionsAsync: () => Promise<{ granted: boolean }>;
   start: (opts: Record<string, unknown>) => void;
@@ -31,9 +31,10 @@ try {
   ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
   useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
 } catch {
-  // Native module not available (Expo Go) — voice input disabled
+  // Native module not available (Expo Go) -- voice input disabled
 }
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 
 const BAR_COUNT = 5;
@@ -108,6 +109,9 @@ export function ChatInput({
   disabled = false,
   placeholder = 'Ask anything...',
 }: ChatInputProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+
   const [text, setText] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState('');
@@ -237,6 +241,10 @@ export function ChatInput({
       <View
         style={[
           styles.inputContainer,
+          {
+            backgroundColor: aiChatTheme.input.bg,
+            borderColor: aiChatTheme.input.border,
+          },
           isListening && styles.inputContainerRecording,
         ]}
       >
@@ -247,12 +255,12 @@ export function ChatInput({
           </View>
         )}
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: aiChatTheme.text.primary }]}
           value={displayText}
           onChangeText={handleChangeText}
           placeholder={isListening ? 'Listening...' : placeholder}
           placeholderTextColor={
-            isListening ? 'rgba(239,68,68,0.5)' : aiChat.input.placeholder
+            isListening ? 'rgba(239,68,68,0.5)' : aiChatTheme.input.placeholder
           }
           multiline
           maxLength={1000}
@@ -269,8 +277,9 @@ export function ChatInput({
           <TouchableOpacity
             style={[
               styles.actionButton,
+              { backgroundColor: aiChatTheme.actionButtonBg },
               isListening && styles.actionButtonRecording,
-              showSend && styles.actionButtonSend,
+              showSend && { backgroundColor: aiChatTheme.accentBlue },
             ]}
             onPress={handleActionButton}
             disabled={disabled}
@@ -280,7 +289,7 @@ export function ChatInput({
               name={isListening ? 'stop' : showSend ? 'arrow-up' : speechAvailable ? 'microphone' : 'arrow-up'}
               size={isListening ? 14 : 18}
               color={
-                isListening || showSend ? '#FFFFFF' : 'rgba(255,255,255,0.2)'
+                isListening || showSend ? '#FFFFFF' : aiChatTheme.actionButtonIcon
               }
             />
           </TouchableOpacity>
@@ -300,10 +309,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: aiChat.input.bg,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: aiChat.input.border,
     paddingLeft: theme.spacing.lg,
     paddingRight: theme.spacing.xs,
     paddingVertical: theme.spacing.xs,
@@ -327,7 +334,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: aiChat.text.primary,
     maxHeight: 100,
     paddingVertical: theme.spacing.sm,
   },
@@ -335,14 +341,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionButtonRecording: {
     backgroundColor: '#EF4444',
-  },
-  actionButtonSend: {
-    backgroundColor: aiChat.accentBlue,
   },
 });

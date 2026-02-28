@@ -249,40 +249,40 @@ export default function BlikPage() {
         <div className="w-full max-w-[420px]">
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white text-center mb-8">BLIK</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)] text-center mb-8">BLIK</h1>
 
             {/* Mode Selection */}
             {mode === 'select' && (
               <div className="space-y-3">
                 <button
                   onClick={() => setMode('request')}
-                  className="w-full p-4 bg-white/3 border border-white/8 rounded-xl hover:bg-white/5 transition-all text-left flex items-center gap-4"
+                  className="w-full p-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl hover:bg-[var(--surface-hover)] transition-all text-left flex items-center gap-4"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-white/8 flex items-center justify-center">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                  <div className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground)]">
                       <line x1="12" y1="5" x2="12" y2="19"/>
                       <polyline points="19 12 12 19 5 12"/>
                     </svg>
                   </div>
                   <div>
-                    <p className="font-semibold text-white">Request</p>
-                    <p className="text-sm text-white/40">Generate code to receive</p>
+                    <p className="font-semibold text-[var(--foreground)]">Request</p>
+                    <p className="text-sm text-[var(--foreground-subtle)]">Generate code to receive</p>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setMode('send')}
-                  className="w-full p-4 bg-white/3 border border-white/8 rounded-xl hover:bg-white/5 transition-all text-left flex items-center gap-4"
+                  className="w-full p-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl hover:bg-[var(--surface-hover)] transition-all text-left flex items-center gap-4"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-white/8 flex items-center justify-center">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                  <div className="w-10 h-10 rounded-lg bg-[var(--surface-hover)] flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground)]">
                       <line x1="12" y1="19" x2="12" y2="5"/>
                       <polyline points="5 12 12 5 19 12"/>
                     </svg>
                   </div>
                   <div>
-                    <p className="font-semibold text-white">Send</p>
-                    <p className="text-sm text-white/40">Enter code to pay</p>
+                    <p className="font-semibold text-[var(--foreground)]">Send</p>
+                    <p className="text-sm text-[var(--foreground-subtle)]">Enter code to pay</p>
                   </div>
                 </button>
               </div>
@@ -293,7 +293,7 @@ export default function BlikPage() {
               <>
                 {!isTestAccount && (
                   <div className="mb-4">
-                    <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">Network</label>
+                    <label className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wider mb-1.5 block">Network</label>
                     <div className="flex flex-wrap gap-1.5">
                       {TIER1_NETWORK_IDS.map((id) => {
                         const net = SUPPORTED_NETWORKS[id]
@@ -305,8 +305,8 @@ export default function BlikPage() {
                             className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
                             style={{
                               backgroundColor: isSelected ? net.color + '20' : 'transparent',
-                              borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
-                              color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                              borderColor: isSelected ? net.color + '60' : 'var(--border)',
+                              color: isSelected ? net.color : 'var(--foreground-subtle)',
                             }}
                           >
                             <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: net.color }} />
@@ -318,8 +318,8 @@ export default function BlikPage() {
                   </div>
                 )}
 
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Amount</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Amount</label>
                   <div className="flex items-center gap-3 overflow-hidden">
                     <input
                       type="number"
@@ -327,10 +327,10 @@ export default function BlikPage() {
                       onChange={(e) => { setAmount(e.target.value); setError(''); }}
                       placeholder="0"
                       step="0.0001"
-                      className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       autoFocus
                     />
-                    <span className="flex-shrink-0 text-lg font-medium text-white/40">
+                    <span className="flex-shrink-0 text-lg font-medium text-[var(--foreground-subtle)]">
                       {isTestAccount ? network.symbol : SUPPORTED_NETWORKS[selectedNetwork].nativeCurrency.symbol}
                     </span>
                   </div>
@@ -345,14 +345,14 @@ export default function BlikPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={reset}
-                    className="flex-1 py-4 rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
+                    className="flex-1 py-4 rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleCreateCode}
                     disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > BLIK_MAX_AMOUNT}
-                    className="flex-1 py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
+                    className="flex-1 py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                   >
                     Generate
                   </button>
@@ -363,7 +363,7 @@ export default function BlikPage() {
             {/* Request - Show Code */}
             {mode === 'request' && createdCode && (
               <div className="text-center">
-                <p className="text-sm text-white/40 mb-4">Share this code</p>
+                <p className="text-sm text-[var(--foreground-subtle)] mb-4">Share this code</p>
                 <button
                   onClick={async () => {
                     await navigator.clipboard.writeText(createdCode.code)
@@ -373,7 +373,7 @@ export default function BlikPage() {
                   className="group relative inline-block mb-2"
                   title="Copy code"
                 >
-                  <p className="text-5xl font-mono font-bold tracking-[0.2em] text-white group-hover:text-white/80 transition-colors">
+                  <p className="text-5xl font-mono font-bold tracking-[0.2em] text-[var(--foreground)] group-hover:text-[var(--foreground-muted)] transition-colors">
                     {createdCode.code}
                   </p>
                   <span className={`absolute -right-8 top-1/2 -translate-y-1/2 transition-opacity ${codeCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`}>
@@ -382,7 +382,7 @@ export default function BlikPage() {
                         <path d="M20 6L9 17l-5-5"/>
                       </svg>
                     ) : (
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/40">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                       </svg>
@@ -392,9 +392,9 @@ export default function BlikPage() {
                 {codeCopied && (
                   <p className="text-xs text-[#22c55e] mb-1">Copied!</p>
                 )}
-                <p className="text-xl text-white mb-2">{createdCode.amount} {createdCode.tokenSymbol}</p>
+                <p className="text-xl text-[var(--foreground)] mb-2">{createdCode.amount} {createdCode.tokenSymbol}</p>
                 {!isTestAccount && (
-                  <p className="text-xs text-white/40 mb-6">
+                  <p className="text-xs text-[var(--foreground-subtle)] mb-6">
                     on {SUPPORTED_NETWORKS[selectedNetwork]?.name || 'Unknown'}
                   </p>
                 )}
@@ -408,7 +408,7 @@ export default function BlikPage() {
 
                 <button
                   onClick={reset}
-                  className="w-full py-4 rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
+                  className="w-full py-4 rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
                 >
                   Cancel
                 </button>
@@ -418,15 +418,15 @@ export default function BlikPage() {
             {/* Send - Enter Code */}
             {mode === 'send' && !foundCode && (
               <>
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">6-digit code</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">6-digit code</label>
                   <input
                     type="text"
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="000000"
                     maxLength={6}
-                    className="w-full bg-transparent text-3xl font-mono font-bold text-white text-center tracking-[0.3em] placeholder:text-white/25 focus:outline-none"
+                    className="w-full bg-transparent text-3xl font-mono font-bold text-[var(--foreground)] text-center tracking-[0.3em] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                     autoFocus
                   />
                 </div>
@@ -440,14 +440,14 @@ export default function BlikPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={reset}
-                    className="flex-1 py-4 rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
+                    className="flex-1 py-4 rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleLookupCode}
                     disabled={inputCode.length !== 6}
-                    className="flex-1 py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
+                    className="flex-1 py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                   >
                     Find
                   </button>
@@ -459,13 +459,13 @@ export default function BlikPage() {
             {mode === 'send' && foundCode && (
               <>
                 <div className="text-center mb-6">
-                  <p className="text-4xl font-bold text-white mb-1">{foundCode.amount} {foundCode.tokenSymbol}</p>
+                  <p className="text-4xl font-bold text-[var(--foreground)] mb-1">{foundCode.amount} {foundCode.tokenSymbol}</p>
                   {foundCode.chainId && foundCode.chainId !== 11155111 && (
-                    <p className="text-xs text-white/30 mb-1">
+                    <p className="text-xs text-[var(--foreground-subtle)] mb-1">
                       on {Object.values(SUPPORTED_NETWORKS).find(n => n.chainId === foundCode.chainId)?.name || `Chain ${foundCode.chainId}`}
                     </p>
                   )}
-                  <p className="text-sm text-white/40 font-mono truncate">{foundCode.receiverAddress}</p>
+                  <p className="text-sm text-[var(--foreground-subtle)] font-mono truncate">{foundCode.receiverAddress}</p>
                 </div>
 
                 {error && (
@@ -477,14 +477,14 @@ export default function BlikPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={reset}
-                    className="flex-1 py-4 rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
+                    className="flex-1 py-4 rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSend}
                     disabled={sendStatus === 'loading'}
-                    className="flex-1 py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
+                    className="flex-1 py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                   >
                     {sendStatus === 'loading' ? 'Sending...' : 'Send'}
                   </button>

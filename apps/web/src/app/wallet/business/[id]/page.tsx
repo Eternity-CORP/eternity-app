@@ -99,7 +99,7 @@ function DonutChart({ holders, totalSupply }: { holders: HolderInfo[]; totalSupp
           cy={center}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.05)"
+          stroke="var(--border-light)"
           strokeWidth={strokeWidth}
         />
         {/* Segments */}
@@ -127,11 +127,11 @@ function DonutChart({ holders, totalSupply }: { holders: HolderInfo[]; totalSupp
           <div key={i} className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-              <span className="text-white/60 truncate max-w-[140px]">
+              <span className="text-[var(--foreground-muted)] truncate max-w-[140px]">
                 {h.username ? `@${h.username}` : `${h.address.slice(0, 6)}...${h.address.slice(-4)}`}
               </span>
             </div>
-            <span className="text-white/40 font-mono">
+            <span className="text-[var(--foreground-subtle)] font-mono">
               {h.percent.toFixed(1)}%
             </span>
           </div>
@@ -395,7 +395,7 @@ export default function BusinessDashboardPage() {
           <div className="w-full max-w-[560px]">
             <div className="glass-card gradient-border rounded-2xl p-6">
               <div className="flex justify-center py-16">
-                <div className="w-10 h-10 border-2 border-white/20 border-t-[#3388FF] rounded-full animate-spin" />
+                <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[#3388FF] rounded-full animate-spin" />
               </div>
             </div>
           </div>
@@ -422,11 +422,11 @@ export default function BusinessDashboardPage() {
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-white mb-2">Failed to load business</h2>
-              <p className="text-sm text-white/40 mb-4">{error || 'Business not found'}</p>
+              <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Failed to load business</h2>
+              <p className="text-sm text-[var(--foreground-subtle)] mb-4">{error || 'Business not found'}</p>
               <button
                 onClick={() => router.push('/wallet')}
-                className="py-2.5 px-6 rounded-xl glass-card text-white font-medium hover:border-white/15 transition-colors"
+                className="py-2.5 px-6 rounded-xl glass-card text-[var(--foreground)] font-medium hover:border-[var(--border)] transition-colors"
               >
                 Back to Wallet
               </button>
@@ -458,30 +458,30 @@ export default function BusinessDashboardPage() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-semibold text-white">{business.name}</h1>
+                  <h1 className="text-xl font-semibold text-[var(--foreground)]">{business.name}</h1>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#3388FF]/15 text-[#3388FF] border border-[#3388FF]/20">
                     ${business.tokenSymbol}
                   </span>
                 </div>
                 {business.description && (
-                  <p className="text-sm text-white/40 mt-1">{business.description}</p>
+                  <p className="text-sm text-[var(--foreground-subtle)] mt-1">{business.description}</p>
                 )}
               </div>
             </div>
 
             {/* Quick stats */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white/3 rounded-xl p-3 text-center">
-                <p className="text-xs text-white/40">Supply</p>
-                <p className="text-sm font-semibold text-white">{business.tokenSupply.toLocaleString()}</p>
+              <div className="bg-[var(--surface)] rounded-xl p-3 text-center">
+                <p className="text-xs text-[var(--foreground-subtle)]">Supply</p>
+                <p className="text-sm font-semibold text-[var(--foreground)]">{business.tokenSupply.toLocaleString()}</p>
               </div>
-              <div className="bg-white/3 rounded-xl p-3 text-center">
-                <p className="text-xs text-white/40">Members</p>
-                <p className="text-sm font-semibold text-white">{holders.length}</p>
+              <div className="bg-[var(--surface)] rounded-xl p-3 text-center">
+                <p className="text-xs text-[var(--foreground-subtle)]">Members</p>
+                <p className="text-sm font-semibold text-[var(--foreground)]">{holders.length}</p>
               </div>
-              <div className="bg-white/3 rounded-xl p-3 text-center">
-                <p className="text-xs text-white/40">Proposals</p>
-                <p className="text-sm font-semibold text-white">{proposals.length}</p>
+              <div className="bg-[var(--surface)] rounded-xl p-3 text-center">
+                <p className="text-xs text-[var(--foreground-subtle)]">Proposals</p>
+                <p className="text-sm font-semibold text-[var(--foreground)]">{proposals.length}</p>
               </div>
             </div>
           </div>
@@ -491,23 +491,23 @@ export default function BusinessDashboardPage() {
 
             {/* Equity Distribution */}
             <div className="glass-card rounded-2xl p-5 sm:col-span-2">
-              <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Equity Distribution</h3>
+              <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Equity Distribution</h3>
               {holders.length > 0 ? (
                 <DonutChart holders={holders} totalSupply={business.tokenSupply} />
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-sm text-white/30">No holder data available</p>
-                  <p className="text-[10px] text-white/20 mt-1">On-chain data may take a moment to load</p>
+                  <p className="text-sm text-[var(--foreground-subtle)]">No holder data available</p>
+                  <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">On-chain data may take a moment to load</p>
                 </div>
               )}
             </div>
 
             {/* Treasury Balance */}
             <div className="glass-card rounded-2xl p-5">
-              <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Treasury</h3>
+              <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Treasury</h3>
               <div className="text-center">
-                <p className="text-2xl font-bold text-white mb-1">{parseFloat(treasuryEth).toFixed(4)}</p>
-                <p className="text-xs text-white/40">ETH</p>
+                <p className="text-2xl font-bold text-[var(--foreground)] mb-1">{parseFloat(treasuryEth).toFixed(4)}</p>
+                <p className="text-xs text-[var(--foreground-subtle)]">ETH</p>
               </div>
               <button
                 onClick={() => setShowDepositInfo(!showDepositInfo)}
@@ -517,13 +517,13 @@ export default function BusinessDashboardPage() {
               </button>
 
               {showDepositInfo && (
-                <div className="mt-3 p-3 bg-white/3 rounded-xl border border-white/8">
-                  <p className="text-[10px] text-white/40 mb-1.5">Send ETH to the treasury address:</p>
+                <div className="mt-3 p-3 bg-[var(--surface)] rounded-xl border border-[var(--border)]">
+                  <p className="text-[10px] text-[var(--foreground-subtle)] mb-1.5">Send ETH to the treasury address:</p>
                   <button
                     onClick={async () => {
                       await navigator.clipboard.writeText(business.treasuryAddress)
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg text-xs font-mono text-white/60 hover:text-white hover:bg-white/8 transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-[var(--surface)] rounded-lg text-xs font-mono text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] transition-colors text-left"
                   >
                     <span className="truncate flex-1">{business.treasuryAddress}</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0">
@@ -531,27 +531,27 @@ export default function BusinessDashboardPage() {
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                     </svg>
                   </button>
-                  <p className="text-[10px] text-white/25 mt-1.5">Or send from any wallet to this address</p>
+                  <p className="text-[10px] text-[var(--foreground-subtle)] mt-1.5">Or send from any wallet to this address</p>
                 </div>
               )}
             </div>
 
             {/* Members List */}
             <div className="glass-card rounded-2xl p-5">
-              <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Members</h3>
+              <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Members</h3>
               <div className="space-y-3">
                 {holders.length > 0 ? holders.map((h, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                      <span className="text-xs text-white/60 truncate font-mono">
+                      <span className="text-xs text-[var(--foreground-muted)] truncate font-mono">
                         {h.username ? `@${h.username}` : `${h.address.slice(0, 6)}...${h.address.slice(-4)}`}
                       </span>
                     </div>
                     <div className="flex flex-col items-end flex-shrink-0 ml-2">
-                      <span className="text-xs text-white/70 font-mono">{h.balance}</span>
+                      <span className="text-xs text-[var(--foreground-muted)] font-mono">{h.balance}</span>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <div className="w-16 h-1 rounded-full bg-white/5 overflow-hidden">
+                        <div className="w-16 h-1 rounded-full bg-[var(--surface)] overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{
@@ -560,12 +560,12 @@ export default function BusinessDashboardPage() {
                             }}
                           />
                         </div>
-                        <span className="text-[10px] text-white/40">{h.percent.toFixed(1)}%</span>
+                        <span className="text-[10px] text-[var(--foreground-subtle)]">{h.percent.toFixed(1)}%</span>
                       </div>
                     </div>
                   </div>
                 )) : (
-                  <p className="text-sm text-white/30 text-center py-4">No member data</p>
+                  <p className="text-sm text-[var(--foreground-subtle)] text-center py-4">No member data</p>
                 )}
               </div>
             </div>
@@ -573,7 +573,7 @@ export default function BusinessDashboardPage() {
             {/* Active Proposals */}
             <div className="glass-card rounded-2xl p-5 sm:col-span-2">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs text-white/40 uppercase tracking-wide">Active Proposals</h3>
+                <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Active Proposals</h3>
                 <Link
                   href={`/wallet/business/${businessId}/proposals`}
                   className="text-[10px] text-[#3388FF] hover:text-[#3388FF]/80 transition-colors"
@@ -594,15 +594,15 @@ export default function BusinessDashboardPage() {
                     const hoursLeft = Math.max(0, Math.floor(timeLeft / 3600000))
 
                     return (
-                      <div key={p.id} className="bg-white/3 border border-white/8 rounded-xl p-4">
+                      <div key={p.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs px-2 py-0.5 rounded-full bg-[#F59E0B]/10 text-[#F59E0B]">
                               #{p.id}
                             </span>
-                            <span className="text-xs text-white/50 capitalize">{p.type.replace(/_/g, ' ').toLowerCase()}</span>
+                            <span className="text-xs text-[var(--foreground-muted)] capitalize">{p.type.replace(/_/g, ' ').toLowerCase()}</span>
                           </div>
-                          <span className="text-[10px] text-white/30">
+                          <span className="text-[10px] text-[var(--foreground-subtle)]">
                             {hoursLeft > 0 ? `${hoursLeft}h left` : 'Ended'}
                           </span>
                         </div>
@@ -611,23 +611,23 @@ export default function BusinessDashboardPage() {
                         <div className="space-y-1.5 mt-3">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-[#22c55e] w-8">For</span>
-                            <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                            <div className="flex-1 h-1.5 rounded-full bg-[var(--surface)] overflow-hidden">
                               <div
                                 className="h-full bg-[#22c55e] transition-all"
                                 style={{ width: `${forPct}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-white/40 w-8 text-right">{p.forVotes}</span>
+                            <span className="text-[10px] text-[var(--foreground-subtle)] w-8 text-right">{p.forVotes}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] text-[#EF4444] w-8">Against</span>
-                            <div className="flex-1 h-1.5 rounded-full bg-white/5 overflow-hidden">
+                            <div className="flex-1 h-1.5 rounded-full bg-[var(--surface)] overflow-hidden">
                               <div
                                 className="h-full bg-[#EF4444] transition-all"
                                 style={{ width: `${againstPct}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-white/40 w-8 text-right">{p.againstVotes}</span>
+                            <span className="text-[10px] text-[var(--foreground-subtle)] w-8 text-right">{p.againstVotes}</span>
                           </div>
                         </div>
 
@@ -640,13 +640,13 @@ export default function BusinessDashboardPage() {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/15 mb-2">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-[var(--foreground-subtle)] mb-2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                     <polyline points="14 2 14 8 20 8" />
                     <line x1="16" y1="13" x2="8" y2="13" />
                     <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
-                  <p className="text-xs text-white/30">No active proposals</p>
+                  <p className="text-xs text-[var(--foreground-subtle)]">No active proposals</p>
                 </div>
               )}
 
@@ -662,7 +662,7 @@ export default function BusinessDashboardPage() {
 
             {/* Recent Activity */}
             <div className="glass-card rounded-2xl p-5 sm:col-span-2">
-              <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Recent Activity</h3>
+              <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Recent Activity</h3>
 
               {activities.length > 0 ? (
                 <div className="space-y-3">
@@ -670,9 +670,9 @@ export default function BusinessDashboardPage() {
                     <div key={activity.id} className="flex items-start gap-3">
                       <ActivityIcon type={activity.type} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white/70">{activity.description}</p>
+                        <p className="text-sm text-[var(--foreground-muted)]">{activity.description}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-white/30">{formatTimeAgo(activity.createdAt)}</span>
+                          <span className="text-[10px] text-[var(--foreground-subtle)]">{formatTimeAgo(activity.createdAt)}</span>
                           {activity.txHash && (
                             <a
                               href={network.explorerTxUrl(activity.txHash)}
@@ -690,35 +690,35 @@ export default function BusinessDashboardPage() {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/15 mb-2">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-[var(--foreground-subtle)] mb-2">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
                   </svg>
-                  <p className="text-xs text-white/30">No activity yet</p>
+                  <p className="text-xs text-[var(--foreground-subtle)]">No activity yet</p>
                 </div>
               )}
             </div>
 
             {/* Business Settings */}
             <div className="glass-card rounded-2xl p-5 sm:col-span-2">
-              <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Settings</h3>
+              <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Settings</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <span className="text-xs text-white/40">Transfer Policy</span>
-                  <span className="text-xs text-white/70">
+                <div className="flex items-center justify-between py-2 border-b border-[var(--border-light)]">
+                  <span className="text-xs text-[var(--foreground-subtle)]">Transfer Policy</span>
+                  <span className="text-xs text-[var(--foreground-muted)]">
                     {business.transferPolicy === 'FREE' ? 'Free Transfer' : 'Approval Required'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <span className="text-xs text-white/40">Quorum Threshold</span>
-                  <span className="text-xs text-white/70">{(business.quorumThreshold / 100).toFixed(0)}%</span>
+                <div className="flex items-center justify-between py-2 border-b border-[var(--border-light)]">
+                  <span className="text-xs text-[var(--foreground-subtle)]">Quorum Threshold</span>
+                  <span className="text-xs text-[var(--foreground-muted)]">{(business.quorumThreshold / 100).toFixed(0)}%</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <span className="text-xs text-white/40">Voting Period</span>
-                  <span className="text-xs text-white/70">{formatVotingPeriod(business.votingPeriod)}</span>
+                <div className="flex items-center justify-between py-2 border-b border-[var(--border-light)]">
+                  <span className="text-xs text-[var(--foreground-subtle)]">Voting Period</span>
+                  <span className="text-xs text-[var(--foreground-muted)]">{formatVotingPeriod(business.votingPeriod)}</span>
                 </div>
-                <div className="flex items-center justify-between py-2 border-b border-white/5">
-                  <span className="text-xs text-white/40">Vesting</span>
-                  <span className="text-xs text-white/70">
+                <div className="flex items-center justify-between py-2 border-b border-[var(--border-light)]">
+                  <span className="text-xs text-[var(--foreground-subtle)]">Vesting</span>
+                  <span className="text-xs text-[var(--foreground-muted)]">
                     {business.vestingEnabled
                       ? `${(business.vestingConfig as VestingDisplayConfig | undefined)?.cliffMonths ?? '?'}mo cliff, ${(business.vestingConfig as VestingDisplayConfig | undefined)?.durationMonths ?? '?'}mo duration`
                       : 'Disabled'
@@ -726,8 +726,8 @@ export default function BusinessDashboardPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-xs text-white/40">Dividends</span>
-                  <span className="text-xs text-white/70">
+                  <span className="text-xs text-[var(--foreground-subtle)]">Dividends</span>
+                  <span className="text-xs text-[var(--foreground-muted)]">
                     {business.dividendsEnabled
                       ? `${(business.dividendsConfig as DividendDisplayConfig | undefined)?.percentage ?? '?'}% ${(business.dividendsConfig as DividendDisplayConfig | undefined)?.frequency ?? ''}`
                       : 'Disabled'
@@ -740,34 +740,34 @@ export default function BusinessDashboardPage() {
             {/* Vesting Status */}
             {vestingInfo && (
               <div className="glass-card rounded-2xl p-5 sm:col-span-2">
-                <h3 className="text-xs text-white/40 uppercase tracking-wide mb-4">Vesting Status</h3>
+                <h3 className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Vesting Status</h3>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/40">Total Vesting</span>
-                    <span className="text-sm text-white font-medium">{vestingInfo.totalAmount} shares</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">Total Vesting</span>
+                    <span className="text-sm text-[var(--foreground)] font-medium">{vestingInfo.totalAmount} shares</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/40">Released</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">Released</span>
                     <span className="text-sm text-[#22c55e] font-medium">{vestingInfo.released} shares</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/40">Locked</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">Locked</span>
                     <span className="text-sm text-[#f59e0b] font-medium">{lockedAmount} shares</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/40">Releasable Now</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">Releasable Now</span>
                     <span className="text-sm text-[#3388FF] font-medium">{releasableAmount} shares</span>
                   </div>
 
                   {/* Timeline */}
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-3 mt-2">
-                    <div className="flex items-center justify-between text-[10px] text-white/30">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 mt-2">
+                    <div className="flex items-center justify-between text-[10px] text-[var(--foreground-subtle)]">
                       <span>Cliff: {new Date(vestingInfo.cliffEnd * 1000).toLocaleDateString()}</span>
                       <span>End: {new Date(vestingInfo.vestingEnd * 1000).toLocaleDateString()}</span>
                     </div>
                     {/* Progress bar */}
-                    <div className="h-2 bg-white/8 rounded-full overflow-hidden mt-2">
+                    <div className="h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden mt-2">
                       <div
                         className="h-full bg-[#3388FF] rounded-full transition-all"
                         style={{
@@ -782,7 +782,7 @@ export default function BusinessDashboardPage() {
                     <button
                       onClick={() => setShowRelease(true)}
                       disabled={releasing}
-                      className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 transition-colors disabled:opacity-40"
+                      className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 transition-colors disabled:opacity-40"
                     >
                       {releasing ? 'Releasing...' : `Release ${releasableAmount} shares`}
                     </button>

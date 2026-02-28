@@ -117,7 +117,7 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
   const truncated = `${address.slice(0, 6)}...${address.slice(-4)}`
 
   return (
-    <div className="glass-card rounded-2xl p-5 border border-white/8">
+    <div className="glass-card rounded-2xl p-5 border border-[var(--border)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -127,13 +127,13 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Get Test ETH</h3>
-            <p className="text-[10px] text-white/40">Sepolia Testnet</p>
+            <h3 className="text-sm font-semibold text-[var(--foreground)]">Get Test ETH</h3>
+            <p className="text-[10px] text-[var(--foreground-subtle)]">Sepolia Testnet</p>
           </div>
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-white/30 hover:text-white hover:bg-white/5 transition-colors"
+          className="p-1.5 rounded-lg text-[var(--foreground-subtle)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M18 6L6 18M6 6l12 12" />
@@ -142,8 +142,8 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
       </div>
 
       {/* Address display */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/3 border border-white/5 mb-4">
-        <span className="text-xs font-mono text-white/50 flex-1">Your address: {truncated}</span>
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border-light)] mb-4">
+        <span className="text-xs font-mono text-[var(--foreground-muted)] flex-1">Your address: {truncated}</span>
         <button
           onClick={handleCopyAddress}
           className="text-xs text-[#3388FF] hover:text-[#3388FF]/80 font-medium transition-colors"
@@ -158,7 +158,7 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
           {state === 'idle' && (
             <button
               onClick={handleClaim}
-              className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 transition-all hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 transition-all hover:scale-[1.01] active:scale-[0.99]"
             >
               Claim 0.001 ETH
             </button>
@@ -167,7 +167,7 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
           {state === 'loading' && (
             <button
               disabled
-              className="w-full py-3 rounded-xl bg-white/20 text-white/60 font-semibold flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-[var(--surface-hover)] text-[var(--foreground-muted)] font-semibold flex items-center justify-center gap-2"
             >
               <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -192,9 +192,9 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
           )}
 
           {state === 'cooldown' && (
-            <div className="px-3 py-3 rounded-xl bg-white/5 border border-white/8 text-center">
-              <p className="text-sm text-white/60">Next claim in</p>
-              <p className="text-lg font-semibold text-white">{formatTimeRemaining(cooldownMs)}</p>
+            <div className="px-3 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-center">
+              <p className="text-sm text-[var(--foreground-muted)]">Next claim in</p>
+              <p className="text-lg font-semibold text-[var(--foreground)]">{formatTimeRemaining(cooldownMs)}</p>
             </div>
           )}
 
@@ -214,11 +214,11 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
 
       {/* Divider */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex-1 h-px bg-white/5" />
-        <span className="text-[10px] text-white/30 uppercase tracking-wider">
+        <div className="flex-1 h-px bg-[var(--border-light)]" />
+        <span className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wider">
           {state === 'empty' ? 'Get from external faucets' : 'or external faucets'}
         </span>
-        <div className="flex-1 h-px bg-white/5" />
+        <div className="flex-1 h-px bg-[var(--border-light)]" />
       </div>
 
       {/* External faucet links */}
@@ -227,17 +227,17 @@ export default function FaucetCard({ address, onClose, onClaimed }: FaucetCardPr
           <button
             key={faucet.name}
             onClick={() => handleCopyAndOpen(faucet.url)}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-white/3 border border-white/5 hover:border-white/10 hover:bg-white/5 transition-all group"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-[var(--surface)] border border-[var(--border-light)] hover:border-[var(--border)] hover:bg-[var(--surface-hover)] transition-all group"
           >
             <span className="text-lg">{faucet.icon}</span>
             <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-white">{faucet.name}</p>
-              <p className="text-[11px] text-white/40">{faucet.description}</p>
+              <p className="text-sm font-medium text-[var(--foreground)]">{faucet.name}</p>
+              <p className="text-[11px] text-[var(--foreground-subtle)]">{faucet.description}</p>
             </div>
             <svg
               width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2"
-              className="text-white/20 group-hover:text-white/50 transition-colors"
+              className="text-[var(--foreground-subtle)] group-hover:text-[var(--foreground-muted)] transition-colors"
             >
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               <polyline points="15 3 21 3 21 9" />

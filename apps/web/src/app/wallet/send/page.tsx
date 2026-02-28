@@ -314,7 +314,7 @@ function SendContent() {
             />
           ) : (
             <div className="glass-card gradient-border rounded-2xl p-6">
-              <h1 className="text-xl font-semibold text-white text-center mb-8">Send</h1>
+              <h1 className="text-xl font-semibold text-[var(--foreground)] text-center mb-8">Send</h1>
 
               {/* Testnet Info */}
               {currentAccount?.type === 'test' && (
@@ -330,28 +330,28 @@ function SendContent() {
               )}
 
               {/* Recipient */}
-              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
-                <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">To</label>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-4">
+                <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">To</label>
                 <input
                   type="text"
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}
                   placeholder="Address or @username"
-                  className="w-full bg-transparent text-lg font-medium text-white placeholder:text-white/25 focus:outline-none"
+                  className="w-full bg-transparent text-lg font-medium text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                 />
-                {resolving && <p className="text-xs text-white/40 mt-2">Resolving...</p>}
+                {resolving && <p className="text-xs text-[var(--foreground-subtle)] mt-2">Resolving...</p>}
                 {resolvedAddress && resolvedAddress !== recipient && (
-                  <p className="text-xs text-white/40 mt-2 font-mono truncate">{resolvedAddress}</p>
+                  <p className="text-xs text-[var(--foreground-subtle)] mt-2 font-mono truncate">{resolvedAddress}</p>
                 )}
               </div>
 
               {/* Amount + Token Selector */}
-              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-4">
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs text-white/40 uppercase tracking-wide">Amount</label>
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Amount</label>
                   <button
                     onClick={() => setAmount(balance)}
-                    className="text-xs text-white/40 hover:text-white transition-colors"
+                    className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors"
                   >
                     Max: {parseFloat(balance).toFixed(4)}
                   </button>
@@ -363,7 +363,7 @@ function SendContent() {
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
                     step="0.0001"
-                    className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                    className="flex-1 min-w-0 bg-transparent text-3xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                   />
                   <TokenSelector
                     selectedSymbol={selectedToken}
@@ -375,8 +375,8 @@ function SendContent() {
               {/* Gas */}
               {gasEstimate && isDirect && (
                 <div className="flex items-center justify-between px-1 mb-4 text-sm">
-                  <span className="text-white/40">Network fee</span>
-                  <span className="text-white">{parseFloat(gasEstimate).toFixed(6)} {SUPPORTED_NETWORKS[route?.fromNetwork || 'ethereum']?.nativeCurrency?.symbol || 'ETH'}</span>
+                  <span className="text-[var(--foreground-subtle)]">Network fee</span>
+                  <span className="text-[var(--foreground)]">{parseFloat(gasEstimate).toFixed(6)} {SUPPORTED_NETWORKS[route?.fromNetwork || 'ethereum']?.nativeCurrency?.symbol || 'ETH'}</span>
                 </div>
               )}
 
@@ -400,8 +400,8 @@ function SendContent() {
               {/* Route Loading */}
               {routeLoading && (
                 <div className="flex items-center gap-2 px-1 mb-4">
-                  <div className="w-3 h-3 border border-white/20 border-t-white rounded-full animate-spin" />
-                  <span className="text-xs text-white/40">Finding best route...</span>
+                  <div className="w-3 h-3 border border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
+                  <span className="text-xs text-[var(--foreground-subtle)]">Finding best route...</span>
                 </div>
               )}
 
@@ -442,7 +442,7 @@ function SendContent() {
                 <button
                   onClick={handleSend}
                   disabled={!isValid || loading || (gasGuard != null && !gasGuard.sufficient)}
-                  className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                  className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--foreground)] text-[var(--background)] shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 >
                   {loading ? 'Sending...' : `Send ${selectedToken}`}
                 </button>
@@ -459,7 +459,7 @@ export default function SendPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
       </div>
     }>
       <SendContent />

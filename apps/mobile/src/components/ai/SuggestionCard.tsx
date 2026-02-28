@@ -3,12 +3,13 @@
  * Horizontal card for proactive AI suggestions
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { theme } from '@/src/constants/theme';
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import type { AiSuggestion } from '@/src/services/ai-service';
 
 interface SuggestionCardProps {
@@ -25,15 +26,18 @@ const SUGGESTION_ICONS: Record<string, React.ComponentProps<typeof FontAwesome>[
   default: 'magic',
 };
 
-const ACCENT_COLORS: Record<string, string> = {
-  payment_reminder: aiChat.accentAmber,
-  security_alert: aiChat.accentRed,
-  transaction_tip: aiChat.accentPurple,
-  savings_tip: aiChat.accentGreen,
-  default: aiChat.accentBlue,
-};
-
 export function SuggestionCard({ suggestion, onPress, onDismiss }: SuggestionCardProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+
+  const ACCENT_COLORS: Record<string, string> = {
+    payment_reminder: aiChatTheme.accentAmber,
+    security_alert: aiChatTheme.accentRed,
+    transaction_tip: aiChatTheme.accentPurple,
+    savings_tip: aiChatTheme.accentGreen,
+    default: aiChatTheme.accentBlue,
+  };
+
   const iconName = SUGGESTION_ICONS[suggestion.type] || SUGGESTION_ICONS.default;
   const accentColor = ACCENT_COLORS[suggestion.type] || ACCENT_COLORS.default;
 
@@ -53,23 +57,26 @@ export function SuggestionCard({ suggestion, onPress, onDismiss }: SuggestionCar
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <View style={styles.card}>
+      <View style={[styles.card, {
+        backgroundColor: aiChatTheme.glassCard.bg,
+        borderColor: aiChatTheme.glassCard.border,
+      }]}>
         <TouchableOpacity
-          style={styles.dismissButton}
+          style={[styles.dismissButton, { backgroundColor: aiChatTheme.dismissBg }]}
           onPress={handleDismiss}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <FontAwesome name="times" size={12} color="rgba(255,255,255,0.7)" />
+          <FontAwesome name="times" size={12} color={aiChatTheme.dismissIcon} />
         </TouchableOpacity>
 
         <View style={[styles.iconContainer, { backgroundColor: accentColor + '26' }]}>
           <FontAwesome name={iconName} size={20} color={accentColor} />
         </View>
 
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={[styles.title, { color: aiChatTheme.text.primary }]} numberOfLines={2}>
           {suggestion.title}
         </Text>
-        <Text style={styles.message} numberOfLines={2}>
+        <Text style={[styles.message, { color: aiChatTheme.text.secondary }]} numberOfLines={2}>
           {suggestion.message}
         </Text>
 
@@ -89,9 +96,7 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.md,
   },
   card: {
-    backgroundColor: aiChat.glassCard.bg,
     borderWidth: 1,
-    borderColor: aiChat.glassCard.border,
     borderRadius: 16,
     padding: theme.spacing.md,
     minHeight: 140,
@@ -103,7 +108,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -118,12 +122,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: aiChat.text.primary,
     marginBottom: theme.spacing.xs,
   },
   message: {
     fontSize: 12,
-    color: aiChat.text.secondary,
     lineHeight: 18,
   },
   actionBadge: {
@@ -139,6 +141,6 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 12,
     fontWeight: '500',
-    color: aiChat.accentBlue,
+    color: '#3388FF',
   },
 });

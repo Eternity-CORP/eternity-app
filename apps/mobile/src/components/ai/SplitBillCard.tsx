@@ -3,7 +3,7 @@
  * Displays split bill confirmation with participant list and approve/reject buttons
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
-import { aiChat } from '@/src/constants/ai-chat-theme';
-import { cardStyles } from './card-styles';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
+import { getCardStyles } from './card-styles';
 import { LogoStrokeDraw } from './LogoStrokeDraw';
 import type { SplitPreview } from '@e-y/shared';
 
@@ -37,6 +38,10 @@ export function SplitBillCard({
   onConfirm,
   onCancel,
 }: SplitBillCardProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+  const cs = useMemo(() => getCardStyles(aiChatTheme), [aiChatTheme]);
+
   const [status, setStatus] = useState<CardStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -55,14 +60,14 @@ export function SplitBillCard({
 
   if (status === 'success') {
     return (
-      <View style={cardStyles.container}>
+      <View style={cs.container}>
         <LinearGradient
           colors={['rgba(34, 197, 94, 0.15)', 'rgba(34, 197, 94, 0.05)']}
           style={styles.successCard}
         >
           <FontAwesome name="check-circle" size={32} color="#22C55E" />
           <Text style={styles.successTitle}>Split Created!</Text>
-          <Text style={styles.successText}>
+          <Text style={[styles.successText, { color: aiChatTheme.text.secondary }]}>
             {preview.totalAmount} {preview.token} split between{' '}
             {preview.participants.length} people
           </Text>
@@ -72,45 +77,45 @@ export function SplitBillCard({
   }
 
   return (
-    <View style={cardStyles.container}>
-      <View style={cardStyles.card}>
+    <View style={cs.container}>
+      <View style={cs.card}>
         <LogoStrokeDraw />
         {/* Header */}
-        <View style={cardStyles.header}>
-          <View style={[cardStyles.headerIcon, styles.headerIconBg]}>
-            <FontAwesome name="users" size={14} color={aiChat.accentGreen} />
+        <View style={cs.header}>
+          <View style={[cs.headerIcon, styles.headerIconBg]}>
+            <FontAwesome name="users" size={14} color={aiChatTheme.accentGreen} />
           </View>
-          <Text style={cardStyles.headerTitle}>Split Bill</Text>
+          <Text style={cs.headerTitle}>Split Bill</Text>
         </View>
 
         {/* Total Amount */}
-        <View style={cardStyles.amountSection}>
-          <Text style={[cardStyles.amountValue, styles.amountValueTypography]}>
+        <View style={cs.amountSection}>
+          <Text style={[cs.amountValue, styles.amountValueTypography]}>
             {preview.totalAmount} {preview.token}
           </Text>
-          <Text style={cardStyles.amountUsd}>
+          <Text style={cs.amountUsd}>
             {preview.perPerson} {preview.token} per person
           </Text>
         </View>
 
         {/* Details */}
-        <View style={cardStyles.details}>
+        <View style={cs.details}>
           {preview.description && (
-            <View style={cardStyles.detailRow}>
-              <Text style={cardStyles.detailLabel}>Description</Text>
-              <Text style={cardStyles.detailValue}>{preview.description}</Text>
+            <View style={cs.detailRow}>
+              <Text style={cs.detailLabel}>Description</Text>
+              <Text style={cs.detailValue}>{preview.description}</Text>
             </View>
           )}
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Participants</Text>
-            <Text style={cardStyles.detailValue}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Participants</Text>
+            <Text style={cs.detailValue}>
               {preview.participants.length}
             </Text>
           </View>
         </View>
 
         {/* Participant List */}
-        <View style={styles.participantList}>
+        <View style={[styles.participantList, { backgroundColor: aiChatTheme.surfaceTintLight }]}>
           {preview.participants.map((p, index) => {
             const displayName = p.username
               ? `@${p.username}`
@@ -121,14 +126,14 @@ export function SplitBillCard({
             return (
               <View key={`${p.address}-${index}`} style={styles.participantRow}>
                 <View style={styles.participantInfo}>
-                  <View style={styles.participantAvatar}>
-                    <FontAwesome name="user" size={10} color={aiChat.text.tertiary} />
+                  <View style={[styles.participantAvatar, { backgroundColor: aiChatTheme.participantAvatarBg }]}>
+                    <FontAwesome name="user" size={10} color={aiChatTheme.text.tertiary} />
                   </View>
-                  <Text style={styles.participantName} numberOfLines={1}>
+                  <Text style={[styles.participantName, { color: aiChatTheme.text.secondary }]} numberOfLines={1}>
                     {displayName}
                   </Text>
                 </View>
-                <Text style={styles.participantAmount}>
+                <Text style={[styles.participantAmount, { color: aiChatTheme.text.primary }]}>
                   {p.amount} {preview.token}
                 </Text>
               </View>
@@ -138,24 +143,24 @@ export function SplitBillCard({
 
         {/* Error */}
         {status === 'error' && (
-          <View style={cardStyles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
-            <Text style={cardStyles.errorText}>{errorMessage}</Text>
+          <View style={cs.errorBanner}>
+            <FontAwesome name="exclamation-circle" size={14} color={aiChatTheme.accentRed} />
+            <Text style={cs.errorText}>{errorMessage}</Text>
           </View>
         )}
 
         {/* Actions */}
-        <View style={cardStyles.actions}>
+        <View style={cs.actions}>
           <TouchableOpacity
-            style={cardStyles.cancelButton}
+            style={cs.cancelButton}
             onPress={onCancel}
             disabled={status === 'confirming'}
           >
-            <Text style={cardStyles.cancelButtonText}>Cancel</Text>
+            <Text style={cs.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[cardStyles.confirmButton, status === 'confirming' && cardStyles.confirmButtonDisabled]}
+            style={[cs.confirmButton, status === 'confirming' && cs.confirmButtonDisabled]}
             onPress={handleConfirm}
             disabled={status === 'confirming'}
           >
@@ -163,14 +168,14 @@ export function SplitBillCard({
               colors={['#22C55E', '#16A34A']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={cardStyles.confirmButtonGradient}
+              style={cs.confirmButtonGradient}
             >
               {status === 'confirming' ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
                   <FontAwesome name="users" size={14} color="#FFFFFF" />
-                  <Text style={cardStyles.confirmButtonText}>Create Split</Text>
+                  <Text style={cs.confirmButtonText}>Create Split</Text>
                 </>
               )}
             </LinearGradient>
@@ -196,7 +201,6 @@ const styles = StyleSheet.create({
   participantList: {
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.sm,
     gap: 2,
@@ -218,17 +222,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   participantName: {
-    color: aiChat.text.secondary,
     fontSize: 13,
     flex: 1,
   },
   participantAmount: {
-    color: aiChat.text.primary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -246,7 +247,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   successText: {
-    color: aiChat.text.secondary,
     fontSize: 14,
     textAlign: 'center',
   },

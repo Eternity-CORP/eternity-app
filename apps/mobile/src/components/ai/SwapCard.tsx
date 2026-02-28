@@ -3,7 +3,7 @@
  * Displays token swap confirmation in AI chat
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
-import { cardStyles } from './card-styles';
+import { getCardStyles } from './card-styles';
 import { LogoStrokeDraw } from './LogoStrokeDraw';
 
 export interface PendingSwap {
@@ -61,6 +62,10 @@ export function SwapCard({
   onComplete,
   isTestAccount = false,
 }: SwapCardProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+  const cs = useMemo(() => getCardStyles(aiChatTheme), [aiChatTheme]);
+
   const [status, setStatus] = useState<'idle' | 'approving' | 'confirming' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -99,26 +104,26 @@ export function SwapCard({
   // Success state
   if (status === 'success') {
     return (
-      <View style={cardStyles.container}>
-        <View style={cardStyles.successContainer}>
+      <View style={cs.container}>
+        <View style={cs.successContainer}>
           <LinearGradient
             colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={cardStyles.successCard}
+            style={cs.successCard}
           >
             <FontAwesome name="check-circle" size={32} color="#FFFFFF" />
-            <Text style={cardStyles.successTitle}>Swap Complete!</Text>
-            <Text style={cardStyles.successSubtitle}>
+            <Text style={cs.successTitle}>Swap Complete!</Text>
+            <Text style={cs.successSubtitle}>
               {swap.fromToken.amount} {swap.fromToken.symbol} → {swap.toToken.amount} {swap.toToken.symbol}
             </Text>
             {txHash && (
-              <Text style={cardStyles.txHash}>{truncateAddress(txHash)}</Text>
+              <Text style={cs.txHash}>{truncateAddress(txHash)}</Text>
             )}
           </LinearGradient>
 
-          <TouchableOpacity style={cardStyles.doneButton} onPress={onComplete}>
-            <Text style={cardStyles.doneButtonText}>Done</Text>
+          <TouchableOpacity style={cs.doneButton} onPress={onComplete}>
+            <Text style={cs.doneButtonText}>Done</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -126,87 +131,93 @@ export function SwapCard({
   }
 
   return (
-    <View style={cardStyles.container}>
-      <View style={cardStyles.card}>
+    <View style={cs.container}>
+      <View style={cs.card}>
         <LogoStrokeDraw />
         {/* Header */}
-        <View style={cardStyles.header}>
-          <View style={[cardStyles.headerIcon, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
+        <View style={cs.header}>
+          <View style={[cs.headerIcon, { backgroundColor: 'rgba(245,158,11,0.15)' }]}>
             <FontAwesome name="exchange" size={16} color="#F59E0B" />
           </View>
-          <Text style={cardStyles.headerTitle}>Confirm Swap</Text>
+          <Text style={cs.headerTitle}>Confirm Swap</Text>
         </View>
 
         {/* Swap Display */}
-        <View style={styles.swapSection}>
+        <View style={[styles.swapSection, { borderBottomColor: aiChatTheme.divider }]}>
           {/* From Token */}
-          <View style={styles.tokenBox}>
-            <Text style={styles.tokenLabel}>From</Text>
+          <View style={[styles.tokenBox, {
+            backgroundColor: aiChatTheme.surfaceTint,
+            borderColor: aiChatTheme.borderTint,
+          }]}>
+            <Text style={[styles.tokenLabel, { color: aiChatTheme.text.tertiary }]}>From</Text>
             <View style={styles.tokenRow}>
               <View style={styles.tokenIcon}>
-                <Text style={styles.tokenIconText}>
+                <Text style={[styles.tokenIconText, { color: aiChatTheme.text.primary }]}>
                   {swap.fromToken.symbol.slice(0, 2)}
                 </Text>
               </View>
               <View style={styles.tokenInfo}>
-                <Text style={styles.tokenAmount}>
+                <Text style={[styles.tokenAmount, { color: aiChatTheme.text.primary }]}>
                   {swap.fromToken.amount} {swap.fromToken.symbol}
                 </Text>
-                <Text style={styles.tokenUsd}>~${swap.fromToken.amountUsd}</Text>
+                <Text style={[styles.tokenUsd, { color: aiChatTheme.text.secondary }]}>~${swap.fromToken.amountUsd}</Text>
               </View>
             </View>
           </View>
 
           {/* Arrow */}
           <View style={styles.arrowContainer}>
-            <FontAwesome name="arrow-down" size={20} color={aiChat.text.tertiary} />
+            <FontAwesome name="arrow-down" size={20} color={aiChatTheme.text.tertiary} />
           </View>
 
           {/* To Token */}
-          <View style={styles.tokenBox}>
-            <Text style={styles.tokenLabel}>To</Text>
+          <View style={[styles.tokenBox, {
+            backgroundColor: aiChatTheme.surfaceTint,
+            borderColor: aiChatTheme.borderTint,
+          }]}>
+            <Text style={[styles.tokenLabel, { color: aiChatTheme.text.tertiary }]}>To</Text>
             <View style={styles.tokenRow}>
               <View style={[styles.tokenIcon, styles.tokenIconGreen]}>
-                <Text style={styles.tokenIconText}>
+                <Text style={[styles.tokenIconText, { color: aiChatTheme.text.primary }]}>
                   {swap.toToken.symbol.slice(0, 2)}
                 </Text>
               </View>
               <View style={styles.tokenInfo}>
-                <Text style={styles.tokenAmount}>
+                <Text style={[styles.tokenAmount, { color: aiChatTheme.text.primary }]}>
                   {swap.toToken.amount} {swap.toToken.symbol}
                 </Text>
-                <Text style={styles.tokenUsd}>~${swap.toToken.amountUsd}</Text>
+                <Text style={[styles.tokenUsd, { color: aiChatTheme.text.secondary }]}>~${swap.toToken.amountUsd}</Text>
               </View>
             </View>
           </View>
         </View>
 
         {/* Details */}
-        <View style={cardStyles.details}>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Rate</Text>
-            <Text style={cardStyles.detailValue}>{swap.rate}</Text>
+        <View style={cs.details}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Rate</Text>
+            <Text style={cs.detailValue}>{swap.rate}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Price Impact</Text>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Price Impact</Text>
             <Text style={[
-              cardStyles.detailValue,
-              parseFloat(swap.priceImpact) > 1 && styles.detailValueWarning
+              cs.detailValue,
+              parseFloat(swap.priceImpact) > 1 && { color: aiChatTheme.accentAmber }
             ]}>
               {swap.priceImpact}
             </Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Slippage</Text>
-            <Text style={cardStyles.detailValue}>{swap.slippage}</Text>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Slippage</Text>
+            <Text style={cs.detailValue}>{swap.slippage}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Network</Text>
-            <Text style={cardStyles.detailValue}>{swap.network}</Text>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Network</Text>
+            <Text style={cs.detailValue}>{swap.network}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Gas Fee</Text>
-            <Text style={cardStyles.detailValue}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Gas Fee</Text>
+            <Text style={cs.detailValue}>
               ~{swap.estimatedGas} ETH (${swap.estimatedGasUsd})
             </Text>
           </View>
@@ -224,9 +235,9 @@ export function SwapCard({
 
         {/* Error */}
         {error && (
-          <View style={cardStyles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
-            <Text style={cardStyles.errorText}>{error}</Text>
+          <View style={cs.errorBanner}>
+            <FontAwesome name="exclamation-circle" size={14} color={aiChatTheme.accentRed} />
+            <Text style={cs.errorText}>{error}</Text>
           </View>
         )}
 
@@ -238,18 +249,18 @@ export function SwapCard({
         )}
 
         {/* Actions */}
-        <View style={cardStyles.actions}>
+        <View style={cs.actions}>
           <TouchableOpacity
-            style={cardStyles.cancelButton}
+            style={cs.cancelButton}
             onPress={onCancel}
             disabled={status === 'approving' || status === 'confirming'}
           >
-            <Text style={cardStyles.cancelButtonText}>Cancel</Text>
+            <Text style={cs.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
           {!isApproved ? (
             <TouchableOpacity
-              style={[cardStyles.confirmButton, status === 'approving' && cardStyles.confirmButtonDisabled]}
+              style={[cs.confirmButton, status === 'approving' && cs.confirmButtonDisabled]}
               onPress={handleApprove}
               disabled={status === 'approving'}
             >
@@ -257,21 +268,21 @@ export function SwapCard({
                 colors={['#F59E0B', '#D97706']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={cardStyles.confirmButtonGradient}
+                style={cs.confirmButtonGradient}
               >
                 {status === 'approving' ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
                     <FontAwesome name="unlock-alt" size={14} color="#FFFFFF" />
-                    <Text style={cardStyles.confirmButtonText}>Approve</Text>
+                    <Text style={cs.confirmButtonText}>Approve</Text>
                   </>
                 )}
               </LinearGradient>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[cardStyles.confirmButton, status === 'confirming' && cardStyles.confirmButtonDisabled]}
+              style={[cs.confirmButton, status === 'confirming' && cs.confirmButtonDisabled]}
               onPress={handleConfirm}
               disabled={status === 'confirming'}
             >
@@ -279,14 +290,14 @@ export function SwapCard({
                 colors={['#F59E0B', '#D97706']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={cardStyles.confirmButtonGradient}
+                style={cs.confirmButtonGradient}
               >
                 {status === 'confirming' ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <>
                     <FontAwesome name="exchange" size={14} color="#FFFFFF" />
-                    <Text style={cardStyles.confirmButtonText}>Swap</Text>
+                    <Text style={cs.confirmButtonText}>Swap</Text>
                   </>
                 )}
               </LinearGradient>
@@ -302,18 +313,14 @@ const styles = StyleSheet.create({
   swapSection: {
     padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: aiChat.divider,
   },
   tokenBox: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
   },
   tokenLabel: {
     ...theme.typography.caption,
-    color: aiChat.text.tertiary,
     marginBottom: theme.spacing.sm,
   },
   tokenRow: {
@@ -334,7 +341,6 @@ const styles = StyleSheet.create({
   },
   tokenIconText: {
     ...theme.typography.body,
-    color: aiChat.text.primary,
     fontWeight: '600',
   },
   tokenInfo: {
@@ -342,20 +348,15 @@ const styles = StyleSheet.create({
   },
   tokenAmount: {
     ...theme.typography.body,
-    color: aiChat.text.primary,
     fontWeight: '600',
   },
   tokenUsd: {
     ...theme.typography.caption,
-    color: aiChat.text.secondary,
     marginTop: 2,
   },
   arrowContainer: {
     alignItems: 'center',
     paddingVertical: theme.spacing.sm,
-  },
-  detailValueWarning: {
-    color: aiChat.accentAmber,
   },
   approvalBanner: {
     flexDirection: 'row',
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
   },
   approvalText: {
     ...theme.typography.caption,
-    color: aiChat.accentAmber,
+    color: '#F59E0B',
     flex: 1,
   },
 });

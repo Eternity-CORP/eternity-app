@@ -31,14 +31,14 @@ export default function BridgeBanner({ route, onProceed, onCancel, loading }: Br
       <div className="flex items-center gap-2 mb-3">
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: fromNet.color }} />
-          <span className="text-xs font-medium text-white/70">{fromNet.name}</span>
+          <span className="text-xs font-medium text-[var(--foreground-muted)]">{fromNet.name}</span>
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/30">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
           <polyline points="9 18 15 12 9 6" />
         </svg>
         <div className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: toNet.color }} />
-          <span className="text-xs font-medium text-white/70">{toNet.name}</span>
+          <span className="text-xs font-medium text-[var(--foreground-muted)]">{toNet.name}</span>
         </div>
       </div>
 
@@ -46,14 +46,14 @@ export default function BridgeBanner({ route, onProceed, onCancel, loading }: Br
       {route.bridgeFeeUsd != null && (
         <div className="flex items-center justify-between text-xs mb-3">
           <div>
-            <span className="text-white/40">Fee: </span>
-            <span className={`font-medium ${isExpensive ? 'text-[#EF4444]' : isWarning ? 'text-[#F59E0B]' : 'text-white/70'}`}>
+            <span className="text-[var(--foreground-subtle)]">Fee: </span>
+            <span className={`font-medium ${isExpensive ? 'text-[#EF4444]' : isWarning ? 'text-[#F59E0B]' : 'text-[var(--foreground-muted)]'}`}>
               ${route.bridgeFeeUsd.toFixed(2)}
             </span>
           </div>
           <div>
-            <span className="text-white/40">Time: </span>
-            <span className="text-white/70 font-medium">{route.estimatedTime}</span>
+            <span className="text-[var(--foreground-subtle)]">Time: </span>
+            <span className="text-[var(--foreground-muted)] font-medium">{route.estimatedTime}</span>
           </div>
         </div>
       )}
@@ -70,13 +70,13 @@ export default function BridgeBanner({ route, onProceed, onCancel, loading }: Br
         </p>
       )}
 
-      <p className="text-xs text-white/40 mb-3">{route.message}</p>
+      <p className="text-xs text-[var(--foreground-subtle)] mb-3">{route.message}</p>
 
       {/* Actions */}
       <div className="flex gap-2">
         <button
           onClick={onCancel}
-          className="flex-1 py-2 rounded-lg glass-card text-white/60 text-xs font-medium"
+          className="flex-1 py-2 rounded-lg glass-card text-[var(--foreground-muted)] text-xs font-medium"
         >
           Cancel
         </button>
@@ -86,7 +86,7 @@ export default function BridgeBanner({ route, onProceed, onCancel, loading }: Br
           className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
             isExpensive
               ? 'bg-[#EF4444]/20 text-[#EF4444] hover:bg-[#EF4444]/30'
-              : 'bg-white text-black shimmer hover:bg-white/90'
+              : 'bg-[var(--foreground)] text-[var(--background)] shimmer hover:opacity-90'
           }`}
         >
           {loading ? 'Processing...' : isExpensive ? 'Bridge Anyway' : 'Bridge'}

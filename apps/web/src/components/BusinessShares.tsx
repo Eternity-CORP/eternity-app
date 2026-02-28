@@ -97,33 +97,33 @@ export default function BusinessShares() {
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-white/5">
-        <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Business Shares</h2>
+      <div className="p-4 border-b border-[var(--border-light)]">
+        <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Business Shares</h2>
       </div>
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-[var(--border-light)]">
         {shares.map((s) => (
           <Link
             key={s.businessId}
             href={`/wallet/business/${s.businessId}`}
-            className="flex items-center justify-between p-4 hover:bg-white/3 transition-colors group"
+            className="flex items-center justify-between p-4 hover:bg-[var(--surface)] transition-colors group"
           >
             <div className="flex items-center gap-3">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-[var(--foreground)]"
                 style={{ backgroundColor: '#3388FF20', border: '2px solid #3388FF40' }}
               >
                 {s.tokenSymbol.charAt(0)}
               </div>
               <div>
-                <p className="text-sm font-semibold text-white group-hover:text-white/90">
+                <p className="text-sm font-semibold text-[var(--foreground)] group-hover:text-[var(--foreground)]">
                   {s.tokenSymbol}
                 </p>
-                <span className="text-xs text-white/40">{s.businessName}</span>
+                <span className="text-xs text-[var(--foreground-subtle)]">{s.businessName}</span>
               </div>
             </div>
 
             <div className="text-right">
-              <p className="text-sm font-semibold text-white">
+              <p className="text-sm font-semibold text-[var(--foreground)]">
                 {s.shares.toLocaleString()}
               </p>
               <p className="text-xs text-[#3388FF]">{s.percent}% ownership</p>

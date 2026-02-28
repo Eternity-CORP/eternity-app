@@ -169,13 +169,13 @@ export default function AccountSelector() {
       {/* Trigger */}
       <button
         onClick={() => { open ? closeDropdown() : setOpen(true) }}
-        className="flex items-center gap-2 px-3 py-2 rounded-xl glass-card hover:border-white/15 transition-all"
+        className="flex items-center gap-2 px-3 py-2 rounded-xl glass-card hover:border-[var(--border)] transition-all"
       >
         <TypeBadge type={currentAccount.type} />
-        <span className="text-sm font-mono text-white/70">{truncateAddress(address)}</span>
+        <span className="text-sm font-mono text-[var(--foreground-muted)]">{truncateAddress(address)}</span>
         <svg
           width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-          className={`text-white/40 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-[var(--foreground-subtle)] transition-transform ${open ? 'rotate-180' : ''}`}
         >
           <path d="M6 9l6 6 6-6" />
         </svg>
@@ -185,8 +185,8 @@ export default function AccountSelector() {
       {open && (
         <>
           {/* Backdrop overlay on mobile */}
-          <div className="fixed inset-0 bg-black/60 z-[998] sm:hidden" onClick={closeDropdown} />
-          <div className="fixed sm:absolute right-3 sm:right-0 left-3 sm:left-auto top-[4.5rem] sm:top-full sm:mt-2 sm:w-80 rounded-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden z-[999] bg-[#111]/95 backdrop-blur-xl">
+          <div className="fixed inset-0 bg-[var(--backdrop-bg)] z-[998] sm:hidden" onClick={closeDropdown} />
+          <div className="fixed sm:absolute right-3 sm:right-0 left-3 sm:left-auto top-[4.5rem] sm:top-full sm:mt-2 sm:w-80 rounded-xl border border-[var(--border)] shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden z-[999] bg-[var(--background)]/95 backdrop-blur-xl">
 
           {/* ===== LIST VIEW ===== */}
           {view === 'list' && (
@@ -198,20 +198,20 @@ export default function AccountSelector() {
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: currentAccount.type === 'real' ? '#22C55E' : currentAccount.type === 'business' ? '#3388FF' : '#F59E0B' }}
                   />
-                  <span className="text-xs text-white/50">
+                  <span className="text-xs text-[var(--foreground-muted)]">
                     {network.name}{currentAccount.type === 'test' || currentAccount.type === 'business' ? ' Testnet' : ''}
                   </span>
                 </div>
                 <button
                   onClick={() => { setEditMode(!editMode); setRenameId(null) }}
                   className={`text-xs px-2 py-1 rounded-md transition-colors ${
-                    editMode ? 'text-white bg-white/10' : 'text-white/40 hover:text-white'
+                    editMode ? 'text-[var(--foreground)] bg-[var(--surface-hover)]' : 'text-[var(--foreground-subtle)] hover:text-[var(--foreground)]'
                   }`}
                 >
                   {editMode ? 'Done' : 'Edit'}
                 </button>
               </div>
-              <div className="border-t border-white/8" />
+              <div className="border-t border-[var(--border)]" />
 
               {/* Account list */}
               <div className="p-2 max-h-64 overflow-y-auto">
@@ -224,7 +224,7 @@ export default function AccountSelector() {
                     <div
                       key={acc.id}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                        acc.id === currentAccount.id ? 'bg-white/8' : 'hover:bg-white/5'
+                        acc.id === currentAccount.id ? 'bg-[var(--surface-hover)]' : 'hover:bg-[var(--surface)]'
                       }`}
                     >
                       {/* Click to switch (not in edit mode) */}
@@ -242,7 +242,7 @@ export default function AccountSelector() {
                                 value={renameValue}
                                 onChange={(e) => setRenameValue(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveRename() }}
-                                className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1 text-sm text-white outline-none focus:border-white/20"
+                                className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-md px-2 py-1 text-sm text-[var(--foreground)] outline-none focus:border-[var(--border)]"
                                 autoFocus
                               />
                               <button
@@ -254,8 +254,8 @@ export default function AccountSelector() {
                             </div>
                           ) : (
                             <>
-                              <p className="text-sm font-medium text-white truncate">{label}</p>
-                              <p className="text-xs font-mono text-white/40 truncate">{truncateAddress(acc.address)}</p>
+                              <p className="text-sm font-medium text-[var(--foreground)] truncate">{label}</p>
+                              <p className="text-xs font-mono text-[var(--foreground-subtle)] truncate">{truncateAddress(acc.address)}</p>
                             </>
                           )}
                         </div>
@@ -267,7 +267,7 @@ export default function AccountSelector() {
                           {/* Rename */}
                           <button
                             onClick={() => handleStartRename(acc.id, label)}
-                            className="p-1.5 rounded-md text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+                            className="p-1.5 rounded-md text-[var(--foreground-subtle)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
                             title="Rename"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -279,7 +279,7 @@ export default function AccountSelector() {
                           {accounts.length > 1 && (
                             <button
                               onClick={() => handleDelete(acc.id)}
-                              className="p-1.5 rounded-md text-white/40 hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
+                              className="p-1.5 rounded-md text-[var(--foreground-subtle)] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
                               title="Delete"
                             >
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -293,15 +293,15 @@ export default function AccountSelector() {
                         <div className="flex items-center gap-2 shrink-0">
                           <div className="text-right">
                             {balances[acc.id] !== undefined ? (
-                              <p className="text-sm font-medium text-white">
-                                {balances[acc.id]} <span className="text-xs text-white/40">{accNetwork.symbol}</span>
+                              <p className="text-sm font-medium text-[var(--foreground)]">
+                                {balances[acc.id]} <span className="text-xs text-[var(--foreground-subtle)]">{accNetwork.symbol}</span>
                               </p>
                             ) : (
-                              <div className="h-4 w-16 bg-white/5 rounded animate-pulse" />
+                              <div className="h-4 w-16 bg-[var(--surface)] rounded animate-pulse" />
                             )}
                           </div>
                           {acc.id === currentAccount.id && (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-white/60">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-[var(--foreground-muted)]">
                               <path d="M20 6L9 17l-5-5" />
                             </svg>
                           )}
@@ -313,10 +313,10 @@ export default function AccountSelector() {
               </div>
 
               {/* Copy address */}
-              <div className="border-t border-white/8" />
+              <div className="border-t border-[var(--border)]" />
               <button
                 onClick={handleCopyAddress}
-                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
               >
                 {copied ? (
                   <>
@@ -337,10 +337,10 @@ export default function AccountSelector() {
               </button>
 
               {/* Add account button */}
-              <div className="border-t border-white/8" />
+              <div className="border-t border-[var(--border)]" />
               <button
                 onClick={() => setView('add')}
-                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -350,11 +350,11 @@ export default function AccountSelector() {
               </button>
 
               {/* Mobile-only: Contacts, Settings, Lock */}
-              <div className="sm:hidden border-t border-white/8">
+              <div className="sm:hidden border-t border-[var(--border)]">
                 <Link
                   href="/wallet/contacts"
                   onClick={closeDropdown}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -367,7 +367,7 @@ export default function AccountSelector() {
                 <Link
                   href="/wallet/settings"
                   onClick={closeDropdown}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="3" />
@@ -377,7 +377,7 @@ export default function AccountSelector() {
                 </Link>
                 <button
                   onClick={() => { closeDropdown(); logout() }}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-5 py-3 text-sm text-[var(--foreground-muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface)] transition-colors"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -393,21 +393,21 @@ export default function AccountSelector() {
           {view === 'add' && (
             <>
               <div className="flex items-center gap-3 px-4 py-3">
-                <button onClick={() => setView('list')} className="text-white/40 hover:text-white transition-colors">
+                <button onClick={() => setView('list')} className="text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M19 12H5"/>
                     <path d="M12 19l-7-7 7-7"/>
                   </svg>
                 </button>
-                <span className="text-sm font-medium text-white">Add Wallet</span>
+                <span className="text-sm font-medium text-[var(--foreground)]">Add Wallet</span>
               </div>
-              <div className="border-t border-white/8" />
+              <div className="border-t border-[var(--border)]" />
 
               <div className="p-2">
                 {/* New Wallet (real) */}
                 <button
                   onClick={() => handleAdd('real')}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[var(--surface)] transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#22C55E]/10 flex items-center justify-center shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2">
@@ -417,15 +417,15 @@ export default function AccountSelector() {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-white">New Wallet</p>
-                    <p className="text-xs text-white/40">Ethereum mainnet</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">New Wallet</p>
+                    <p className="text-xs text-[var(--foreground-subtle)]">Ethereum mainnet</p>
                   </div>
                 </button>
 
                 {/* New Test Wallet */}
                 <button
                   onClick={() => handleAdd('test')}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[var(--surface)] transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
@@ -434,15 +434,15 @@ export default function AccountSelector() {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-white">New Test Wallet</p>
-                    <p className="text-xs text-white/40">Sepolia testnet</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">New Test Wallet</p>
+                    <p className="text-xs text-[var(--foreground-subtle)]">Sepolia testnet</p>
                   </div>
                 </button>
 
                 {/* New Business Wallet */}
                 <button
                   onClick={() => { closeDropdown(); router.push('/wallet/business/create') }}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[var(--surface)] transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#3388FF]/10 flex items-center justify-center shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3388FF" strokeWidth="2">
@@ -451,15 +451,15 @@ export default function AccountSelector() {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-white">New Business Wallet</p>
-                    <p className="text-xs text-white/40">Tokenized equity shares</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">New Business Wallet</p>
+                    <p className="text-xs text-[var(--foreground-subtle)]">Tokenized equity shares</p>
                   </div>
                 </button>
 
                 {/* Import Existing */}
                 <button
                   onClick={() => setView('import')}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[var(--surface)] transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#8B5CF6]/10 flex items-center justify-center shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="2">
@@ -469,8 +469,8 @@ export default function AccountSelector() {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-medium text-white">Import Wallet</p>
-                    <p className="text-xs text-white/40">Recovery phrase</p>
+                    <p className="text-sm font-medium text-[var(--foreground)]">Import Wallet</p>
+                    <p className="text-xs text-[var(--foreground-subtle)]">Recovery phrase</p>
                   </div>
                 </button>
               </div>
@@ -481,18 +481,18 @@ export default function AccountSelector() {
           {view === 'import' && (
             <>
               <div className="flex items-center gap-3 px-4 py-3">
-                <button onClick={() => { setView('add'); setImportPhrase(''); setImportError('') }} className="text-white/40 hover:text-white transition-colors">
+                <button onClick={() => { setView('add'); setImportPhrase(''); setImportError('') }} className="text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M19 12H5"/>
                     <path d="M12 19l-7-7 7-7"/>
                   </svg>
                 </button>
-                <span className="text-sm font-medium text-white">Import Wallet</span>
+                <span className="text-sm font-medium text-[var(--foreground)]">Import Wallet</span>
               </div>
-              <div className="border-t border-white/8" />
+              <div className="border-t border-[var(--border)]" />
 
               <div className="p-4 space-y-3">
-                <p className="text-xs text-white/40">
+                <p className="text-xs text-[var(--foreground-subtle)]">
                   Enter your 12 or 24 word recovery phrase. This will replace the current wallet.
                 </p>
                 <textarea
@@ -500,10 +500,10 @@ export default function AccountSelector() {
                   onChange={(e) => { setImportPhrase(e.target.value); setImportError('') }}
                   placeholder="word1 word2 word3 ..."
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-white/20 resize-none font-mono"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder-[var(--foreground-subtle)] outline-none focus:border-[var(--border)] resize-none font-mono"
                 />
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs ${wordCount === 12 || wordCount === 24 ? 'text-[#22C55E]' : 'text-white/30'}`}>
+                  <span className={`text-xs ${wordCount === 12 || wordCount === 24 ? 'text-[#22C55E]' : 'text-[var(--foreground-subtle)]'}`}>
                     {wordCount} / 12 or 24 words
                   </span>
                   {importError && (
@@ -513,7 +513,7 @@ export default function AccountSelector() {
                 <button
                   onClick={handleImport}
                   disabled={wordCount !== 12 && wordCount !== 24}
-                  className="w-full py-2.5 rounded-lg bg-white text-black font-semibold text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/90"
+                  className="w-full py-2.5 rounded-lg bg-[var(--foreground)] text-[var(--background)] font-semibold text-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:opacity-90"
                 >
                   Import
                 </button>

@@ -242,7 +242,7 @@ export default function UsernamePage() {
           <div className="w-full max-w-[420px]">
             <BackButton />
             <div className="flex justify-center pt-20">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
             </div>
           </div>
         </main>
@@ -258,35 +258,35 @@ export default function UsernamePage() {
         <div className="w-full max-w-[420px]">
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white text-center mb-8">Username</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)] text-center mb-8">Username</h1>
 
             {/* Info box */}
-            <div className="flex items-start gap-3 bg-white/3 border border-white/8 rounded-xl p-4 mb-6">
+            <div className="flex items-start gap-3 bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-6">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5 text-[#3388FF]">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
                 <path d="M12 16v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 <circle cx="12" cy="8" r="1" fill="currentColor" />
               </svg>
-              <p className="text-xs text-white/50 leading-relaxed">
+              <p className="text-xs text-[var(--foreground-muted)] leading-relaxed">
                 Your @username allows others to send tokens to you easily without knowing your wallet address.
               </p>
             </div>
 
             {/* Current username display */}
             {currentUsername && (
-              <div className="bg-white/3 border border-white/8 rounded-xl p-4 mb-6 text-center">
-                <p className="text-xs text-white/40 uppercase tracking-wide mb-1">Current Username</p>
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 mb-6 text-center">
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-1">Current Username</p>
                 <p className="text-lg font-semibold text-[#22C55E]">@{currentUsername}</p>
               </div>
             )}
 
             {/* Input */}
             <div className="mb-6">
-              <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+              <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                 {currentUsername ? 'New Username' : 'Choose Username'}
               </label>
-              <div className="flex items-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus-within:border-[#3388FF]/40 transition-colors">
-                <span className="text-white/30 text-lg font-medium mr-1">@</span>
+              <div className="flex items-center bg-[var(--surface)] border border-[var(--border)] rounded-xl px-4 py-3 focus-within:border-[#3388FF]/40 transition-colors">
+                <span className="text-[var(--foreground-subtle)] text-lg font-medium mr-1">@</span>
                 <input
                   ref={inputRef}
                   type="text"
@@ -297,11 +297,11 @@ export default function UsernamePage() {
                   autoCapitalize="off"
                   autoCorrect="off"
                   spellCheck={false}
-                  className="flex-1 bg-transparent text-lg font-medium text-white placeholder:text-white/20 focus:outline-none"
+                  className="flex-1 bg-transparent text-lg font-medium text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                 />
                 {/* Status indicator */}
                 {isChecking && (
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin flex-shrink-0" />
+                  <div className="w-5 h-5 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin flex-shrink-0" />
                 )}
                 {!isChecking && isAvailable === true && isNewUsername && (
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-[#22C55E]">
@@ -318,7 +318,7 @@ export default function UsernamePage() {
               </div>
 
               {/* Hint */}
-              <p className="text-[11px] text-white/25 mt-2">
+              <p className="text-[11px] text-[var(--foreground-subtle)] mt-2">
                 3-20 characters, letters, numbers, and underscores. Must start with a letter.
               </p>
 
@@ -344,7 +344,7 @@ export default function UsernamePage() {
             <button
               onClick={handleSubmitClick}
               disabled={!canSubmit}
-              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-white text-black shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+              className="w-full py-4 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[var(--foreground)] text-[var(--background)] shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
               {currentUsername ? 'Update Username' : 'Claim Username'}
             </button>

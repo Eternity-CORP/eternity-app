@@ -56,7 +56,7 @@ export default function WalletDashboard() {
     return (
       <div className="h-screen relative z-[2] flex flex-col">
         <Navigation />
-        <div className="flex-1 min-h-0 bg-black bg-grid">
+        <div className="flex-1 min-h-0 bg-[var(--background)] bg-grid">
           <ChatContainer />
         </div>
       </div>
@@ -90,14 +90,14 @@ export default function WalletDashboard() {
             {/* Total Balance */}
             <div className="text-center mb-8">
               {loading ? (
-                <div className="h-12 w-40 bg-white/5 rounded-xl animate-pulse mx-auto" />
+                <div className="h-12 w-40 bg-[var(--surface)] rounded-xl animate-pulse mx-auto" />
               ) : (
                 <>
-                  <p className="text-sm text-white/40 mb-1">Total Balance</p>
+                  <p className="text-sm text-[var(--foreground-subtle)] mb-1">Total Balance</p>
                   <span className="text-5xl font-bold text-gradient">{formatUsd(totalUsdValue)}</span>
                   <div className="flex items-center justify-center gap-1.5 mt-2">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: networkColor }} />
-                    <span className="text-xs text-white/40">
+                    <span className="text-xs text-[var(--foreground-subtle)]">
                       {currentAccount?.type === 'real' ? 'Multi-Network' : 'Sepolia Testnet'}
                     </span>
                   </div>
@@ -109,7 +109,7 @@ export default function WalletDashboard() {
             <div className="flex gap-3">
               <Link
                 href="/wallet/send"
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold hover:opacity-90 transition-all shimmer hover:scale-[1.02] active:scale-[0.98]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="19" x2="12" y2="5"/>
@@ -119,7 +119,7 @@ export default function WalletDashboard() {
               </Link>
               <Link
                 href="/wallet/receive"
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl glass-card text-white font-semibold hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl glass-card text-[var(--foreground)] font-semibold hover:border-[var(--border)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/>
@@ -129,7 +129,7 @@ export default function WalletDashboard() {
               </Link>
               <Link
                 href="/wallet/deposit"
-                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl glass-card text-white font-semibold hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 flex flex-col items-center gap-2 py-4 rounded-xl glass-card text-[var(--foreground)] font-semibold hover:border-[var(--border)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <line x1="12" y1="5" x2="12" y2="19"/>
@@ -144,7 +144,7 @@ export default function WalletDashboard() {
           <div className="grid grid-cols-5 gap-2 mt-4">
             <Link
               href="/wallet/blik"
-              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.03] active:scale-[0.97] group"
+              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-[var(--foreground)] transition-all hover:scale-[1.03] active:scale-[0.97] group"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-[#3388FF] transition-colors">
                 <rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -154,7 +154,7 @@ export default function WalletDashboard() {
             </Link>
             <Link
               href="/wallet/history"
-              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.03] active:scale-[0.97] group"
+              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-[var(--foreground)] transition-all hover:scale-[1.03] active:scale-[0.97] group"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-[#00E5FF] transition-colors">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -163,7 +163,7 @@ export default function WalletDashboard() {
             </Link>
             <Link
               href="/wallet/scheduled"
-              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.03] active:scale-[0.97] group"
+              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-[var(--foreground)] transition-all hover:scale-[1.03] active:scale-[0.97] group"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-[#F59E0B] transition-colors">
                 <circle cx="12" cy="12" r="10"/>
@@ -173,7 +173,7 @@ export default function WalletDashboard() {
             </Link>
             <Link
               href="/wallet/split"
-              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.03] active:scale-[0.97] group"
+              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-[var(--foreground)] transition-all hover:scale-[1.03] active:scale-[0.97] group"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-[#22c55e] transition-colors">
                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -185,7 +185,7 @@ export default function WalletDashboard() {
             </Link>
             <Link
               href="/wallet/swap"
-              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.03] active:scale-[0.97] group"
+              className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl glass-card-glow text-[var(--foreground)] transition-all hover:scale-[1.03] active:scale-[0.97] group"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-[#3388FF] transition-colors">
                 <path d="M16 3l4 4-4 4"/>
@@ -231,7 +231,7 @@ export default function WalletDashboard() {
               ) : (
                 <button
                   onClick={() => setShowFaucet(true)}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl glass-card-glow text-white transition-all hover:scale-[1.01] active:scale-[0.99] group"
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl glass-card-glow text-[var(--foreground)] transition-all hover:scale-[1.01] active:scale-[0.99] group"
                 >
                   <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/10 flex items-center justify-center">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2">
@@ -240,9 +240,9 @@ export default function WalletDashboard() {
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-medium">Get Test ETH</p>
-                    <p className="text-[11px] text-white/40">Sepolia faucets</p>
+                    <p className="text-[11px] text-[var(--foreground-subtle)]">Sepolia faucets</p>
                   </div>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 group-hover:text-white/50 transition-colors">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground)]/20 group-hover:text-[var(--foreground)]/50 transition-colors">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>

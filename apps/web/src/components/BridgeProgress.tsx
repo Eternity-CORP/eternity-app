@@ -47,7 +47,7 @@ export default function BridgeProgress({
 
   return (
     <div className="glass-card rounded-2xl p-5">
-      <h3 className="text-sm font-semibold text-white mb-4">Bridge Progress</h3>
+      <h3 className="text-sm font-semibold text-[var(--foreground)] mb-4">Bridge Progress</h3>
 
       {/* Step indicators */}
       <div className="space-y-3 mb-4">
@@ -63,12 +63,12 @@ export default function BridgeProgress({
               {/* Circle */}
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                 isDone
-                  ? 'bg-[#22c55e] text-white'
+                  ? 'bg-[#22c55e] text-[var(--foreground)]'
                   : isCurrent
                     ? isFailed
                       ? 'bg-[#EF4444]/20 border-2 border-[#EF4444] text-[#EF4444]'
                       : 'bg-[#3388FF]/20 border-2 border-[#3388FF] text-[#3388FF] animate-pulse'
-                    : 'bg-white/5 text-white/20'
+                    : 'bg-[var(--surface)] text-[var(--foreground-subtle)]'
               }`}>
                 {isDone ? (
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -86,7 +86,7 @@ export default function BridgeProgress({
 
               {/* Label */}
               <span className={`text-sm ${
-                isDone ? 'text-white/60' : isCurrent ? 'text-white font-medium' : 'text-white/30'
+                isDone ? 'text-[var(--foreground-muted)]' : isCurrent ? 'text-[var(--foreground)] font-medium' : 'text-[var(--foreground-subtle)]'
               }`}>
                 {step.label}
               </span>
@@ -97,12 +97,12 @@ export default function BridgeProgress({
 
       {/* Status Message */}
       {currentStep && !isComplete && !isFailed && (
-        <p className="text-xs text-white/40 mb-3">{currentStep}</p>
+        <p className="text-xs text-[var(--foreground-subtle)] mb-3">{currentStep}</p>
       )}
 
       {/* TX Hash */}
       {txHash && (
-        <p className="text-xs text-white/30 font-mono truncate mb-3">
+        <p className="text-xs text-[var(--foreground-subtle)] font-mono truncate mb-3">
           TX: {txHash.slice(0, 10)}...{txHash.slice(-8)}
         </p>
       )}
@@ -120,7 +120,7 @@ export default function BridgeProgress({
           {isFailed && onRetry && (
             <button
               onClick={onRetry}
-              className="flex-1 py-2.5 rounded-xl glass-card text-white/60 text-sm font-medium hover:bg-white/5 transition-colors"
+              className="flex-1 py-2.5 rounded-xl glass-card text-[var(--foreground-muted)] text-sm font-medium hover:bg-[var(--surface)] transition-colors"
             >
               Retry
             </button>
@@ -128,7 +128,7 @@ export default function BridgeProgress({
           {(isComplete || isFailed) && onDone && (
             <button
               onClick={onDone}
-              className="flex-1 py-2.5 rounded-xl bg-white text-black text-sm font-semibold shimmer hover:bg-white/90 transition-all"
+              className="flex-1 py-2.5 rounded-xl bg-[var(--foreground)] text-[var(--background)] text-sm font-semibold shimmer hover:opacity-90 transition-all"
             >
               {isComplete ? 'Done' : 'Close'}
             </button>

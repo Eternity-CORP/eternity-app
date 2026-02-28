@@ -270,11 +270,11 @@ export default function CreateProposalPage() {
           <div className="glass-card gradient-border rounded-2xl p-6">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-xl font-semibold text-white">Create Proposal</h1>
+              <h1 className="text-xl font-semibold text-[var(--foreground)]">Create Proposal</h1>
               {step !== 'type' && (
                 <button
                   onClick={handleBack}
-                  className="text-xs text-white/40 hover:text-white transition-colors"
+                  className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] transition-colors"
                 >
                   Back
                 </button>
@@ -291,12 +291,12 @@ export default function CreateProposalPage() {
                         ? 'bg-[#3388FF] text-white'
                         : ['type', 'fields', 'review'].indexOf(step) > i
                         ? 'bg-[#22c55e] text-white'
-                        : 'bg-white/10 text-white/30'
+                        : 'bg-[var(--surface-hover)] text-[var(--foreground-subtle)]'
                     }`}
                   >
                     {i + 1}
                   </div>
-                  {i < 2 && <div className="flex-1 h-px bg-white/10" />}
+                  {i < 2 && <div className="flex-1 h-px bg-[var(--surface-hover)]" />}
                 </div>
               ))}
             </div>
@@ -308,13 +308,13 @@ export default function CreateProposalPage() {
                   <button
                     key={pt.value}
                     onClick={() => handleSelectType(pt.value)}
-                    className="w-full text-left bg-white/3 border border-white/8 rounded-xl p-4 hover:border-[#3388FF]/30 hover:bg-[#3388FF]/5 transition-colors"
+                    className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[#3388FF]/30 hover:bg-[#3388FF]/5 transition-colors"
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-[#3388FF]">{typeIcon(pt.value)}</div>
                       <div>
-                        <p className="text-sm font-medium text-white">{pt.label}</p>
-                        <p className="text-[11px] text-white/40 mt-0.5">{pt.description}</p>
+                        <p className="text-sm font-medium text-[var(--foreground)]">{pt.label}</p>
+                        <p className="text-[11px] text-[var(--foreground-subtle)] mt-0.5">{pt.description}</p>
                       </div>
                     </div>
                   </button>
@@ -327,8 +327,8 @@ export default function CreateProposalPage() {
               <div className="space-y-4">
                 {selectedType === 'WITHDRAW_ETH' && (
                   <>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         Recipient Address
                       </label>
                       <input
@@ -336,11 +336,11 @@ export default function CreateProposalPage() {
                         value={ethRecipient}
                         onChange={(e) => setEthRecipient(e.target.value)}
                         placeholder="0x..."
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono"
+                        className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none text-sm font-mono"
                       />
                     </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         ETH Amount
                       </label>
                       <input
@@ -349,7 +349,7 @@ export default function CreateProposalPage() {
                         onChange={(e) => setEthAmount(e.target.value)}
                         placeholder="0.0"
                         step="0.0001"
-                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                        className="w-full bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
                     </div>
                   </>
@@ -357,8 +357,8 @@ export default function CreateProposalPage() {
 
                 {selectedType === 'DISTRIBUTE_DIVIDENDS' && (
                   <>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         Total ETH to Distribute
                       </label>
                       <input
@@ -367,12 +367,12 @@ export default function CreateProposalPage() {
                         onChange={(e) => setDividendAmount(e.target.value)}
                         placeholder="0.0"
                         step="0.0001"
-                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                        className="w-full bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
                     </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-xs text-white/40 uppercase tracking-wide">
+                        <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">
                           Holders
                         </label>
                         <button
@@ -397,13 +397,13 @@ export default function CreateProposalPage() {
                         </button>
                       </div>
                       {dividendHolders.length === 0 ? (
-                        <p className="text-xs text-white/25">Click &quot;Load holders&quot; to fetch all business members</p>
+                        <p className="text-xs text-[var(--foreground-subtle)]">Click &quot;Load holders&quot; to fetch all business members</p>
                       ) : (
                         <div className="space-y-1">
                           {dividendHolders.map((h, i) => (
-                            <p key={i} className="text-xs text-white/60 font-mono">{truncateAddress(h)}</p>
+                            <p key={i} className="text-xs text-[var(--foreground-muted)] font-mono">{truncateAddress(h)}</p>
                           ))}
-                          <p className="text-[10px] text-white/25 mt-1">{dividendHolders.length} holders will receive dividends</p>
+                          <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">{dividendHolders.length} holders will receive dividends</p>
                         </div>
                       )}
                     </div>
@@ -412,8 +412,8 @@ export default function CreateProposalPage() {
 
                 {selectedType === 'TRANSFER_SHARES' && (
                   <>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         From Address
                       </label>
                       <input
@@ -421,11 +421,11 @@ export default function CreateProposalPage() {
                         value={sharesFrom}
                         onChange={(e) => setSharesFrom(e.target.value)}
                         placeholder="0x..."
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono"
+                        className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none text-sm font-mono"
                       />
                     </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         To Address
                       </label>
                       <input
@@ -433,11 +433,11 @@ export default function CreateProposalPage() {
                         value={sharesTo}
                         onChange={(e) => setSharesTo(e.target.value)}
                         placeholder="0x..."
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono"
+                        className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none text-sm font-mono"
                       />
                     </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         Share Amount
                       </label>
                       <input
@@ -446,7 +446,7 @@ export default function CreateProposalPage() {
                         onChange={(e) => setSharesAmount(e.target.value)}
                         placeholder="0"
                         step="1"
-                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                        className="w-full bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
                     </div>
                   </>
@@ -454,8 +454,8 @@ export default function CreateProposalPage() {
 
                 {selectedType === 'CHANGE_SETTINGS' && (
                   <>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         New Quorum (basis points, 1-10000)
                       </label>
                       <input
@@ -466,14 +466,14 @@ export default function CreateProposalPage() {
                         step="100"
                         min="1"
                         max="10000"
-                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                        className="w-full bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
-                      <p className="text-[10px] text-white/25 mt-1">
+                      <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">
                         {newQuorum ? `${(parseInt(newQuorum) / 100).toFixed(1)}% of total supply required` : '50% = 5000 bps'}
                       </p>
                     </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         New Voting Period (seconds)
                       </label>
                       <input
@@ -483,9 +483,9 @@ export default function CreateProposalPage() {
                         placeholder="86400"
                         step="3600"
                         min="3600"
-                        className="w-full bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                        className="w-full bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
-                      <p className="text-[10px] text-white/25 mt-1">
+                      <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">
                         {newVotingPeriod ? `${(parseInt(newVotingPeriod) / 3600).toFixed(1)} hours` : '24 hours = 86400 seconds'}
                       </p>
                     </div>
@@ -494,8 +494,8 @@ export default function CreateProposalPage() {
 
                 {selectedType === 'CUSTOM' && (
                   <>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         Title
                       </label>
                       <input
@@ -503,11 +503,11 @@ export default function CreateProposalPage() {
                         value={customTitle}
                         onChange={(e) => setCustomTitle(e.target.value)}
                         placeholder="Proposal title"
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none"
+                        className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                       />
                     </div>
-                    <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                      <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                         Description
                       </label>
                       <textarea
@@ -515,7 +515,7 @@ export default function CreateProposalPage() {
                         onChange={(e) => setCustomDescription(e.target.value)}
                         placeholder="Describe the proposal..."
                         rows={4}
-                        className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none resize-none"
+                        className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none resize-none"
                       />
                     </div>
                   </>
@@ -535,11 +535,11 @@ export default function CreateProposalPage() {
             {step === 'review' && selectedType && (
               <div className="space-y-4">
                 {/* Summary */}
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <p className="text-xs text-white/40 uppercase tracking-wide mb-2">Proposal Type</p>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2">Proposal Type</p>
                   <div className="flex items-center gap-2 text-[#3388FF]">
                     {typeIcon(selectedType)}
-                    <span className="text-white font-medium">
+                    <span className="text-[var(--foreground)] font-medium">
                       {PROPOSAL_TYPES.find((t) => t.value === selectedType)?.label}
                     </span>
                   </div>
@@ -547,59 +547,59 @@ export default function CreateProposalPage() {
 
                 {/* Type-specific review details */}
                 {selectedType === 'WITHDRAW_ETH' && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Recipient</span>
-                      <span className="text-xs text-white font-mono">{truncateAddress(ethRecipient)}</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">Recipient</span>
+                      <span className="text-xs text-[var(--foreground)] font-mono">{truncateAddress(ethRecipient)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Amount</span>
-                      <span className="text-sm text-white font-bold">{ethAmount} ETH</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">Amount</span>
+                      <span className="text-sm text-[var(--foreground)] font-bold">{ethAmount} ETH</span>
                     </div>
                   </div>
                 )}
 
                 {selectedType === 'DISTRIBUTE_DIVIDENDS' && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Total Amount</span>
-                      <span className="text-sm text-white font-bold">{dividendAmount} ETH</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">Total Amount</span>
+                      <span className="text-sm text-[var(--foreground)] font-bold">{dividendAmount} ETH</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Recipients</span>
-                      <span className="text-xs text-white">{dividendHolders.length} holders</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">Recipients</span>
+                      <span className="text-xs text-[var(--foreground)]">{dividendHolders.length} holders</span>
                     </div>
                   </div>
                 )}
 
                 {selectedType === 'TRANSFER_SHARES' && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">From</span>
-                      <span className="text-xs text-white font-mono">{truncateAddress(sharesFrom)}</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">From</span>
+                      <span className="text-xs text-[var(--foreground)] font-mono">{truncateAddress(sharesFrom)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">To</span>
-                      <span className="text-xs text-white font-mono">{truncateAddress(sharesTo)}</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">To</span>
+                      <span className="text-xs text-[var(--foreground)] font-mono">{truncateAddress(sharesTo)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">Shares</span>
-                      <span className="text-sm text-white font-bold">{sharesAmount}</span>
+                      <span className="text-xs text-[var(--foreground-subtle)]">Shares</span>
+                      <span className="text-sm text-[var(--foreground)] font-bold">{sharesAmount}</span>
                     </div>
                   </div>
                 )}
 
                 {selectedType === 'CHANGE_SETTINGS' && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">New Quorum</span>
-                      <span className="text-sm text-white font-bold">
+                      <span className="text-xs text-[var(--foreground-subtle)]">New Quorum</span>
+                      <span className="text-sm text-[var(--foreground)] font-bold">
                         {newQuorum} bps ({(parseInt(newQuorum) / 100).toFixed(1)}%)
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-white/40">New Voting Period</span>
-                      <span className="text-sm text-white font-bold">
+                      <span className="text-xs text-[var(--foreground-subtle)]">New Voting Period</span>
+                      <span className="text-sm text-[var(--foreground)] font-bold">
                         {newVotingPeriod}s ({(parseInt(newVotingPeriod) / 3600).toFixed(1)}h)
                       </span>
                     </div>
@@ -607,15 +607,15 @@ export default function CreateProposalPage() {
                 )}
 
                 {selectedType === 'CUSTOM' && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
                     <div>
-                      <span className="text-xs text-white/40">Title</span>
-                      <p className="text-white text-sm mt-1">{customTitle}</p>
+                      <span className="text-xs text-[var(--foreground-subtle)]">Title</span>
+                      <p className="text-[var(--foreground)] text-sm mt-1">{customTitle}</p>
                     </div>
                     {customDescription && (
                       <div>
-                        <span className="text-xs text-white/40">Description</span>
-                        <p className="text-white/70 text-sm mt-1">{customDescription}</p>
+                        <span className="text-xs text-[var(--foreground-subtle)]">Description</span>
+                        <p className="text-[var(--foreground-muted)] text-sm mt-1">{customDescription}</p>
                       </div>
                     )}
                   </div>
@@ -630,7 +630,7 @@ export default function CreateProposalPage() {
                 <button
                   onClick={() => setShowConfirm(true)}
                   disabled={submitStatus === 'loading'}
-                  className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
+                  className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
                   {submitStatus === 'loading' ? 'Submitting...' : 'Submit Proposal'}
                 </button>

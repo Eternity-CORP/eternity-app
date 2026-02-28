@@ -77,13 +77,13 @@ export default function CreateWallet() {
           <div className="glass-card gradient-border rounded-2xl p-8">
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-gradient mb-2">Verify Recovery Phrase</h1>
-              <p className="text-white/50">Enter the requested words to confirm you saved your phrase</p>
+              <p className="text-[var(--foreground-muted)]">Enter the requested words to confirm you saved your phrase</p>
             </div>
 
             <div className="space-y-4 mb-6">
               {verifyIndices.map((wordIdx, i) => (
                 <div key={wordIdx}>
-                  <label className="block text-sm text-white/40 mb-1.5">
+                  <label className="block text-sm text-[var(--foreground-subtle)] mb-1.5">
                     Word #{wordIdx + 1}
                   </label>
                   <input
@@ -96,7 +96,7 @@ export default function CreateWallet() {
                       setVerifyInputs(next)
                       setVerifyError(false)
                     }}
-                    className="w-full py-3 px-4 bg-white/3 border border-white/8 rounded-xl text-white placeholder-white/20 focus:outline-none focus:border-white/20 transition-colors"
+                    className="w-full py-3 px-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--border)] transition-colors"
                     placeholder={`Enter word #${wordIdx + 1}`}
                   />
                 </div>
@@ -114,14 +114,14 @@ export default function CreateWallet() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={handleBack}
-                className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="py-4 text-center rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Back
               </button>
               <button
                 onClick={handleVerify}
                 disabled={!allFilled}
-                className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+                className="py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold hover:opacity-90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Verify
               </button>
@@ -141,7 +141,7 @@ export default function CreateWallet() {
         <div className="glass-card gradient-border rounded-2xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gradient mb-2">Recovery Phrase</h1>
-            <p className="text-white/50">Write these 12 words down and keep them safe</p>
+            <p className="text-[var(--foreground-muted)]">Write these 12 words down and keep them safe</p>
           </div>
 
           {/* Seed phrase grid */}
@@ -149,10 +149,10 @@ export default function CreateWallet() {
             {mnemonic.map((word, i) => (
               <div
                 key={i}
-                className="bg-white/3 border border-white/8 rounded-xl px-2 py-3 hover:border-white/12 transition-colors flex items-center min-w-0"
+                className="bg-[var(--surface)] border border-[var(--border)] rounded-xl px-2 py-3 hover:border-[var(--border)] transition-colors flex items-center min-w-0"
               >
-                <span className="text-white/30 text-[10px] shrink-0">{i + 1}.</span>
-                <span className="ml-1 font-medium text-white text-sm truncate">{word}</span>
+                <span className="text-[var(--foreground-subtle)] text-[10px] shrink-0">{i + 1}.</span>
+                <span className="ml-1 font-medium text-[var(--foreground)] text-sm truncate">{word}</span>
               </div>
             ))}
           </div>
@@ -160,7 +160,7 @@ export default function CreateWallet() {
           {/* Copy button */}
           <button
             onClick={handleCopy}
-            className="w-full py-3 px-6 glass-card rounded-xl font-semibold text-white hover:border-white/15 transition-all mb-6 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
+            className="w-full py-3 px-6 glass-card rounded-xl font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-all mb-6 flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
           >
             {copied ? (
               <>
@@ -188,14 +188,14 @@ export default function CreateWallet() {
           </div>
 
           {/* Confirmation checkbox */}
-          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-white/3 border border-white/8 hover:border-white/12 transition-colors">
+          <label className="flex items-start gap-3 mb-6 cursor-pointer p-4 rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:border-[var(--border)] transition-colors">
             <input
               type="checkbox"
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
-              className="mt-0.5 w-5 h-5 rounded border-white/20 bg-transparent accent-white"
+              className="mt-0.5 w-5 h-5 rounded border-[var(--border)] bg-transparent accent-[var(--foreground)]"
             />
-            <span className="text-white/50 text-sm">
+            <span className="text-[var(--foreground-muted)] text-sm">
               I have written down my recovery phrase and stored it in a safe place
             </span>
           </label>
@@ -204,14 +204,14 @@ export default function CreateWallet() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="py-4 text-center rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Back
             </Link>
             <button
               onClick={handleContinue}
               disabled={!confirmed}
-              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold hover:opacity-90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Continue
             </button>

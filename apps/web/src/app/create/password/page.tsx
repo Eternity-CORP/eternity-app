@@ -83,30 +83,30 @@ export default function SetPassword() {
           <div className="text-center mb-8">
             <img src="/logo.svg" alt="Eternity" className="w-12 h-12 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gradient mb-2">Set Password</h1>
-            <p className="text-white/50">This password encrypts your wallet on this device</p>
+            <p className="text-[var(--foreground-muted)]">This password encrypts your wallet on this device</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm text-white/50 font-medium mb-2">Password</label>
+              <label className="block text-sm text-[var(--foreground-muted)] font-medium mb-2">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-5 py-4 bg-white/3 border border-white/8 rounded-xl text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
+                className="w-full px-5 py-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--border)] transition-colors"
                 autoFocus
               />
             </div>
 
             <div>
-              <label className="block text-sm text-white/50 font-medium mb-2">Confirm Password</label>
+              <label className="block text-sm text-[var(--foreground-muted)] font-medium mb-2">Confirm Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm password"
-                className="w-full px-5 py-4 bg-white/3 border border-white/8 rounded-xl text-white placeholder:text-white/25 focus:outline-none focus:border-white/20 transition-colors"
+                className="w-full px-5 py-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--border)] transition-colors"
               />
             </div>
 
@@ -115,12 +115,12 @@ export default function SetPassword() {
             )}
 
             {/* Password strength meter */}
-            <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-3">
+            <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-3">
               {/* Strength bar */}
               {password.length > 0 && (
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-white/40">Strength</span>
+                    <span className="text-xs text-[var(--foreground-subtle)]">Strength</span>
                     <span className="text-xs font-medium" style={{ color: strengthColor }}>
                       {strengthLabel}
                     </span>
@@ -131,7 +131,7 @@ export default function SetPassword() {
                         key={i}
                         className="h-1.5 flex-1 rounded-full transition-colors duration-300"
                         style={{
-                          backgroundColor: i < strength.score ? strengthColor : 'rgba(255,255,255,0.08)',
+                          backgroundColor: i < strength.score ? strengthColor : 'var(--surface-hover)',
                         }}
                       />
                     ))}
@@ -167,14 +167,14 @@ export default function SetPassword() {
             <div className="grid grid-cols-2 gap-3 pt-2">
               <Link
                 href="/create"
-                className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-colors"
+                className="py-4 text-center rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
               >
                 Back
               </Link>
               <button
                 type="submit"
                 disabled={status === 'loading' || !canSubmit}
-                className="py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {status === 'loading' ? 'Creating...' : 'Create Wallet'}
               </button>
@@ -189,10 +189,10 @@ export default function SetPassword() {
 function RequirementItem({ met, label, active }: { met: boolean; label: string; active: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <span className={`text-sm ${met ? 'text-[#22c55e]' : active ? 'text-[#ef4444]' : 'text-white/25'}`}>
+      <span className={`text-sm ${met ? 'text-[#22c55e]' : active ? 'text-[#ef4444]' : 'text-[var(--foreground-subtle)]'}`}>
         {met ? '\u2713' : '\u25CB'}
       </span>
-      <span className={`text-sm ${met ? 'text-white/60' : 'text-white/40'}`}>{label}</span>
+      <span className={`text-sm ${met ? 'text-[var(--foreground-muted)]' : 'text-[var(--foreground-subtle)]'}`}>{label}</span>
     </div>
   )
 }

@@ -33,13 +33,13 @@ export default function NotFound() {
           Page not found
         </h3>
 
-        <p className="text-white/40 mb-8 leading-relaxed">
+        <p className="text-[var(--foreground-subtle)] mb-8 leading-relaxed">
           The page you are looking for does not exist or has been moved.
         </p>
 
         <Link
           href="/wallet"
-          className="inline-block px-8 py-3.5 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98]"
+          className="inline-block px-8 py-3.5 bg-[var(--foreground)] text-[var(--background)] font-semibold rounded-xl hover:opacity-90 transition-all shimmer hover:scale-[1.02] active:scale-[0.98]"
         >
           Go to Wallet
         </Link>

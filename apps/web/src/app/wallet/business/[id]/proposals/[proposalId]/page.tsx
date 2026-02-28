@@ -54,13 +54,13 @@ function statusColor(s: ProposalStatus): string {
     case 'passed':
       return 'bg-[#22c55e]/15 text-[#22c55e]'
     case 'executed':
-      return 'bg-white/10 text-white/60'
+      return 'bg-[var(--surface-hover)] text-[var(--foreground-muted)]'
     case 'rejected':
       return 'bg-[#EF4444]/15 text-[#EF4444]'
     case 'canceled':
       return 'bg-[#f59e0b]/15 text-[#f59e0b]'
     default:
-      return 'bg-white/10 text-white/60'
+      return 'bg-[var(--surface-hover)] text-[var(--foreground-muted)]'
   }
 }
 
@@ -325,7 +325,7 @@ export default function ProposalDetailPage() {
           {/* Loading */}
           {status === 'loading' && (
             <div className="glass-card gradient-border rounded-2xl p-6 flex justify-center py-12">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-[var(--border)] border-t-white rounded-full animate-spin" />
             </div>
           )}
 
@@ -336,7 +336,7 @@ export default function ProposalDetailPage() {
                 <p className="text-[#f87171] text-sm">{error}</p>
                 <button
                   onClick={loadData}
-                  className="text-xs text-white/40 hover:text-white mt-2 transition-colors"
+                  className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] mt-2 transition-colors"
                 >
                   Retry
                 </button>
@@ -351,7 +351,7 @@ export default function ProposalDetailPage() {
               <div className="glass-card gradient-border rounded-2xl p-6">
                 {/* Type + Status */}
                 <div className="flex items-center justify-between mb-4">
-                  <h1 className="text-lg font-semibold text-white">
+                  <h1 className="text-lg font-semibold text-[var(--foreground)]">
                     {proposalTypeLabel(proposalType)}
                   </h1>
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor(proposalStatus)}`}>
@@ -360,25 +360,25 @@ export default function ProposalDetailPage() {
                 </div>
 
                 {/* Proposal ID + Creator */}
-                <div className="flex items-center justify-between text-xs text-white/40 mb-4">
+                <div className="flex items-center justify-between text-xs text-[var(--foreground-subtle)] mb-4">
                   <span>Proposal #{proposalId}</span>
                   <span className="font-mono">{truncateAddress(proposal.creator)}</span>
                 </div>
 
                 {/* Countdown */}
-                <div className="bg-white/3 border border-white/8 rounded-xl p-3 mb-4">
-                  <p className="text-xs text-white/40 mb-1">Deadline</p>
-                  <p className="text-sm text-white font-medium">{countdown}</p>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3 mb-4">
+                  <p className="text-xs text-[var(--foreground-subtle)] mb-1">Deadline</p>
+                  <p className="text-sm text-[var(--foreground)] font-medium">{countdown}</p>
                 </div>
 
                 {/* Decoded Data */}
                 {Object.keys(decodedData).length > 0 && (
-                  <div className="bg-white/3 border border-white/8 rounded-xl p-4 space-y-2">
-                    <p className="text-xs text-white/40 uppercase tracking-wide mb-2">Details</p>
+                  <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 space-y-2">
+                    <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2">Details</p>
                     {Object.entries(decodedData).map(([key, value]) => (
                       <div key={key} className="flex items-start justify-between gap-3">
-                        <span className="text-xs text-white/40 flex-shrink-0">{key}</span>
-                        <span className="text-xs text-white font-mono text-right break-all">
+                        <span className="text-xs text-[var(--foreground-subtle)] flex-shrink-0">{key}</span>
+                        <span className="text-xs text-[var(--foreground)] font-mono text-right break-all">
                           {value}
                         </span>
                       </div>
@@ -389,7 +389,7 @@ export default function ProposalDetailPage() {
 
               {/* Voting Progress Card */}
               <div className="glass-card rounded-2xl p-6">
-                <p className="text-xs text-white/40 uppercase tracking-wide mb-4">Voting Progress</p>
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-4">Voting Progress</p>
 
                 {/* For / Against */}
                 <div className="space-y-3 mb-4">
@@ -397,9 +397,9 @@ export default function ProposalDetailPage() {
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-[#22c55e] font-medium">For</span>
-                      <span className="text-white/60">{proposal.forVotes} votes ({forPercent}%)</span>
+                      <span className="text-[var(--foreground-muted)]">{proposal.forVotes} votes ({forPercent}%)</span>
                     </div>
-                    <div className="h-3 bg-white/8 rounded-full overflow-hidden">
+                    <div className="h-3 bg-[var(--surface-hover)] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-[#22c55e] rounded-full transition-all"
                         style={{ width: `${forPercent}%` }}
@@ -411,9 +411,9 @@ export default function ProposalDetailPage() {
                   <div>
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-[#EF4444] font-medium">Against</span>
-                      <span className="text-white/60">{proposal.againstVotes} votes ({againstPercent}%)</span>
+                      <span className="text-[var(--foreground-muted)]">{proposal.againstVotes} votes ({againstPercent}%)</span>
                     </div>
-                    <div className="h-3 bg-white/8 rounded-full overflow-hidden">
+                    <div className="h-3 bg-[var(--surface-hover)] rounded-full overflow-hidden">
                       <div
                         className="h-full bg-[#EF4444] rounded-full transition-all"
                         style={{ width: `${againstPercent}%` }}
@@ -423,25 +423,25 @@ export default function ProposalDetailPage() {
                 </div>
 
                 {/* Quorum */}
-                <div className="bg-white/3 border border-white/8 rounded-xl p-3">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-3">
                   <div className="flex items-center justify-between text-xs mb-2">
-                    <span className="text-white/40">Quorum</span>
-                    <span className={quorumReached ? 'text-[#22c55e]' : 'text-white/60'}>
+                    <span className="text-[var(--foreground-subtle)]">Quorum</span>
+                    <span className={quorumReached ? 'text-[#22c55e]' : 'text-[var(--foreground-muted)]'}>
                       {votedPercent}% voted / {quorumPercent}% required
                     </span>
                   </div>
-                  <div className="h-2 bg-white/8 rounded-full overflow-hidden relative">
+                  <div className="h-2 bg-[var(--surface-hover)] rounded-full overflow-hidden relative">
                     <div
                       className={`h-full rounded-full transition-all ${quorumReached ? 'bg-[#22c55e]' : 'bg-[#3388FF]'}`}
                       style={{ width: `${Math.min(votedPercent, 100)}%` }}
                     />
                     {/* Quorum threshold marker */}
                     <div
-                      className="absolute top-0 bottom-0 w-0.5 bg-white/40"
+                      className="absolute top-0 bottom-0 w-0.5 bg-[var(--foreground-subtle)]"
                       style={{ left: `${Math.min(quorumPercent, 100)}%` }}
                     />
                   </div>
-                  <p className={`text-[10px] mt-1 ${quorumReached ? 'text-[#22c55e]' : 'text-white/30'}`}>
+                  <p className={`text-[10px] mt-1 ${quorumReached ? 'text-[#22c55e]' : 'text-[var(--foreground-subtle)]'}`}>
                     {quorumReached ? 'Quorum reached' : 'Quorum not yet reached'}
                   </p>
                 </div>
@@ -451,9 +451,9 @@ export default function ProposalDetailPage() {
               <div className="glass-card rounded-2xl p-6 space-y-3">
                 {/* User vote weight */}
                 {userBalance > 0 && (
-                  <div className="flex items-center justify-between text-xs text-white/40 mb-2">
+                  <div className="flex items-center justify-between text-xs text-[var(--foreground-subtle)] mb-2">
                     <span>Your vote weight</span>
-                    <span className="text-white font-medium">{userBalance} shares</span>
+                    <span className="text-[var(--foreground)] font-medium">{userBalance} shares</span>
                   </div>
                 )}
 
@@ -467,7 +467,7 @@ export default function ProposalDetailPage() {
                 {canVote && (
                   <>
                     {holderAccount && (
-                      <p className="text-[10px] text-white/30 text-center mb-1">
+                      <p className="text-[10px] text-[var(--foreground-subtle)] text-center mb-1">
                         Signing from {holderAccount.label || 'Wallet'} ({holderAccount.address.slice(0, 6)}...{holderAccount.address.slice(-4)})
                       </p>
                     )}
@@ -492,7 +492,7 @@ export default function ProposalDetailPage() {
                 {canExecute && (
                   <button
                     onClick={() => setShowExecute(true)}
-                    className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
+                    className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
                   >
                     Execute Proposal
                   </button>
@@ -510,7 +510,7 @@ export default function ProposalDetailPage() {
 
                 {/* No action available */}
                 {!canVote && !canExecute && !canCancel && !userHasVoted && (
-                  <p className="text-xs text-white/30 text-center">
+                  <p className="text-xs text-[var(--foreground-subtle)] text-center">
                     {userBalance === 0
                       ? 'You need to hold shares to vote'
                       : 'No actions available'}

@@ -40,8 +40,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${inter.variable} dark`}>
-      <body className="antialiased min-h-screen bg-black bg-grid text-white noise">
+    <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
+      <body className="antialiased min-h-screen bg-[var(--background)] bg-grid text-[var(--foreground)] noise transition-colors duration-300">
         {/* Ambient glow orbs */}
         <div className="glow-orb glow-orb-1" />
         <div className="glow-orb glow-orb-2" />

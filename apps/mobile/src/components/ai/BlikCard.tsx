@@ -3,7 +3,7 @@
  * Displays BLIK code generation or payment confirmation in AI chat
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,10 +15,11 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import { truncateAddress } from '@/src/utils/format';
 import { TestModeWarning } from '@/src/components/TestModeWarning';
-import { cardStyles } from './card-styles';
+import { getCardStyles } from './card-styles';
 import { LogoStrokeDraw } from './LogoStrokeDraw';
 
 export interface PendingBlikGenerate {
@@ -68,6 +69,10 @@ export function BlikCard({
   isInContacts = false,
   isTestAccount = false,
 }: BlikCardProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+  const cs = useMemo(() => getCardStyles(aiChatTheme), [aiChatTheme]);
+
   const [status, setStatus] = useState<'idle' | 'confirming' | 'success' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
@@ -139,8 +144,8 @@ export function BlikCard({
     const isExpired = timeLeft === 0;
 
     return (
-      <View style={cardStyles.container}>
-        <View style={[cardStyles.card, { borderColor: 'rgba(139,92,246,0.2)' }]}>
+      <View style={cs.container}>
+        <View style={[cs.card, { borderColor: 'rgba(139,92,246,0.2)' }]}>
           <LogoStrokeDraw />
           <LinearGradient
             colors={['#8B5CF6', '#7C3AED']}
@@ -178,8 +183,8 @@ export function BlikCard({
             )}
           </LinearGradient>
 
-          <TouchableOpacity style={cardStyles.doneButton} onPress={onComplete}>
-            <Text style={cardStyles.doneButtonText}>
+          <TouchableOpacity style={cs.doneButton} onPress={onComplete}>
+            <Text style={cs.doneButtonText}>
               {blik.status === 'paid' ? 'Done' : 'Cancel'}
             </Text>
           </TouchableOpacity>
@@ -196,61 +201,61 @@ export function BlikCard({
   // Success state
   if (status === 'success') {
     return (
-      <View style={cardStyles.container}>
-        <View style={cardStyles.successContainer}>
+      <View style={cs.container}>
+        <View style={cs.successContainer}>
           <LinearGradient
             colors={['#10B981', '#059669']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={cardStyles.successCard}
+            style={cs.successCard}
           >
             <FontAwesome name="check-circle" size={32} color="#FFFFFF" />
-            <Text style={cardStyles.successTitle}>BLIK Payment Sent!</Text>
-            <Text style={cardStyles.successSubtitle}>
+            <Text style={cs.successTitle}>BLIK Payment Sent!</Text>
+            <Text style={cs.successSubtitle}>
               {blik.amount} {blik.token} → {recipient}
             </Text>
             {txHash && (
-              <Text style={cardStyles.txHash}>{truncateAddress(txHash)}</Text>
+              <Text style={cs.txHash}>{truncateAddress(txHash)}</Text>
             )}
           </LinearGradient>
 
           {/* Save Contact Section */}
           {!isInContacts && !contactSaved && onSaveContact && !blik.receiverUsername && (
-            <View style={cardStyles.saveContactSection}>
+            <View style={cs.saveContactSection}>
               {!showSaveContact ? (
                 <TouchableOpacity
-                  style={cardStyles.saveContactPrompt}
+                  style={cs.saveContactPrompt}
                   onPress={() => setShowSaveContact(true)}
                 >
-                  <FontAwesome name="user-plus" size={16} color={aiChat.accentBlue} />
-                  <Text style={cardStyles.saveContactPromptText}>Save to contacts?</Text>
+                  <FontAwesome name="user-plus" size={16} color={aiChatTheme.accentBlue} />
+                  <Text style={cs.saveContactPromptText}>Save to contacts?</Text>
                 </TouchableOpacity>
               ) : (
-                <View style={cardStyles.saveContactForm}>
+                <View style={cs.saveContactForm}>
                   <TextInput
-                    style={cardStyles.contactNameInput}
+                    style={cs.contactNameInput}
                     placeholder="Contact name"
-                    placeholderTextColor={aiChat.text.tertiary}
+                    placeholderTextColor={aiChatTheme.text.tertiary}
                     value={contactName}
                     onChangeText={setContactName}
                     autoFocus
                   />
-                  <View style={cardStyles.saveContactActions}>
+                  <View style={cs.saveContactActions}>
                     <TouchableOpacity
-                      style={cardStyles.saveContactCancel}
+                      style={cs.saveContactCancel}
                       onPress={() => setShowSaveContact(false)}
                     >
-                      <Text style={cardStyles.saveContactCancelText}>Cancel</Text>
+                      <Text style={cs.saveContactCancelText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={cardStyles.saveContactSave}
+                      style={cs.saveContactSave}
                       onPress={handleSaveContact}
                       disabled={savingContact || !contactName.trim()}
                     >
                       {savingContact ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
                       ) : (
-                        <Text style={cardStyles.saveContactSaveText}>Save</Text>
+                        <Text style={cs.saveContactSaveText}>Save</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -260,14 +265,14 @@ export function BlikCard({
           )}
 
           {contactSaved && (
-            <View style={cardStyles.contactSavedBanner}>
-              <FontAwesome name="check" size={14} color={aiChat.accentGreen} />
-              <Text style={cardStyles.contactSavedText}>Contact saved!</Text>
+            <View style={cs.contactSavedBanner}>
+              <FontAwesome name="check" size={14} color={aiChatTheme.accentGreen} />
+              <Text style={cs.contactSavedText}>Contact saved!</Text>
             </View>
           )}
 
-          <TouchableOpacity style={cardStyles.doneButton} onPress={onComplete}>
-            <Text style={cardStyles.doneButtonText}>Done</Text>
+          <TouchableOpacity style={cs.doneButton} onPress={onComplete}>
+            <Text style={cs.doneButtonText}>Done</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -276,44 +281,44 @@ export function BlikCard({
 
   // Payment confirmation state
   return (
-    <View style={cardStyles.container}>
-      <View style={[cardStyles.card, { borderColor: 'rgba(139,92,246,0.2)' }]}>
+    <View style={cs.container}>
+      <View style={[cs.card, { borderColor: 'rgba(139,92,246,0.2)' }]}>
         <LogoStrokeDraw />
         {/* Header */}
-        <View style={cardStyles.header}>
-          <View style={[cardStyles.headerIcon, { backgroundColor: 'rgba(139,92,246,0.15)' }]}>
+        <View style={cs.header}>
+          <View style={[cs.headerIcon, { backgroundColor: 'rgba(139,92,246,0.15)' }]}>
             <FontAwesome name="bolt" size={16} color="#8B5CF6" />
           </View>
-          <Text style={cardStyles.headerTitle}>Confirm BLIK Payment</Text>
+          <Text style={cs.headerTitle}>Confirm BLIK Payment</Text>
         </View>
 
         {/* Code Display */}
-        <View style={styles.codeSection}>
-          <Text style={styles.codeSectionLabel}>BLIK Code</Text>
+        <View style={[styles.codeSection, { borderBottomColor: aiChatTheme.divider }]}>
+          <Text style={[styles.codeSectionLabel, { color: aiChatTheme.text.tertiary }]}>BLIK Code</Text>
           <Text style={styles.codeSectionValue}>{formatCode(blik.code)}</Text>
         </View>
 
         {/* Amount */}
-        <View style={cardStyles.amountSection}>
-          <Text style={cardStyles.amountValue}>
+        <View style={cs.amountSection}>
+          <Text style={cs.amountValue}>
             {blik.amount} {blik.token}
           </Text>
-          <Text style={cardStyles.amountUsd}>≈ ${blik.amountUsd}</Text>
+          <Text style={cs.amountUsd}>≈ ${blik.amountUsd}</Text>
         </View>
 
         {/* Details */}
-        <View style={cardStyles.details}>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>To</Text>
-            <Text style={cardStyles.detailValue}>{recipient}</Text>
+        <View style={cs.details}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>To</Text>
+            <Text style={cs.detailValue}>{recipient}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Network</Text>
-            <Text style={cardStyles.detailValue}>{blik.network}</Text>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Network</Text>
+            <Text style={cs.detailValue}>{blik.network}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Gas Fee</Text>
-            <Text style={cardStyles.detailValue}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Gas Fee</Text>
+            <Text style={cs.detailValue}>
               ~{blik.estimatedGas} ETH (${blik.estimatedGasUsd})
             </Text>
           </View>
@@ -321,9 +326,9 @@ export function BlikCard({
 
         {/* Error */}
         {error && (
-          <View style={cardStyles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
-            <Text style={cardStyles.errorText}>{error}</Text>
+          <View style={cs.errorBanner}>
+            <FontAwesome name="exclamation-circle" size={14} color={aiChatTheme.accentRed} />
+            <Text style={cs.errorText}>{error}</Text>
           </View>
         )}
 
@@ -335,17 +340,17 @@ export function BlikCard({
         )}
 
         {/* Actions */}
-        <View style={cardStyles.actions}>
+        <View style={cs.actions}>
           <TouchableOpacity
-            style={cardStyles.cancelButton}
+            style={cs.cancelButton}
             onPress={onCancel}
             disabled={status === 'confirming'}
           >
-            <Text style={cardStyles.cancelButtonText}>Cancel</Text>
+            <Text style={cs.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[cardStyles.confirmButton, status === 'confirming' && cardStyles.confirmButtonDisabled]}
+            style={[cs.confirmButton, status === 'confirming' && cs.confirmButtonDisabled]}
             onPress={handleConfirmPay}
             disabled={status === 'confirming'}
           >
@@ -353,14 +358,14 @@ export function BlikCard({
               colors={['#8B5CF6', '#7C3AED']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={cardStyles.confirmButtonGradient}
+              style={cs.confirmButtonGradient}
             >
               {status === 'confirming' ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
                   <FontAwesome name="bolt" size={14} color="#FFFFFF" />
-                  <Text style={cardStyles.confirmButtonText}>Pay</Text>
+                  <Text style={cs.confirmButtonText}>Pay</Text>
                 </>
               )}
             </LinearGradient>
@@ -435,17 +440,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: aiChat.divider,
   },
   codeSectionLabel: {
     ...theme.typography.caption,
-    color: aiChat.text.tertiary,
     marginBottom: theme.spacing.xs,
   },
   codeSectionValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: aiChat.accentPurple,
+    color: '#8B5CF6',
     letterSpacing: 4,
   },
 });

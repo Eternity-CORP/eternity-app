@@ -100,13 +100,13 @@ function statusColor(s: ProposalStatus): string {
     case 'passed':
       return 'bg-[#22c55e]/15 text-[#22c55e]'
     case 'executed':
-      return 'bg-white/10 text-white/60'
+      return 'bg-[var(--surface-hover)] text-[var(--foreground-muted)]'
     case 'rejected':
       return 'bg-[#EF4444]/15 text-[#EF4444]'
     case 'canceled':
       return 'bg-[#f59e0b]/15 text-[#f59e0b]'
     default:
-      return 'bg-white/10 text-white/60'
+      return 'bg-[var(--surface-hover)] text-[var(--foreground-muted)]'
   }
 }
 
@@ -206,14 +206,14 @@ export default function ProposalsPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-xl font-semibold text-white">Proposals</h1>
+                <h1 className="text-xl font-semibold text-[var(--foreground)]">Proposals</h1>
                 {business && (
-                  <p className="text-xs text-white/40 mt-1">{business.name}</p>
+                  <p className="text-xs text-[var(--foreground-subtle)] mt-1">{business.name}</p>
                 )}
               </div>
               <button
                 onClick={() => router.push(`/wallet/business/${businessId}/proposals/create`)}
-                className="px-4 py-2 rounded-xl bg-white text-black text-sm font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
+                className="px-4 py-2 rounded-xl bg-[var(--foreground)] text-[var(--background)] text-sm font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
               >
                 Create Proposal
               </button>
@@ -228,7 +228,7 @@ export default function ProposalsPage() {
                   className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
                     filter === tab.key
                       ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                      : 'glass-card text-white/40'
+                      : 'glass-card text-[var(--foreground-subtle)]'
                   }`}
                 >
                   {tab.label}
@@ -239,7 +239,7 @@ export default function ProposalsPage() {
             {/* Loading */}
             {status === 'loading' && (
               <div className="flex justify-center py-8">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-[var(--border)] border-t-white rounded-full animate-spin" />
               </div>
             )}
 
@@ -249,7 +249,7 @@ export default function ProposalsPage() {
                 <p className="text-[#f87171] text-sm">{error}</p>
                 <button
                   onClick={loadProposals}
-                  className="text-xs text-white/40 hover:text-white mt-2 transition-colors"
+                  className="text-xs text-[var(--foreground-subtle)] hover:text-[var(--foreground)] mt-2 transition-colors"
                 >
                   Retry
                 </button>
@@ -268,13 +268,13 @@ export default function ProposalsPage() {
                     <button
                       key={p.id}
                       onClick={() => router.push(`/wallet/business/${businessId}/proposals/${p.id}`)}
-                      className="w-full text-left bg-white/3 border border-white/8 rounded-xl p-4 hover:border-white/15 transition-colors"
+                      className="w-full text-left bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[var(--border)] transition-colors"
                     >
                       {/* Type + Status */}
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 text-white/70">
+                        <div className="flex items-center gap-2 text-[var(--foreground-muted)]">
                           {proposalTypeIcon(p.type)}
-                          <span className="text-sm font-medium text-white">
+                          <span className="text-sm font-medium text-[var(--foreground)]">
                             {proposalTypeLabel(p.type)}
                           </span>
                         </div>
@@ -285,11 +285,11 @@ export default function ProposalsPage() {
 
                       {/* Voting Progress */}
                       <div className="mb-3">
-                        <div className="flex items-center justify-between text-[10px] text-white/40 mb-1">
+                        <div className="flex items-center justify-between text-[10px] text-[var(--foreground-subtle)] mb-1">
                           <span>For: {forPercent}%</span>
                           <span>Against: {againstPercent}%</span>
                         </div>
-                        <div className="h-1.5 bg-white/8 rounded-full overflow-hidden flex">
+                        <div className="h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden flex">
                           {forPercent > 0 && (
                             <div
                               className="h-full bg-[#22c55e] transition-all"
@@ -306,7 +306,7 @@ export default function ProposalsPage() {
                       </div>
 
                       {/* Deadline + Creator */}
-                      <div className="flex items-center justify-between text-[10px] text-white/30">
+                      <div className="flex items-center justify-between text-[10px] text-[var(--foreground-subtle)]">
                         <span>{formatCountdown(p.deadline)}</span>
                         <span className="font-mono">{truncateAddress(p.creator)}</span>
                       </div>
@@ -319,14 +319,14 @@ export default function ProposalsPage() {
             {/* Empty State */}
             {status === 'succeeded' && filtered.length === 0 && (
               <div className="text-center py-8">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-[var(--foreground-subtle)] mb-4">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
                   <line x1="16" y1="17" x2="8" y2="17" />
                 </svg>
-                <p className="text-white/40">No proposals found</p>
-                <p className="text-xs text-white/25 mt-1">
+                <p className="text-[var(--foreground-subtle)]">No proposals found</p>
+                <p className="text-xs text-[var(--foreground-subtle)] mt-1">
                   {filter !== 'all' ? 'Try a different filter' : 'Create the first proposal'}
                 </p>
               </div>

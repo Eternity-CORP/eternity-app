@@ -3,9 +3,10 @@
  * Animated typing dots for streaming AI response
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { aiChat } from '@/src/constants/ai-chat-theme';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
 import { theme } from '@/src/constants/theme';
 import { renderMarkdown } from '@/src/utils/markdown';
 
@@ -14,6 +15,9 @@ interface TypingIndicatorProps {
 }
 
 export function TypingIndicator({ streamingContent }: TypingIndicatorProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -71,14 +75,19 @@ export function TypingIndicator({ streamingContent }: TypingIndicatorProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.bubble}>
+      <View style={[styles.bubble, {
+        backgroundColor: aiChatTheme.aiBubble.bg,
+        borderColor: aiChatTheme.aiBubble.border,
+      }]}>
         {streamingContent ? (
-          <Text style={styles.streamingText}>{renderMarkdown(streamingContent, styles.streamingText)}</Text>
+          <Text style={[styles.streamingText, { color: aiChatTheme.text.primary }]}>
+            {renderMarkdown(streamingContent, { ...styles.streamingText, color: aiChatTheme.text.primary })}
+          </Text>
         ) : (
           <View style={styles.dotsContainer}>
-            <Animated.View style={[styles.dot, createDotStyle(dot1)]} />
-            <Animated.View style={[styles.dot, createDotStyle(dot2)]} />
-            <Animated.View style={[styles.dot, createDotStyle(dot3)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: aiChatTheme.text.tertiary }, createDotStyle(dot1)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: aiChatTheme.text.tertiary }, createDotStyle(dot2)]} />
+            <Animated.View style={[styles.dot, { backgroundColor: aiChatTheme.text.tertiary }, createDotStyle(dot3)]} />
           </View>
         )}
       </View>
@@ -96,11 +105,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
   },
   bubble: {
-    backgroundColor: aiChat.aiBubble.bg,
     borderRadius: theme.borderRadius.lg,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: aiChat.aiBubble.border,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
     minWidth: 60,
@@ -117,11 +124,9 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: aiChat.text.tertiary,
   },
   streamingText: {
     fontSize: 14,
-    color: aiChat.text.primary,
     lineHeight: 20,
   },
   label: {

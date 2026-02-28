@@ -22,13 +22,13 @@ export default function BlikReceivedPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-gradient mb-2">Payment Received!</h1>
-          <p className="text-white/50 mb-8">
+          <p className="text-[var(--foreground-muted)] mb-8">
             Someone sent ETH using your BLIK code
           </p>
 
           <button
             onClick={() => router.push('/wallet')}
-            className="w-full py-4 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
+            className="w-full py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
           >
             Back to Wallet
           </button>

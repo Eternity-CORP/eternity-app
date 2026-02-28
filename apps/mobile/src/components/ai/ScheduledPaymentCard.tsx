@@ -3,7 +3,7 @@
  * Displays scheduled payment confirmation with approve/reject buttons
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { theme } from '@/src/constants/theme';
-import { aiChat } from '@/src/constants/ai-chat-theme';
-import { cardStyles } from './card-styles';
+import { getAiChatTheme } from '@/src/constants/ai-chat-theme';
+import { useTheme } from '@/src/contexts';
+import { getCardStyles } from './card-styles';
 import { LogoStrokeDraw } from './LogoStrokeDraw';
 import type { ScheduledPaymentPreview } from '@e-y/shared';
 
@@ -64,6 +65,10 @@ export function ScheduledPaymentCard({
   onConfirm,
   onCancel,
 }: ScheduledPaymentCardProps) {
+  const { isDark } = useTheme();
+  const aiChatTheme = useMemo(() => getAiChatTheme(isDark), [isDark]);
+  const cs = useMemo(() => getCardStyles(aiChatTheme), [aiChatTheme]);
+
   const [status, setStatus] = useState<CardStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -86,14 +91,14 @@ export function ScheduledPaymentCard({
 
   if (status === 'success') {
     return (
-      <View style={cardStyles.container}>
+      <View style={cs.container}>
         <LinearGradient
           colors={['rgba(34, 197, 94, 0.15)', 'rgba(34, 197, 94, 0.05)']}
           style={styles.successCard}
         >
           <FontAwesome name="check-circle" size={32} color="#22C55E" />
           <Text style={styles.successTitle}>Payment Scheduled!</Text>
-          <Text style={styles.successText}>
+          <Text style={[styles.successText, { color: aiChatTheme.text.secondary }]}>
             {preview.amount} {preview.token} to {recipient}
           </Text>
         </LinearGradient>
@@ -102,46 +107,46 @@ export function ScheduledPaymentCard({
   }
 
   return (
-    <View style={cardStyles.container}>
-      <View style={cardStyles.card}>
+    <View style={cs.container}>
+      <View style={cs.card}>
         <LogoStrokeDraw />
         {/* Header */}
-        <View style={cardStyles.header}>
-          <View style={[cardStyles.headerIcon, styles.headerIconBg]}>
-            <FontAwesome name="clock-o" size={16} color={aiChat.accentPurple} />
+        <View style={cs.header}>
+          <View style={[cs.headerIcon, styles.headerIconBg]}>
+            <FontAwesome name="clock-o" size={16} color={aiChatTheme.accentPurple} />
           </View>
-          <Text style={cardStyles.headerTitle}>Schedule Payment</Text>
+          <Text style={cs.headerTitle}>Schedule Payment</Text>
         </View>
 
         {/* Amount */}
-        <View style={cardStyles.amountSection}>
-          <Text style={[cardStyles.amountValue, styles.amountValueTypography]}>
+        <View style={cs.amountSection}>
+          <Text style={[cs.amountValue, styles.amountValueTypography]}>
             {preview.amount} {preview.token}
           </Text>
         </View>
 
         {/* Details */}
-        <View style={cardStyles.details}>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>To</Text>
-            <Text style={cardStyles.detailValue}>{recipient}</Text>
+        <View style={cs.details}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>To</Text>
+            <Text style={cs.detailValue}>{recipient}</Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Date & Time</Text>
-            <Text style={cardStyles.detailValue}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Date & Time</Text>
+            <Text style={cs.detailValue}>
               {formatScheduledDate(preview.scheduledAt)}
             </Text>
           </View>
-          <View style={cardStyles.detailRow}>
-            <Text style={cardStyles.detailLabel}>Frequency</Text>
-            <Text style={cardStyles.detailValue}>
+          <View style={cs.detailRow}>
+            <Text style={cs.detailLabel}>Frequency</Text>
+            <Text style={cs.detailValue}>
               {recurringLabel(preview.recurring)}
             </Text>
           </View>
           {preview.description && (
-            <View style={cardStyles.detailRow}>
-              <Text style={cardStyles.detailLabel}>Description</Text>
-              <Text style={[cardStyles.detailValue, styles.descriptionValue]}>
+            <View style={cs.detailRow}>
+              <Text style={cs.detailLabel}>Description</Text>
+              <Text style={[cs.detailValue, styles.descriptionValue]}>
                 {preview.description}
               </Text>
             </View>
@@ -150,24 +155,24 @@ export function ScheduledPaymentCard({
 
         {/* Error */}
         {status === 'error' && (
-          <View style={cardStyles.errorBanner}>
-            <FontAwesome name="exclamation-circle" size={14} color={aiChat.accentRed} />
-            <Text style={cardStyles.errorText}>{errorMessage}</Text>
+          <View style={cs.errorBanner}>
+            <FontAwesome name="exclamation-circle" size={14} color={aiChatTheme.accentRed} />
+            <Text style={cs.errorText}>{errorMessage}</Text>
           </View>
         )}
 
         {/* Actions */}
-        <View style={cardStyles.actions}>
+        <View style={cs.actions}>
           <TouchableOpacity
-            style={cardStyles.cancelButton}
+            style={cs.cancelButton}
             onPress={onCancel}
             disabled={status === 'confirming'}
           >
-            <Text style={cardStyles.cancelButtonText}>Cancel</Text>
+            <Text style={cs.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[cardStyles.confirmButton, status === 'confirming' && cardStyles.confirmButtonDisabled]}
+            style={[cs.confirmButton, status === 'confirming' && cs.confirmButtonDisabled]}
             onPress={handleConfirm}
             disabled={status === 'confirming'}
           >
@@ -175,14 +180,14 @@ export function ScheduledPaymentCard({
               colors={['#8B5CF6', '#7C3AED']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={cardStyles.confirmButtonGradient}
+              style={cs.confirmButtonGradient}
             >
               {status === 'confirming' ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
                   <FontAwesome name="clock-o" size={14} color="#FFFFFF" />
-                  <Text style={cardStyles.confirmButtonText}>Schedule</Text>
+                  <Text style={cs.confirmButtonText}>Schedule</Text>
                 </>
               )}
             </LinearGradient>
@@ -220,7 +225,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   successText: {
-    color: aiChat.text.secondary,
     fontSize: 14,
   },
 });

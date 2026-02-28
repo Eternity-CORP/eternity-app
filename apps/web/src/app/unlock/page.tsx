@@ -49,7 +49,7 @@ function UnlockContent() {
 
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gradient mb-2">Welcome back</h1>
-            <p className="text-white/50">Enter your password to unlock</p>
+            <p className="text-[var(--foreground-muted)]">Enter your password to unlock</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,7 +62,7 @@ function UnlockContent() {
                   setError('')
                 }}
                 placeholder="Enter your password"
-                className="w-full px-5 py-4 bg-white/3 border border-white/8 rounded-xl text-white text-lg placeholder:text-white/25 focus:outline-none focus:border-white/20 focus:shadow-[0_0_20px_rgba(51,136,255,0.05)] transition-all"
+                className="w-full px-5 py-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-[var(--foreground)] text-lg placeholder:text-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--accent-blue)]/30 transition-all"
                 autoFocus
               />
               {error && (
@@ -73,11 +73,11 @@ function UnlockContent() {
             <button
               type="submit"
               disabled={status === 'loading' || !password}
-              className="w-full py-4 px-6 bg-white text-black font-semibold text-lg rounded-xl hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-4 px-6 bg-[var(--foreground)] text-[var(--background)] font-semibold text-lg rounded-xl hover:opacity-90 transition-all shimmer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {status === 'loading' ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-[var(--background)]/20 border-t-[var(--background)] rounded-full animate-spin" />
                   Unlocking...
                 </span>
               ) : (
@@ -86,18 +86,18 @@ function UnlockContent() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/5">
-            <p className="text-white/30 text-sm text-center" style={{ marginBottom: '1.25rem' }}>Don&apos;t have a wallet?</p>
+          <div className="mt-8 pt-6 border-t border-[var(--border-light)]">
+            <p className="text-[var(--foreground-subtle)] text-sm text-center" style={{ marginBottom: '1.25rem' }}>Don&apos;t have a wallet?</p>
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/create"
-                className="py-3 px-4 text-center glass-card rounded-xl text-sm font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="py-3 px-4 text-center glass-card rounded-xl text-sm font-semibold text-[var(--foreground)] transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Create New
               </Link>
               <Link
                 href="/import"
-                className="py-3 px-4 text-center text-white/50 text-sm font-semibold hover:text-white transition-colors"
+                className="py-3 px-4 text-center text-[var(--foreground-muted)] text-sm font-semibold hover:text-[var(--foreground)] transition-colors"
               >
                 Import
               </Link>
@@ -113,7 +113,7 @@ export default function UnlockWallet() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
       </div>
     }>
       <UnlockContent />

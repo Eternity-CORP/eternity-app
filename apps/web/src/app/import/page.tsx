@@ -76,17 +76,17 @@ export default function ImportWallet() {
         <div className="glass-card gradient-border rounded-2xl p-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-gradient mb-2">Import Wallet</h1>
-            <p className="text-white/50">Enter your recovery phrase to restore your wallet</p>
+            <p className="text-[var(--foreground-muted)]">Enter your recovery phrase to restore your wallet</p>
           </div>
 
           {/* Word count toggle */}
-          <div className="flex gap-2 p-1.5 bg-white/3 rounded-xl mb-6">
+          <div className="flex gap-2 p-1.5 bg-[var(--surface)] rounded-xl mb-6">
             <button
               onClick={() => handleWordCountChange(12)}
               className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                 wordCount === 12
-                  ? 'bg-white/8 text-white shadow-[0_0_10px_rgba(255,255,255,0.03)]'
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-[var(--surface-hover)] text-[var(--foreground)] shadow-[0_0_10px_var(--glass-shadow)]'
+                  : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
               }`}
             >
               12 words
@@ -95,8 +95,8 @@ export default function ImportWallet() {
               onClick={() => handleWordCountChange(24)}
               className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
                 wordCount === 24
-                  ? 'bg-white/8 text-white shadow-[0_0_10px_rgba(255,255,255,0.03)]'
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-[var(--surface-hover)] text-[var(--foreground)] shadow-[0_0_10px_var(--glass-shadow)]'
+                  : 'text-[var(--foreground-muted)] hover:text-[var(--foreground)]'
               }`}
             >
               24 words
@@ -110,12 +110,12 @@ export default function ImportWallet() {
           >
             {words.map((word, i) => (
               <div key={i} className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 text-xs pointer-events-none">{i + 1}.</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--foreground-subtle)] text-xs pointer-events-none">{i + 1}.</span>
                 <input
                   type="text"
                   value={word}
                   onChange={(e) => handleWordChange(i, e.target.value)}
-                  className="w-full bg-white/3 border border-white/8 rounded-lg pl-8 pr-3 py-2.5 text-sm text-white focus:border-white/20 focus:outline-none focus:shadow-[0_0_10px_rgba(51,136,255,0.03)] transition-all"
+                  className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg pl-8 pr-3 py-2.5 text-sm text-[var(--foreground)] focus:border-[var(--border)] focus:outline-none focus:shadow-[0_0_10px_rgba(51,136,255,0.03)] transition-all"
                   autoComplete="off"
                   autoCapitalize="off"
                 />
@@ -123,7 +123,7 @@ export default function ImportWallet() {
             ))}
           </div>
 
-          <p className="text-xs text-white/30 mb-6 text-center">
+          <p className="text-xs text-[var(--foreground-subtle)] mb-6 text-center">
             Tip: You can paste your entire phrase at once
           </p>
 
@@ -136,14 +136,14 @@ export default function ImportWallet() {
           <div className="grid grid-cols-2 gap-3">
             <Link
               href="/"
-              className="py-4 text-center rounded-xl glass-card font-semibold text-white hover:border-white/15 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="py-4 text-center rounded-xl glass-card font-semibold text-[var(--foreground)] hover:border-[var(--border)] transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Back
             </Link>
             <button
               onClick={handleContinue}
               disabled={status === 'loading'}
-              className="py-4 rounded-xl bg-white text-black font-semibold hover:bg-white/90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="py-4 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold hover:opacity-90 transition-all shimmer hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {status === 'loading' ? 'Validating...' : 'Continue'}
             </button>

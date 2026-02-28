@@ -343,15 +343,15 @@ export default function ChatContainer() {
 
     if (confirmTarget.type === 'split' && pendingSplit) {
       const participantsContent = (
-        <div className="border-t border-white/5 pt-2 mb-4">
-          <span className="text-[10px] uppercase tracking-wider text-white/40 block mb-1.5">Participants</span>
+        <div className="border-t border-[var(--border-light)] pt-2 mb-4">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)] block mb-1.5">Participants</span>
           <div className="space-y-1 max-h-[100px] overflow-y-auto">
             {pendingSplit.participants.map((p, i) => (
               <div key={i} className="flex items-center justify-between text-xs gap-2">
-                <span className="text-white/70 truncate max-w-[140px] flex-shrink-0">
+                <span className="text-[var(--foreground-muted)] truncate max-w-[140px] flex-shrink-0">
                   {p.username ? `@${p.username}` : p.name || `${p.address.slice(0, 6)}...${p.address.slice(-4)}`}
                 </span>
-                <span className="text-white/50 font-mono flex-shrink-0">{p.amount} {pendingSplit.token}</span>
+                <span className="text-[var(--foreground-muted)] font-mono flex-shrink-0">{p.amount} {pendingSplit.token}</span>
               </div>
             ))}
           </div>
@@ -486,7 +486,7 @@ export default function ChatContainer() {
           {/* Greeting */}
           <div className="text-center mb-8 select-none">
             <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-              <span className="text-white/60">Welcome to </span>
+              <span className="text-[var(--foreground-muted)]">Welcome to </span>
               <span className="text-gradient-accent">Eternity</span>
             </h1>
           </div>

@@ -283,10 +283,10 @@ export default function SplitPage() {
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-8">
-              <h1 className="text-xl font-semibold text-white">Split Bill</h1>
+              <h1 className="text-xl font-semibold text-[var(--foreground)]">Split Bill</h1>
               <button
                 onClick={() => setShowCreate(!showCreate)}
-                className="w-8 h-8 rounded-lg glass-card flex items-center justify-center text-white hover:border-white/15 transition-colors"
+                className="w-8 h-8 rounded-lg glass-card flex items-center justify-center text-[var(--foreground)] hover:border-[var(--border)] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19"/>
@@ -301,7 +301,7 @@ export default function SplitPage() {
                 {/* Network Selector (real accounts only) */}
                 {!isTestAccount && (
                   <div className="mb-4">
-                    <label className="text-[10px] text-white/30 uppercase tracking-wider mb-1.5 block">Network</label>
+                    <label className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wider mb-1.5 block">Network</label>
                     <div className="flex flex-wrap gap-1.5">
                       {TIER1_NETWORK_IDS.map((id) => {
                         const net = SUPPORTED_NETWORKS[id]
@@ -313,8 +313,8 @@ export default function SplitPage() {
                             className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all border"
                             style={{
                               backgroundColor: isSelected ? net.color + '20' : 'transparent',
-                              borderColor: isSelected ? net.color + '60' : 'rgba(255,255,255,0.08)',
-                              color: isSelected ? net.color : 'rgba(255,255,255,0.4)',
+                              borderColor: isSelected ? net.color + '60' : 'var(--border)',
+                              color: isSelected ? net.color : 'var(--foreground-subtle)',
                             }}
                           >
                             <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: net.color }} />
@@ -326,8 +326,8 @@ export default function SplitPage() {
                   </div>
                 )}
 
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
                     Total Amount {splitMode === 'custom' && !usePercentages ? '(recommended)' : ''}
                   </label>
                   <div className="flex items-center gap-3 overflow-hidden">
@@ -337,40 +337,40 @@ export default function SplitPage() {
                       onChange={(e) => setTotalAmount(e.target.value)}
                       placeholder="0"
                       step="0.0001"
-                      className="flex-1 min-w-0 bg-transparent text-xl font-bold text-white placeholder:text-white/25 focus:outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-xl font-bold text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                     />
-                    <span className="flex-shrink-0 text-white/40">{network.symbol}</span>
+                    <span className="flex-shrink-0 text-[var(--foreground-subtle)]">{network.symbol}</span>
                   </div>
                 </div>
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Description</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Description</label>
                   <input
                     type="text"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Dinner, tickets, etc."
-                    className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none"
+                    className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none"
                   />
                 </div>
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Recipient Address</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Recipient Address</label>
                   <input
                     type="text"
                     value={recipientAddress}
                     onChange={(e) => setRecipientAddress(e.target.value)}
                     placeholder="Your address (default)"
-                    className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none text-sm font-mono break-all"
+                    className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none text-sm font-mono break-all"
                   />
-                  <p className="text-[10px] text-white/25 mt-1">Leave empty to receive payments at your wallet</p>
+                  <p className="text-[10px] text-[var(--foreground-subtle)] mt-1">Leave empty to receive payments at your wallet</p>
                 </div>
-                <div className="bg-white/3 border border-white/8 rounded-xl p-4">
-                  <label className="text-xs text-white/40 uppercase tracking-wide mb-2 block">Participants</label>
+                <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                  <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">Participants</label>
                   <textarea
                     value={participantAddresses}
                     onChange={(e) => setParticipantAddresses(e.target.value)}
                     placeholder="Addresses or @usernames (one per line)"
                     rows={3}
-                    className="w-full bg-transparent text-white placeholder:text-white/25 focus:outline-none resize-none"
+                    className="w-full bg-transparent text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none resize-none"
                   />
                 </div>
 
@@ -381,7 +381,7 @@ export default function SplitPage() {
                     className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
                       splitType === 'split_with_me'
                         ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                        : 'glass-card text-white/40'
+                        : 'glass-card text-[var(--foreground-subtle)]'
                     }`}
                   >
                     Split with me
@@ -391,7 +391,7 @@ export default function SplitPage() {
                     className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
                       splitType === 'collect'
                         ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                        : 'glass-card text-white/40'
+                        : 'glass-card text-[var(--foreground-subtle)]'
                     }`}
                   >
                     Collect from others
@@ -404,8 +404,8 @@ export default function SplitPage() {
                     onClick={() => setSplitMode('equal')}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                       splitMode === 'equal'
-                        ? 'bg-white text-black'
-                        : 'glass-card text-white/40'
+                        ? 'bg-[var(--foreground)] text-[var(--background)]'
+                        : 'glass-card text-[var(--foreground-subtle)]'
                     }`}
                   >
                     Equal Split
@@ -414,8 +414,8 @@ export default function SplitPage() {
                     onClick={() => setSplitMode('custom')}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                       splitMode === 'custom'
-                        ? 'bg-white text-black'
-                        : 'glass-card text-white/40'
+                        ? 'bg-[var(--foreground)] text-[var(--background)]'
+                        : 'glass-card text-[var(--foreground-subtle)]'
                     }`}
                   >
                     Custom
@@ -431,7 +431,7 @@ export default function SplitPage() {
                         className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                           !usePercentages
                             ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                            : 'glass-card text-white/40'
+                            : 'glass-card text-[var(--foreground-subtle)]'
                         }`}
                       >
                         Amount
@@ -448,7 +448,7 @@ export default function SplitPage() {
                         className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                           usePercentages
                             ? 'bg-[#3388FF]/20 text-[#3388FF] border border-[#3388FF]/30'
-                            : 'glass-card text-white/40'
+                            : 'glass-card text-[var(--foreground-subtle)]'
                         }`}
                       >
                         %
@@ -456,7 +456,7 @@ export default function SplitPage() {
                     </div>
                     {parsedEntries.map((entry, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-xs text-white/50 truncate max-w-[80px] flex-shrink-0" title={entry}>
+                        <span className="text-xs text-[var(--foreground-muted)] truncate max-w-[80px] flex-shrink-0" title={entry}>
                           {entry.startsWith('@') ? entry : `${entry.slice(0, 6)}...${entry.slice(-4)}`}
                         </span>
                         <input
@@ -469,9 +469,9 @@ export default function SplitPage() {
                           }}
                           placeholder={usePercentages ? '0' : '0.00'}
                           step={usePercentages ? '1' : '0.0001'}
-                          className="flex-1 bg-white/5 border border-white/8 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/25 focus:outline-none focus:border-white/20"
+                          className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1.5 text-sm text-[var(--foreground)] placeholder:text-[var(--foreground-subtle)] focus:outline-none focus:border-[var(--border)]"
                         />
-                        <span className="text-xs text-white/40 flex-shrink-0 w-8">
+                        <span className="text-xs text-[var(--foreground-subtle)] flex-shrink-0 w-8">
                           {usePercentages ? '%' : network.symbol}
                         </span>
                       </div>
@@ -515,7 +515,7 @@ export default function SplitPage() {
                 <button
                   onClick={handleCreate}
                   disabled={!canSubmit || submitStatus === 'loading'}
-                  className="w-full py-3 rounded-xl bg-white text-black font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
+                  className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
                   {submitStatus === 'loading' ? 'Creating...' : 'Create Split'}
                 </button>
@@ -525,14 +525,14 @@ export default function SplitPage() {
             {/* Loading state */}
             {status === 'loading' && (
               <div className="flex justify-center py-8">
-                <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-[var(--border)] border-t-[var(--foreground)] rounded-full animate-spin" />
               </div>
             )}
 
             {/* Pending Payments (you owe) */}
             {status !== 'loading' && pendingSplitsFiltered.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs text-white/40 uppercase tracking-wide">You Owe</p>
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">You Owe</p>
                 <div className="space-y-3 mt-5">
                   {pendingSplitsFiltered.map((split) => {
                     const myPart = split.participants.find(
@@ -542,13 +542,13 @@ export default function SplitPage() {
                     return (
                       <div
                         key={split.id}
-                        className="bg-white/3 border border-white/8 rounded-xl p-4"
+                        className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-white font-medium">{myPart?.amount} {network.symbol}</p>
+                          <p className="text-[var(--foreground)] font-medium">{myPart?.amount} {network.symbol}</p>
                           <div className="flex items-center gap-2">
                             {networkLabel && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--foreground-subtle)] font-mono">
                                 {networkLabel}
                               </span>
                             )}
@@ -557,7 +557,7 @@ export default function SplitPage() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-white/50">{split.description}</p>
+                        <p className="text-sm text-[var(--foreground-muted)]">{split.description}</p>
                         <button
                           onClick={() => setPendingPayment({
                             splitId: split.id,
@@ -566,7 +566,7 @@ export default function SplitPage() {
                             description: split.description || 'Split bill',
                             chainId: split.chainId,
                           })}
-                          className="w-full mt-3 py-2 rounded-lg bg-white text-black text-sm font-semibold shimmer hover:bg-white/90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
+                          className="w-full mt-3 py-2 rounded-lg bg-[var(--foreground)] text-[var(--background)] text-sm font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
                         >
                           Pay Now
                         </button>
@@ -580,7 +580,7 @@ export default function SplitPage() {
             {/* Paid by you */}
             {status !== 'loading' && paidSplitsFiltered.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs text-white/40 uppercase tracking-wide">Paid</p>
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Paid</p>
                 <div className="space-y-3 mt-5">
                   {paidSplitsFiltered.map((split) => {
                     const myPart = split.participants.find(
@@ -593,10 +593,10 @@ export default function SplitPage() {
                         className="bg-[#22c55e]/5 border border-[#22c55e]/15 rounded-xl p-4"
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-white font-medium">{myPart?.amount} {network.symbol}</p>
+                          <p className="text-[var(--foreground)] font-medium">{myPart?.amount} {network.symbol}</p>
                           <div className="flex items-center gap-2">
                             {networkLabel && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--foreground-subtle)] font-mono">
                                 {networkLabel}
                               </span>
                             )}
@@ -605,7 +605,7 @@ export default function SplitPage() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-white/50">{split.description}</p>
+                        <p className="text-sm text-[var(--foreground-muted)]">{split.description}</p>
                       </div>
                     )
                   })}
@@ -616,7 +616,7 @@ export default function SplitPage() {
             {/* Created Splits */}
             {status !== 'loading' && createdSplits.length > 0 && (
               <div className="mb-6">
-                <p className="text-xs text-white/40 uppercase tracking-wide">Your Splits</p>
+                <p className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide">Your Splits</p>
                 <div className="space-y-3 mt-5">
                   {createdSplits.map((split) => {
                     const paidCount = split.participants.filter(p => p.status === 'paid').length
@@ -627,7 +627,7 @@ export default function SplitPage() {
                     return (
                       <div
                         key={split.id}
-                        className={`rounded-xl overflow-hidden ${allPaid ? 'bg-[#22c55e]/5 border border-[#22c55e]/15' : 'bg-white/3 border border-white/8'}`}
+                        className={`rounded-xl overflow-hidden ${allPaid ? 'bg-[#22c55e]/5 border border-[#22c55e]/15' : 'bg-[var(--surface)] border border-[var(--border)]'}`}
                       >
                         {/* Clickable header */}
                         <button
@@ -635,10 +635,10 @@ export default function SplitPage() {
                           className="w-full p-4 text-left"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-white font-medium">{split.totalAmount} {network.symbol}</p>
+                            <p className="text-[var(--foreground)] font-medium">{split.totalAmount} {network.symbol}</p>
                             <div className="flex items-center gap-2">
                               {networkLabel && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/40 font-mono">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface)] text-[var(--foreground-subtle)] font-mono">
                                   {networkLabel}
                                 </span>
                               )}
@@ -647,13 +647,13 @@ export default function SplitPage() {
                               </span>
                               <svg
                                 width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                                className={`text-white/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                className={`text-[var(--foreground-subtle)] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                               >
                                 <polyline points="6 9 12 15 18 9" />
                               </svg>
                             </div>
                           </div>
-                          <p className="text-sm text-white/50 mb-2">{split.description}</p>
+                          <p className="text-sm text-[var(--foreground-muted)] mb-2">{split.description}</p>
                           {allPaid ? (
                             <div className="flex items-center gap-1.5">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -663,7 +663,7 @@ export default function SplitPage() {
                             </div>
                           ) : (
                             <div className="flex items-center gap-2">
-                              <div className="flex-1 h-1.5 bg-white/8 rounded-full overflow-hidden">
+                              <div className="flex-1 h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
                                 <div
                                   className="h-full bg-[#22c55e] transition-all"
                                   style={{ width: `${(paidCount / split.participants.length) * 100}%` }}
@@ -675,19 +675,19 @@ export default function SplitPage() {
 
                         {/* Expanded details */}
                         {isExpanded && (
-                          <div className="px-4 pb-5 border-t border-white/5">
-                            <p className="text-[10px] text-white/30 uppercase tracking-wide mt-4 mb-4">Participants</p>
+                          <div className="px-4 pb-5 border-t border-[var(--border-light)]">
+                            <p className="text-[10px] text-[var(--foreground-subtle)] uppercase tracking-wide mt-4 mb-4">Participants</p>
                             <div className="space-y-3">
                               {split.participants.map((p, i) => (
-                                <div key={i} className="flex items-center justify-between py-3 px-3 rounded-lg bg-white/3">
+                                <div key={i} className="flex items-center justify-between py-3 px-3 rounded-lg bg-[var(--surface)]">
                                   <div className="flex items-center gap-3 min-w-0 flex-1">
                                     <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${p.status === 'paid' ? 'bg-[#22c55e]' : 'bg-[#f59e0b]'}`} />
-                                    <span className="text-xs text-white/70 truncate">
+                                    <span className="text-xs text-[var(--foreground-muted)] truncate">
                                       {p.username ? `@${p.username}` : p.name || `${p.address.slice(0, 6)}...${p.address.slice(-4)}`}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-3 flex-shrink-0">
-                                    <span className="text-xs text-white/50 font-mono">{p.amount} {network.symbol}</span>
+                                    <span className="text-xs text-[var(--foreground-muted)] font-mono">{p.amount} {network.symbol}</span>
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${
                                       p.status === 'paid'
                                         ? 'bg-[#22c55e]/10 text-[#22c55e]'
@@ -709,7 +709,7 @@ export default function SplitPage() {
                                 Cancel Split
                               </button>
                             ) : (
-                              <p className="text-[10px] text-white/25 text-center mt-4">Cannot cancel — participants already paid</p>
+                              <p className="text-[10px] text-[var(--foreground-subtle)] text-center mt-4">Cannot cancel — participants already paid</p>
                             )}
                           </div>
                         )}
@@ -723,14 +723,14 @@ export default function SplitPage() {
             {/* Empty State */}
             {status !== 'loading' && splits.length === 0 && pendingSplitsList.length === 0 && !showCreate && (
               <div className="text-center py-8">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-white/20 mb-4">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto text-[var(--foreground-subtle)] mb-4">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                   <circle cx="9" cy="7" r="4"/>
                   <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <p className="text-white/40">No split bills</p>
-                <p className="text-xs text-white/25 mt-1">Tap + to split a bill</p>
+                <p className="text-[var(--foreground-subtle)]">No split bills</p>
+                <p className="text-xs text-[var(--foreground-subtle)] mt-1">Tap + to split a bill</p>
               </div>
             )}
           </div>

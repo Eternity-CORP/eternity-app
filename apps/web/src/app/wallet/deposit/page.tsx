@@ -22,7 +22,7 @@ export default function DepositPage() {
         <div className="w-full max-w-[420px]">
           <BackButton />
           <div className="glass-card gradient-border rounded-2xl p-6">
-            <h1 className="text-xl font-semibold text-white text-center mb-6">Buy Crypto</h1>
+            <h1 className="text-xl font-semibold text-[var(--foreground)] text-center mb-6">Buy Crypto</h1>
 
             {isTestAccount ? (
               <div className="text-center py-8">
@@ -33,16 +33,16 @@ export default function DepositPage() {
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-white mb-2">Deposits unavailable on testnet</h2>
-                <p className="text-sm text-white/50 mb-1">
+                <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Deposits unavailable on testnet</h2>
+                <p className="text-sm text-[var(--foreground-muted)] mb-1">
                   Buying crypto with fiat requires a real mainnet account.
                 </p>
-                <p className="text-sm text-white/50 mb-6">
+                <p className="text-sm text-[var(--foreground-muted)] mb-6">
                   Switch to a real account to use fiat on-ramp and purchase crypto.
                 </p>
                 <button
                   onClick={() => window.history.back()}
-                  className="px-6 py-3 rounded-xl font-medium transition-all bg-white/10 text-white hover:bg-white/15"
+                  className="px-6 py-3 rounded-xl font-medium transition-all bg-[var(--surface-hover)] text-[var(--foreground)] hover:bg-[var(--surface-hover)]"
                 >
                   Go back
                 </button>
@@ -50,7 +50,7 @@ export default function DepositPage() {
             ) : onramperUrl ? (
               <iframe
                 src={onramperUrl}
-                className="w-full rounded-xl border border-white/10"
+                className="w-full rounded-xl border border-[var(--border)]"
                 style={{ height: '600px' }}
                 allow="accelerometer; autoplay; camera; gyroscope; payment"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
@@ -58,7 +58,7 @@ export default function DepositPage() {
               />
             ) : (
               <div className="flex items-center justify-center py-16">
-                <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
+                <div className="h-8 w-8 rounded-full border-2 border-[var(--border)] border-t-[var(--foreground)] animate-spin" />
               </div>
             )}
           </div>

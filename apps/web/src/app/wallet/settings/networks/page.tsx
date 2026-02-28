@@ -124,18 +124,18 @@ export default function NetworkPreferencesPage() {
       <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
           <BackButton />
-          <h1 className="text-lg font-semibold text-white mb-6">Network Preferences</h1>
+          <h1 className="text-lg font-semibold text-[var(--foreground)] mb-6">Network Preferences</h1>
 
           {/* Info Banner */}
           <div className="glass-card rounded-2xl p-4 mb-4 border border-[#3388FF]/20">
-            <p className="text-xs text-white/50">
+            <p className="text-xs text-[var(--foreground-muted)]">
               Choose your preferred network for receiving tokens. Senders will see your preference and can send on that network without conversion fees.
             </p>
           </div>
 
           {/* Default Network */}
           <div className="mb-6">
-            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Default Receiving Network</h2>
+            <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide mb-3">Default Receiving Network</h2>
             <div className="space-y-2">
               {NETWORK_OPTIONS.map((option) => {
                 const isSelected = defaultNetwork === option.id
@@ -146,24 +146,24 @@ export default function NetworkPreferencesPage() {
                     key={option.id ?? 'any'}
                     onClick={() => handleDefaultChange(option.id)}
                     className={`w-full flex items-center justify-between p-4 rounded-xl glass-card transition-colors ${
-                      isSelected ? 'border border-[#3388FF]/30 bg-[#3388FF]/5' : 'hover:bg-white/3'
+                      isSelected ? 'border border-[#3388FF]/30 bg-[#3388FF]/5' : 'hover:bg-[var(--surface)]'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-[#3388FF]' : 'border-white/20'
+                        isSelected ? 'border-[#3388FF]' : 'border-[var(--border)]'
                       }`}>
                         {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[#3388FF]" />}
                       </div>
                       <div className="text-left">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white">{option.name}</span>
+                          <span className="text-sm font-medium text-[var(--foreground)]">{option.name}</span>
                           {option.recommended && (
                             <span className="text-[10px] font-medium text-[#22c55e] bg-[#22c55e]/10 px-1.5 py-0.5 rounded">Recommended</span>
                           )}
                         </div>
                         {option.description && (
-                          <p className="text-xs text-white/40">{option.description}</p>
+                          <p className="text-xs text-[var(--foreground-subtle)]">{option.description}</p>
                         )}
                       </div>
                     </div>
@@ -179,7 +179,7 @@ export default function NetworkPreferencesPage() {
           {/* Token Exceptions */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">Token Exceptions</h2>
+              <h2 className="text-sm font-semibold text-[var(--foreground-muted)] uppercase tracking-wide">Token Exceptions</h2>
               {availableTokens.length > 0 && (
                 <button
                   onClick={() => setShowTokenModal(true)}
@@ -191,8 +191,8 @@ export default function NetworkPreferencesPage() {
             </div>
 
             {overridesList.length === 0 ? (
-              <div className="glass-card rounded-2xl p-6 text-center border border-dashed border-white/10">
-                <p className="text-xs text-white/40">No exceptions. All tokens use default network.</p>
+              <div className="glass-card rounded-2xl p-6 text-center border border-dashed border-[var(--border)]">
+                <p className="text-xs text-[var(--foreground-subtle)]">No exceptions. All tokens use default network.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -201,18 +201,18 @@ export default function NetworkPreferencesPage() {
                   return (
                     <div key={symbol} className="flex items-center justify-between p-3 glass-card rounded-xl">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-white">{symbol}</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20">
+                        <span className="text-sm font-semibold text-[var(--foreground)]">{symbol}</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                           <polyline points="9 18 15 12 9 6" />
                         </svg>
                         <div className="flex items-center gap-1.5">
                           <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: netConfig?.color || '#888' }} />
-                          <span className="text-sm text-white/60">{networkName}</span>
+                          <span className="text-sm text-[var(--foreground-muted)]">{networkName}</span>
                         </div>
                       </div>
                       <button
                         onClick={() => handleRemoveOverride(symbol)}
-                        className="p-1 text-white/20 hover:text-[#EF4444] transition-colors"
+                        className="p-1 text-[var(--foreground-subtle)] hover:text-[#EF4444] transition-colors"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
@@ -227,7 +227,7 @@ export default function NetworkPreferencesPage() {
 
           {saveStatus === 'loading' && (
             <div className="mt-4 text-center">
-              <p className="text-xs text-white/40">Saving...</p>
+              <p className="text-xs text-[var(--foreground-subtle)]">Saving...</p>
             </div>
           )}
         </div>
@@ -236,11 +236,11 @@ export default function NetworkPreferencesPage() {
       {/* Token Selection Modal */}
       {showTokenModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowTokenModal(false)} />
+          <div className="absolute inset-0 bg-[var(--backdrop-bg)] backdrop-blur-sm" onClick={() => setShowTokenModal(false)} />
           <div className="relative w-full max-w-[360px] glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <h3 className="text-sm font-semibold text-white">Select Token</h3>
-              <button onClick={() => setShowTokenModal(false)} className="text-white/40 hover:text-white">
+            <div className="flex items-center justify-between p-4 border-b border-[var(--border-light)]">
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">Select Token</h3>
+              <button onClick={() => setShowTokenModal(false)} className="text-[var(--foreground-subtle)] hover:text-[var(--foreground)]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -255,10 +255,10 @@ export default function NetworkPreferencesPage() {
                     setShowTokenModal(false)
                     setShowNetworkModal(true)
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
                 >
-                  <span className="text-sm font-medium text-white">{symbol}</span>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20">
+                  <span className="text-sm font-medium text-[var(--foreground)]">{symbol}</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </button>
@@ -271,11 +271,11 @@ export default function NetworkPreferencesPage() {
       {/* Network Selection Modal */}
       {showNetworkModal && selectedToken && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowNetworkModal(false); setSelectedToken(null) }} />
+          <div className="absolute inset-0 bg-[var(--backdrop-bg)] backdrop-blur-sm" onClick={() => { setShowNetworkModal(false); setSelectedToken(null) }} />
           <div className="relative w-full max-w-[360px] glass-card rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <h3 className="text-sm font-semibold text-white">Network for {selectedToken}</h3>
-              <button onClick={() => { setShowNetworkModal(false); setSelectedToken(null) }} className="text-white/40 hover:text-white">
+            <div className="flex items-center justify-between p-4 border-b border-[var(--border-light)]">
+              <h3 className="text-sm font-semibold text-[var(--foreground)]">Network for {selectedToken}</h3>
+              <button onClick={() => { setShowNetworkModal(false); setSelectedToken(null) }} className="text-[var(--foreground-subtle)] hover:text-[var(--foreground)]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
@@ -288,10 +288,10 @@ export default function NetworkPreferencesPage() {
                   <button
                     key={networkId}
                     onClick={() => handleAddOverride(selectedToken, networkId)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--surface-hover)] transition-colors"
                   >
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: net.color }} />
-                    <span className="text-sm font-medium text-white">{net.name}</span>
+                    <span className="text-sm font-medium text-[var(--foreground)]">{net.name}</span>
                   </button>
                 )
               })}

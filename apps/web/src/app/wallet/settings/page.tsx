@@ -68,35 +68,35 @@ export default function SettingsPage() {
       <main className="w-full flex justify-center px-6 pt-8 pb-12">
         <div className="w-full max-w-[420px]">
           <BackButton />
-          <h1 className="text-lg font-semibold text-white mb-6">Settings</h1>
+          <h1 className="text-lg font-semibold text-[var(--foreground)] mb-6">Settings</h1>
 
           {/* UI Mode */}
           <div className="glass-card rounded-2xl p-5 mb-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-white">UI Mode</p>
-                <p className="text-xs text-white/40">Switch between AI and Classic</p>
+                <p className="text-sm font-semibold text-[var(--foreground)]">UI Mode</p>
+                <p className="text-xs text-[var(--foreground-subtle)]">Switch between AI and Classic</p>
               </div>
               <ModeToggle value={uiMode} onChange={setUiMode} />
             </div>
           </div>
 
           {/* Settings Links */}
-          <div className="glass-card rounded-2xl overflow-hidden divide-y divide-white/5">
+          <div className="glass-card rounded-2xl overflow-hidden divide-y divide-[var(--border-light)]">
             {SETTINGS_LINKS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-4 p-4 hover:bg-white/3 transition-colors group"
+                className="flex items-center gap-4 p-4 hover:bg-[var(--surface)] transition-colors group"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-white/50 group-hover:text-white/70 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-[var(--surface)] flex items-center justify-center text-[var(--foreground-muted)] group-hover:text-[var(--foreground-muted)] transition-colors">
                   {item.icon}
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-white">{item.label}</p>
-                  <p className="text-xs text-white/40">{item.description}</p>
+                  <p className="text-sm font-semibold text-[var(--foreground)]">{item.label}</p>
+                  <p className="text-xs text-[var(--foreground-subtle)]">{item.description}</p>
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--foreground-subtle)]">
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
               </Link>

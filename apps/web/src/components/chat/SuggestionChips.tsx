@@ -19,7 +19,7 @@ export default function SuggestionChips({ onSelect, hasMessages, centered }: Sug
         <button
           key={chip}
           onClick={() => onSelect(chip)}
-          className="suggestion-chip rounded-xl px-4 py-2 text-xs font-medium text-white/60 hover:text-white cursor-pointer"
+          className="suggestion-chip rounded-xl px-4 py-2 text-xs font-medium text-[var(--foreground-muted)] hover:text-[var(--foreground)] cursor-pointer"
         >
           {chip}
         </button>

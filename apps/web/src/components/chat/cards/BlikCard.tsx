@@ -61,7 +61,7 @@ function BlikGenerateView({ blik, onCancel }: { blik: BlikGeneratePreview; onCan
               <path d="M2 10h20" />
             </svg>
           </div>
-          <span className="text-sm font-semibold text-white">BLIK Code</span>
+          <span className="text-sm font-semibold text-[var(--foreground)]">BLIK Code</span>
         </div>
 
         {/* Code display */}
@@ -85,7 +85,7 @@ function BlikGenerateView({ blik, onCancel }: { blik: BlikGeneratePreview; onCan
             className={`
               mt-3 block w-full text-center text-3xl font-mono font-bold tracking-[0.2em] py-3 rounded-xl transition-colors cursor-pointer
               ${expired && !paid
-                ? 'text-white/20 bg-white/3'
+                ? 'text-[var(--foreground)]/20 bg-[var(--surface)]'
                 : 'text-[#8B5CF6] bg-[#8B5CF6]/10 hover:bg-[#8B5CF6]/15'
               }
             `}
@@ -99,7 +99,7 @@ function BlikGenerateView({ blik, onCancel }: { blik: BlikGeneratePreview; onCan
 
           {/* Timer */}
           {!paid && !expired && (
-            <p className={`text-xs mt-2 font-mono ${remaining < 30000 ? 'text-[#EF4444]' : 'text-white/40'}`}>
+            <p className={`text-xs mt-2 font-mono ${remaining < 30000 ? 'text-[#EF4444]' : 'text-[var(--foreground-subtle)]'}`}>
               {formatCountdown(remaining)}
             </p>
           )}
@@ -107,15 +107,15 @@ function BlikGenerateView({ blik, onCancel }: { blik: BlikGeneratePreview; onCan
 
         {/* Amount */}
         <div className="text-center mb-4">
-          <p className="text-sm text-white font-medium">{blik.amount} {blik.token}</p>
-          <p className="text-[10px] text-white/30">${blik.amountUsd}</p>
+          <p className="text-sm text-[var(--foreground)] font-medium">{blik.amount} {blik.token}</p>
+          <p className="text-[10px] text-[var(--foreground-subtle)]">${blik.amountUsd}</p>
         </div>
 
         {/* Cancel */}
         {!paid && (
           <button
             onClick={onCancel}
-            className="w-full px-3 py-2 rounded-xl text-xs font-medium text-white/60 glass-card hover:text-white/80 transition-colors cursor-pointer"
+            className="w-full px-3 py-2 rounded-xl text-xs font-medium text-[var(--foreground-muted)] glass-card hover:text-[var(--foreground)] transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -135,42 +135,42 @@ function BlikPayView({ blik, onConfirmPay, onCancel }: { blik: BlikPayPreview; o
               <path d="M2 10h20" />
             </svg>
           </div>
-          <span className="text-sm font-semibold text-white">BLIK Payment</span>
+          <span className="text-sm font-semibold text-[var(--foreground)]">BLIK Payment</span>
         </div>
 
         {/* Details */}
         <div className="space-y-3 mb-4">
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-white/40">Amount</span>
-            <p className="text-sm text-white font-medium mt-0.5">{blik.amount} {blik.token}</p>
-            <p className="text-[10px] text-white/30">${blik.amountUsd}</p>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Amount</span>
+            <p className="text-sm text-[var(--foreground)] font-medium mt-0.5">{blik.amount} {blik.token}</p>
+            <p className="text-[10px] text-[var(--foreground-subtle)]">${blik.amountUsd}</p>
           </div>
 
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-white/40">BLIK Code</span>
-            <p className="text-sm text-white font-mono mt-0.5">{formatCode(blik.code)}</p>
+            <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">BLIK Code</span>
+            <p className="text-sm text-[var(--foreground)] font-mono mt-0.5">{formatCode(blik.code)}</p>
           </div>
 
           <div>
-            <span className="text-[10px] uppercase tracking-wider text-white/40">Receiver</span>
-            <p className="text-xs text-white mt-0.5">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Receiver</span>
+            <p className="text-xs text-[var(--foreground)] mt-0.5">
               {blik.receiverUsername || truncateAddress(blik.receiverAddress)}
             </p>
           </div>
 
           {blik.network && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider text-white/40">Network</span>
-              <p className="text-xs text-white/60 mt-0.5">{blik.network}</p>
+              <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Network</span>
+              <p className="text-xs text-[var(--foreground-muted)] mt-0.5">{blik.network}</p>
             </div>
           )}
 
           {blik.estimatedGas && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider text-white/40">Gas fee</span>
-              <p className="text-xs text-white/60 mt-0.5">
+              <span className="text-[10px] uppercase tracking-wider text-[var(--foreground-subtle)]">Gas fee</span>
+              <p className="text-xs text-[var(--foreground-muted)] mt-0.5">
                 {blik.estimatedGas} ETH
-                {blik.estimatedGasUsd && <span className="text-white/30"> (${blik.estimatedGasUsd})</span>}
+                {blik.estimatedGasUsd && <span className="text-[var(--foreground-subtle)]"> (${blik.estimatedGasUsd})</span>}
               </p>
             </div>
           )}
@@ -180,7 +180,7 @@ function BlikPayView({ blik, onConfirmPay, onCancel }: { blik: BlikPayPreview; o
         <div className="flex gap-2">
           <button
             onClick={onCancel}
-            className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-white/60 glass-card hover:text-white/80 transition-colors cursor-pointer"
+            className="flex-1 px-3 py-2 rounded-xl text-xs font-medium text-[var(--foreground-muted)] glass-card hover:text-[var(--foreground)] transition-colors cursor-pointer"
           >
             Cancel
           </button>
