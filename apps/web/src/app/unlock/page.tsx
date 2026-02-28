@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Navigation from '@/components/Navigation'
 import { useAccount } from '@/contexts/account-context'
 import { useInviteGuard } from '@/hooks/useInviteGuard'
+import ThemeLogo from '@/components/ThemeLogo'
 
 function UnlockContent() {
   const { isInviteValid } = useInviteGuard()
@@ -44,7 +45,7 @@ function UnlockContent() {
         <div className="glass-card gradient-border rounded-2xl p-8">
           {/* Logo */}
           <div className="flex justify-center mb-8">
-            <img src="/logo.svg" alt="Eternity" className="w-16 h-16" />
+            <ThemeLogo className="w-16 h-16" />
           </div>
 
           <div className="text-center mb-8">

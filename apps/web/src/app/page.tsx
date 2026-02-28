@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { hasWallet } from '@e-y/storage'
 import Link from 'next/link'
 import { useInviteGuard } from '@/hooks/useInviteGuard'
+import ThemeLogo from '@/components/ThemeLogo'
 
 export default function Home() {
   const router = useRouter()
@@ -37,7 +38,7 @@ export default function Home() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-10">
-          <img src="/logo.svg" alt="Eternity" className="w-20 h-20 mx-auto mb-6" />
+          <ThemeLogo className="w-20 h-20 mx-auto mb-6" />
           <h1 className="text-3xl font-bold text-[var(--foreground)] mb-2">Eternity</h1>
           <p className="text-[var(--foreground-subtle)] text-sm">AI-native self-custody wallet</p>
         </div>

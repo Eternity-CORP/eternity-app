@@ -9,6 +9,7 @@ import { useAccount } from '@/contexts/account-context'
 import { decryptTempFromSession, clearTempSession } from '@/lib/session-crypto'
 import { useInviteGuard } from '@/hooks/useInviteGuard'
 import { validatePasswordStrength, getPasswordStrengthLabel, getPasswordStrengthColor } from '@e-y/shared'
+import ThemeLogo from '@/components/ThemeLogo'
 
 const STRENGTH_COLORS: Record<ReturnType<typeof getPasswordStrengthColor>, string> = {
   red: '#ef4444',
@@ -81,7 +82,7 @@ export default function SetPassword() {
       <main className="max-w-[440px] mx-auto px-6 py-12">
         <div className="glass-card gradient-border rounded-2xl p-8">
           <div className="text-center mb-8">
-            <img src="/logo.svg" alt="Eternity" className="w-12 h-12 mx-auto mb-4" />
+            <ThemeLogo className="w-12 h-12 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gradient mb-2">Set Password</h1>
             <p className="text-[var(--foreground-muted)]">This password encrypts your wallet on this device</p>
           </div>

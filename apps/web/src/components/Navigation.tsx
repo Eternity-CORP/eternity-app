@@ -6,6 +6,7 @@ import { useAccount } from '@/contexts/account-context'
 import { useThemeMode } from '@/contexts/theme-context'
 import AccountSelector from '@/components/AccountSelector'
 import ModeToggle from '@/components/ModeToggle'
+import ThemeLogo from '@/components/ThemeLogo'
 
 function ThemeToggle() {
   const { preference, toggle } = useThemeMode()
@@ -65,7 +66,7 @@ export default function Navigation() {
           {/* Logo */}
           <div className="flex items-center gap-1">
             <Link href={isLoggedIn ? '/wallet' : '/'} className="flex items-center gap-2.5 group">
-              <img src="/logo.svg" alt="Eternity" className="w-7 h-7" />
+              <ThemeLogo className="w-7 h-7" />
               <span className="hidden sm:inline text-lg font-semibold text-[var(--foreground)] group-hover:text-[var(--foreground-muted)] transition-colors">
                 Eternity
               </span>
