@@ -1,82 +1,79 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '@/src/contexts';
-import { theme } from '@/src/constants/theme';
 
 export default function WelcomeScreen() {
-  const { theme: dynamicTheme } = useTheme();
+  const { theme: dynamicTheme, isDark } = useTheme();
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: dynamicTheme.colors.background }]} edges={['top', 'bottom']}>
       <View style={[styles.container, { backgroundColor: dynamicTheme.colors.background }]}>
-      <View style={styles.content}>
-        <Text style={[styles.title, theme.typography.title, { color: dynamicTheme.colors.textPrimary }]}>
-          Welcome to E-Y
-        </Text>
-        <Text style={[styles.subtitle, theme.typography.body, { color: dynamicTheme.colors.textSecondary }]}>
-          Your secure crypto wallet with BLIK codes
-        </Text>
-      </View>
+        {/* Logo + Title */}
+        <View style={styles.hero}>
+          <Image
+            source={isDark
+              ? require('../../assets/images/logo_white.png')
+              : require('../../assets/images/logo_black.png')
+            }
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={[styles.title, { color: dynamicTheme.colors.textPrimary }]}>
+            Eternity
+          </Text>
+          <Text style={[styles.subtitle, { color: dynamicTheme.colors.textTertiary }]}>
+            AI-native self-custody wallet
+          </Text>
+        </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.button, styles.buttonReal, { backgroundColor: dynamicTheme.colors.buttonPrimary }]}
-          onPress={() => router.push({
-            pathname: '/(onboarding)/create-wallet',
-            params: { accountType: 'real' },
-          })}
-        >
-          <View style={styles.buttonContent}>
-            <FontAwesome name="diamond" size={20} color={dynamicTheme.colors.buttonPrimaryText} style={styles.buttonIcon} />
-            <View style={styles.buttonTextContainer}>
-              <Text style={[styles.buttonText, { color: dynamicTheme.colors.buttonPrimaryText }]}>
-                New Wallet
-              </Text>
-              <Text style={[styles.buttonSubtext, { color: dynamicTheme.colors.buttonPrimaryText, opacity: 0.8 }]}>
-                Create a new real wallet
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+        {/* Actions */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[styles.primaryButton, {
+              backgroundColor: isDark ? '#FFFFFF' : '#000000',
+            }]}
+            onPress={() => router.push({
+              pathname: '/(onboarding)/create-wallet',
+              params: { accountType: 'real' },
+            })}
+            activeOpacity={0.85}
+          >
+            <FontAwesome
+              name="plus"
+              size={16}
+              color={isDark ? '#000000' : '#FFFFFF'}
+              style={styles.buttonIcon}
+            />
+            <Text style={[styles.primaryButtonText, {
+              color: isDark ? '#000000' : '#FFFFFF',
+            }]}>
+              Create Wallet
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonSecondary, { backgroundColor: dynamicTheme.colors.buttonSecondary, borderColor: dynamicTheme.colors.buttonSecondaryBorder }]}
-          onPress={() => router.push('/(onboarding)/import-wallet')}
-        >
-          <View style={styles.buttonContent}>
-            <FontAwesome name="download" size={20} color={dynamicTheme.colors.textPrimary} style={styles.buttonIcon} />
-            <View style={styles.buttonTextContainer}>
-              <Text style={[styles.buttonText, { color: dynamicTheme.colors.textPrimary }]}>
-                Existing Wallet
-              </Text>
-              <Text style={[styles.buttonSubtext, { color: dynamicTheme.colors.textSecondary }]}>
-                Import with recovery phrase
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.buttonTest, { backgroundColor: dynamicTheme.colors.buttonSecondary }]}
-          onPress={() => router.push({
-            pathname: '/(onboarding)/create-wallet',
-            params: { accountType: 'test' },
-          })}
-        >
-          <View style={styles.buttonContent}>
-            <FontAwesome name="flask" size={20} color="#F59E0B" style={styles.buttonIcon} />
-            <View style={styles.buttonTextContainer}>
-              <Text style={[styles.buttonText, { color: dynamicTheme.colors.textPrimary }]}>
-                New Test Wallet
-              </Text>
-              <Text style={[styles.buttonSubtext, { color: dynamicTheme.colors.textSecondary }]}>
-                For testing with free tokens
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={[styles.secondaryButton, {
+              backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+            }]}
+            onPress={() => router.push('/(onboarding)/import-wallet')}
+            activeOpacity={0.85}
+          >
+            <FontAwesome
+              name="download"
+              size={16}
+              color={dynamicTheme.colors.textPrimary}
+              style={styles.buttonIcon}
+            />
+            <Text style={[styles.secondaryButtonText, {
+              color: dynamicTheme.colors.textPrimary,
+            }]}>
+              Import Existing
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -85,69 +82,60 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.xl,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
     justifyContent: 'space-between',
   },
-  content: {
+  hero: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  logo: {
+    width: 80,
+    height: 80,
+    marginBottom: 24,
+  },
   title: {
-    color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.md,
-    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: 8,
   },
   subtitle: {
-    textAlign: 'center',
-    paddingHorizontal: theme.spacing.xl,
+    fontSize: 16,
+    fontWeight: '400',
   },
   actions: {
-    gap: theme.spacing.md,
+    gap: 12,
   },
-  button: {
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
-    borderRadius: theme.borderRadius.md,
-  },
-  buttonContent: {
+  primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 16,
+  },
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  secondaryButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
   },
   buttonIcon: {
-    marginRight: theme.spacing.md,
-    width: 24,
-    textAlign: 'center',
-  },
-  buttonTextContainer: {
-    flex: 1,
-  },
-  buttonReal: {
-    backgroundColor: theme.colors.buttonPrimary,
-    borderWidth: 2,
-    borderColor: '#10B981', // Green border for real wallet
-  },
-  buttonSecondary: {
-    backgroundColor: theme.colors.buttonSecondary,
-    borderWidth: 1,
-    borderColor: theme.colors.buttonSecondaryBorder,
-  },
-  buttonTest: {
-    backgroundColor: theme.colors.buttonSecondary,
-    borderWidth: 2,
-    borderColor: '#F59E0B', // Orange border for test wallet
-  },
-  buttonText: {
-    ...theme.typography.heading,
-  },
-  buttonSubtext: {
-    ...theme.typography.caption,
-    marginTop: 2,
+    marginRight: 10,
   },
 });

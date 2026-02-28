@@ -3,13 +3,14 @@
  * User profile with SHARD identity and settings access
  */
 
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useAppSelector } from '@/src/store/hooks';
-import { getCurrentAccount } from '@/src/store/slices/wallet-slice';
+import { useAppSelector, useAppDispatch } from '@/src/store/hooks';
+import { getCurrentAccount, clearWallet as clearWalletAction } from '@/src/store/slices/wallet-slice';
+import { clearWallet } from '@/src/services/wallet-service';
 import { truncateAddress } from '@/src/utils/format';
 import { AccountTypeBadge } from '@/src/components/AccountTypeBadge';
 import { useTheme } from '@/src/contexts';
@@ -17,6 +18,7 @@ import { theme } from '@/src/constants/theme';
 
 export default function ProfileScreen() {
   const { theme: dynamicTheme, isDark } = useTheme();
+  const dispatch = useAppDispatch();
   const wallet = useAppSelector((state) => state.wallet);
   const currentAccount = getCurrentAccount(wallet);
 
@@ -26,6 +28,38 @@ export default function ProfileScreen() {
 
   const handleUsernamePress = () => {
     router.push('/profile/username');
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your wallet and all data from this device. Make sure you have backed up your seed phrase. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you sure?',
+              'All wallet data, accounts, and settings will be permanently erased.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete Everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    await clearWallet();
+                    dispatch(clearWalletAction());
+                    router.replace('/(onboarding)/welcome');
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -154,6 +188,26 @@ export default function ProfileScreen() {
               <Text style={[styles.menuDesc, { color: dynamicTheme.colors.textSecondary }]}>Privacy, security, and more</Text>
             </View>
             <FontAwesome name="chevron-right" size={14} color={dynamicTheme.colors.textTertiary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: '#EF4444' }]}>Danger Zone</Text>
+
+          <TouchableOpacity
+            style={[styles.menuItem, { backgroundColor: dynamicTheme.colors.surface, borderWidth: 1, borderColor: 'rgba(239,68,68,0.2)' }]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
+              <FontAwesome name="trash" size={18} color="#EF4444" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuLabel, { color: '#EF4444' }]}>Delete Account</Text>
+              <Text style={[styles.menuDesc, { color: dynamicTheme.colors.textSecondary }]}>Remove all wallet data from device</Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color="#EF4444" />
           </TouchableOpacity>
         </View>
       </ScrollView>
