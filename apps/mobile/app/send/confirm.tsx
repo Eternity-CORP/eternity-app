@@ -476,6 +476,11 @@ export default function ConfirmScreen() {
             <Text style={[styles.errorText, theme.typography.caption, { color: dynamicTheme.colors.error }]}>
               {send.gasEstimateError || send.sendError}
             </Text>
+            {isTestAccount && (send.gasEstimateError || send.sendError || '').includes('nsufficient') && (
+              <Text style={[theme.typography.caption, { color: dynamicTheme.colors.textSecondary, marginTop: 6, textAlign: 'center' }]}>
+                Testnet transactions still require gas. Use the Faucet to get free testnet ETH.
+              </Text>
+            )}
           </View>
         )}
 
