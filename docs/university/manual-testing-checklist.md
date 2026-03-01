@@ -239,13 +239,13 @@
 
 ## FLOW 15: Landing / Website
 
-- [ ] L15.1: https://eternity-wallet.vercel.app loads
-- [ ] L15.2: Hero section with 3D crystal/animation
-- [ ] L15.3: Scroll through sections (Problem, Features, Roadmap)
-- [ ] L15.4: CTA buttons work
-- [ ] L15.5: Mobile responsive
-- [ ] L15.6: Footer links (Privacy, Terms)
-- [ ] L15.7: Performance — loads under 3 seconds
+- [x] L15.1: https://eternity-wallet.vercel.app loads
+- [x] L15.2: Hero section with 3D crystal/animation
+- [x] L15.3: Scroll through sections (Problem, Features, Roadmap)
+- [x] L15.4: CTA buttons work
+- [x] L15.5: Mobile responsive
+- [x] L15.6: Footer links (Privacy, Terms)
+- [x] L15.7: Performance — loads under 3 seconds
 
 ---
 
@@ -284,4 +284,4 @@ Severity: Critical / High / Medium / Low / Cosmetic
 | FLOW 12 | Scheduled | — | — | — | — | |
 | FLOW 13 | Split Bill | — | — | — | — | |
 | FLOW 14 | TX History | — | — | — | — | |
-| FLOW 15 | Landing | — | — | — | — | |
+| FLOW 15 | Landing | PASSED | 2026-03-01 | 0 | 0/0 | All checks passed, no bugs found |
