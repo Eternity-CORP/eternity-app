@@ -28,6 +28,7 @@ function SendContent() {
   useAuthGuard()
   const { wallet, address, currentAccount } = useAccount()
   const { aggregatedBalances } = useBalance()
+  const isTestAccount = currentAccount?.type === 'test'
 
   const [recipient, setRecipient] = useState(prefillTo || '')
   const [amount, setAmount] = useState('')
@@ -183,15 +184,15 @@ function SendContent() {
         // Use route's network when available, otherwise fall back to default
         const networkId = route?.fromNetwork || 'ethereum'
 
-        const estimate = await estimateGasOnNetwork(networkId, address, resolvedAddress, amount, tokenInfo)
+        const estimate = await estimateGasOnNetwork(networkId, address, resolvedAddress, amount, tokenInfo, undefined, isTestAccount)
         setGasEstimate(estimate.totalGasCost)
         runGasGuard(networkId, estimate.totalGasCost)
       } catch (err) {
         console.error('Gas estimation failed, falling back to basic estimate:', err)
         try {
-          const { getProvider } = await import('@/lib/multi-network')
+          const { getProvider, getSepoliaProvider } = await import('@/lib/multi-network')
           const networkId = route?.fromNetwork || 'ethereum'
-          const provider = getProvider(networkId)
+          const provider = isTestAccount ? getSepoliaProvider() : getProvider(networkId)
           const feeData = await provider.getFeeData()
           const gasLimit = BigInt(21000)
           const gasCost = gasLimit * (feeData.gasPrice || BigInt(0))
@@ -207,7 +208,7 @@ function SendContent() {
     }
 
     doEstimate()
-  }, [resolvedAddress, amount, selectedToken, address, route, aggregatedBalances])
+  }, [resolvedAddress, amount, selectedToken, address, route, aggregatedBalances, isTestAccount])
 
   const handleSend = async () => {
     if (!wallet || !resolvedAddress || !amount) return
@@ -218,7 +219,7 @@ function SendContent() {
     try {
       const networkId = route?.fromNetwork || 'ethereum'
 
-      const txHash = await sendOnNetwork(wallet, networkId, resolvedAddress, amount, tokenInfo)
+      const txHash = await sendOnNetwork(wallet, networkId, resolvedAddress, amount, tokenInfo, isTestAccount)
 
       setStatus('succeeded')
       router.push(`/wallet/send/success?hash=${txHash}&network=${networkId}`)

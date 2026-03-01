@@ -39,6 +39,16 @@ export function getProvider(networkId: NetworkId): JsonRpcProvider {
   return providers[networkId]!
 }
 
+// Sepolia provider for test accounts
+let sepoliaProvider: JsonRpcProvider | null = null
+
+export function getSepoliaProvider(): JsonRpcProvider {
+  if (!sepoliaProvider) {
+    sepoliaProvider = new JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`)
+  }
+  return sepoliaProvider
+}
+
 async function fetchTokenPrices(symbols: string[]): Promise<Record<string, number>> {
   if (priceCache && Date.now() - priceCache.timestamp < PRICE_CACHE_DURATION) {
     return priceCache.prices

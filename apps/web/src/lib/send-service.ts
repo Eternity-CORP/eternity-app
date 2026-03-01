@@ -6,7 +6,7 @@
 import { ethers, Contract, Transaction, parseEther, parseUnits, formatEther } from 'ethers'
 import { ERC20_TRANSFER_ABI, type GasEstimate } from '@e-y/shared'
 import type { NetworkId } from '@e-y/shared'
-import { getProvider } from './multi-network'
+import { getProvider, getSepoliaProvider } from './multi-network'
 
 const ERC20_ABI = ERC20_TRANSFER_ABI as unknown as string[]
 
@@ -129,8 +129,17 @@ export async function estimateGas(
 }
 
 /**
+ * Resolve provider — use Sepolia for test accounts, mainnet for real.
+ */
+function resolveProvider(networkId: NetworkId, isTestAccount?: boolean): ethers.JsonRpcProvider {
+  if (isTestAccount) return getSepoliaProvider()
+  return getProvider(networkId)
+}
+
+/**
  * Send a token on a specific network.
  * Resolves provider internally from the networkId.
+ * For test accounts, routes through Sepolia.
  */
 export async function sendOnNetwork(
   wallet: ethers.HDNodeWallet,
@@ -138,8 +147,9 @@ export async function sendOnNetwork(
   to: string,
   amount: string,
   token?: { address: string; decimals: number },
+  isTestAccount?: boolean,
 ): Promise<string> {
-  const provider = getProvider(networkId)
+  const provider = resolveProvider(networkId, isTestAccount)
   const connectedWallet = wallet.connect(provider)
 
   if (token) {
@@ -150,6 +160,7 @@ export async function sendOnNetwork(
 
 /**
  * Estimate gas on a specific network.
+ * For test accounts, routes through Sepolia.
  */
 export async function estimateGasOnNetwork(
   networkId: NetworkId,
@@ -158,7 +169,8 @@ export async function estimateGasOnNetwork(
   amount: string,
   token?: { address: string; decimals: number },
   ethPrice?: number,
+  isTestAccount?: boolean,
 ): Promise<GasEstimate> {
-  const provider = getProvider(networkId)
+  const provider = resolveProvider(networkId, isTestAccount)
   return estimateGas(provider, from, to, amount, token, ethPrice)
 }
