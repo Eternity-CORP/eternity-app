@@ -58,21 +58,21 @@
 ## FLOW 4: Send ETH (Web + Mobile)
 
 ### Web
-- [ ] W4.1: Navigate to Send
-- [ ] W4.2: Enter recipient address (0x...)
-- [ ] W4.3: Enter amount (0.001 ETH)
-- [ ] W4.4: Gas estimation shown
-- [ ] W4.5: Confirm — transaction sent
-- [ ] W4.6: Success screen with TX hash
-- [ ] W4.7: Balance decreased
+- [x] W4.1: Navigate to Send
+- [x] W4.2: Enter recipient address (0x...)
+- [x] W4.3: Enter amount (0.001 ETH)
+- [x] W4.4: Gas estimation shown
+- [x] W4.5: Confirm — transaction sent
+- [x] W4.6: Success screen with TX hash
+- [x] W4.7: Balance decreased
 
 ### Mobile
-- [ ] M4.1: Tap Send
-- [ ] M4.2: Enter recipient
-- [ ] M4.3: Enter amount
-- [ ] M4.4: Confirm screen shows gas
-- [ ] M4.5: Transaction succeeds
-- [ ] M4.6: History shows new TX
+- [x] M4.1: Tap Send
+- [x] M4.2: Enter recipient
+- [x] M4.3: Enter amount
+- [x] M4.4: Confirm screen shows gas
+- [x] M4.5: Transaction succeeds
+- [x] M4.6: History shows new TX
 
 ---
 
@@ -260,6 +260,7 @@
 | 5 | F1 | M1.1 | Mobile | iOS Keychain persists wallet data after app reinstall — can't reset state | Medium | FIXED — added Delete Account button to Profile |
 | 6 | F1 | M1.1 | Mobile | Welcome screen had test wallet button and outdated design | Cosmetic | FIXED — redesigned with clean minimal layout |
 | 7 | F1 | M1.1 | Mobile | Welcome screen used placeholder icon instead of real Eternity logo | Cosmetic | FIXED — added logo_white/logo_black with theme switching |
+| 8 | F4 | W4.4 | Web | Gas estimation used mainnet provider for test accounts — "Insufficient funds" even with Sepolia balance | High | FIXED — added Sepolia provider routing for test accounts |
 
 Severity: Critical / High / Medium / Low / Cosmetic
 
@@ -272,7 +273,7 @@ Severity: Critical / High / Medium / Low / Cosmetic
 | FLOW 1 | Onboarding | PASSED | 2026-02-28 | 7 | 7/7 | Web + Mobile. All critical/high bugs fixed in-session. Commits: `0d94d6c`, `d303535`, `4b8b09e` |
 | FLOW 2 | Receive | PASSED | 2026-03-01 | 2 | 2/2 | Web + Mobile. Fixed: balance refresh spinner stuck, redesigned wallet buttons |
 | FLOW 3 | Faucet | PASSED | 2026-03-01 | 0 | 0/0 | Web + Mobile. All checks passed, no bugs found |
-| FLOW 4 | Send ETH | — | — | — | — | |
+| FLOW 4 | Send ETH | PASSED | 2026-03-01 | 1 | 1/1 | Web + Mobile (testnet). Bug: gas estimation used mainnet provider for test accounts → "Insufficient funds". Fixed: Sepolia provider routing + gas reserve on Max |
 | FLOW 5 | @username | — | — | — | — | |
 | FLOW 6 | BLIK | — | — | — | — | |
 | FLOW 7 | AI Assistant | — | — | — | — | |
