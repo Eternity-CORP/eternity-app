@@ -19,7 +19,7 @@ import ContactSaveCard from './cards/ContactSaveCard'
 import ConfirmModal from '../shared/ConfirmModal'
 import type { ConfirmDetail } from '../shared/ConfirmModal'
 import { loadContacts, saveContact } from '@/lib/contacts-service'
-import { createSplitBill, registerUsername, createScheduledPayment } from '@e-y/shared'
+import { createSplitBill, registerUsername, createScheduledPayment, lookupUsername } from '@e-y/shared'
 import type { TransactionPreview, SwapPreview } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 
@@ -136,7 +136,19 @@ export default function ChatContainer() {
 
     if (confirmTarget.type === 'send') {
       const txn = confirmTarget.transaction
-      const toAddress = editedValues?.to || txn.to
+      const rawTo = editedValues?.to || txn.to
+      // Resolve @username to address — editedValues.to may contain display name like "@user"
+      let toAddress = rawTo
+      if (rawTo && !rawTo.startsWith('0x')) {
+        const username = rawTo.startsWith('@') ? rawTo.slice(1) : rawTo
+        const resolved = await lookupUsername(apiClient, username)
+        if (!resolved) {
+          addLocalMessage(`Username @${username} not found.`)
+          setConfirmTarget(null)
+          return
+        }
+        toAddress = resolved.address
+      }
       const amount = editedValues?.amount || txn.amount
       const token = txn.token.toUpperCase()
       const isNative = token === 'ETH' || token === network.symbol
@@ -190,6 +202,18 @@ export default function ChatContainer() {
       clearPendingBlik()
       setConfirmTarget(null)
       addLocalMessage(`BLIK payment sent! Hash: ${tx.hash}`)
+
+      // Offer to save contact
+      const blikContacts = loadContacts(address)
+      const blikAlreadySaved = blikContacts.some(
+        (c) => c.address.toLowerCase() === blik.receiverAddress.toLowerCase(),
+      )
+      if (!blikAlreadySaved) {
+        setPendingContactSave({
+          address: blik.receiverAddress,
+          username: blik.receiverUsername,
+        })
+      }
     } else if (confirmTarget.type === 'swap') {
       clearPendingSwap()
       setConfirmTarget(null)
@@ -208,7 +232,18 @@ export default function ChatContainer() {
       setConfirmTarget(null)
       addLocalMessage(`Username @${pendingUsername.username} registered successfully!`)
     } else if (confirmTarget.type === 'scheduled' && pendingScheduled) {
-      const recipient = editedValues?.to || pendingScheduled.recipient
+      const rawRecipient = editedValues?.to || pendingScheduled.recipient
+      let recipient = rawRecipient
+      if (rawRecipient && !rawRecipient.startsWith('0x')) {
+        const uname = rawRecipient.startsWith('@') ? rawRecipient.slice(1) : rawRecipient
+        const resolved = await lookupUsername(apiClient, uname)
+        if (!resolved) {
+          addLocalMessage(`Username @${uname} not found.`)
+          setConfirmTarget(null)
+          return
+        }
+        recipient = resolved.address
+      }
       const amount = editedValues?.amount || pendingScheduled.amount
       const signedData = await signTransaction(connectedWallet, provider, recipient, amount)
 
@@ -263,10 +298,10 @@ export default function ChatContainer() {
       const txn = confirmTarget.transaction
       return {
         title: 'Confirm Send',
-        summary: `${txn.amount} ${txn.token}`,
+        summary: `${String(txn.amount)} ${txn.token}`,
         details: [
           { key: 'to', label: 'To', value: txn.toUsername || txn.to, editable: true },
-          { key: 'amount', label: 'Amount', value: txn.amount, editable: true, type: 'number' as const },
+          { key: 'amount', label: 'Amount', value: String(txn.amount), editable: true, type: 'number' as const },
           { label: 'Network', value: txn.network || network.name },
           ...(txn.estimatedGas
             ? [{ label: 'Gas fee', value: `${txn.estimatedGas} ETH` }]

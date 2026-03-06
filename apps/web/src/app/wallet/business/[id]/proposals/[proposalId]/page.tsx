@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
+import { getSepoliaProvider } from '@/lib/multi-network'
 import {
   type ProposalStatus,
   type ProposalType,
@@ -20,6 +21,9 @@ import {
   type BusinessWallet,
   type OnChainProposal,
   truncateAddress,
+  logBusinessVote,
+  logBusinessExecution,
+  logBusinessCancellation,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { createContractFactory } from '@/lib/contract-utils'
@@ -139,7 +143,7 @@ export default function ProposalDetailPage() {
   const businessId = params.id as string
   const proposalId = parseInt(params.proposalId as string)
   const { address, network, currentAccount, accounts } = useAccount()
-  const personalAccounts = accounts.filter((a) => a.type !== 'business')
+  const personalAccounts = useMemo(() => accounts.filter((a) => a.type !== 'business'), [accounts])
 
   const [business, setBusiness] = useState<BusinessWallet | null>(null)
   const [proposal, setProposal] = useState<OnChainProposal | null>(null)
@@ -174,7 +178,7 @@ export default function ProposalDetailPage() {
       const biz = await getBusiness(apiClient, businessId)
       setBusiness(biz)
 
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const provider = getSepoliaProvider()
 
       const [onChain, qBps] = await Promise.all([
         getOnChainProposal(createContractFactory, biz.treasuryAddress, provider, proposalId),
@@ -216,7 +220,7 @@ export default function ProposalDetailPage() {
       setError(msg)
       setStatus('failed')
     }
-  }, [businessId, proposalId, personalAccounts, network.rpcUrl])
+  }, [businessId, proposalId, personalAccounts])
 
   useEffect(() => {
     loadData()
@@ -243,18 +247,28 @@ export default function ProposalDetailPage() {
   const handleVote = async (password: string, support: boolean) => {
     if (!business || !holderAccount) return
 
-    setActionStatus('loading')
-    const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, holderAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-    const signer = wallet.connect(provider)
+    try {
+      setActionStatus('loading')
+      const mnemonic = await loadAndDecrypt(password)
+      const wallet = deriveWalletFromMnemonic(mnemonic, holderAccount.accountIndex)
+      const provider = getSepoliaProvider()
+      const signer = wallet.connect(provider)
 
-    await castVote(createContractFactory, business.treasuryAddress, signer, proposalId, support)
+      await castVote(createContractFactory, business.treasuryAddress, signer, proposalId, support)
 
-    setActionStatus('succeeded')
-    setShowVoteFor(false)
-    setShowVoteAgainst(false)
-    await loadData()
+      // Log vote to activity log
+      logBusinessVote(apiClient, businessId, holderAccount.address, proposalId, support).catch(() => {})
+
+      setActionStatus('succeeded')
+      setShowVoteFor(false)
+      setShowVoteAgainst(false)
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Vote failed')
+      setActionStatus('failed')
+      setShowVoteFor(false)
+      setShowVoteAgainst(false)
+    }
   }
 
   const handleExecute = async (password: string) => {
@@ -262,17 +276,26 @@ export default function ProposalDetailPage() {
     const signerAccount = holderAccount ?? personalAccounts[0]
     if (!signerAccount) return
 
-    setActionStatus('loading')
-    const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, signerAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-    const signer = wallet.connect(provider)
+    try {
+      setActionStatus('loading')
+      const mnemonic = await loadAndDecrypt(password)
+      const wallet = deriveWalletFromMnemonic(mnemonic, signerAccount.accountIndex)
+      const provider = getSepoliaProvider()
+      const signer = wallet.connect(provider)
 
-    await executeProposal(createContractFactory, business.treasuryAddress, signer, proposalId)
+      await executeProposal(createContractFactory, business.treasuryAddress, signer, proposalId)
 
-    setActionStatus('succeeded')
-    setShowExecute(false)
-    await loadData()
+      // Log execution to activity log
+      logBusinessExecution(apiClient, businessId, signerAccount.address, proposalId).catch(() => {})
+
+      setActionStatus('succeeded')
+      setShowExecute(false)
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Execution failed')
+      setActionStatus('failed')
+      setShowExecute(false)
+    }
   }
 
   const handleCancel = async (password: string) => {
@@ -280,17 +303,26 @@ export default function ProposalDetailPage() {
     const signerAccount = holderAccount ?? personalAccounts[0]
     if (!signerAccount) return
 
-    setActionStatus('loading')
-    const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, signerAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-    const signer = wallet.connect(provider)
+    try {
+      setActionStatus('loading')
+      const mnemonic = await loadAndDecrypt(password)
+      const wallet = deriveWalletFromMnemonic(mnemonic, signerAccount.accountIndex)
+      const provider = getSepoliaProvider()
+      const signer = wallet.connect(provider)
 
-    await cancelProposal(createContractFactory, business.treasuryAddress, signer, proposalId)
+      await cancelProposal(createContractFactory, business.treasuryAddress, signer, proposalId)
 
-    setActionStatus('succeeded')
-    setShowCancel(false)
-    await loadData()
+      // Log cancellation to activity log
+      logBusinessCancellation(apiClient, businessId, signerAccount.address, proposalId).catch(() => {})
+
+      setActionStatus('succeeded')
+      setShowCancel(false)
+      await loadData()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Cancellation failed')
+      setActionStatus('failed')
+      setShowCancel(false)
+    }
   }
 
   // Derived values

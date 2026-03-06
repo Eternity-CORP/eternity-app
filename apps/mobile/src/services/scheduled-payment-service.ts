@@ -78,9 +78,9 @@ export async function createScheduledPayment(
 /**
  * Get a single payment by ID
  */
-export async function getScheduledPayment(id: string): Promise<ScheduledPayment | null> {
+export async function getScheduledPayment(id: string, walletAddress: string): Promise<ScheduledPayment | null> {
   try {
-    return await sharedGetOne(apiClient, id);
+    return await sharedGetOne(apiClient, id, walletAddress);
   } catch {
     log.warn('Failed to get scheduled payment');
     return null;

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
+import { getSepoliaProvider } from '@/lib/multi-network'
 import {
   type TransferPolicy,
   getTokenInfo,
@@ -83,7 +84,7 @@ export default function TransferSharesPage() {
       const biz = await getBusiness(apiClient, businessId)
       setBusiness(biz)
 
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const provider = getSepoliaProvider()
 
       const [tokenInfo, userBalance] = await Promise.all([
         getTokenInfo(createContractFactory, biz.contractAddress, provider),
@@ -132,7 +133,7 @@ export default function TransferSharesPage() {
       setError(msg)
       setStatus('failed')
     }
-  }, [businessId, address, network.rpcUrl])
+  }, [businessId, address])
 
   useEffect(() => {
     loadData()
@@ -144,7 +145,7 @@ export default function TransferSharesPage() {
 
     const mnemonic = await loadAndDecrypt(password)
     const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+    const provider = getSepoliaProvider()
     const signer = wallet.connect(provider)
 
     const tokenContract = new ethers.Contract(

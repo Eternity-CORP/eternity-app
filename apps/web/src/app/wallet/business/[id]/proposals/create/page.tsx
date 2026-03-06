@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
+import { getSepoliaProvider } from '@/lib/multi-network'
 import {
   type ProposalType,
   createProposal,
   getBusiness,
+  getShareBalance,
   saveProposal,
   truncateAddress,
 } from '@e-y/shared'
@@ -87,7 +89,40 @@ export default function CreateProposalPage() {
   const router = useRouter()
   const params = useParams()
   const businessId = params.id as string
-  const { address, network, currentAccount } = useAccount()
+  const { wallet, address, network, currentAccount, accounts } = useAccount()
+
+  // For proposals, always use a personal wallet with shares (not treasury)
+  const personalAccounts = useMemo(() => accounts.filter((a) => a.type !== 'business'), [accounts])
+  const [holderAccount, setHolderAccount] = useState<typeof personalAccounts[0] | null>(null)
+  const creatorAddress = holderAccount?.address || wallet?.address || address
+
+  // Find the personal account that holds shares in this business
+  useEffect(() => {
+    let cancelled = false
+    async function findHolder() {
+      try {
+        const biz = await getBusiness(apiClient, businessId)
+        const provider = getSepoliaProvider()
+        for (const acc of personalAccounts) {
+          const shares = await getShareBalance(createContractFactory, biz.contractAddress, provider, acc.address)
+          if (shares > 0 && !cancelled) {
+            setHolderAccount(acc)
+            return
+          }
+        }
+        // Fallback: use first personal account
+        if (!cancelled && personalAccounts.length > 0) {
+          setHolderAccount(personalAccounts[0])
+        }
+      } catch {
+        if (!cancelled && personalAccounts.length > 0) {
+          setHolderAccount(personalAccounts[0])
+        }
+      }
+    }
+    findHolder()
+    return () => { cancelled = true }
+  }, [businessId, personalAccounts])
 
   const [step, setStep] = useState<Step>('type')
   const [selectedType, setSelectedType] = useState<ProposalType | null>(null)
@@ -212,41 +247,49 @@ export default function CreateProposalPage() {
   ])
 
   const handleConfirmSubmit = async (password: string) => {
-    if (!selectedType || !currentAccount) return
+    if (!selectedType || !holderAccount) return
 
     setSubmitStatus('loading')
     setError('')
 
-    const mnemonic = await loadAndDecrypt(password)
-    const wallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
-    const provider = new ethers.JsonRpcProvider(network.rpcUrl)
-    const signer = wallet.connect(provider)
+    try {
+      const mnemonic = await loadAndDecrypt(password)
+      const wallet = deriveWalletFromMnemonic(mnemonic, holderAccount.accountIndex)
+      const provider = getSepoliaProvider()
+      const signer = wallet.connect(provider)
 
-    // Load business metadata
-    const biz = await getBusiness(apiClient, businessId)
+      // Load business metadata
+      const biz = await getBusiness(apiClient, businessId)
 
-    // Create on-chain proposal
-    const result = await createProposal(
-      createContractFactory,
-      biz.treasuryAddress,
-      signer,
-      selectedType,
-      encodedData,
-    )
+      // Create on-chain proposal
+      const result = await createProposal(
+        createContractFactory,
+        biz.treasuryAddress,
+        signer,
+        selectedType,
+        encodedData,
+      )
 
-    // Save metadata to API
-    const deadline = new Date(Date.now() + biz.votingPeriod * 1000).toISOString()
-    await saveProposal(apiClient, biz.id, {
-      onChainId: result.proposalId,
-      type: selectedType,
-      title: proposalTitle,
-      description: selectedType === 'CUSTOM' ? customDescription : undefined,
-      deadline,
-      createdBy: address,
-    })
+      // Save metadata to API
+      const deadline = new Date(Date.now() + biz.votingPeriod * 1000).toISOString()
+      await saveProposal(apiClient, biz.id, {
+        onChainId: result.proposalId,
+        type: selectedType,
+        title: proposalTitle,
+        description: selectedType === 'CUSTOM' ? customDescription : undefined,
+        deadline,
+        createdBy: creatorAddress,
+      })
 
-    setSubmitStatus('succeeded')
-    router.push(`/wallet/business/${businessId}/proposals/${result.proposalId}`)
+      setSubmitStatus('succeeded')
+      setShowConfirm(false)
+      router.push(`/wallet/business/${businessId}/proposals/${result.proposalId}`)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create proposal'
+      setError(message)
+      setSubmitStatus('failed')
+      setShowConfirm(false)
+    }
   }
 
   const handleSelectType = (type: ProposalType) => {
@@ -385,7 +428,7 @@ export default function CreateProposalPage() {
                               setDividendHolders(addresses)
                             } catch {
                               // fallback: use current user address
-                              setDividendHolders([address])
+                              setDividendHolders([creatorAddress])
                             } finally {
                               setLoadingHolders(false)
                             }
@@ -629,10 +672,10 @@ export default function CreateProposalPage() {
 
                 <button
                   onClick={() => setShowConfirm(true)}
-                  disabled={submitStatus === 'loading'}
+                  disabled={submitStatus === 'loading' || !holderAccount}
                   className="w-full py-3 rounded-xl bg-[var(--foreground)] text-[var(--background)] font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors disabled:opacity-40"
                 >
-                  {submitStatus === 'loading' ? 'Submitting...' : 'Submit Proposal'}
+                  {submitStatus === 'loading' ? 'Submitting...' : !holderAccount ? 'Finding signer...' : 'Submit Proposal'}
                 </button>
               </div>
             )}

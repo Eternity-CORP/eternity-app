@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
+import { getSepoliaProvider } from '@/lib/multi-network'
 import Link from 'next/link'
 import { useAccount } from '@/contexts/account-context'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
@@ -29,6 +30,7 @@ import {
   type VestingScheduleInfo,
   indexToProposalStatus,
   indexToProposalType,
+  getShareBalance,
 } from '@e-y/shared'
 import { apiClient } from '@/lib/api'
 import { createContractFactory } from '@/lib/contract-utils'
@@ -163,6 +165,10 @@ function ActivityIcon({ type }: { type: BusinessActivity['type'] }) {
       color: '#22c55e',
       path: 'M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3',
     },
+    canceled: {
+      color: '#f59e0b',
+      path: 'M18.36 5.64a9 9 0 1 1-12.73 0 M12 2v10',
+    },
     transfer: {
       color: '#00E5FF',
       path: 'M16 3l4 4-4 4 M20 7H4 M8 21l-4-4 4-4 M4 17h16',
@@ -197,14 +203,15 @@ export default function BusinessDashboardPage() {
   const router = useRouter()
   const params = useParams()
   const businessId = params.id as string
-  const { address, network, currentAccount } = useAccount()
+  const { address, network, currentAccount, accounts } = useAccount()
+  const personalAccounts = useMemo(() => accounts.filter((a) => a.type !== 'business'), [accounts])
 
-  // Redirect away if user switches to a non-business account
+  // If user switches to a DIFFERENT business account, redirect to that business's page
   useEffect(() => {
-    if (currentAccount && currentAccount.type !== 'business') {
-      router.replace('/wallet')
+    if (currentAccount?.type === 'business' && currentAccount.businessId && currentAccount.businessId !== businessId) {
+      router.replace(`/wallet/business/${currentAccount.businessId}`)
     }
-  }, [currentAccount, router])
+  }, [currentAccount, router, businessId])
 
   // Data state
   const [business, setBusiness] = useState<BusinessWallet | null>(null)
@@ -215,6 +222,7 @@ export default function BusinessDashboardPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [error, setError] = useState('')
   const [showDepositInfo, setShowDepositInfo] = useState(false)
+  const [isMember, setIsMember] = useState(false)
 
   // Vesting state
   const [vestingInfo, setVestingInfo] = useState<VestingScheduleInfo | null>(null)
@@ -240,7 +248,17 @@ export default function BusinessDashboardPage() {
         if (cancelled) return
         setBusiness(biz)
 
-        const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+        // Check membership: user's personal accounts must be in the business members list
+        const memberAddressSet = new Set((biz.members || []).map(m => m.address.toLowerCase()))
+        const userIsMember = personalAccounts.some(a => memberAddressSet.has(a.address.toLowerCase()))
+        setIsMember(userIsMember)
+
+        if (!userIsMember) {
+          setStatus('succeeded')
+          return
+        }
+
+        const provider = getSepoliaProvider()
 
         // 2. Collect all known member addresses from the API response
         const memberAddresses = (biz.members || []).map(m => m.address)
@@ -337,7 +355,7 @@ export default function BusinessDashboardPage() {
 
     load()
     return () => { cancelled = true }
-  }, [businessId, address, network.rpcUrl, reloadKey])
+  }, [businessId, address, reloadKey, personalAccounts])
 
   // --------------------------------------------------
   // Release vested tokens handler
@@ -349,7 +367,7 @@ export default function BusinessDashboardPage() {
     try {
       const mnemonic = await loadAndDecrypt(password)
       const signerWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const provider = getSepoliaProvider()
       const signer = signerWallet.connect(provider)
       await releaseVestedTokens(createContractFactory, business.contractAddress, signer)
       // Trigger data reload
@@ -424,6 +442,38 @@ export default function BusinessDashboardPage() {
               </div>
               <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Failed to load business</h2>
               <p className="text-sm text-[var(--foreground-subtle)] mb-4">{error || 'Business not found'}</p>
+              <button
+                onClick={() => router.push('/wallet')}
+                className="py-2.5 px-6 rounded-xl glass-card text-[var(--foreground)] font-medium hover:border-[var(--border)] transition-colors"
+              >
+                Back to Wallet
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // --------------------------------------------------
+  // Access denied — user is not a member
+  // --------------------------------------------------
+
+  if (status === 'succeeded' && business && !isMember) {
+    return (
+      <div className="min-h-screen relative z-[2]">
+        <Navigation />
+        <main className="w-full flex justify-center px-6 pt-12 pb-12">
+          <div className="w-full max-w-[560px]">
+            <div className="glass-card gradient-border rounded-2xl p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-[#f59e0b]/15 flex items-center justify-center mx-auto mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Access Denied</h2>
+              <p className="text-sm text-[var(--foreground-subtle)] mb-4">You are not a member of this business wallet.</p>
               <button
                 onClick={() => router.push('/wallet')}
                 className="py-2.5 px-6 rounded-xl glass-card text-[var(--foreground)] font-medium hover:border-[var(--border)] transition-colors"
@@ -594,7 +644,7 @@ export default function BusinessDashboardPage() {
                     const hoursLeft = Math.max(0, Math.floor(timeLeft / 3600000))
 
                     return (
-                      <div key={p.id} className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+                      <Link key={p.id} href={`/wallet/business/${businessId}/proposals/${p.id}`} className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 hover:border-[#3388FF]/30 transition-colors">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <span className="text-xs px-2 py-0.5 rounded-full bg-[#F59E0B]/10 text-[#F59E0B]">
@@ -634,7 +684,7 @@ export default function BusinessDashboardPage() {
                         {quorumMet && (
                           <p className="text-[10px] text-[#22c55e] mt-2">Quorum reached</p>
                         )}
-                      </div>
+                      </Link>
                     )
                   })}
                 </div>

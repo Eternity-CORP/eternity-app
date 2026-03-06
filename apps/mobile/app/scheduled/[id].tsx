@@ -60,14 +60,14 @@ export default function ScheduledPaymentDetailsScreen() {
   // Load payment details
   useEffect(() => {
     async function loadPayment() {
-      if (!id) return;
+      if (!id || !currentAccount?.address) return;
       setLoading(true);
-      const data = await getScheduledPayment(id);
+      const data = await getScheduledPayment(id, currentAccount.address);
       setPayment(data);
       setLoading(false);
     }
     loadPayment();
-  }, [id]);
+  }, [id, currentAccount?.address]);
 
   const handleCancel = async () => {
     if (!payment) return;

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
+import { getSepoliaProvider } from '@/lib/multi-network'
 import {
   type ProposalStatus,
   type ProposalType,
@@ -11,6 +12,7 @@ import {
   indexToProposalStatus,
   indexToProposalType,
   getBusiness,
+  getShareBalance,
   type BusinessWallet,
   truncateAddress,
 } from '@e-y/shared'
@@ -131,13 +133,15 @@ export default function ProposalsPage() {
   const router = useRouter()
   const params = useParams()
   const businessId = params.id as string
-  const { network } = useAccount()
+  const { accounts } = useAccount()
+  const personalAccounts = useMemo(() => accounts.filter((a) => a.type !== 'business'), [accounts])
 
   const [business, setBusiness] = useState<BusinessWallet | null>(null)
   const [proposals, setProposals] = useState<ProposalItem[]>([])
   const [filter, setFilter] = useState<FilterTab>('all')
   const [status, setStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('loading')
   const [error, setError] = useState('')
+  const [hasShares, setHasShares] = useState(false)
 
   // Load business metadata + on-chain proposals
   const loadProposals = useCallback(async () => {
@@ -150,7 +154,7 @@ export default function ProposalsPage() {
       setBusiness(biz)
 
       // Load on-chain proposals
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const provider = getSepoliaProvider()
       const count = await getProposalCount(createContractFactory, biz.treasuryAddress, provider)
 
       const items: ProposalItem[] = []
@@ -170,13 +174,20 @@ export default function ProposalsPage() {
       }
 
       setProposals(items.reverse())
+
+      // Check if user holds shares (for Create Proposal button visibility)
+      for (const acc of personalAccounts) {
+        const shares = await getShareBalance(createContractFactory, biz.contractAddress, provider, acc.address).catch(() => 0)
+        if (shares > 0) { setHasShares(true); break }
+      }
+
       setStatus('succeeded')
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load proposals'
       setError(msg)
       setStatus('failed')
     }
-  }, [businessId, network.rpcUrl])
+  }, [businessId, personalAccounts])
 
   useEffect(() => {
     loadProposals()
@@ -211,12 +222,14 @@ export default function ProposalsPage() {
                   <p className="text-xs text-[var(--foreground-subtle)] mt-1">{business.name}</p>
                 )}
               </div>
-              <button
-                onClick={() => router.push(`/wallet/business/${businessId}/proposals/create`)}
-                className="px-4 py-2 rounded-xl bg-[var(--foreground)] text-[var(--background)] text-sm font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
-              >
-                Create Proposal
-              </button>
+              {hasShares && (
+                <button
+                  onClick={() => router.push(`/wallet/business/${businessId}/proposals/create`)}
+                  className="px-4 py-2 rounded-xl bg-[var(--foreground)] text-[var(--background)] text-sm font-semibold shimmer hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-colors"
+                >
+                  Create Proposal
+                </button>
+              )}
             </div>
 
             {/* Filter Tabs */}

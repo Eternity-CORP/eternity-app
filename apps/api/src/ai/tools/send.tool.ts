@@ -136,7 +136,7 @@ export class SendTool implements AIToolHandler {
         from: userAddress,
         to: resolvedAddress,
         toUsername: recipientUsername,
-        amount: amount,
+        amount: String(amount),
         token: token.toUpperCase(),
         amountUsd,
         estimatedGas,

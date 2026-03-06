@@ -20,13 +20,24 @@ export async function getScheduledPayments(
 }
 
 /**
+ * Get incoming scheduled payments (where user is recipient)
+ */
+export async function getIncomingScheduledPayments(
+  client: ApiClient,
+  walletAddress: string,
+): Promise<ScheduledPayment[]> {
+  return client.withWallet(walletAddress).get<ScheduledPayment[]>('/api/scheduled/incoming');
+}
+
+/**
  * Get a single scheduled payment by ID
  */
 export async function getScheduledPayment(
   client: ApiClient,
   id: string,
+  walletAddress: string,
 ): Promise<ScheduledPayment> {
-  return client.get<ScheduledPayment>(`/api/scheduled/${id}`);
+  return client.withWallet(walletAddress).get<ScheduledPayment>(`/api/scheduled/${id}`);
 }
 
 /**

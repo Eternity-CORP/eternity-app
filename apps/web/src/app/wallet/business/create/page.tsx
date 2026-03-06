@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
+import { getSepoliaProvider } from '@/lib/multi-network'
 import { loadAndDecrypt } from '@e-y/storage'
 import { deriveWalletFromMnemonic } from '@e-y/crypto'
 import { useAccount } from '@/contexts/account-context'
@@ -113,7 +114,23 @@ function StepIndicator({ current }: { current: Step }) {
 export default function BusinessCreatePage() {
   useAuthGuard()
   const router = useRouter()
-  const { address, network, currentAccount, wallet, addBusinessAccount } = useAccount()
+  const { address, network, currentAccount, wallet, accounts, addBusinessAccount } = useAccount()
+
+  // Personal accounts only (exclude business accounts)
+  const personalAccounts = useMemo(
+    () => accounts.filter(a => a.type !== 'business'),
+    [accounts],
+  )
+
+  // Default creator = current personal account, or first personal account
+  const defaultCreatorAddress = wallet?.address || address
+  const [creatorAddress, setCreatorAddress] = useState(defaultCreatorAddress)
+
+  // Resolve the selected creator account for signing
+  const creatorAccount = useMemo(
+    () => personalAccounts.find(a => a.address.toLowerCase() === creatorAddress.toLowerCase()) || currentAccount,
+    [personalAccounts, creatorAddress, currentAccount],
+  )
 
   // Step state
   const [step, setStep] = useState<Step>(1)
@@ -126,7 +143,7 @@ export default function BusinessCreatePage() {
 
   // Step 2: Founders
   const [founders, setFounders] = useState<FounderEntry[]>([
-    { input: address, address: address, shares: 0, resolved: true },
+    { input: defaultCreatorAddress, address: defaultCreatorAddress, shares: 0, resolved: true },
   ])
   const [newFounderInput, setNewFounderInput] = useState('')
   const [resolvingFounder, setResolvingFounder] = useState(false)
@@ -272,15 +289,15 @@ export default function BusinessCreatePage() {
   // --------------------------------------------------
 
   const handleDeploy = useCallback(async (password: string) => {
-    if (!currentAccount || !wallet) return
+    if (!creatorAccount || !wallet) return
 
     setDeployStatus('loading')
     setDeployError('')
 
     try {
       const mnemonic = await loadAndDecrypt(password)
-      const signerWallet = deriveWalletFromMnemonic(mnemonic, currentAccount.accountIndex)
-      const provider = new ethers.JsonRpcProvider(network.rpcUrl)
+      const signerWallet = deriveWalletFromMnemonic(mnemonic, creatorAccount.accountIndex)
+      const provider = getSepoliaProvider()
       const signer = signerWallet.connect(provider)
 
       const params: CreateBusinessParams = {
@@ -337,7 +354,7 @@ export default function BusinessCreatePage() {
         dividendsConfig: dividendsEnabled
           ? { frequency: dividendFrequency, percentage: parseFloat(dividendPercentage) } as unknown as Record<string, unknown>
           : undefined,
-        createdBy: address,
+        createdBy: creatorAddress,
         members: founders.map(f => ({
           address: f.address,
           username: f.username,
@@ -363,7 +380,7 @@ export default function BusinessCreatePage() {
       throw err // Re-throw for ConfirmModal error display
     }
   }, [
-    currentAccount, wallet, network, address, name, description, tokenSymbol,
+    creatorAccount, wallet, network, creatorAddress, name, description, tokenSymbol,
     supply, founders, transferPolicy, quorumBps, votingPeriod,
     vestingEnabled, vestingCliff, vestingDuration,
     dividendsEnabled, dividendFrequency, dividendPercentage,
@@ -450,9 +467,70 @@ export default function BusinessCreatePage() {
     </div>
   )
 
+  const handleCreatorChange = useCallback((newAddress: string) => {
+    setCreatorAddress(newAddress)
+    // Update the first founder (creator) entry
+    setFounders(prev => prev.map((f, i) =>
+      i === 0 ? { ...f, input: newAddress, address: newAddress } : f
+    ))
+  }, [])
+
   const renderStep2 = () => (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">Founders & Shares</h2>
+
+      {/* Account selector — only shown when user has 2+ personal accounts */}
+      {personalAccounts.length > 1 && (
+        <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+          <label className="text-xs text-[var(--foreground-subtle)] uppercase tracking-wide mb-2 block">
+            Creator Account
+          </label>
+          <div className="space-y-2">
+            {personalAccounts.map((acc) => (
+              <button
+                key={acc.address}
+                onClick={() => handleCreatorChange(acc.address)}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                  creatorAddress.toLowerCase() === acc.address.toLowerCase()
+                    ? 'border-[#3388FF] bg-[#3388FF]/5'
+                    : 'border-[var(--border)] hover:border-[var(--border)] hover:bg-[var(--surface-hover)]'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                  creatorAddress.toLowerCase() === acc.address.toLowerCase()
+                    ? 'bg-[#3388FF] text-white'
+                    : 'bg-[var(--surface-hover)] text-[var(--foreground-subtle)]'
+                }`}>
+                  {acc.type === 'test' ? 'T' : 'R'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[var(--foreground)] truncate">
+                    {acc.label || `Wallet ${acc.accountIndex + 1}`}
+                  </p>
+                  <p className="text-[10px] text-[var(--foreground-subtle)] font-mono">
+                    {acc.address.slice(0, 8)}...{acc.address.slice(-6)}
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                  acc.type === 'test'
+                    ? 'bg-[#F59E0B]/10 text-[#F59E0B]'
+                    : 'bg-[#22c55e]/10 text-[#22c55e]'
+                }`}>
+                  {acc.type}
+                </span>
+                {creatorAddress.toLowerCase() === acc.address.toLowerCase() && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3388FF" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-[var(--foreground-subtle)] mt-2">
+            This account will sign the creation transaction and receive creator shares
+          </p>
+        </div>
+      )}
 
       {/* Share distribution bar */}
       {supply > 0 && (
