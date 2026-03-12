@@ -1,6 +1,6 @@
 # E-Y (Eternity Wallet)
 
-> Mobile-first crypto wallet with BLIK-style P2P transfers, @username support, business wallets, and AI-powered transactions.
+> Mobile-first crypto wallet with BLIK-style P2P transfers, @username support, and AI-powered transactions.
 
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
@@ -13,7 +13,6 @@ E-Y reimagines how people interact with crypto. Instead of copying long addresse
 
 - **Send via @username** — like Venmo, but on-chain
 - **Use BLIK codes** — 6-digit codes for instant P2P transfers (inspired by the Polish BLIK system)
-- **Create a Business Wallet** — treasury management with on-chain governance, dividends, and vesting
 - **Talk to AI** — describe what you want in natural language, and the AI executes it
 
 ## Tech Stack
@@ -119,13 +118,6 @@ docker compose -f docker-compose.local.yml down -v
 - Real-time transaction tracking via WebSocket
 - Contact book with favorites
 - Token management (ERC-20)
-
-### Business Wallet
-- On-chain business creation via smart contracts
-- Treasury management with multi-sig governance
-- Proposal system (transfers, dividends, rule changes)
-- Automatic token vesting for founders
-- Dividend distribution to token holders
 
 ### AI Assistant
 - Natural language transaction execution

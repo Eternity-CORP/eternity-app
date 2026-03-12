@@ -10,6 +10,9 @@ import { formatEther } from 'ethers';
 import {
   fetchTransactionHistory as sharedFetchHistory,
   fetchMultiChainTransactionHistory as sharedFetchMultiChain,
+  fetchTransactionHistoryPage as sharedFetchHistoryPage,
+  fetchMultiChainTransactionHistoryPage as sharedFetchMultiChainPage,
+  type TransactionPageKeys,
 } from '@e-y/shared';
 import { getProvider } from './balance-service';
 import { TIER1_NETWORK_IDS, getAlchemyUrl } from '@/src/constants/networks';
@@ -219,4 +222,88 @@ export async function fetchMultiChainHistory(
     createdAt: item.createdAt,
     networkId: item.networkId,
   }));
+}
+
+/** Re-export pagination types for use in Redux slice */
+export type { TransactionPageKeys };
+
+/** Result of a paginated fetch */
+export interface TransactionPage {
+  items: Transaction[];
+  pageKeys: TransactionPageKeys;
+  networkPageKeys: Record<string, TransactionPageKeys>;
+  hasMore: boolean;
+}
+
+/**
+ * Paginated single-chain fetch (test accounts).
+ */
+export async function fetchTransactionHistoryPaginated(
+  address: string,
+  limit: number = 20,
+  pageKeys?: TransactionPageKeys,
+): Promise<TransactionPage> {
+  const ALCHEMY_API_KEY = process.env.EXPO_PUBLIC_ALCHEMY_API_KEY;
+  const NETWORK = process.env.EXPO_PUBLIC_NETWORK || 'sepolia';
+
+  if (ALCHEMY_API_KEY) {
+    const alchemyUrl = `https://eth-${NETWORK}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+    const page = await sharedFetchHistoryPage(alchemyUrl, address, limit, pageKeys);
+    return {
+      items: page.items.map(item => ({
+        hash: item.hash,
+        from: item.from,
+        to: item.to,
+        amount: item.amount,
+        token: item.token,
+        direction: item.direction,
+        status: item.status,
+        blockNumber: item.blockNumber,
+        timestamp: item.timestamp,
+        createdAt: item.createdAt,
+        networkId: item.networkId,
+      })),
+      pageKeys: page.pageKeys,
+      networkPageKeys: {},
+      hasMore: page.hasMore,
+    };
+  }
+
+  // Fallback: no pagination for block scanning
+  const items = await fetchTransactionHistory(address, limit);
+  return { items, pageKeys: {}, networkPageKeys: {}, hasMore: false };
+}
+
+/**
+ * Paginated multi-chain fetch (real accounts).
+ */
+export async function fetchMultiChainHistoryPaginated(
+  address: string,
+  limit: number = 20,
+  networkPageKeys?: Record<string, TransactionPageKeys>,
+): Promise<TransactionPage> {
+  const networks = TIER1_NETWORK_IDS.map(id => ({
+    networkId: id,
+    alchemyUrl: getAlchemyUrl(id),
+  }));
+
+  const page = await sharedFetchMultiChainPage(networks, address, limit, networkPageKeys);
+  return {
+    items: page.items.map(item => ({
+      hash: item.hash,
+      from: item.from,
+      to: item.to,
+      amount: item.amount,
+      token: item.token,
+      direction: item.direction,
+      status: item.status,
+      blockNumber: item.blockNumber,
+      timestamp: item.timestamp,
+      createdAt: item.createdAt,
+      networkId: item.networkId,
+    })),
+    pageKeys: {},
+    networkPageKeys: page.networkPageKeys,
+    hasMore: page.hasMore,
+  };
 }

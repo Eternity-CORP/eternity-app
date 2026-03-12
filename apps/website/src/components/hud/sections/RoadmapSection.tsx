@@ -23,7 +23,7 @@ const MILESTONES = [
     quarter: 'Q2 2026',
     title: 'Expansion',
     current: false,
-    items: ['Multi-chain support', 'Fiat on-ramp', 'Business wallets v2', 'Mobile app launch'],
+    items: ['Multi-chain support', 'Fiat on-ramp', 'DeFi integrations', 'Mobile app launch'],
   },
   {
     quarter: 'Q3 2026',
