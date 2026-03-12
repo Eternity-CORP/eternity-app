@@ -3,7 +3,7 @@
  */
 
 export type RecurringInterval = 'daily' | 'weekly' | 'monthly';
-export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed';
+export type ScheduledPaymentStatus = 'pending' | 'executed' | 'cancelled' | 'failed' | 'needs_resigning' | 'pending_confirmation';
 
 export interface ScheduledPayment {
   id: string;

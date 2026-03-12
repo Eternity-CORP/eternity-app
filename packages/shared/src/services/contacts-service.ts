@@ -50,6 +50,9 @@ export async function saveContact(
   const key = getStorageKey(accountAddress);
   const now = Date.now();
 
+  // Normalize: strip leading @ from username
+  const cleanUsername = contact.username?.replace(/^@/, '') || undefined;
+
   const existingIndex = contacts.findIndex(
     (c) => c.address.toLowerCase() === contact.address.toLowerCase(),
   );
@@ -58,7 +61,7 @@ export async function saveContact(
     const updated: Contact = {
       ...contacts[existingIndex],
       name: contact.name,
-      username: contact.username || contacts[existingIndex].username,
+      username: cleanUsername || contacts[existingIndex].username,
       lastUsedAt: now,
     };
     contacts[existingIndex] = updated;
@@ -70,7 +73,7 @@ export async function saveContact(
     id: `contact_${now}_${Math.random().toString(36).slice(2, 9)}`,
     name: contact.name,
     address: contact.address,
-    username: contact.username,
+    username: cleanUsername,
     createdAt: now,
     lastUsedAt: now,
   };

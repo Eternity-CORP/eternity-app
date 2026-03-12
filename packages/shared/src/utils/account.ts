@@ -4,9 +4,6 @@ import type { AccountType, WalletAccount } from '../types/wallet';
  * Generate a default label for an account
  */
 export function generateAccountLabel(type: AccountType, index: number): string {
-  if (type === 'business') {
-    return index === 0 ? 'Business Wallet' : `Business Wallet ${index}`;
-  }
   if (index === 0) {
     return type === 'test' ? 'Test Wallet' : 'Main Wallet';
   }
@@ -62,14 +59,12 @@ export function createAccount(params: {
   address: string;
   type: AccountType;
   label?: string;
-  businessId?: string;
 }): WalletAccount {
   return {
-    id: params.businessId ? `biz-${params.businessId}` : String(params.index),
+    id: String(params.index),
     address: params.address,
     accountIndex: params.index,
     label: params.label || generateAccountLabel(params.type, params.index),
     type: params.type,
-    ...(params.businessId && { businessId: params.businessId }),
   };
 }

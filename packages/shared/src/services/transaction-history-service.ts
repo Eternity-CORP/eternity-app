@@ -18,15 +18,91 @@ export interface TransactionHistoryItem {
   networkId?: string; // which network this tx is on
 }
 
+/** Pagination cursor returned by Alchemy */
+export interface TransactionPageKeys {
+  receivedPageKey?: string;
+  sentPageKey?: string;
+}
+
+/** Result with items + pagination cursors */
+export interface TransactionHistoryPage {
+  items: TransactionHistoryItem[];
+  pageKeys: TransactionPageKeys;
+  hasMore: boolean;
+}
+
+interface AlchemyTransfer {
+  hash: string;
+  from: string;
+  to: string;
+  asset: string;
+  value: number;
+  blockNum?: string;
+  metadata?: { blockTimestamp?: string };
+}
+
+interface AlchemyResponse {
+  result?: { transfers?: AlchemyTransfer[]; pageKey?: string };
+}
+
 /**
- * Fetch transaction history via Alchemy getAssetTransfers
- * Fetches both sent and received transfers, deduplicates, sorts by timestamp.
+ * Build Alchemy getAssetTransfers request body.
  */
-export async function fetchTransactionHistory(
+function buildAlchemyRequest(
+  id: number,
+  address: string,
+  direction: 'to' | 'from',
+  maxCount: string,
+  pageKey?: string,
+) {
+  const params: Record<string, unknown> = {
+    fromBlock: '0x0',
+    toBlock: 'latest',
+    category: ['external', 'erc20'],
+    withMetadata: true,
+    excludeZeroValue: false,
+    maxCount,
+    order: 'desc',
+  };
+  if (direction === 'to') params.toAddress = address;
+  else params.fromAddress = address;
+  if (pageKey) params.pageKey = pageKey;
+
+  return {
+    jsonrpc: '2.0',
+    id,
+    method: 'alchemy_getAssetTransfers',
+    params: [params],
+  };
+}
+
+function mapTransfers(transfers: AlchemyTransfer[], direction: 'received' | 'sent'): TransactionHistoryItem[] {
+  return transfers.map(t => ({
+    hash: t.hash,
+    from: t.from,
+    to: t.to,
+    amount: Number(t.value ?? 0).toFixed(6),
+    token: t.asset || 'ETH',
+    direction,
+    status: 'confirmed' as const,
+    blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
+    timestamp: t.metadata?.blockTimestamp
+      ? new Date(t.metadata.blockTimestamp).getTime()
+      : Date.now(),
+    createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
+  }));
+}
+
+/**
+ * Fetch transaction history via Alchemy getAssetTransfers (paginated).
+ * Returns items + pageKeys for cursor-based "load more".
+ */
+export async function fetchTransactionHistoryPage(
   alchemyUrl: string,
   address: string,
   limit: number = 20,
-): Promise<TransactionHistoryItem[]> {
+  pageKeys?: TransactionPageKeys,
+): Promise<TransactionHistoryPage> {
   try {
     const maxCount = `0x${limit.toString(16)}`;
 
@@ -34,99 +110,24 @@ export async function fetchTransactionHistory(
       fetch(alchemyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'alchemy_getAssetTransfers',
-          params: [{
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            toAddress: address,
-            category: ['external', 'erc20'],
-            withMetadata: true,
-            excludeZeroValue: false,
-            maxCount,
-          }],
-        }),
+        body: JSON.stringify(buildAlchemyRequest(1, address, 'to', maxCount, pageKeys?.receivedPageKey)),
       }),
       fetch(alchemyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'alchemy_getAssetTransfers',
-          params: [{
-            fromBlock: '0x0',
-            toBlock: 'latest',
-            fromAddress: address,
-            category: ['external', 'erc20'],
-            withMetadata: true,
-            excludeZeroValue: false,
-            maxCount,
-          }],
-        }),
+        body: JSON.stringify(buildAlchemyRequest(2, address, 'from', maxCount, pageKeys?.sentPageKey)),
       }),
     ]);
-
-    interface AlchemyTransfer {
-      hash: string;
-      from: string;
-      to: string;
-      asset: string;
-      value: number;
-      blockNum?: string;
-      metadata?: { blockTimestamp?: string };
-    }
-
-    interface AlchemyResponse {
-      result?: { transfers?: AlchemyTransfer[] };
-    }
 
     const [receivedData, sentData] = (await Promise.all([
       receivedRes.json(),
       sentRes.json(),
     ])) as [AlchemyResponse, AlchemyResponse];
 
-    const transactions: TransactionHistoryItem[] = [];
-
-    if (receivedData.result?.transfers) {
-      for (const t of receivedData.result.transfers) {
-        transactions.push({
-          hash: t.hash,
-          from: t.from,
-          to: t.to,
-          amount: Number(t.value ?? 0).toFixed(6),
-          token: t.asset || 'ETH',
-          direction: 'received',
-          status: 'confirmed',
-          blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
-          timestamp: t.metadata?.blockTimestamp
-            ? new Date(t.metadata.blockTimestamp).getTime()
-            : Date.now(),
-          createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
-        });
-      }
-    }
-
-    if (sentData.result?.transfers) {
-      for (const t of sentData.result.transfers) {
-        transactions.push({
-          hash: t.hash,
-          from: t.from,
-          to: t.to,
-          amount: Number(t.value ?? 0).toFixed(6),
-          token: t.asset || 'ETH',
-          direction: 'sent',
-          status: 'confirmed',
-          blockNumber: t.blockNum ? parseInt(t.blockNum, 16) : undefined,
-          timestamp: t.metadata?.blockTimestamp
-            ? new Date(t.metadata.blockTimestamp).getTime()
-            : Date.now(),
-          createdAt: t.metadata?.blockTimestamp || new Date().toISOString(),
-        });
-      }
-    }
+    const transactions: TransactionHistoryItem[] = [
+      ...mapTransfers(receivedData.result?.transfers || [], 'received'),
+      ...mapTransfers(sentData.result?.transfers || [], 'sent'),
+    ];
 
     // Deduplicate and sort
     const unique = new Map<string, TransactionHistoryItem>();
@@ -137,41 +138,97 @@ export async function fetchTransactionHistory(
       }
     }
 
-    return Array.from(unique.values()).slice(0, limit);
+    const newPageKeys: TransactionPageKeys = {
+      receivedPageKey: receivedData.result?.pageKey,
+      sentPageKey: sentData.result?.pageKey,
+    };
+    const hasMore = !!(newPageKeys.receivedPageKey || newPageKeys.sentPageKey);
+
+    return {
+      items: Array.from(unique.values()),
+      pageKeys: newPageKeys,
+      hasMore,
+    };
   } catch {
-    return [];
+    return { items: [], pageKeys: {}, hasMore: false };
   }
 }
 
 /**
- * Fetch transaction history from multiple Alchemy URLs.
- * Returns merged + sorted results.
+ * Fetch transaction history (non-paginated, returns flat array).
+ * Backwards-compatible wrapper for callers that don't need pagination.
  */
-export async function fetchMultiChainTransactionHistory(
+export async function fetchTransactionHistory(
+  alchemyUrl: string,
+  address: string,
+  limit: number = 20,
+): Promise<TransactionHistoryItem[]> {
+  const page = await fetchTransactionHistoryPage(alchemyUrl, address, limit);
+  return page.items.slice(0, limit);
+}
+
+/**
+ * Paginated result for multi-chain fetch.
+ */
+export interface MultiChainTransactionPage {
+  items: TransactionHistoryItem[];
+  /** Per-network page keys for subsequent loads */
+  networkPageKeys: Record<string, TransactionPageKeys>;
+  hasMore: boolean;
+}
+
+/**
+ * Fetch transaction history from multiple Alchemy URLs (paginated).
+ */
+export async function fetchMultiChainTransactionHistoryPage(
   networks: { networkId: string; alchemyUrl: string }[],
   address: string,
   limitPerNetwork: number = 10,
-): Promise<TransactionHistoryItem[]> {
+  networkPageKeys?: Record<string, TransactionPageKeys>,
+): Promise<MultiChainTransactionPage> {
   const results = await Promise.allSettled(
     networks.map(async ({ networkId, alchemyUrl }) => {
-      const items = await fetchTransactionHistory(alchemyUrl, address, limitPerNetwork);
-      return items.map(item => ({ ...item, networkId }));
+      const pk = networkPageKeys?.[networkId];
+      const page = await fetchTransactionHistoryPage(alchemyUrl, address, limitPerNetwork, pk);
+      return {
+        networkId,
+        items: page.items.map(item => ({ ...item, networkId })),
+        pageKeys: page.pageKeys,
+        hasMore: page.hasMore,
+      };
     }),
   );
 
   const allItems: TransactionHistoryItem[] = [];
+  const newNetworkPageKeys: Record<string, TransactionPageKeys> = {};
+  let anyHasMore = false;
+
   for (const result of results) {
     if (result.status === 'fulfilled') {
-      allItems.push(...result.value);
+      allItems.push(...result.value.items);
+      newNetworkPageKeys[result.value.networkId] = result.value.pageKeys;
+      if (result.value.hasMore) anyHasMore = true;
     }
   }
 
-  // Sort by timestamp descending (newest first)
   allItems.sort((a, b) => {
     const timeA = typeof a.timestamp === 'number' ? a.timestamp : new Date(a.timestamp || 0).getTime();
     const timeB = typeof b.timestamp === 'number' ? b.timestamp : new Date(b.timestamp || 0).getTime();
     return timeB - timeA;
   });
 
-  return allItems;
+  return { items: allItems, networkPageKeys: newNetworkPageKeys, hasMore: anyHasMore };
+}
+
+/**
+ * Fetch transaction history from multiple Alchemy URLs (non-paginated).
+ * Backwards-compatible wrapper.
+ */
+export async function fetchMultiChainTransactionHistory(
+  networks: { networkId: string; alchemyUrl: string }[],
+  address: string,
+  limitPerNetwork: number = 10,
+): Promise<TransactionHistoryItem[]> {
+  const page = await fetchMultiChainTransactionHistoryPage(networks, address, limitPerNetwork);
+  return page.items;
 }

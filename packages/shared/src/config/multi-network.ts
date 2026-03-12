@@ -182,7 +182,7 @@ export const SEPOLIA_CHAIN_ID = 11155111;
 
 /**
  * Get the correct chainId based on account type and selected network.
- * Test/business accounts always use Sepolia; real accounts use the selected network.
+ * Test accounts always use Sepolia; real accounts use the selected network.
  */
 export function resolveChainId(isTestAccount: boolean, selectedNetwork?: NetworkId): number {
   return isTestAccount ? SEPOLIA_CHAIN_ID : NETWORK_TO_CHAIN_ID[selectedNetwork || 'ethereum'];
@@ -213,13 +213,16 @@ export function getNetworkBadge(chainId: number | null | undefined): { name: str
 /**
  * Build Onramper fiat on-ramp URL for a wallet address.
  * Returns null if no address provided.
+ *
+ * NOTE: The `wallets` parameter requires HMAC-SHA256 URL signing (server-side secret).
+ * Without signing, Onramper rejects the URL as "Invalid Link".
+ * We omit `wallets` so the widget loads — the user pastes their address at checkout.
  */
 export function buildOnramperUrl(address: string | undefined, apiKey: string): string | null {
   if (!address) return null;
-  const wallets = TIER1_NETWORK_IDS
-    .map((id) => `${SUPPORTED_NETWORKS[id].shortName.toLowerCase()}:${address}`)
-    .join(',');
-  return `https://buy.onramper.com?apiKey=${apiKey}&defaultCrypto=eth&wallets=${wallets}&mode=buy&darkMode=true`;
+  const cryptos = 'eth,matic,usdc,usdt,dai';
+  const networks = 'ethereum,polygon,arbitrum,base,optimism';
+  return `https://buy.onramper.com?apiKey=${apiKey}&defaultCrypto=eth&onlyCryptos=${cryptos}&onlyCryptoNetworks=${networks}&mode=buy&darkMode=true`;
 }
 
 /**

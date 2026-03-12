@@ -7,7 +7,7 @@
  * - 'test': Account for testnet networks only
  * - 'real': Account for mainnet networks only
  */
-export type AccountType = 'test' | 'real' | 'business';
+export type AccountType = 'test' | 'real';
 
 export interface Wallet {
   address: string;
@@ -21,9 +21,8 @@ export interface WalletAccount {
   address: string;
   accountIndex: number;
   label?: string;
-  type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets, 'business' for business wallets
+  type: AccountType; // Account type: 'test' for testnets, 'real' for mainnets
   createdAt?: number;
-  businessId?: string; // UUID from API — links this account to a specific business wallet
 }
 
 export interface WalletBalance {
