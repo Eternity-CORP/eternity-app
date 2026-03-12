@@ -13,7 +13,7 @@ const NETWORKS = buildNetworks(ALCHEMY_KEY)
 const MULTI_NETWORKS = buildMultiNetworkConfigs(ALCHEMY_KEY)
 
 /**
- * Get single-network config (for test/business accounts, or default for real).
+ * Get single-network config (for test accounts, or default for real).
  */
 export function getNetwork(type: AccountType): NetworkConfig {
   return NETWORKS[type]
@@ -21,7 +21,7 @@ export function getNetwork(type: AccountType): NetworkConfig {
 
 /**
  * Get all network configs for a real account.
- * Returns null for test/business (single-network mode).
+ * Returns null for test (single-network mode).
  */
 export function getMultiNetworkConfigs(type: AccountType): Record<NetworkId, NetworkConfig> | null {
   if (getAccountNetworkMode(type) !== 'multi') return null

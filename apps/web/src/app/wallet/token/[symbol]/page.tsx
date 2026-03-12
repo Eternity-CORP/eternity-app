@@ -68,7 +68,7 @@ export default function TokenDetailPage() {
         .then((txs) => { setTransactions(txs); setTxStatus('succeeded') })
         .catch(() => { setTransactions([]); setTxStatus('failed') })
     } else {
-      // Single-chain: test/business
+      // Single-chain: test
       const alchemyNetwork = 'eth-sepolia'
       const alchemyUrl = `https://${alchemyNetwork}.g.alchemy.com/v2/${ALCHEMY_KEY}`
       fetchTransactionHistory(alchemyUrl, address, 10)
