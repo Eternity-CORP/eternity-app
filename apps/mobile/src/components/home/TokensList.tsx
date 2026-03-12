@@ -25,6 +25,10 @@ interface TokensListProps {
 export function TokensList({ balances, isLoading, aggregatedBalances }: TokensListProps) {
   const { theme: dynamicTheme, isDark } = useTheme();
 
+  const handleTokenPress = (token: TokenBalance) => {
+    router.push(`/token/${token.symbol}`);
+  };
+
   return (
     <View style={styles.tokensSection}>
       <Text style={[styles.sectionTitle, { color: dynamicTheme.colors.textSecondary }]}>Tokens</Text>
@@ -33,7 +37,7 @@ export function TokensList({ balances, isLoading, aggregatedBalances }: TokensLi
         <TouchableOpacity
           key={token.token}
           style={[styles.tokenItem, { backgroundColor: dynamicTheme.colors.surface, borderColor: isDark ? 'transparent' : dynamicTheme.colors.border }]}
-          onPress={() => router.push(`/token/${token.symbol}`)}
+          onPress={() => handleTokenPress(token)}
           activeOpacity={0.7}
         >
           <TokenIcon symbol={token.symbol} iconUrl={token.iconUrl} size={44} />

@@ -238,7 +238,7 @@ export async function fetchAllNetworkBalances(
   networks?: AnyNetworkId[],
 ): Promise<MultiNetworkBalanceResult> {
   const networksToFetch: AnyNetworkId[] =
-    networks || (accountType === 'test' || accountType === 'business' ? TESTNET_NETWORK_IDS : TIER1_NETWORK_IDS);
+    networks || (accountType === 'test' ? TESTNET_NETWORK_IDS : TIER1_NETWORK_IDS);
 
   const networkBalances: Record<string, NetworkTokenBalance[]> = {};
   const failedNetworks: string[] = [];

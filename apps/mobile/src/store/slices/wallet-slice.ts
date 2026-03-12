@@ -5,7 +5,7 @@
 import { createSlice, createAsyncThunk, PayloadAction, type Dispatch } from '@reduxjs/toolkit';
 import { generateWallet, saveWallet, importWallet, loadWallet, loadAccounts, createNewAccount, saveAccounts, saveCurrentAccountIndex, loadCurrentAccountIndex, getMnemonic, type WalletData } from '@/src/services/wallet-service';
 import { getAddressFromMnemonic } from '@e-y/crypto';
-import { migrateAccountAddresses, createAccount, type AccountType, type WalletAccount } from '@e-y/shared';
+import { migrateAccountAddresses, type AccountType, type WalletAccount } from '@e-y/shared';
 
 export type { AccountType };
 
@@ -138,107 +138,6 @@ export const addAccountThunk = createAsyncThunk(
     const newIndex = state.wallet.accounts.length; // will be the index of the new account
     await saveCurrentAccountIndex(newIndex);
     return newAccount;
-  }
-);
-
-/**
- * Add a business-type account reusing the current account's address/index.
- * Business account ID format: biz-{businessId}
- */
-export const addBusinessAccountThunk = createAsyncThunk(
-  'wallet/addBusinessAccount',
-  async (params: { businessId: string; label: string; treasuryAddress: string }, { getState }) => {
-    const state = getState() as { wallet: WalletState };
-    const accounts = state.wallet.accounts;
-
-    // Skip if this business account already exists
-    if (accounts.some((a) => a.businessId === params.businessId)) {
-      return null;
-    }
-
-    const currentAccount = getCurrentAccount(state.wallet);
-    if (!currentAccount) {
-      throw new Error('No current account available');
-    }
-
-    const newAccount = createAccount({
-      index: currentAccount.accountIndex,
-      address: params.treasuryAddress, // Business wallet address = treasury address
-      type: 'business',
-      label: params.label,
-      businessId: params.businessId,
-    });
-
-    const updatedAccounts = [...accounts, newAccount];
-    await saveAccounts(updatedAccounts);
-
-    // Switch to the new business account
-    const newIndex = updatedAccounts.length - 1;
-    await saveCurrentAccountIndex(newIndex);
-
-    return newAccount;
-  }
-);
-
-/**
- * Sync business accounts from API data.
- * Adds missing, updates addresses, removes stale.
- */
-export const syncBusinessAccountsThunk = createAsyncThunk(
-  'wallet/syncBusinessAccounts',
-  async (businesses: { id: string; name: string; treasuryAddress: string }[], { getState }) => {
-    const state = getState() as { wallet: WalletState };
-    const accounts = state.wallet.accounts;
-    const existingBizIds = new Set(
-      accounts.filter((a) => a.type === 'business').map((a) => a.businessId)
-    );
-    const apiBizIds = new Set(businesses.map((b) => b.id));
-    const bizByIdMap = new Map(businesses.map((b) => [b.id, b]));
-
-    let updated = [...accounts];
-    let changed = false;
-
-    // Update existing business accounts — fix address if it doesn't match treasury
-    updated = updated.map((a) => {
-      if (a.type !== 'business' || !a.businessId) return a;
-      const biz = bizByIdMap.get(a.businessId);
-      if (biz && a.address !== biz.treasuryAddress) {
-        changed = true;
-        return { ...a, address: biz.treasuryAddress };
-      }
-      return a;
-    });
-
-    // Find a non-business account to derive accountIndex from
-    const baseAccount = accounts.find((a) => a.type !== 'business') || accounts[0];
-    if (!baseAccount) return { accounts: updated, changed: false };
-
-    // Add missing businesses
-    for (const biz of businesses) {
-      if (!existingBizIds.has(biz.id)) {
-        updated.push(createAccount({
-          index: baseAccount.accountIndex,
-          address: biz.treasuryAddress,
-          type: 'business',
-          label: biz.name,
-          businessId: biz.id,
-        }));
-        changed = true;
-      }
-    }
-
-    // Remove stale business accounts (no longer in API)
-    const beforeLen = updated.length;
-    updated = updated.filter(
-      (a) => a.type !== 'business' || (a.businessId && apiBizIds.has(a.businessId))
-    );
-    if (updated.length !== beforeLen) changed = true;
-
-    if (changed) {
-      await saveAccounts(updated);
-    }
-
-    return { accounts: updated, changed };
   }
 );
 
@@ -430,26 +329,7 @@ const walletSlice = createSlice({
         state.status = 'failed';
         state.error = action.error.message || 'Failed to import wallet';
       })
-      // Add business account
-      .addCase(addBusinessAccountThunk.fulfilled, (state, action) => {
-        if (action.payload) {
-          state.accounts.push(action.payload);
-          state.currentAccountIndex = state.accounts.length - 1;
-        }
-      })
-      .addCase(addBusinessAccountThunk.rejected, (state, action) => {
-        state.error = action.error.message || 'Failed to add business account';
-      })
-      // Sync business accounts
-      .addCase(syncBusinessAccountsThunk.fulfilled, (state, action) => {
-        if (action.payload.changed) {
-          state.accounts = action.payload.accounts;
-          // Bounds-check the current index after potential removals
-          if (state.currentAccountIndex >= state.accounts.length) {
-            state.currentAccountIndex = Math.max(0, state.accounts.length - 1);
-          }
-        }
-      });
+;
   },
 });
 
