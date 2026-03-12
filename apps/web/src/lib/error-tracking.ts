@@ -186,5 +186,4 @@ export const BreadcrumbCategory = {
   NETWORK: 'network',
   API: 'api',
   SWAP: 'swap',
-  BUSINESS: 'business',
 } as const;

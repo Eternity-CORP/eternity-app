@@ -21,10 +21,9 @@ const milestones = [
   },
   {
     quarter: 'Q2 2026',
-    title: 'DeFi & Business',
+    title: 'DeFi',
     status: 'current',
     items: [
-      { text: 'Business Wallet & Governance', done: true },
       { text: 'Cross-chain swaps (LI.FI)', done: true },
       { text: 'Fiat on-ramp (Onramper)', done: true },
       { text: 'Push notifications', done: true },

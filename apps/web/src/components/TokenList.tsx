@@ -62,11 +62,12 @@ export default function TokenList() {
         {aggregatedBalances.map((token) => {
           const color = TOKEN_COLORS[token.symbol.toUpperCase()] || '#888888'
           const initial = token.symbol.charAt(0)
+          const href = `/wallet/token/${token.symbol}`
 
           return (
             <Link
               key={token.symbol}
-              href={`/wallet/token/${token.symbol}`}
+              href={href}
               className="flex items-center justify-between p-4 hover:bg-[var(--surface)] transition-colors group"
             >
               <div className="flex items-center gap-3">

@@ -21,7 +21,6 @@ const MORPH_CONFIGS: MorphConfig[] = [
   { distort: 0.70, speed: 4.0, color: [1, 0.25, 0.25] },     // Problem: chaotic, red
   { distort: 0.10, speed: 0.8, color: [0.2, 0.85, 0.45] },   // Solution: smooth, green
   { distort: 0.35, speed: 2.0, color: [0.3, 0.55, 1] },      // Features: pulse, blue
-  { distort: 0.30, speed: 1.2, color: [0.6, 0.3, 1] },       // Business: structured, purple
   { distort: 0.40, speed: 1.8, color: [1, 0.6, 0.15] },      // Roadmap: flowing, orange
   { distort: 0.20, speed: 1.0, color: [1, 1, 1] },           // CTA: calm, white
 ]

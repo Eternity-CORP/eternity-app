@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
 
 /* ------------------------------------------------------------------ */
 /*  Shared styles                                                      */
@@ -449,163 +448,6 @@ export function FeaturesVisual({ isActive }: { isActive: boolean }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  4. BusinessVisual                                                   */
-/* ------------------------------------------------------------------ */
-
-export function BusinessVisual({ isActive }: { isActive: boolean }) {
-  const [voteProgress, setVoteProgress] = useState(0)
-
-  useEffect(() => {
-    if (!isActive) {
-      setVoteProgress(0)
-      return
-    }
-    const timer = setTimeout(() => setVoteProgress(67), 600)
-    return () => clearTimeout(timer)
-  }, [isActive])
-
-  // Pie chart data
-  const slices = [
-    { label: 'Founder', pct: 40, color: '#7c3aed' },
-    { label: 'Investor', pct: 35, color: '#3b82f6' },
-    { label: 'Team', pct: 25, color: '#06b6d4' },
-  ]
-
-  // Build conic-gradient string
-  let conicStops = ''
-  let cumulative = 0
-  slices.forEach((s, i) => {
-    const start = cumulative
-    cumulative += s.pct
-    conicStops += `${s.color} ${start}% ${cumulative}%`
-    if (i < slices.length - 1) conicStops += ', '
-  })
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.85 }}
-      animate={
-        isActive
-          ? { opacity: 1, scale: 1 }
-          : { opacity: 0, scale: 0.85 }
-      }
-      transition={{ duration: 0.5, ease: 'easeOut' }}
-      style={{
-        ...glassCard,
-        padding: '20px',
-        width: 300,
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: 'white' }}>Acme Inc</span>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: '#22c55e',
-            background: 'rgba(34, 197, 94, 0.15)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            padding: '2px 8px',
-            borderRadius: 6,
-          }}
-        >
-          Active
-        </span>
-      </div>
-
-      {/* Pie chart + legend */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
-        {/* CSS conic-gradient pie chart */}
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: `conic-gradient(${conicStops})`,
-            flexShrink: 0,
-            position: 'relative',
-          }}
-        >
-          {/* Center hole for donut effect */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: 'rgba(0, 0, 0, 0.8)',
-            }}
-          />
-        </div>
-
-        {/* Legend */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {slices.map((s) => (
-            <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: s.color,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-                {s.label} {s.pct}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', marginBottom: 14 }} />
-
-      {/* Proposal */}
-      <div style={{ marginBottom: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>
-            Proposal #3 — Hire CTO
-          </span>
-        </div>
-
-        {/* Progress bar */}
-        <div
-          style={{
-            height: 6,
-            borderRadius: 3,
-            background: 'rgba(255,255,255,0.08)',
-            overflow: 'hidden',
-            marginBottom: 6,
-          }}
-        >
-          <motion.div
-            initial={{ width: '0%' }}
-            animate={{ width: `${voteProgress}%` }}
-            transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-            style={{
-              height: '100%',
-              borderRadius: 3,
-              background: 'linear-gradient(90deg, #7c3aed, #3b82f6)',
-            }}
-          />
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>3/5 votes</span>
-          <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>67%</span>
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
 /*  5. RoadmapVisual                                                    */
 /* ------------------------------------------------------------------ */
 
@@ -740,8 +582,6 @@ export function SectionVisual({ sectionId, isActive }: { sectionId: string; isAc
       return <SolutionVisual isActive={isActive} />
     case 'features':
       return <FeaturesVisual isActive={isActive} />
-    case 'business':
-      return <BusinessVisual isActive={isActive} />
     case 'roadmap':
       return <RoadmapVisual isActive={isActive} />
     default:

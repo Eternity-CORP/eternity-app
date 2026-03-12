@@ -95,20 +95,6 @@ const sections: Section[] = [
     range: [0.45, 0.65],
   },
   {
-    id: 'business',
-    tag: 'New Feature',
-    title: 'Your Business,\nOn-Chain',
-    gradientWord: 'On-Chain',
-    description: 'Tokenize ownership, govern collectively, and transfer shares — all from your wallet.',
-    bullets: [
-      { label: 'Tokenized Equity', text: 'ERC-20 tokens representing ownership shares.' },
-      { label: 'Shared Treasury', text: 'Collective control through governance voting.' },
-      { label: 'Governance', text: 'Proposals, weighted votes, automatic execution.' },
-      { label: 'Smart Transfers', text: 'Configurable share transfer policies.' },
-    ],
-    range: [0.65, 0.80],
-  },
-  {
     id: 'roadmap',
     tag: 'Roadmap',
     title: 'Our\nJourney',
@@ -120,7 +106,7 @@ const sections: Section[] = [
       { label: 'Q3 2026 — Identity', text: 'SHARD Identity, Proof of Personhood, privacy KYC.' },
       { label: 'Q4 2026 — Scale', text: 'Mobile app launch, advanced AI, institutional features.' },
     ],
-    range: [0.80, 0.90],
+    range: [0.65, 0.80],
   },
   {
     id: 'cta',
@@ -128,7 +114,7 @@ const sections: Section[] = [
     title: 'Experience\nAI-Native Crypto',
     gradientWord: 'AI-Native',
     description: 'Join the waitlist for early access.',
-    range: [0.90, 1.0],
+    range: [0.80, 1.0],
   },
 ]
 
@@ -166,9 +152,8 @@ const cameraPositions: [number, number, number][] = [
   [3, 1.5, 3.5],     // Section 1 (Problem): upper right view
   [-2, 0, 4.5],      // Section 2 (Solution): left front view
   [2.5, -0.5, 4],    // Section 3 (Features): right, slightly below
-  [-3, 1, 3.5],      // Section 4 (Business): upper left view
-  [0, 2.5, 3],       // Section 5 (Roadmap): top-down view
-  [0, 0.3, 4.5],     // Section 6 (CTA): front view, closer
+  [0, 2.5, 3],       // Section 4 (Roadmap): top-down view
+  [0, 0.3, 4.5],     // Section 5 (CTA): front view, closer
 ]
 
 /* ------------------------------------------------------------------ */

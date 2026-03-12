@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import ChatContainer from '@/components/chat/ChatContainer'
 import TokenList from '@/components/TokenList'
-import BusinessShares from '@/components/BusinessShares'
 import FaucetCard from '@/components/FaucetCard'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
@@ -16,19 +14,11 @@ import { useAuthGuard } from '@/hooks/useAuthGuard'
 
 export default function WalletDashboard() {
   useAuthGuard()
-  const router = useRouter()
   const { currentAccount, address, uiMode } = useAccount()
   const { totalUsdValue, loading, refresh } = useBalance()
   const [showFaucet, setShowFaucet] = useState(false)
   const [pendingSplitCount, setPendingSplitCount] = useState(0)
   const isTestAccount = currentAccount?.type === 'test'
-
-  // Redirect to business dashboard when a business account is selected
-  useEffect(() => {
-    if (currentAccount?.type === 'business' && currentAccount.businessId) {
-      router.replace(`/wallet/business/${currentAccount.businessId}`)
-    }
-  }, [currentAccount, router])
 
   // Fetch pending splits for banner
   useEffect(() => {
@@ -249,11 +239,6 @@ export default function WalletDashboard() {
               )}
             </div>
           )}
-
-          {/* Business Shares */}
-          <div className="mt-4">
-            <BusinessShares />
-          </div>
 
           {/* Token List */}
           <div className="mt-4">

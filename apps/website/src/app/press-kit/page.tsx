@@ -23,7 +23,7 @@ const colors = [
 const facts = [
   { label: 'Founded', value: '2026' },
   { label: 'Category', value: 'AI-Native Crypto Wallet' },
-  { label: 'Key Features', value: 'BLIK codes, AI Agent, Business Wallet' },
+  { label: 'Key Features', value: 'BLIK codes, AI Agent, @username system' },
   { label: 'Stage', value: 'Active Development (Testnet + Mainnet)' },
   { label: 'Platform', value: 'Web, iOS & Android' },
 ]
@@ -135,7 +135,7 @@ export default function PressKitPage() {
                 Eternity is an AI-native cryptocurrency wallet designed to make
                 crypto accessible to everyone. By introducing BLIK-style 6-digit
                 codes for transfers, an AI Agent that speaks your language, and
-                on-chain business wallets with tokenized equity — Eternity eliminates
+                @username-based transfers — Eternity eliminates
                 the complexity that prevents mainstream adoption.
               </p>
               <p className="leading-relaxed mb-4" style={{ color: 'var(--foreground-muted)' }}>
@@ -145,9 +145,8 @@ export default function PressKitPage() {
                 contextual suggestions.
               </p>
               <p className="leading-relaxed" style={{ color: 'var(--foreground-muted)' }}>
-                For businesses, Eternity provides on-chain governance with tokenized
-                equity, shared treasury management, and proposal-based decision making
-                — all from the same wallet.
+                With scheduled payments, split bills, cross-chain swaps, and fiat
+                on-ramp — Eternity covers every daily crypto need from a single wallet.
               </p>
             </div>
           </section>
@@ -178,13 +177,13 @@ export default function PressKitPage() {
               <p className="leading-relaxed italic" style={{ color: 'var(--foreground-muted)' }}>
                 &ldquo;Eternity is an AI-native crypto wallet with BLIK-style codes,
                 enabling anyone to send and receive cryptocurrency using just 6 digits
-                or an @username. With a built-in AI Agent and on-chain business wallets,
+                or an @username. With a built-in AI Agent,
                 Eternity makes crypto as simple as sending a text message.&rdquo;
               </p>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    'Eternity is an AI-native crypto wallet with BLIK-style codes, enabling anyone to send and receive cryptocurrency using just 6 digits or an @username. With a built-in AI Agent and on-chain business wallets, Eternity makes crypto as simple as sending a text message.'
+                    'Eternity is an AI-native crypto wallet with BLIK-style codes, enabling anyone to send and receive cryptocurrency using just 6 digits or an @username. With a built-in AI Agent, Eternity makes crypto as simple as sending a text message.'
                   )
                 }}
                 className="mt-4 text-sm hover:underline"

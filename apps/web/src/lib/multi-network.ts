@@ -152,10 +152,10 @@ async function fetchNetworkBalances(
  */
 export async function fetchAllNetworkBalances(
   address: string,
-  accountType: 'test' | 'real' | 'business',
+  accountType: 'test' | 'real',
 ): Promise<MultiNetworkBalanceResult> {
-  // Test and business accounts: only Sepolia via the existing single-chain path
-  const isTestnet = accountType === 'test' || accountType === 'business';
+  // Test accounts: only Sepolia via the existing single-chain path
+  const isTestnet = accountType === 'test';
   const networksToFetch: NetworkId[] =
     isTestnet ? ['ethereum'] : [...TIER1_NETWORK_IDS]
 
@@ -164,32 +164,63 @@ export async function fetchAllNetworkBalances(
 
   const results = await Promise.allSettled(
     networksToFetch.map(async (networkId) => {
-      // For test/business accounts, use Sepolia RPC instead
+      // For test accounts, use Sepolia Alchemy URL for both native + ERC-20
       if (isTestnet) {
-        const sepoliaUrl = `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
-        const provider = new JsonRpcProvider(sepoliaUrl)
-
-        const balanceWei = await Promise.race([
-          provider.getBalance(address),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), REQUEST_TIMEOUT),
-          ),
-        ])
-
-        const balance = formatEther(balanceWei)
+        const sepoliaAlchemyUrl = `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}`
+        const sepoliaProvider = getSepoliaProvider()
         const balances: NetworkTokenBalance[] = []
 
-        if (parseFloat(balance) > 0) {
+        // Fetch native ETH + ERC-20 tokens in parallel
+        const [nativeBalanceWei, tokenBalances] = await Promise.all([
+          Promise.race([
+            sepoliaProvider.getBalance(address),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), REQUEST_TIMEOUT),
+            ),
+          ]),
+          fetchAlchemyTokenBalances(sepoliaAlchemyUrl, address),
+        ])
+
+        const nativeBalance = formatEther(nativeBalanceWei)
+        if (parseFloat(nativeBalance) > 0) {
           balances.push({
             networkId: 'ethereum',
             contractAddress: 'native',
             symbol: 'ETH',
             name: 'Ether',
-            balance: parseFloat(balance).toFixed(6),
-            balanceRaw: balanceWei.toString(),
+            balance: parseFloat(nativeBalance).toFixed(6),
+            balanceRaw: nativeBalanceWei.toString(),
             decimals: 18,
             usdValue: 0,
             iconUrl: SUPPORTED_NETWORKS.ethereum.iconUrl,
+          })
+        }
+
+        // Fetch metadata for ERC-20 tokens
+        const metadataPromises = tokenBalances.map((t) =>
+          fetchAlchemyTokenMetadata(sepoliaAlchemyUrl, t.contractAddress),
+        )
+        const metadataResults = await Promise.all(metadataPromises)
+
+        for (let i = 0; i < tokenBalances.length; i++) {
+          const tokenData = tokenBalances[i]
+          const metadata = metadataResults[i]
+          if (!metadata) continue
+
+          const balance = formatRawTokenBalance(tokenData.tokenBalance, metadata.decimals)
+          if (parseFloat(balance) === 0) continue
+          if (isSpamToken(metadata.symbol, metadata.name, balance)) continue
+
+          balances.push({
+            networkId: 'ethereum',
+            contractAddress: tokenData.contractAddress,
+            symbol: metadata.symbol,
+            name: metadata.name,
+            balance,
+            balanceRaw: tokenData.tokenBalance,
+            decimals: metadata.decimals,
+            usdValue: 0,
+            iconUrl: getTokenIconUrl(tokenData.contractAddress, metadata.symbol, networkId),
           })
         }
 

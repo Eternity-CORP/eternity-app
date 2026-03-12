@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { ethers } from 'ethers'
 import { useAccount } from '@/contexts/account-context'
 import { useBalance } from '@/contexts/balance-context'
@@ -16,11 +15,6 @@ function TypeBadge({ type }: { type: AccountType }) {
       Test
     </span>
   )
-  if (type === 'business') return (
-    <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-[#3388FF]/15 text-[#3388FF]">
-      Biz
-    </span>
-  )
   return (
     <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-[#22C55E]/15 text-[#22C55E]">
       Real
@@ -31,7 +25,6 @@ function TypeBadge({ type }: { type: AccountType }) {
 type View = 'list' | 'add' | 'import' | 'rename'
 
 export default function AccountSelector() {
-  const router = useRouter()
   const {
     accounts, currentAccount, address, network, logout,
     switchAccount, addAccount, renameAccount, removeAccount, importWallet,
@@ -88,8 +81,7 @@ export default function AccountSelector() {
           if (currentAccount && acc.id === currentAccount.id && acc.type === 'real') return
 
           try {
-            // Business accounts use testnet to fetch treasury balance
-            const net = getNetwork(acc.type === 'business' ? 'test' : acc.type)
+            const net = getNetwork(acc.type)
             const provider = new ethers.JsonRpcProvider(net.rpcUrl)
             const bal = await provider.getBalance(acc.address)
             if (!cancelled) {
@@ -196,10 +188,10 @@ export default function AccountSelector() {
                 <div className="flex items-center gap-2">
                   <span
                     className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: currentAccount.type === 'real' ? '#22C55E' : currentAccount.type === 'business' ? '#3388FF' : '#F59E0B' }}
+                    style={{ backgroundColor: currentAccount.type === 'real' ? '#22C55E' : '#F59E0B' }}
                   />
                   <span className="text-xs text-[var(--foreground-muted)]">
-                    {network.name}{currentAccount.type === 'test' || currentAccount.type === 'business' ? ' Testnet' : ''}
+                    {network.name}{currentAccount.type === 'test' ? ' Testnet' : ''}
                   </span>
                 </div>
                 <button
@@ -436,23 +428,6 @@ export default function AccountSelector() {
                   <div className="text-left">
                     <p className="text-sm font-medium text-[var(--foreground)]">New Test Wallet</p>
                     <p className="text-xs text-[var(--foreground-subtle)]">Sepolia testnet</p>
-                  </div>
-                </button>
-
-                {/* New Business Wallet */}
-                <button
-                  onClick={() => { closeDropdown(); router.push('/wallet/business/create') }}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[var(--surface)] transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[#3388FF]/10 flex items-center justify-center shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3388FF" strokeWidth="2">
-                      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"/>
-                      <polyline points="9 22 9 12 15 12 15 22"/>
-                    </svg>
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-[var(--foreground)]">New Business Wallet</p>
-                    <p className="text-xs text-[var(--foreground-subtle)]">Tokenized equity shares</p>
                   </div>
                 </button>
 

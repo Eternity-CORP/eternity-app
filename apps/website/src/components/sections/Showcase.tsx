@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useInView } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { FadeIn } from '@/components/animations/FadeIn'
 import { GlitchText } from '@/components/animations/GlitchText'
 import { SpotlightGrid } from '@/components/animations/SpotlightGrid'
@@ -10,7 +10,7 @@ import { SpotlightGrid } from '@/components/animations/SpotlightGrid'
 /*  Types                                                              */
 /* ================================================================== */
 
-type ShowcaseCategory = 'personal' | 'business'
+type ShowcaseCategory = 'personal'
 
 interface ShowcaseFeature {
   id: string
@@ -18,19 +18,13 @@ interface ShowcaseFeature {
   title: string
   description: string
   details: string[]
-  visual: 'phone' | 'pie-chart' | 'token-flow' | 'governance' | 'transfer-visual'
+  visual: 'phone'
   phoneScreen?: { title: string; content: string; details: string[] }
 }
 
 /* ================================================================== */
 /*  Data                                                               */
 /* ================================================================== */
-
-const founders = [
-  { name: 'Daniel', share: 50, color: 'var(--accent-blue)' },
-  { name: 'Alex', share: 30, color: 'var(--accent-cyan)' },
-  { name: 'Maria', share: 20, color: '#22C55E' },
-]
 
 const personalFeatures: ShowcaseFeature[] = [
   {
@@ -125,60 +119,8 @@ const personalFeatures: ShowcaseFeature[] = [
   },
 ]
 
-const businessFeatures: ShowcaseFeature[] = [
-  {
-    id: 'equity',
-    category: 'business',
-    title: 'Tokenized Equity',
-    description: 'Create a fixed-supply token representing your business. Each token is a share. Transfer tokens, transfer ownership.',
-    details: ['ERC-20 ownership tokens', 'Fixed supply at creation', 'Proportional voting rights'],
-    visual: 'pie-chart',
-  },
-  {
-    id: 'treasury',
-    category: 'business',
-    title: 'Shared Treasury',
-    description: 'Clients pay your business address. Funds are controlled by governance voting weighted by ownership.',
-    details: ['Collective fund control', 'Incoming payment routing', 'Governance-managed spending'],
-    visual: 'token-flow',
-  },
-  {
-    id: 'governance',
-    category: 'business',
-    title: 'Governance',
-    description: 'Create proposals, cast weighted votes, execute decisions automatically when quorum is reached.',
-    details: ['Create & vote on proposals', 'Weighted by token ownership', 'Auto-execute at quorum'],
-    visual: 'governance',
-  },
-  {
-    id: 'transfers',
-    category: 'business',
-    title: 'Smart Transfers',
-    description: 'Free transfers or approval-required mode. Sell shares, onboard new partners, or lock ownership with a vote.',
-    details: ['Configurable transfer policy', 'Sell or gift shares', 'Lock ownership by vote'],
-    visual: 'transfer-visual',
-  },
-  {
-    id: 'dividends',
-    category: 'business',
-    title: 'Dividends',
-    description: 'Distribute profits to all shareholders proportionally.',
-    details: ['Pull-based claiming', 'Pro-rata distribution', 'On-chain records'],
-    visual: 'governance',
-  },
-  {
-    id: 'vesting',
-    category: 'business',
-    title: 'Vesting',
-    description: 'Auto-vest tokens for team members with time-based release.',
-    details: ['Automatic at creation', 'Time-based release', 'Cliff periods'],
-    visual: 'governance',
-  },
-]
-
 const allFeatures: Record<ShowcaseCategory, ShowcaseFeature[]> = {
   personal: personalFeatures,
-  business: businessFeatures,
 }
 
 /* ================================================================== */
@@ -262,367 +204,13 @@ function IPhoneMockup({ screen }: { screen: { title: string; content: string; de
 }
 
 /* ================================================================== */
-/*  AnimatedPieChart                                                   */
-/* ================================================================== */
-
-function AnimatedPieChart() {
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: false, margin: '-80px' })
-  const [activeSlice, setActiveSlice] = useState<number | null>(null)
-
-  const size = 200
-  const cx = size / 2
-  const cy = size / 2
-  const radius = 80
-  const gap = 2
-
-  function describeArc(startAngle: number, endAngle: number, r: number) {
-    const start = ((startAngle - 90) * Math.PI) / 180
-    const end = ((endAngle - 90) * Math.PI) / 180
-    const x1 = cx + r * Math.cos(start)
-    const y1 = cy + r * Math.sin(start)
-    const x2 = cx + r * Math.cos(end)
-    const y2 = cy + r * Math.sin(end)
-    const largeArc = endAngle - startAngle > 180 ? 1 : 0
-    return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
-  }
-
-  let currentAngle = 0
-  const slices = founders.map((f) => {
-    const startAngle = currentAngle + gap / 2
-    const sliceAngle = (f.share / 100) * 360 - gap
-    const endAngle = startAngle + sliceAngle
-    currentAngle = endAngle + gap / 2
-    return { ...f, startAngle, endAngle, path: describeArc(startAngle, endAngle, radius) }
-  })
-
-  return (
-    <div ref={ref} className="relative flex flex-col items-center justify-center">
-      <svg
-        viewBox={`0 0 ${size} ${size}`}
-        className="w-44 h-44 md:w-52 md:h-52"
-        style={{ filter: 'drop-shadow(0 4px 24px rgba(0,0,0,0.15))' }}
-      >
-        {slices.map((slice, i) => (
-          <motion.path
-            key={slice.name}
-            d={slice.path}
-            fill={slice.color}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={
-              isInView
-                ? { scale: activeSlice === i ? 1.06 : 1, opacity: 1 }
-                : { scale: 0, opacity: 0 }
-            }
-            transition={{
-              scale: { type: 'spring', stiffness: 200, damping: 20 },
-              opacity: { duration: 0.6, delay: 0.2 + i * 0.15 },
-            }}
-            style={{ transformOrigin: `${cx}px ${cy}px` }}
-            onMouseEnter={() => setActiveSlice(i)}
-            onMouseLeave={() => setActiveSlice(null)}
-            className="cursor-pointer"
-          />
-        ))}
-        <circle cx={cx} cy={cy} r="36" fill="var(--background)" />
-        <text x={cx} y={cy - 6} textAnchor="middle" fill="var(--foreground)" fontSize="14" fontWeight="700" fontFamily="var(--font-sans), system-ui, sans-serif">
-          $ACME
-        </text>
-        <text x={cx} y={cy + 10} textAnchor="middle" fill="var(--foreground-muted)" fontSize="9" fontFamily="var(--font-sans), system-ui, sans-serif">
-          100 tokens
-        </text>
-      </svg>
-
-      <div className="flex gap-4 mt-4">
-        {founders.map((f, i) => (
-          <div
-            key={f.name}
-            className="flex items-center gap-1.5 cursor-pointer"
-            onMouseEnter={() => setActiveSlice(i)}
-            onMouseLeave={() => setActiveSlice(null)}
-          >
-            <div
-              className="w-2 h-2 rounded-full transition-transform duration-200"
-              style={{ background: f.color, transform: activeSlice === i ? 'scale(1.4)' : 'scale(1)' }}
-            />
-            <span className="text-[10px] font-medium" style={{ color: activeSlice === i ? 'var(--foreground)' : 'var(--foreground-muted)' }}>
-              @{f.name.toLowerCase()} ({f.share}%)
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ================================================================== */
-/*  TokenFlowAnimation                                                 */
-/* ================================================================== */
-
-function TokenFlowAnimation() {
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: false, margin: '-60px' })
-
-  const svgSize = 260
-  const center = svgSize / 2
-  const orbitRadius = 90
-
-  const nodePositions = founders.map((_, i) => {
-    const angle = (i * 120 - 90) * (Math.PI / 180)
-    return { x: center + Math.cos(angle) * orbitRadius, y: center + Math.sin(angle) * orbitRadius }
-  })
-
-  return (
-    <div ref={ref} className="flex justify-center items-center h-full">
-      <svg viewBox={`0 0 ${svgSize} ${svgSize}`} className="w-full h-full max-w-[260px]">
-        {nodePositions.map((pos, i) => (
-          <motion.line
-            key={`line-${i}`}
-            x1={center} y1={center} x2={pos.x} y2={pos.y}
-            stroke="var(--border)" strokeWidth={1} strokeDasharray="4 4"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={isInView ? { pathLength: 1, opacity: 0.5 } : {}}
-            transition={{ duration: 0.8, delay: 0.3 + i * 0.1 }}
-          />
-        ))}
-
-        <motion.g
-          initial={{ scale: 0, opacity: 0 }}
-          animate={isInView ? { scale: 1, opacity: 1 } : {}}
-          transition={{ type: 'spring', delay: 0.2 }}
-          style={{ transformOrigin: `${center}px ${center}px` }}
-        >
-          <rect x={center - 26} y={center - 26} width={52} height={52} rx={13} fill="var(--card-bg)" stroke="var(--accent-blue)" strokeWidth={2} />
-          <g transform={`translate(${center - 11}, ${center - 11})`}>
-            <rect x="2" y="5" width="18" height="13" rx="2" fill="none" stroke="var(--accent-blue)" strokeWidth={1.5} />
-            <path d="M6 5V3.5a5 5 0 0 1 10 0V5" fill="none" stroke="var(--accent-blue)" strokeWidth={1.5} />
-          </g>
-        </motion.g>
-
-        {founders.map((f, i) => {
-          const pos = nodePositions[i]
-          return (
-            <motion.g
-              key={f.name}
-              initial={{ opacity: 0, scale: 0 }}
-              animate={isInView ? { opacity: 1, scale: 1 } : {}}
-              transition={{ delay: 0.4 + i * 0.15, type: 'spring' }}
-              style={{ transformOrigin: `${pos.x}px ${pos.y}px` }}
-            >
-              <rect x={pos.x - 17} y={pos.y - 17} width={34} height={34} rx={9} fill={f.color} />
-              <text x={pos.x} y={pos.y + 1} textAnchor="middle" dominantBaseline="central" fill="#fff" fontSize="11" fontWeight="700" fontFamily="var(--font-sans), system-ui, sans-serif">
-                {f.share}
-              </text>
-              <text x={pos.x} y={pos.y + 28} textAnchor="middle" fill="var(--foreground-muted)" fontSize="9" fontWeight="500" fontFamily="var(--font-sans), system-ui, sans-serif">
-                @{f.name.toLowerCase()}
-              </text>
-            </motion.g>
-          )
-        })}
-
-        {isInView && founders.map((f, fi) => {
-          const pos = nodePositions[fi]
-          return Array.from({ length: 3 }).map((_, pi) => (
-            <motion.circle
-              key={`p-${fi}-${pi}`}
-              r={2.5}
-              fill={f.color}
-              initial={{ cx: pos.x, cy: pos.y, opacity: 0 }}
-              animate={{ cx: [pos.x, center], cy: [pos.y, center], opacity: [0, 1, 1, 0] }}
-              transition={{ duration: 2, delay: 1 + pi * 0.6 + fi * 0.3, repeat: Infinity, repeatDelay: 1, ease: 'easeInOut' }}
-            />
-          ))
-        })}
-      </svg>
-    </div>
-  )
-}
-
-/* ================================================================== */
-/*  GovernanceDemo                                                     */
-/* ================================================================== */
-
-function GovernanceDemo() {
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: false, margin: '-60px' })
-  const [step, setStep] = useState(0)
-
-  useEffect(() => {
-    if (!isInView) return
-    const interval = setInterval(() => setStep((prev) => (prev + 1) % 4), 2500)
-    return () => clearInterval(interval)
-  }, [isInView])
-
-  const demoSteps = [
-    { label: 'Proposal Created', detail: 'Withdraw 0.1 ETH for hosting', progress: 0 },
-    { label: '@daniel voted For', detail: '50 / 51 needed', progress: 50 },
-    { label: '@alex voted For', detail: '80 / 51 needed', progress: 80 },
-    { label: 'Proposal Passed', detail: 'Executing withdrawal...', progress: 100 },
-  ]
-
-  return (
-    <div ref={ref} className="flex flex-col justify-center h-full">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-mono" style={{ color: 'var(--foreground-light)' }}>LIVE DEMO</span>
-        <motion.div className="w-2 h-2 rounded-full" style={{ background: '#22C55E' }} animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.3 }}
-        >
-          <p className="text-sm font-semibold mb-1" style={{ color: 'var(--foreground)' }}>{demoSteps[step].label}</p>
-          <p className="text-xs mb-3" style={{ color: 'var(--foreground-muted)' }}>{demoSteps[step].detail}</p>
-
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface)' }}>
-            <motion.div
-              className="h-full rounded-full"
-              style={{ background: demoSteps[step].progress >= 100 ? '#22C55E' : 'linear-gradient(90deg, var(--accent-blue), var(--accent-cyan))' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${demoSteps[step].progress}%` }}
-              transition={{ duration: 0.6, ease: 'easeOut' }}
-            />
-          </div>
-
-          <div className="relative mt-1">
-            <div className="absolute left-[51%] -top-[10px] w-px h-[10px]" style={{ background: 'var(--foreground-light)' }} />
-            <span className="absolute left-[51%] -translate-x-1/2 text-[9px]" style={{ color: 'var(--foreground-light)' }}>51%</span>
-          </div>
-        </motion.div>
-      </AnimatePresence>
-
-      <div className="flex gap-1 mt-5">
-        {demoSteps.map((_, i) => (
-          <div key={i} className="h-0.5 flex-1 rounded-full transition-colors duration-300" style={{ background: i <= step ? 'var(--foreground)' : 'var(--border)' }} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ================================================================== */
-/*  TransferVisual                                                     */
-/* ================================================================== */
-
-function TransferVisual() {
-  const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once: false, margin: '-60px' })
-
-  const w = 260
-  const h = 200
-  const walletA = { x: 50, y: 100 }
-  const walletB = { x: 210, y: 100 }
-
-  return (
-    <div ref={ref} className="flex justify-center items-center h-full">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full max-w-[260px]">
-        {/* Connection line */}
-        <motion.line
-          x1={walletA.x + 28} y1={walletA.y} x2={walletB.x - 28} y2={walletB.y}
-          stroke="var(--border)" strokeWidth={1} strokeDasharray="6 4"
-          initial={{ pathLength: 0 }} animate={isInView ? { pathLength: 1 } : {}} transition={{ duration: 0.8, delay: 0.3 }}
-        />
-
-        {/* Arrow indicator */}
-        <motion.polygon
-          points={`${w / 2 + 8},${100 - 4} ${w / 2 + 16},${100} ${w / 2 + 8},${100 + 4}`}
-          fill="var(--accent-blue)"
-          initial={{ opacity: 0 }} animate={isInView ? { opacity: [0, 1, 0.6, 1] } : {}} transition={{ duration: 1.5, delay: 0.8, repeat: Infinity }}
-        />
-
-        {/* Wallet A */}
-        <motion.g
-          initial={{ opacity: 0, scale: 0 }}
-          animate={isInView ? { opacity: 1, scale: 1 } : {}}
-          transition={{ delay: 0.1, type: 'spring' }}
-          style={{ transformOrigin: `${walletA.x}px ${walletA.y}px` }}
-        >
-          <rect x={walletA.x - 26} y={walletA.y - 26} width={52} height={52} rx={14} fill="var(--card-bg)" stroke="var(--accent-blue)" strokeWidth={1.5} />
-          <text x={walletA.x} y={walletA.y + 2} textAnchor="middle" dominantBaseline="central" fill="var(--accent-blue)" fontSize="16" fontWeight="700">A</text>
-          <text x={walletA.x} y={walletA.y + 42} textAnchor="middle" fill="var(--foreground-muted)" fontSize="9">Seller</text>
-        </motion.g>
-
-        {/* Wallet B */}
-        <motion.g
-          initial={{ opacity: 0, scale: 0 }}
-          animate={isInView ? { opacity: 1, scale: 1 } : {}}
-          transition={{ delay: 0.2, type: 'spring' }}
-          style={{ transformOrigin: `${walletB.x}px ${walletB.y}px` }}
-        >
-          <rect x={walletB.x - 26} y={walletB.y - 26} width={52} height={52} rx={14} fill="var(--card-bg)" stroke="var(--accent-cyan)" strokeWidth={1.5} />
-          <text x={walletB.x} y={walletB.y + 2} textAnchor="middle" dominantBaseline="central" fill="var(--accent-cyan)" fontSize="16" fontWeight="700">B</text>
-          <text x={walletB.x} y={walletB.y + 42} textAnchor="middle" fill="var(--foreground-muted)" fontSize="9">Buyer</text>
-        </motion.g>
-
-        {/* Animated token particles */}
-        {isInView && Array.from({ length: 4 }).map((_, i) => (
-          <motion.circle
-            key={`t-${i}`}
-            r={3}
-            fill="var(--accent-blue)"
-            initial={{ cx: walletA.x + 28, cy: walletA.y, opacity: 0 }}
-            animate={{ cx: [walletA.x + 28, walletB.x - 28], cy: [walletA.y, walletB.y], opacity: [0, 1, 1, 0] }}
-            transition={{ duration: 1.5, delay: 0.5 + i * 0.4, repeat: Infinity, repeatDelay: 0.6, ease: 'easeInOut' }}
-          />
-        ))}
-
-        {/* Status label */}
-        <motion.text
-          x={w / 2} y={55} textAnchor="middle" fill="var(--foreground-muted)" fontSize="10" fontWeight="500"
-          fontFamily="var(--font-sans), system-ui, sans-serif"
-          initial={{ opacity: 0 }} animate={isInView ? { opacity: 1 } : {}} transition={{ delay: 0.6 }}
-        >
-          Share Transfer
-        </motion.text>
-      </svg>
-    </div>
-  )
-}
-
-/* ================================================================== */
 /*  FeatureVisual — renders the right visual for each feature          */
 /* ================================================================== */
 
 function FeatureVisual({ feature }: { feature: ShowcaseFeature }) {
-  switch (feature.visual) {
-    case 'phone':
-      return feature.phoneScreen ? (
-        <IPhoneMockup screen={feature.phoneScreen} />
-      ) : null
-    case 'pie-chart':
-      return (
-        <div className="p-4 rounded-2xl h-[320px] lg:h-[380px] flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}>
-          <AnimatedPieChart />
-        </div>
-      )
-    case 'token-flow':
-      return (
-        <div className="p-4 rounded-2xl h-[320px] lg:h-[380px] flex flex-col" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}>
-          <p className="text-xs font-mono mb-2" style={{ color: 'var(--foreground-light)' }}>TREASURY FLOW</p>
-          <div className="flex-1 flex items-center">
-            <TokenFlowAnimation />
-          </div>
-        </div>
-      )
-    case 'governance':
-      return (
-        <div className="p-6 rounded-2xl h-[320px] lg:h-[380px] flex flex-col justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}>
-          <GovernanceDemo />
-        </div>
-      )
-    case 'transfer-visual':
-      return (
-        <div className="p-4 rounded-2xl h-[320px] lg:h-[380px] flex items-center justify-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--border-light)' }}>
-          <TransferVisual />
-        </div>
-      )
-    default:
-      return null
-  }
+  return feature.phoneScreen ? (
+    <IPhoneMockup screen={feature.phoneScreen} />
+  ) : null
 }
 
 /* ================================================================== */
@@ -755,15 +343,6 @@ export function Showcase() {
     }
   }, [isPaused, progress])
 
-  // Reset on category change
-  const switchCategory = (cat: ShowcaseCategory) => {
-    if (cat === category) return
-    setCategory(cat)
-    setActiveIndex(0)
-    setSlideDirection(1)
-    startTimeRef.current = Date.now()
-    setProgress(0)
-  }
 
   const goToSlide = (index: number) => {
     setSlideDirection(index > activeIndex ? 1 : -1)
@@ -834,38 +413,11 @@ export function Showcase() {
 
         <FadeIn delay={0.2}>
           <p className="text-center text-lg md:text-xl mb-12 [text-wrap:balance]" style={{ color: 'var(--foreground-muted)' }}>
-            Personal wallet features and business tools, all in one app.
+            Everything you need in one app.
           </p>
         </FadeIn>
 
-        {/* Category Tabs */}
-        <FadeIn delay={0.3}>
-          <div className="flex justify-center mb-12 lg:mb-16">
-            <div className="relative flex rounded-full p-1" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
-              {(['personal', 'business'] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => switchCategory(cat)}
-                  className="relative z-10 px-6 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300"
-                  style={{ color: category === cat ? 'var(--background)' : 'var(--foreground-muted)' }}
-                >
-                  {cat === 'personal' ? 'Personal Wallet' : 'Business Wallet'}
-                </button>
-              ))}
-
-              {/* Animated pill */}
-              <motion.div
-                className="absolute top-1 bottom-1 rounded-full"
-                style={{ background: 'var(--foreground)' }}
-                animate={{
-                  left: category === 'personal' ? '4px' : '50%',
-                  right: category === 'personal' ? '50%' : '4px',
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              />
-            </div>
-          </div>
-        </FadeIn>
+        <div className="mb-12 lg:mb-16" />
 
         {/* Slide Content */}
         <div className="relative max-w-6xl mx-auto">

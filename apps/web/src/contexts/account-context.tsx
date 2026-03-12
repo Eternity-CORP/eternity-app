@@ -32,8 +32,6 @@ interface AccountContextValue {
   login: (mnemonic: string, defaultAccountType?: AccountType) => Promise<void>
   switchAccount: (accountId: string) => Promise<void>
   addAccount: (type: AccountType, label?: string) => Promise<void>
-  addBusinessAccount: (businessId: string, label: string, treasuryAddress: string) => void
-  syncBusinessAccounts: (businesses: { id: string; name: string; treasuryAddress: string }[]) => void
   renameAccount: (accountId: string, label: string) => void
   removeAccount: (accountId: string) => Promise<void>
   importWallet: (mnemonic: string) => Promise<boolean>
@@ -57,8 +55,6 @@ const AccountContext = createContext<AccountContextValue>({
   login: async (_mnemonic: string, _defaultAccountType?: AccountType) => {},
   switchAccount: async () => {},
   addAccount: async () => {},
-  addBusinessAccount: () => { /* noop */ },
-  syncBusinessAccounts: () => { /* noop */ },
   renameAccount: () => {},
   removeAccount: async () => {},
   importWallet: async () => false,
@@ -177,83 +173,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     setWallet(w)
   }, [])
 
-  // Add a business account — uses treasury address as the business wallet address
-  const addBusinessAccount = useCallback((businessId: string, label: string, treasuryAddress: string) => {
-    const accs = loadAccounts()
-
-    // Skip if already exists
-    if (accs.some((a) => a.businessId === businessId)) return
-
-    const current = currentAccount
-    if (!current) return
-
-    const newAccount = createAccount({
-      index: current.accountIndex,
-      address: treasuryAddress, // Business wallet address = treasury address
-      type: 'business',
-      label,
-      businessId,
-    })
-
-    const updated = [...accs, newAccount]
-    saveAccounts(updated)
-    setAccounts(updated)
-
-    // Switch to new business account
-    const newIdx = updated.length - 1
-    saveCurrentAccountIndex(newIdx)
-    setCurrentAccount(newAccount)
-  }, [currentAccount])
-
-  // Sync business accounts from API — adds missing, updates addresses, removes stale
-  const syncBusinessAccounts = useCallback((businesses: { id: string; name: string; treasuryAddress: string }[]) => {
-    const accs = loadAccounts()
-    const existingBizIds = new Set(accs.filter((a) => a.type === 'business').map((a) => a.businessId))
-    const apiBizIds = new Set(businesses.map((b) => b.id))
-    const bizByIdMap = new Map(businesses.map((b) => [b.id, b]))
-
-    let updated = [...accs]
-    let changed = false
-
-    // Update existing business accounts — fix address if it doesn't match treasury
-    updated = updated.map((a) => {
-      if (a.type !== 'business' || !a.businessId) return a
-      const biz = bizByIdMap.get(a.businessId)
-      if (biz && a.address !== biz.treasuryAddress) {
-        changed = true
-        return { ...a, address: biz.treasuryAddress }
-      }
-      return a
-    })
-
-    // Add missing businesses
-    for (const biz of businesses) {
-      if (!existingBizIds.has(biz.id)) {
-        const baseAccount = accs.find((a) => a.type !== 'business') || accs[0]
-        if (!baseAccount) continue
-
-        updated.push(createAccount({
-          index: baseAccount.accountIndex,
-          address: biz.treasuryAddress,
-          type: 'business',
-          label: biz.name,
-          businessId: biz.id,
-        }))
-        changed = true
-      }
-    }
-
-    // Remove stale business accounts (deleted from API)
-    const beforeLen = updated.length
-    updated = updated.filter((a) => a.type !== 'business' || (a.businessId && apiBizIds.has(a.businessId)))
-    if (updated.length !== beforeLen) changed = true
-
-    if (changed) {
-      saveAccounts(updated)
-      setAccounts(updated)
-    }
-  }, [])
-
   const renameAccount = useCallback((accountId: string, label: string) => {
     const accs = loadAccounts()
     const updated = accs.map((a) =>
@@ -321,10 +240,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     router.push('/unlock')
   }, [router])
 
-  // For business accounts, show treasury address; for personal accounts, show HD wallet address
-  const address = currentAccount?.type === 'business'
-    ? currentAccount.address
-    : wallet?.address || ''
+  const address = wallet?.address || ''
   const network = currentAccount ? getNetwork(currentAccount.type) : defaultNetwork
   const isLoggedIn = wallet !== null
 
@@ -342,8 +258,6 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         login,
         switchAccount,
         addAccount,
-        addBusinessAccount,
-        syncBusinessAccounts,
         renameAccount,
         removeAccount,
         importWallet,

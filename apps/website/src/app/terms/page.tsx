@@ -61,7 +61,6 @@ export default function TermsPage() {
                 <li>Use BLIK codes for simplified transfers</li>
                 <li>Register and use @usernames</li>
                 <li>Interact with an AI Agent for wallet assistance</li>
-                <li>Create and manage on-chain business wallets with tokenized equity and governance</li>
               </ul>
               <div className="mt-4 p-4 rounded-lg" style={{ background: 'var(--surface-light)', border: '1px solid var(--border-light)' }}>
                 <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>

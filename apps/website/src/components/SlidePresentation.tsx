@@ -14,7 +14,7 @@ import { shardProgress } from '@/lib/shardProgress'
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const TOTAL_CHECKPOINTS = 8 // must match checkpoints[] in ShardScene
+const TOTAL_CHECKPOINTS = 7 // must match checkpoints[] in ShardScene
 const TRANSITION_COOLDOWN = 800 // ms between slide switches
 const WHEEL_THRESHOLD = 30 // minimum delta to trigger switch
 
@@ -75,19 +75,6 @@ const slides: Slide[] = [
       { label: '@username', text: 'Send to @alex instead of 0x7f3a...9b2c.' },
       { label: 'AI Agent', text: 'Talk to your wallet in plain language.' },
       { label: 'Token Balances', text: 'All tokens in one place with real-time prices.' },
-    ],
-  },
-  {
-    id: 'business',
-    menuLabel: 'Business',
-    tag: 'New Feature',
-    title: 'Your Business,\nOn-Chain',
-    description: 'Tokenize ownership, govern collectively, and transfer shares — all from your wallet.',
-    bullets: [
-      { label: 'Tokenized Equity', text: 'ERC-20 tokens representing ownership shares.' },
-      { label: 'Shared Treasury', text: 'Collective control through governance voting.' },
-      { label: 'Governance', text: 'Proposals, weighted votes, automatic execution.' },
-      { label: 'Smart Transfers', text: 'Configurable share transfer policies.' },
     ],
   },
   {
@@ -303,49 +290,6 @@ function FeaturesScreen() {
   )
 }
 
-function BusinessScreen() {
-  return (
-    <div className="h-full flex flex-col pt-12 px-5">
-      <p className="text-[13px] font-semibold text-black text-center mb-1">ACME Business</p>
-      <p className="text-[10px] text-gray-400 text-center mb-3">$ACME</p>
-      <div className="rounded-2xl bg-gray-50 p-3 mb-3 flex items-center justify-between">
-        <div>
-          <p className="text-[10px] text-gray-400">Treasury</p>
-          <p className="text-[14px] font-bold text-black">2.5 ETH</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] text-gray-400">Proposals</p>
-          <p className="text-[14px] font-bold text-black">3</p>
-        </div>
-      </div>
-      <p className="text-[10px] text-gray-400 mb-2">Shareholders</p>
-      <div className="space-y-2 mb-3">
-        {[
-          { name: '@daniel', share: 50, color: '#3388FF' },
-          { name: '@alex', share: 30, color: '#00E5FF' },
-          { name: '@maria', share: 20, color: '#22C55E' },
-        ].map((s) => (
-          <div key={s.name} className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[8px] font-bold" style={{ background: s.color }}>
-              {s.name[1].toUpperCase()}
-            </div>
-            <span className="text-[11px] text-black flex-1">{s.name}</span>
-            <div className="flex-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${s.share}%`, background: s.color }} />
-            </div>
-            <span className="text-[10px] text-gray-500 w-8 text-right">{s.share}%</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-auto mb-8">
-        <div className="bg-black text-white text-[11px] font-medium py-2.5 rounded-xl text-center">
-          Create Proposal
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function RoadmapScreen() {
   const milestones = [
     { q: 'Q1 2026', title: 'MVP + AI Agent', done: true },
@@ -415,7 +359,7 @@ function CTAScreen() {
   )
 }
 
-const phoneScreens = [HeroScreen, ProblemScreen, SolutionScreen, FeaturesScreen, BusinessScreen, RoadmapScreen, CTAScreen]
+const phoneScreens = [HeroScreen, ProblemScreen, SolutionScreen, FeaturesScreen, RoadmapScreen, CTAScreen]
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar (desktop)                                                  */

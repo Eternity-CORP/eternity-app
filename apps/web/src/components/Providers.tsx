@@ -3,14 +3,8 @@
 import { AccountProvider } from '@/contexts/account-context'
 import { BalanceProvider } from '@/contexts/balance-context'
 import { ThemeProvider } from '@/contexts/theme-context'
-import { useBusinessSync } from '@/hooks/useBusinessSync'
 import { useErrorTrackingInit, useErrorTrackingUser } from '@/hooks/useErrorTracking'
 import type { ReactNode } from 'react'
-
-function BusinessSyncRunner({ children }: { children: ReactNode }) {
-  useBusinessSync()
-  return <>{children}</>
-}
 
 /** Syncs wallet address with error tracking user context */
 function ErrorTrackingUserSync({ children }: { children: ReactNode }) {
@@ -27,7 +21,7 @@ export default function Providers({ children }: { children: ReactNode }) {
       <AccountProvider>
         <ErrorTrackingUserSync>
           <BalanceProvider>
-            <BusinessSyncRunner>{children}</BusinessSyncRunner>
+            {children}
           </BalanceProvider>
         </ErrorTrackingUserSync>
       </AccountProvider>

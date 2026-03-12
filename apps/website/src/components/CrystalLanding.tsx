@@ -19,11 +19,11 @@ import type { MorphCtrl } from '@/components/3d/MorphSphere'
 /*  Constants                                                  */
 /* ---------------------------------------------------------- */
 
-const SECTIONS = 7
+const SECTIONS = 6
 const TRANSITION_MS = 800
 const WHEEL_THRESHOLD = 30
 
-const SECTION_LABELS = ['Home', 'Problem', 'Solution', 'Features', 'Business', 'Roadmap', 'Join Us']
+const SECTION_LABELS = ['Home', 'Problem', 'Solution', 'Features', 'Roadmap', 'Join Us']
 
 /* ---------------------------------------------------------- */
 /*  Section content data                                       */
@@ -65,16 +65,6 @@ const SECTION_CONTENT = [
       { label: 'BLIK Payments', text: 'Generate a 6-digit code, share it, get paid' },
       { label: 'AI Commands', text: 'Natural language transactions' },
       { label: 'Multi-Token', text: 'ETH, USDC, USDT — all in one view' },
-    ],
-  },
-  {
-    tag: 'New Feature',
-    title: 'Your Business,\nOn-Chain',
-    description: 'Create a business wallet with shareholders, treasury, and governance — all transparent on the blockchain.',
-    features: [
-      { label: 'Treasury', text: 'Shared funds managed by vote' },
-      { label: 'Shareholders', text: 'Token-based ownership shares' },
-      { label: 'Governance', text: 'Proposals and voting on-chain' },
     ],
   },
   {
@@ -440,7 +430,7 @@ export function CrystalLanding() {
 
   // CTA burst
   useEffect(() => {
-    morphCtrl.current.burst = activeIndex === 6 ? 1 : 0
+    morphCtrl.current.burst = activeIndex === 5 ? 1 : 0
   }, [activeIndex])
 
   const navigateTo = useCallback((index: number) => {
