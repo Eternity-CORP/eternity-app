@@ -46,7 +46,7 @@ export interface ChatPayload {
 export interface SubscribePayload {
   address: string;
   contacts?: AiContact[];
-  accountType?: 'test' | 'real' | 'business';
+  accountType?: 'test' | 'real';
 }
 
 // Alias for consistency with existing code
@@ -72,7 +72,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Map of socket ID -> user's saved contacts (for recipient resolution)
   private socketToContacts = new Map<string, AiContact[]>();
 
-  // Map of socket ID -> user's account type (test/real/business)
+  // Map of socket ID -> user's account type (test/real)
   private socketToAccountType = new Map<string, string>();
 
   @WebSocketServer()
@@ -92,7 +92,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
    */
   private getSystemPrompt(userAddress: string, contacts?: AiContact[], accountType?: string): string {
     // Determine effective network from user's account type (fallback to env NETWORK)
-    const effectiveNetwork = accountType === 'real' || accountType === 'business'
+    const effectiveNetwork = accountType === 'real'
       ? 'mainnet'
       : accountType === 'test'
         ? 'sepolia'
@@ -284,7 +284,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (parsedIntent) {
       // Handle receive_address intent directly — no tool needed, we have the address
       if (parsedIntent.tool === 'receive_address') {
-        const effectiveNetwork = accountType === 'real' || accountType === 'business'
+        const effectiveNetwork = accountType === 'real'
           ? 'mainnet'
           : accountType === 'test'
             ? 'sepolia'
@@ -328,7 +328,7 @@ export class AiGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
 
         const toolData = toolResult.data as Record<string, unknown> | undefined;
-        const pendingTransaction = toolData?.requiresConfirmation ? toolResult.data : undefined;
+        const pendingTransaction = toolData?.requiresConfirmation ? toolData.preview : undefined;
         const pendingBlik = toolData?.pendingBlik || undefined;
         const pendingScheduled = toolData?.pendingScheduled || undefined;
         const pendingSplit = toolData?.pendingSplit || undefined;

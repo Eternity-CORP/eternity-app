@@ -186,6 +186,26 @@ export class ScheduledService {
     return (data || []).map(item => this.mapToEntity(item));
   }
 
+  async findByRecipient(recipientAddress: string): Promise<ScheduledPayment[]> {
+    const normalizedAddress = recipientAddress.toLowerCase();
+    this.logger.debug(`findByRecipient: querying for recipient=${normalizedAddress}`);
+
+    const { data, error } = await this.supabaseService
+      .from('scheduled_payments')
+      .select('*')
+      .eq('recipient', normalizedAddress)
+      .in('status', ['pending', 'executed'])
+      .order('scheduled_at', { ascending: true });
+
+    if (error) {
+      this.logger.error(`findByRecipient failed: ${error.message} (code: ${error.code})`);
+      throw new BadRequestException(`Failed to query incoming payments: ${error.message}`);
+    }
+
+    this.logger.debug(`findByRecipient: found ${data?.length || 0} payments for ${normalizedAddress}`);
+    return (data || []).map(item => this.mapToEntity(item));
+  }
+
   async findPending(creatorAddress: string): Promise<ScheduledPayment[]> {
     const normalizedAddress = creatorAddress.toLowerCase();
     this.logger.debug(`findPending: querying for creator_address=${normalizedAddress}`);
@@ -303,8 +323,8 @@ export class ScheduledService {
       throw new BadRequestException('Only creator can execute scheduled payment');
     }
 
-    if (payment.status !== 'pending') {
-      throw new BadRequestException('Payment is not pending');
+    if (payment.status !== 'pending' && payment.status !== 'needs_resigning') {
+      throw new BadRequestException('Payment is not in an executable state');
     }
 
     const { data, error } = await this.supabaseService
@@ -313,6 +333,7 @@ export class ScheduledService {
         status: 'executed',
         executed_tx_hash: dto.txHash,
         executed_at: new Date().toISOString(),
+        failure_reason: null,
       })
       .eq('id', id)
       .select()
@@ -345,8 +366,8 @@ export class ScheduledService {
       throw new BadRequestException('Only creator can cancel scheduled payment');
     }
 
-    if (payment.status !== 'pending') {
-      throw new BadRequestException('Payment is not pending');
+    if (payment.status !== 'pending' && payment.status !== 'needs_resigning') {
+      throw new BadRequestException('Can only cancel pending or needs_resigning payments');
     }
 
     const { data, error } = await this.supabaseService

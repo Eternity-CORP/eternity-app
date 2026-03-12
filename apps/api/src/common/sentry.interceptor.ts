@@ -4,7 +4,7 @@
  * Captures and reports exceptions to Sentry with structured context:
  * - User context (wallet address from request headers)
  * - Transaction context (endpoint name, HTTP method)
- * - Module tags for dashboard filtering (blik, split, scheduled, ai, business, etc.)
+ * - Module tags for dashboard filtering (blik, split, scheduled, ai, etc.)
  * - Performance spans for critical operations
  * - Sanitized request body (sensitive fields redacted)
  */
@@ -33,8 +33,6 @@ const MODULE_TAG_MAP: Record<string, string> = {
   TransactionGateway: 'transaction',
   AiController: 'ai',
   AiGateway: 'ai',
-  BusinessController: 'business',
-  BusinessGateway: 'business',
   FaucetController: 'faucet',
   UsernameController: 'username',
   NotificationsController: 'notifications',

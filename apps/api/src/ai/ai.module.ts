@@ -19,9 +19,6 @@ import {
   GetSplitsTool,
   CheckUsernameTool,
   RegisterUsernameTool,
-  GetBusinessesTool,
-  GetBusinessDetailTool,
-  GetBusinessProposalsTool,
 } from './tools';
 import {
   AiSecurityService,
@@ -35,7 +32,6 @@ import { ScheduledModule } from '../scheduled/scheduled.module';
 import { UsernameModule } from '../username/username.module';
 import { BlikModule } from '../blik/blik.module';
 import { SplitModule } from '../split/split.module';
-import { BusinessModule } from '../business/business.module';
 
 @Module({
   imports: [
@@ -44,7 +40,6 @@ import { BusinessModule } from '../business/business.module';
     UsernameModule,
     BlikModule,
     SplitModule,
-    BusinessModule,
   ],
   controllers: [AiController],
   providers: [
@@ -68,9 +63,6 @@ import { BusinessModule } from '../business/business.module';
     GetSplitsTool,
     CheckUsernameTool,
     RegisterUsernameTool,
-    GetBusinessesTool,
-    GetBusinessDetailTool,
-    GetBusinessProposalsTool,
     AiSecurityService,
     AiRateLimiter,
     AiAuditLogger,

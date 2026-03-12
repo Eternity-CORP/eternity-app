@@ -63,6 +63,18 @@ export class ScheduledController {
   }
 
   /**
+   * Get incoming scheduled payments (where user is recipient)
+   */
+  @Get('incoming')
+  async findIncoming(@Headers('x-wallet-address') walletAddress: string) {
+    if (!walletAddress) {
+      throw new BadRequestException('Wallet address required');
+    }
+
+    return this.scheduledService.findByRecipient(walletAddress);
+  }
+
+  /**
    * Get upcoming scheduled payments (default: next 7 days)
    */
   @Get('upcoming')
@@ -92,9 +104,13 @@ export class ScheduledController {
 
     const payment = await this.scheduledService.findById(id);
 
-    if (payment.creatorAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+    const normalizedWallet = walletAddress.toLowerCase();
+    if (
+      payment.creatorAddress.toLowerCase() !== normalizedWallet &&
+      payment.recipient.toLowerCase() !== normalizedWallet
+    ) {
       throw new ForbiddenException(
-        'Only the payment creator can view this scheduled payment',
+        'Only the payment creator or recipient can view this scheduled payment',
       );
     }
 

@@ -25,8 +25,8 @@ export class WsSubscribeDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['test', 'real', 'business'], {
-    message: 'accountType must be one of: test, real, business',
+  @IsIn(['test', 'real'], {
+    message: 'accountType must be one of: test, real',
   })
-  accountType?: 'test' | 'real' | 'business';
+  accountType?: 'test' | 'real';
 }

@@ -342,13 +342,29 @@ export class NotificationsService {
     txHash: string,
   ): Promise<void> {
     const recipientShort = `${recipient.slice(0, 6)}...${recipient.slice(-4)}`;
+    const creatorShort = `${creatorAddress.slice(0, 6)}...${creatorAddress.slice(-4)}`;
 
+    // Notify creator
     await this.sendToWallet(creatorAddress, {
       title: 'Scheduled Payment Executed',
       body: `Your payment of ${amount} ${tokenSymbol} to ${recipientShort} was sent`,
       data: {
         type: 'scheduled_executed',
         recipient,
+        amount,
+        tokenSymbol,
+        txHash,
+      },
+      channelId: 'scheduled',
+    });
+
+    // Notify recipient
+    await this.sendToWallet(recipient, {
+      title: 'Payment Received',
+      body: `You received ${amount} ${tokenSymbol} from ${creatorShort}`,
+      data: {
+        type: 'scheduled_received',
+        sender: creatorAddress,
         amount,
         tokenSymbol,
         txHash,

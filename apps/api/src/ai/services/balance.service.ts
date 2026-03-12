@@ -63,7 +63,7 @@ export class BalanceServiceAi {
   }
 
   private getNetworksToQuery(accountType?: string): NetworkTarget[] {
-    // Use accountType to determine networks: 'real'/'business' = mainnet, 'test' = sepolia
+    // Use accountType to determine networks: 'real' = mainnet, 'test' = sepolia
     // Falls back to env NETWORK if accountType is not provided (backward compat)
     const useTestnet = accountType
       ? accountType === 'test'
@@ -163,7 +163,7 @@ export class BalanceServiceAi {
 
   /**
    * Get all balances for an address across all supported networks
-   * @param accountType - Optional account type override ('test' | 'real' | 'business').
+   * @param accountType - Optional account type override ('test' | 'real').
    *   If provided, overrides the env NETWORK setting for network selection.
    */
   async getBalances(address: string, tokenFilter?: string, accountType?: string): Promise<BalanceResult> {

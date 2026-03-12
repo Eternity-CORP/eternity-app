@@ -100,14 +100,3 @@ export class AiError extends AppError {
   }
 }
 
-export class BusinessError extends AppError {
-  constructor(
-    message: string,
-    code: string = 'BUSINESS_ERROR',
-    statusCode: number = 400,
-    context?: Record<string, unknown>,
-  ) {
-    super(message, code, statusCode, context);
-    this.name = 'BusinessError';
-  }
-}
