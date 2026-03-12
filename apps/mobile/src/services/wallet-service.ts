@@ -160,15 +160,19 @@ export async function loadAccounts(): Promise<Account[]> {
   }
 }
 
+const VALID_ACCOUNT_TYPES: Set<string> = new Set(['test', 'real']);
+
 /**
- * Migrate accounts that don't have a type field
+ * Migrate accounts that don't have a type field and filter out removed types (e.g. 'business')
  * Default to 'test' for backwards compatibility
  */
 function migrateAccountsWithType(accounts: Partial<Account>[]): Account[] {
-  return accounts.map((acc) => ({
-    ...acc,
-    type: acc.type || 'test',
-  })) as Account[];
+  return accounts
+    .map((acc) => ({
+      ...acc,
+      type: acc.type || 'test',
+    }) as Account)
+    .filter((acc) => VALID_ACCOUNT_TYPES.has(acc.type));
 }
 
 /**

@@ -5,11 +5,19 @@ export type { AccountType, WalletAccount }
 const ACCOUNTS_KEY = 'ey_accounts'
 const CURRENT_INDEX_KEY = 'ey_current_account_index'
 
+const VALID_ACCOUNT_TYPES = new Set<AccountType>(['test', 'real'])
+
 export function loadAccounts(): WalletAccount[] {
   try {
     const raw = localStorage.getItem(ACCOUNTS_KEY)
     if (!raw) return []
-    return JSON.parse(raw)
+    const parsed: WalletAccount[] = JSON.parse(raw)
+    // Filter out removed account types (e.g. 'business') that may linger in storage
+    const valid = parsed.filter((a) => VALID_ACCOUNT_TYPES.has(a.type))
+    if (valid.length !== parsed.length) {
+      saveAccounts(valid)
+    }
+    return valid
   } catch (err) {
     console.error('Failed to load accounts from localStorage:', err)
     return []
